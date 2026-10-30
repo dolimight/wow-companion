@@ -27,8 +27,8 @@ CI stamps package and lockfile metadata only in the build checkout, without crea
 5. Check the completed GitHub release and its update assets before distributing the installer
 
 The workflow runs typechecking, unit tests, release-script tests, and packaged debugger acceptance before publication
-It builds Windows x64 NSIS plus macOS arm64/x64 DMG and ZIP artifacts
-The publish step validates manifest versions, asset sizes and SHA-512 hashes, merges macOS manifests across architectures, and creates SHA256SUMS
+It builds the Windows x64 NSIS installer; macOS and Linux are not built because World of Warcraft players on this app use Windows
+The publish step validates manifest versions, asset sizes and SHA-512 hashes, and creates SHA256SUMS
 All artifacts are uploaded to a draft before it is published, so a feed never points at a partially uploaded release
 Stable and Nightly use isolated manifests, and builders are configured not to generate other channels' feeds
 
@@ -40,13 +40,9 @@ No token or certificate is embedded in source or application update feeds
 | Platform | Secrets |
 | --- | --- |
 | Windows certificate | `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD` |
-| macOS Developer ID | `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD` |
-| macOS notarization | `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` |
 
 The workflow can create unsigned artifacts while certificates are absent
 Windows unsigned installers are suitable for personal testing but may trigger operating-system reputation prompts
-Unsigned macOS artifacts do not establish a production auto-update path: configure a Developer ID certificate and notarization before relying on macOS OTA updates
-Local Windows validation does not establish macOS runtime or signing correctness
 
 ## Bootstrap and update behavior
 
@@ -87,5 +83,5 @@ Local packaged evidence: `.local/packaged-release-x64-1793384184918/acceptance/r
 Local source evidence: `.local/debug-acceptance-1793383872879/acceptance/report.json`
 The generated bootstrap installer is `release/WOW-Companion-0.1.0-win-x64.exe`
 
-These checks do not establish a real GitHub-fed old-version → new-version installation/relaunch or macOS runtime behavior
-That round trip requires published release versions, and production macOS distribution requires signing/notarization credentials
+These checks do not establish a real GitHub-fed old-version → new-version installation/relaunch
+That round trip requires published release versions

@@ -21,12 +21,6 @@ win:
   icon: public/assets/wow-companion.ico
   target: nsis
   signExecutable: false
-mac:
-  icon: public/assets/wow-companion.icns
-  category: public.app-category.utilities
-  target:
-    - dmg
-    - zip
 nsis:
   differentialPackage: true
   oneClick: false
