@@ -18,7 +18,7 @@ Active rulesets: [main guardrails](https://github.com/dolimight/wow-companion/ru
 
 PR validation runs full TypeScript, unit tests, maintenance/release script tests, and a production build
 Windows packaged smoke builds the NSIS package and exercises it with main/renderer debuggers against an isolated fictional profile
-Release automation builds Windows x64 and macOS arm64/x64 artifacts, verifies feeds and checksums, and publishes complete releases
+Release automation builds the Windows x64 installer, verifies feeds and checksums, and publishes complete releases
 Nightly eligibility is checked every 30 minutes with changed-commit and six-hour gates; Stable promotes a published nightly's exact commit
 See [releases](releases.md) for signing, versioning, bootstrap installation, and release commands
 

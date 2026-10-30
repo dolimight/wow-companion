@@ -83,12 +83,6 @@ jobs:
           - runner: windows-latest
             platform: win
             arch: x64
-          - runner: macos-15
-            platform: mac
-            arch: arm64
-          - runner: macos-15-intel
-            platform: mac
-            arch: x64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -105,11 +99,8 @@ jobs:
       - name: Package desktop and generate its update feed
         env:
           GH_TOKEN: ${{ github.token }}
-          CSC_LINK: ${{ (matrix.platform == 'win' && secrets.WIN_CSC_LINK) || (matrix.platform == 'mac' && secrets.MAC_CSC_LINK) || '' }}
-          CSC_KEY_PASSWORD: ${{ (matrix.platform == 'win' && secrets.WIN_CSC_KEY_PASSWORD) || (matrix.platform == 'mac' && secrets.MAC_CSC_KEY_PASSWORD) || '' }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: node --import tsx scripts/release/package.ts '${{ needs.prepare.outputs.version }}' '${{ matrix.arch }}'
       - name: Exercise the packaged app with both debuggers and an isolated profile
         run: node --import tsx scripts/release/smoke.ts '${{ matrix.arch }}'
@@ -119,8 +110,6 @@ jobs:
           if-no-files-found: error
           path: |
             release/*.exe
-            release/*.dmg
-            release/*.zip
             release/*.blockmap
             release/latest*.yml
             release/nightly*.yml

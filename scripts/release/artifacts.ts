@@ -12,7 +12,7 @@ const yaml = requireBuilder('js-yaml') as { load(text: string): unknown; dump(va
 export function validateManifest(info: UpdateManifest, assets: Map<string, Buffer>, version: string) {
   if (info.version !== version || !Array.isArray(info.files) || !info.files.length) throw new Error('Invalid update manifest version or file list')
   for (const file of info.files) {
-    if (typeof file.url !== 'string' || basename(file.url) !== file.url || !/\.(exe|zip|dmg)$/.test(file.url)) throw new Error('Update manifest contains an unsafe asset URL')
+    if (typeof file.url !== 'string' || basename(file.url) !== file.url || !/\.exe$/.test(file.url)) throw new Error('Update manifest contains an unsafe asset URL')
     const bytes = assets.get(file.url)
     if (!bytes) throw new Error(`Missing update asset ${file.url}`)
     if (createHash('sha512').update(bytes).digest('base64') !== file.sha512 || bytes.length !== file.size) throw new Error(`Update asset integrity mismatch: ${file.url}`)
@@ -29,16 +29,14 @@ export function mergeManifests(manifests: UpdateManifest[], assets: Map<string, 
     if (prior && prior.sha512 !== file.sha512) throw new Error('Conflicting update assets')
     files.set(file.url, file)
   }
-  // Keep the x64 fallback path, while arm64 clients select their architecture from files
-  const first = manifests.find(m => m.files.some(f => f.url.includes('-x64.zip'))) ?? manifests[0]
-  return { ...first, files: [...files.values()] }
+  return { ...manifests[0], files: [...files.values()] }
 }
 
 export async function collectArtifacts(input: string, output: string, version: string) {
   const channel = releaseChannel(`v${version}`)
   if (!channel) throw new Error('Invalid release version')
   const prefix = channel === 'stable' ? 'latest' : 'nightly'
-  const manifestNames = new Set([`${prefix}.yml`, `${prefix}-mac.yml`])
+  const manifestName = `${prefix}.yml`
   const assets = new Map<string, Buffer>(), manifests = new Map<string, UpdateManifest[]>()
   async function visit(directory: string) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -46,10 +44,10 @@ export async function collectArtifacts(input: string, output: string, version: s
       if (entry.isDirectory()) { await visit(file); continue }
       if (!entry.isFile()) throw new Error('Release artifacts must be regular files')
       if (entry.name.endsWith('.yml')) {
-        if (!manifestNames.has(entry.name)) throw new Error(`Unexpected channel manifest ${entry.name}`)
+        if (entry.name !== manifestName) throw new Error(`Unexpected channel manifest ${entry.name}`)
         const info = yaml.load(await readFile(file, 'utf8')) as UpdateManifest
         manifests.set(entry.name, [...(manifests.get(entry.name) ?? []), info])
-      } else if (/\.(exe|dmg|zip|blockmap)$/.test(entry.name)) {
+      } else if (/\.(exe|blockmap)$/.test(entry.name)) {
         const bytes = await readFile(file)
         const previous = assets.get(entry.name)
         if (previous && !previous.equals(bytes)) throw new Error(`Conflicting artifact ${entry.name}`)
@@ -58,9 +56,8 @@ export async function collectArtifacts(input: string, output: string, version: s
     }
   }
   await visit(input)
-  for (const name of manifestNames) if (!manifests.has(name)) throw new Error(`Missing platform update manifest ${name}`)
+  if (!manifests.has(manifestName)) throw new Error(`Missing platform update manifest ${manifestName}`)
   if (![...assets.keys()].some(name => name.endsWith('.exe.blockmap'))) throw new Error('Missing Windows differential blockmap')
-  if (![...assets.keys()].some(name => name.includes('-arm64.zip')) || ![...assets.keys()].some(name => name.includes('-x64.zip'))) throw new Error('Missing macOS update architecture')
   await mkdir(output, { recursive: true })
   for (const [name, bytes] of assets) await writeFile(join(output, name), bytes)
   for (const [name, entries] of manifests) await writeFile(join(output, name), yaml.dump(mergeManifests(entries, assets, version)))
