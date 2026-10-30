@@ -42,6 +42,8 @@ jobs:
         with:
           node-version: '24.20.0'
           package-manager-cache: false
+      # The release scripts are TypeScript, so their tooling is installed without running dependency install scripts
+      - run: npm ci --ignore-scripts
       - id: metadata
         name: Resolve immutable release commit and channel
         env:
