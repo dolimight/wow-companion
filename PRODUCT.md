@@ -55,7 +55,7 @@ Item search uses the local Retail game data index; planners never have to know a
 
 ## Brand Commitments
 
-Working label: WoW Companion, not a confirmed final brand name
+App name: WOW Companion
 User prefers shadcn-style interface components
 User explicitly requires Apple design principles for the UI mocks, adapted to Electron
 Use T3 Code's native planner; do not use visual-plan or the separate Plan viewer
@@ -63,12 +63,11 @@ No trailing periods in user-facing UI copy or assistant replies
 
 ## Evidence on Hand
 
-Multi-character and 3D feature design: plans/wow-companion/multi-character-and-3d-design.md
-Build plans: plans/wow-companion/multi-character-implementation.md and plans/wow-companion/3d-model-implementation.md
-The build plans are historical; the app described above ships. No 3D character assembly feasibility test has been completed
-Detailed design: plans/wow-companion/plan.mdx
-Existing concept wireframes: plans/wow-companion/canvas.mdx
-Current low-fidelity demo: plans/wow-companion/concept.html
+Current feature status and release gates: docs/roadmap-implementation-2026-10-29.md
+Rendering boundaries: docs/model-inspection.md
+Active navigation proposal: docs/specs/2026-10-30-navigation-redesign.md
+Audited user flows: docs/specs/2026-10-30-user-flow-map.md
+Completed mockups, execution logs, duplicate screenshots, and exploratory downloads are excluded from the maintained repository
 Real characters import through Battle.net and the addon, and top-player rankings come from Raider.IO. A verified current-season item-level cap and 3D integration are still unavailable, so those values stay Unknown
 UI mocks may use explicitly labeled fictional demo content, without implying that its numbers are current game facts
 

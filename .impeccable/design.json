@@ -705,7 +705,7 @@
   ],
   "narrative": {
     "northStar": "The character folio",
-    "overview": "A calm desktop companion gives character identity and progression room to lead, with a persistent translucent sidebar, quiet silver separators, system typography, and blue selection. Apple design principles guide hierarchy, feedback, and material depth within an Electron-shaped shell and familiar shadcn-style controls\n\nThis system is extracted from the five-screen clickable HTML mock in plans/wow-companion/ui-mocks.html, covering Characters, Character, Gear planner, Standings, and Wardrobe. Home opens a roster of four fictional characters with a selected-character pane. The working name is provisional, all character and game values are fictional demo content, and only the mage has generated static concept artwork",
+    "overview": "A calm Electron desktop companion gives character identity and progression room to lead, using Apple-inspired system typography, blue selection, quiet separators, adaptive surfaces, and a pure-black dark theme. The renderer in src/renderer is the visual authority; the roster opens with a selected-character pane, and fictional demo data is labeled",
     "keyCharacteristics": [
       "Adaptive light and dark semantic surfaces with a single interaction accent",
       "Readable compact controls and tabular progression numbers",

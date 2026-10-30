@@ -74,4 +74,4 @@ No automatic game interaction, hosted asset service, assumption that a static GL
 
 Collection planning and in-game preview can ship first. If desktop assembly fails S6-A5, keep S6-R8 explicitly incomplete and record the missing capability; retain the working outfit workflow and static render without calling it completed 3D support
 
-References: [existing feasibility record](../../research/3d/FEASIBILITY.md), [Narcissus](https://www.curseforge.com/wow/addons/narcissus), [wow.export](https://github.com/Kruithne/wow.export)
+References: [model inspection boundaries](../model-inspection.md), [Narcissus](https://www.curseforge.com/wow/addons/narcissus), [wow.export](https://github.com/Kruithne/wow.export)

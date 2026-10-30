@@ -82,7 +82,7 @@ Unit tests cover identity isolation, stale imports, declarative Lua parsing, per
 The integration script tests the actual loopback WebSocket transport and database worker, including rejected origins/tokens and post-commit notifications
 The desktop harness uses a fresh isolated `.local` workspace and hidden offscreen Electron window, executes real UI actions, and writes captures plus `report.json` under the printed acceptance path
 
-See the [implementation review](docs/implementation-status.md) for scope and outstanding limitations
+See the [implementation status](docs/roadmap-implementation-2026-10-29.md) for scope and outstanding limitations
 
 `npm run test:debug` starts the app with a loopback-only Node inspector, attaches a debugger to the main process, observes and resumes its startup pause, and keeps uncaught-exception monitoring enabled
 The desktop harness also attaches Chromium's debugger to the sandboxed renderer and verifies an actual JavaScript pause/resume before exercising the UI
@@ -92,7 +92,7 @@ To repeat the same test against an unpacked package, set `WOW_COMPANION_DEBUG_EX
 For interactive source breakpoints in VS Code, choose the included `Electron main + renderer` launch configuration
 It builds source maps, launches Electron, and attaches the renderer debugger on loopback port 9222
 
-The named execution sub-skills referenced in the planning templates were not installed; implementation used the user's requested native agent team instead
+The project builds and tests with standard npm commands and does not depend on any AI coding assistant, model, or provider
 
 ## Engineering notes
 
@@ -117,5 +117,9 @@ npm run dev:browser
 Native file dialogs remain desktop-only
 The browser preview binds to loopback and must not be exposed as a hosted service
 
-UI mocks and design plans remain in [plans/wow-companion](plans/wow-companion)
-The demo illustration's original prompt and provenance remain in [asset notes](plans/wow-companion/assets/ASSETS.md)
+## Contributing and repository rules
+
+Changes go through feature branches and pull requests; direct pushes to main are blocked, including for administrators
+See [repository maintenance](docs/repository.md) for enforced checks, release rules, script conventions, and the documentation map
+The [navigation redesign](docs/specs/2026-10-30-navigation-redesign.md) remains proposed work, separate from the current app
+Asset provenance lives beside the shipping images in [public/assets](public/assets/README.md)

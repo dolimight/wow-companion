@@ -12,12 +12,33 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.20.0'
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: node --test scripts/release/*.test.mjs
+      - run: npm run test:scripts
       - run: npm run build
+  desktop-smoke:
+    name: Windows packaged smoke
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Build an updater-enabled Windows installer
+        run: node --import tsx scripts/release/package.ts current x64
+      - name: Run main and renderer debugger acceptance against the package
+        run: node --import tsx scripts/release/smoke.ts x64
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: windows-smoke-diagnostics
+          include-hidden-files: true
+          path: .local/packaged-release-*/acceptance/
