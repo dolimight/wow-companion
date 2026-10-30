@@ -37,18 +37,19 @@ jobs:
       channel: ${{ steps.metadata.outputs.channel }}
       tag: ${{ steps.metadata.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.20.0'
+          package-manager-cache: false
       - id: metadata
         name: Resolve immutable release commit and channel
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_CHANNEL: ${{ inputs.channel || 'nightly' }}
           RELEASE_VERSION: ${{ inputs.version }}
-        run: node scripts/release/prepare.mjs
-      - uses: actions/upload-artifact@v4
+        run: node --import tsx scripts/release/prepare.ts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.metadata.outputs.publish == 'true'
         with:
           name: release-metadata
@@ -60,16 +61,16 @@ jobs:
     if: needs.prepare.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.20.0'
-          cache: npm
+          package-manager-cache: false
       - run: npm ci
       - run: npm run check
-      - run: node --test scripts/release/*.test.mjs
+      - run: npm run test:scripts
 
   desktop:
     needs: [prepare, checks]
@@ -88,16 +89,16 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.20.0'
-          cache: npm
+          package-manager-cache: false
       - run: npm ci
       - name: Stamp this build without changing source history
-        run: node scripts/release/stamp.mjs '${{ needs.prepare.outputs.version }}'
+        run: node --import tsx scripts/release/stamp.ts '${{ needs.prepare.outputs.version }}'
       - run: npm run build
       - name: Package desktop and generate its update feed
         env:
@@ -107,10 +108,10 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: node scripts/release/package.mjs '${{ needs.prepare.outputs.version }}' '${{ matrix.arch }}'
+        run: node --import tsx scripts/release/package.ts '${{ needs.prepare.outputs.version }}' '${{ matrix.arch }}'
       - name: Exercise the packaged app with both debuggers and an isolated profile
-        run: node scripts/release/smoke.mjs '${{ matrix.arch }}'
-      - uses: actions/upload-artifact@v4
+        run: node --import tsx scripts/release/smoke.ts '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
           if-no-files-found: error
@@ -128,42 +129,33 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.20.0'
-          cache: npm
+          package-manager-cache: false
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-metadata
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: desktop-*
           path: release-artifacts
       - name: Verify asset hashes and merge architecture manifests
-        run: node scripts/release/artifacts.mjs release-artifacts release-publish '${{ needs.prepare.outputs.version }}'
+        run: node --import tsx scripts/release/artifacts.ts release-artifacts release-publish '${{ needs.prepare.outputs.version }}'
       - name: Generate notes since the previous release on this track
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/release/notes.mjs .local-release.json
+        run: node --import tsx scripts/release/notes.ts .local-release.json
       - name: Publish one complete release after all artifacts pass
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
           RELEASE_CHANNEL: ${{ needs.prepare.outputs.channel }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          title="WOW Companion ${RELEASE_VERSION}"
-          if [[ "$RELEASE_CHANNEL" == nightly ]]; then title="WOW Companion Nightly ${RELEASE_VERSION}"; fi
-          gh release create "$RELEASE_TAG" release-publish/* --draft --target "$RELEASE_SHA" --title "$title" --notes-file release-notes.md
-          if [[ "$RELEASE_CHANNEL" == nightly ]]; then
-            gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
-          else
-            gh release edit "$RELEASE_TAG" --draft=false --prerelease=false --latest=true
-          fi
+        run: node --import tsx scripts/release/publish.ts

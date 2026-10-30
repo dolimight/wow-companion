@@ -32,7 +32,7 @@ The current workspace has no live character-assembly renderer or model attachmen
 Wardrobe retains the official observed character render where available and clearly labels that it does not change with the plan
 The shared `evaluateModelCapability` gate requires two real-character references, customization, dynamic armor swaps, weapon attachments, body variants, animation, local assets, and missing-asset recovery
 An animated flattened GLB cannot pass that gate
-The historical [feasibility record](../research/3d/FEASIBILITY.md) describes earlier experiments; it does not establish those components are present in this checkout
+See [model inspection](model-inspection.md) for the shipped renderer boundary; historical extraction experiments are not part of the application
 
 ## Verification
 

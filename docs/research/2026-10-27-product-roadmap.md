@@ -19,7 +19,7 @@ This is a research proposal, not a claim that the proposed features already work
 - `src/main/providers/raiderio-top.ts` requests a limited player sample and can fall back to players found in high runs; that fallback should retain its explicit sample description
 - The weekly view already displays source-aware Vault progress, giving the action planner a useful starting point
 - A shared compatibility helper exists, but the inspected game-data engine still uses index version 1 and does not index `AllowableClass` or `ItemSpecOverride`; finish and test the full data path before describing search as fully spec-compatible
-- `research/3d/FEASIBILITY.md` records unproven live character assembly. Exported model inspection and a fully swappable Retail character are different capabilities
+- [Model inspection](../model-inspection.md) records the boundary between exported snapshots and unproven live character assembly
 - Documentation has drifted: README limitations and PRODUCT capabilities disagree on some account integration features. Treat current source and runtime evidence as the acceptance criteria
 
 ## 1. Make progression answer the original question
