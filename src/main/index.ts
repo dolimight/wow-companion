@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, safeStorage, shell } from 'electron'
 import { mkdirSync } from 'node:fs'
-import { readFile, writeFile, mkdir, realpath, stat } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, realpath, stat, rename } from 'node:fs/promises'
 import { dirname, extname, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { DatabaseClient } from './database'
@@ -10,6 +10,9 @@ import { rendererOrigin } from './renderer-origin'
 import { runDesktopAcceptance } from './desktop-acceptance'
 import { EncryptedFileStore } from './secrets'
 import type { WindowState } from '../shared/bridge'
+import { createUpdateService, type UpdatePreferences } from './updates/service'
+import { electronUpdaterAdapter } from './updates/electron'
+import { isUpdateChannel } from '../shared/updates'
 
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
@@ -22,6 +25,7 @@ const root=dirname(fileURLToPath(import.meta.url))
 let window:BrowserWindow|null=null
 let cleanup:(()=>Promise<void>)|undefined
 let closing=false
+let installingUpdate=false
 const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: wow-asset:; connect-src 'self' blob: data: ws://127.0.0.1:* wow-asset:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'"
 async function main(){
   const userDir=process.env.WOW_COMPANION_DATA_DIR?resolve(process.env.WOW_COMPANION_DATA_DIR):app.getPath('userData')
@@ -35,7 +39,28 @@ async function main(){
   const secrets=new EncryptedFileStore(resolve(userDir,'secrets.json'),{available:()=>safeStorage.isEncryptionAvailable(),encrypt:value=>safeStorage.encryptString(value),decrypt:value=>safeStorage.decryptString(value)})
   const addonDir=app.isPackaged?resolve(process.resourcesPath,'addon'):resolve(app.getAppPath(),'addon')
   const service=await startLocalService({db,origins,refreshCharacter:id=>refreshPublicCharacter(db,id),gameDataDir:resolve(userDir,'gamedata'),secrets,addonDir,assetsDir:userDir,autoSync:!process.env.WOW_COMPANION_DATA_DIR})
-  cleanup=async()=>{await service.close();await db.close()}
+  let nativeOperations=0
+  let updateBlockerAcknowledgedAt=0
+  const updatePreferences=resolve(userDir,'updates.json')
+  const updates=await createUpdateService({
+    version:app.getVersion(),
+    disabledReason:!app.isPackaged?'Updates are available in installed release builds':process.env.WOW_COMPANION_DATA_DIR||process.argv.includes('--acceptance')||process.argv.includes('--smoke')?'Automatic updates are disabled in isolated test runs':process.platform!=='win32'&&process.platform!=='darwin'?'In-app updates currently support Windows and macOS':null,
+    adapter:electronUpdaterAdapter(),
+    readPreferences:async()=>{try{return JSON.parse(await readFile(updatePreferences,'utf8'))}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return null;throw error}},
+    writePreferences:async(value:UpdatePreferences)=>{const temporary=updatePreferences+'.tmp';await writeFile(temporary,JSON.stringify(value),{encoding:'utf8',mode:0o600});await rename(temporary,updatePreferences)},
+    blockers:()=>[...(Date.now()-updateBlockerAcknowledgedAt>10_000?['Waiting for the app to confirm that your work is saved']:[]),...(service.simulations.busy?['A simulation or simulation save is in progress']:[]),...(service.sync.state.running?['Character sync is in progress']:[]),...(nativeOperations?['A file import, backup, or other file action is in progress']:[])],
+    beforeInstall:async()=>{
+      installingUpdate=true
+      try{
+        const backup=await db.call('exportBackup')
+        await mkdir(resolve(userDir,'backups'),{recursive:true})
+        await writeFile(resolve(userDir,'backups','before-update-'+Date.now()+'.json'),JSON.stringify(backup),{encoding:'utf8',mode:0o600})
+        await service.close();await db.close();cleanup=undefined;closing=true
+      }catch(error){installingUpdate=false;throw error}
+    },
+    changed:state=>{if(window&&!window.webContents.isDestroyed())window.webContents.send('companion:update-state-changed',state)},
+  })
+  cleanup=async()=>{updates.close();await service.close();await db.close()}
   const rendererRoot=resolve(root,'../renderer')
   protocol.handle('app',async request=>{
     const url=new URL(request.url)
@@ -54,7 +79,19 @@ async function main(){
     return new Response('Not found',{status:404})
   })
   const trusted=(event:Electron.IpcMainInvokeEvent)=>{const url=event.senderFrame?.url;if(!url||!origins.includes(rendererOrigin(url)??'')||event.sender!==window?.webContents)throw new Error('Untrusted application frame')}
-  function handle(channel:string,fn:(...args:any[])=>unknown){ipcMain.handle(channel,async(event,...args)=>{trusted(event);return fn(...args)})}
+  function handle(channel:string,fn:(...args:any[])=>unknown){ipcMain.handle(channel,async(event,...args)=>{
+    trusted(event)
+    if(installingUpdate&&!['companion:update-state','companion:update-blockers'].includes(channel))throw new Error('The app is restarting to install an update')
+    const fileAction=/^companion:(?:import-file|watch-file|export-backup|import-backup|choose-model-file|choose-wow-folder|choose-simulation-executable)$/.test(channel)
+    if(fileAction)nativeOperations++
+    try{return await fn(...args)}finally{if(fileAction)nativeOperations--}
+  })}
+  handle('companion:update-state',()=>updates.getState())
+  handle('companion:update-check',()=>updates.check())
+  handle('companion:update-download',()=>updates.download())
+  handle('companion:update-install',()=>updates.install())
+  handle('companion:update-channel',(channel:unknown)=>{if(!isUpdateChannel(channel))throw new Error('Choose Stable or Nightly');return updates.setChannel(channel)})
+  handle('companion:update-blockers',(values:unknown)=>{if(!Array.isArray(values)||values.length>20||values.some(value=>typeof value!=='string'||value.length>160))throw new Error('Invalid pending work');updateBlockerAcknowledgedAt=Date.now();updates.setBlockers(values)})
   async function selectedFile(filters:Electron.FileFilter[]){const result=await dialog.showOpenDialog(window!,{properties:['openFile'],filters});return result.canceled?null:result.filePaths[0]??null}
   async function smallText(path:string){const info=await stat(path);if(!info.isFile()||info.size>16*1024*1024)throw new Error('Choose a file smaller than 16 MiB');return readFile(path,'utf8')}
   handle('companion:connection',()=>service.connection)
@@ -89,6 +126,7 @@ async function main(){
   window.once('ready-to-show',()=>{if(!process.env.WOW_COMPANION_HEADLESS)window?.show()})
   window.on('closed',()=>{window=null})
   if(devUrl)await window.loadURL(devUrl);else await window.loadURL('app://companion/index.html')
+  updates.startPolling()
   if(process.argv.includes('--acceptance')){const report=await runDesktopAcceptance({window,db,service,outputDir:resolve(userDir,'acceptance')});console.log('DESKTOP_ACCEPTANCE',JSON.stringify({passed:report.passed,steps:report.steps.map(s=>({name:s.name,status:s.status,detail:s.status==='fail'?s.detail:undefined})),evidence:resolve(userDir,'acceptance/report.json')}));process.exitCode=report.passed?0:1;app.quit()}
   if(process.argv.includes('--smoke')){const result=await window.webContents.executeJavaScript(`new Promise(resolve=>{let n=0;const t=setInterval(()=>{if(document.querySelector('h1')||++n>100){clearInterval(t);resolve({title:document.title,heading:document.querySelector('h1')?.textContent,body:document.body.innerText.slice(0,500)})}},100)})`);console.log('COMPANION_SMOKE',JSON.stringify(result));app.quit()}
 }

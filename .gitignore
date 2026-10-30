@@ -1,7 +1,11 @@
 node_modules/
 out/
 dist/
-release/
+/release/
+/release-artifacts/
+/release-publish/
+/.local-release.json
+/release-notes.md
 .local/
 coverage/
 *.tsbuildinfo

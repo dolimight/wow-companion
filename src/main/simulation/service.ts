@@ -84,6 +84,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     } finally { pumping = false }
   }
   const service = {
+    get busy() { return pumping || !!active || jobs.length > 0 || mutations.size > 0 },
     async exportProfile(characterId: string) { return exportCharacterProfile(await character(characterId), now()) },
     async importProfile(characterId: string, text: string) { const profile = importCharacterProfile(await character(characterId), text, now()); await mutate(characterId, state => { state.profile = profile }); return profile },
     async clearProfile(characterId: string) { await mutate(characterId, state => { state.profile = null }); return service.list(characterId) },

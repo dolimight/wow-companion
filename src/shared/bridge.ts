@@ -1,5 +1,6 @@
 import type { ImportReport } from './domain'
 import type { GameDataStatus } from './gamedata'
+import type { UpdateChannel, UpdateState } from './updates'
 
 export type ConnectionInfo = { url:string;token:string }
 export type WindowState = {
@@ -11,6 +12,13 @@ export type WindowState = {
   focused:boolean
 }
 export type NativeBridge = {
+  updateState():Promise<UpdateState>
+  checkForUpdates():Promise<UpdateState>
+  downloadUpdate():Promise<UpdateState>
+  installUpdate():Promise<UpdateState>
+  setUpdateChannel(channel:UpdateChannel):Promise<UpdateState>
+  setUpdateBlockers(blockers:string[]):Promise<void>
+  onUpdateState(listener:(state:UpdateState)=>void):()=>void
   windowState():Promise<WindowState>
   onWindowState(listener:(state:WindowState)=>void):()=>void
   setWindowTheme(theme:'system'|'light'|'dark'):Promise<void>

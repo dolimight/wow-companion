@@ -1,0 +1,169 @@
+name: Release WOW Companion
+
+on:
+  schedule:
+    - cron: '8,38 * * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Release track
+        type: choice
+        options: [nightly, stable]
+        default: nightly
+        required: true
+      version:
+        description: Optional plain stable version override when promoting a nightly
+        type: string
+        required: false
+  push:
+    tags:
+      - 'v*.*.*'
+      - '!v*-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event_name == 'schedule' && 'nightly' || inputs.channel || 'stable' }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.metadata.outputs.publish }}
+      sha: ${{ steps.metadata.outputs.sha }}
+      version: ${{ steps.metadata.outputs.version }}
+      channel: ${{ steps.metadata.outputs.channel }}
+      tag: ${{ steps.metadata.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+      - id: metadata
+        name: Resolve immutable release commit and channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_CHANNEL: ${{ inputs.channel || 'nightly' }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node scripts/release/prepare.mjs
+      - uses: actions/upload-artifact@v4
+        if: steps.metadata.outputs.publish == 'true'
+        with:
+          name: release-metadata
+          path: .local-release.json
+          include-hidden-files: true
+
+  checks:
+    needs: prepare
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: node --test scripts/release/*.test.mjs
+
+  desktop:
+    needs: [prepare, checks]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: win
+            arch: x64
+          - runner: macos-15
+            platform: mac
+            arch: arm64
+          - runner: macos-15-intel
+            platform: mac
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci
+      - name: Stamp this build without changing source history
+        run: node scripts/release/stamp.mjs '${{ needs.prepare.outputs.version }}'
+      - run: npm run build
+      - name: Package desktop and generate its update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CSC_LINK: ${{ (matrix.platform == 'win' && secrets.WIN_CSC_LINK) || (matrix.platform == 'mac' && secrets.MAC_CSC_LINK) || '' }}
+          CSC_KEY_PASSWORD: ${{ (matrix.platform == 'win' && secrets.WIN_CSC_KEY_PASSWORD) || (matrix.platform == 'mac' && secrets.MAC_CSC_KEY_PASSWORD) || '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: node scripts/release/package.mjs '${{ needs.prepare.outputs.version }}' '${{ matrix.arch }}'
+      - name: Exercise the packaged app with both debuggers and an isolated profile
+        run: node scripts/release/smoke.mjs '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+            release/*.blockmap
+            release/latest*.yml
+            release/nightly*.yml
+
+  publish:
+    needs: [prepare, checks, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-metadata
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release-artifacts
+      - name: Verify asset hashes and merge architecture manifests
+        run: node scripts/release/artifacts.mjs release-artifacts release-publish '${{ needs.prepare.outputs.version }}'
+      - name: Generate notes since the previous release on this track
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/notes.mjs .local-release.json
+      - name: Publish one complete release after all artifacts pass
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+          RELEASE_CHANNEL: ${{ needs.prepare.outputs.channel }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          title="WOW Companion ${RELEASE_VERSION}"
+          if [[ "$RELEASE_CHANNEL" == nightly ]]; then title="WOW Companion Nightly ${RELEASE_VERSION}"; fi
+          gh release create "$RELEASE_TAG" release-publish/* --draft --target "$RELEASE_SHA" --title "$title" --notes-file release-notes.md
+          if [[ "$RELEASE_CHANNEL" == nightly ]]; then
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease=false --latest=true
+          fi

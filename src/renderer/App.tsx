@@ -61,6 +61,8 @@ import { ProgressionPage, ProgressionSummary } from "./features/progression/prog
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
+import { UpdateSettings, UpdateIndicator } from "./features/updates/UpdateSettings";
+import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
 import { InventoryPage } from "./features/inventory/InventoryPage";
 import { ComparisonPage } from "./features/comparisons/ComparisonPage";
 import {ProviderSettings} from './features/comparisons/ProviderSettings';
@@ -433,6 +435,7 @@ function SelectedPane({ character, activity }: { character: Character; activity:
   );
 }
 function Shell() {
+  useUpdateSafety();
   const roster = useRoster();
   const settings = useSettings();
   const navigate = useNavigate();
@@ -678,6 +681,7 @@ function Shell() {
                 <TooltipContent side="top">Settings</TooltipContent>
               </Tooltip>
               <SyncButton onClick={() => setSheet("sync")} />
+              <UpdateIndicator onOpen={() => void navigate({ to: '/settings' })} />
             </div>
           </aside>
         </ResizablePanel>
@@ -1322,6 +1326,8 @@ function GearEditor({
     setDirty(stored.dirty);
   }), [memoryKey]);
   const current = items.find((i) => i.slot === selected);
+  const inspectorDirty = hydrated.current && (itemName !== (current?.name ?? '') || itemLevel !== (current?.itemLevel?.toString() ?? '') || enchant !== (current?.enchant ?? '') || gems !== (current?.gems.join(', ') ?? ''));
+  useUpdateBlocker(dirty || inspectorDirty || target !== (character.targetItemLevel?.toString() ?? ''), 'Save your gear plan and slot edits before restarting');
   useEffect(() => {
     setItemName(current?.name ?? "");
     setItemLevel(current?.itemLevel?.toString() ?? "");
@@ -1768,6 +1774,7 @@ function SettingsPage() {
   const save = useAction(api.saveSettings, "Preferences saved");
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
+  useUpdateBlocker(busy, 'Wait for the backup or import to finish');
   async function backup(kind: "export" | "import") {
     setBusy(true);
     try {
@@ -1804,6 +1811,7 @@ function SettingsPage() {
         <>
           <ConnectionsSection />
           <ProviderSettings />
+          <UpdateSettings />
           <section className="settings-section" aria-labelledby="appearance-heading">
             <h2 id="appearance-heading">Appearance</h2>
             <p>Choose your theme and motion preferences</p>
@@ -1922,6 +1930,7 @@ function ManagePanel({
   const remove = useMutation({
     mutationFn: (id: string) => api.deleteCharacter({ id }),
     onSuccess: (_, id) => {
+      for (const key of gearMemory.keys()) if (key.startsWith(id + ':')) gearMemory.delete(key);
       void client.invalidateQueries();
       setConfirmDelete(null);
       notify("Character deleted");

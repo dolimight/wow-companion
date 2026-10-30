@@ -12,6 +12,7 @@ import { assetUrl } from '../../lib/assets'
 import { errorMessage, notify } from '../../lib/notify'
 import { OutfitTools } from './OutfitTools'
 import {ModelStage} from '../model-stage/ModelStage'
+import { useUpdateBlocker } from '../../lib/update-safety'
 import './outfits.css'
 
 const editableSlots: Array<{ value: AppearanceSlot; label: string }> = [{ value: 'head', label: 'Head' }, { value: 'shoulder', label: 'Shoulders' }, { value: 'shoulderLeft', label: 'Left shoulder' }, { value: 'shoulderRight', label: 'Right shoulder' }, { value: 'back', label: 'Cloak' }, { value: 'chest', label: 'Chest' }, { value: 'shirt', label: 'Shirt' }, { value: 'wrist', label: 'Wrists' }, { value: 'hands', label: 'Hands' }, { value: 'waist', label: 'Waist' }, { value: 'legs', label: 'Legs' }, { value: 'feet', label: 'Feet' }, { value: 'tabard', label: 'Tabard' }, { value: 'mainHand', label: 'Main hand' }, { value: 'offHand', label: 'Off hand' }]
@@ -22,6 +23,7 @@ export function WardrobePage({ character }: { character: Character }) {
   const query = useQuery({ queryKey: ['outfits', character.id], queryFn: () => api.listOutfits({ characterId: character.id }) })
   const [draft, setDraft] = useState<Outfit | null>(null)
   const [dirty, setDirty] = useState(false)
+  useUpdateBlocker(dirty, 'Save or discard your outfit before restarting')
   const [pending, setPending] = useState<Outfit | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [modelOpen,setModelOpen]=useState(false)

@@ -49,8 +49,8 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     assert(result, `Editable field missing: ${label}`)
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
   }
-  const capture = async (name: string) => {
-    await evaluate(`document.querySelector('.workspace-scroll')?.scrollTo(0,0);document.querySelector('.page-content')?.scrollTo(0,0);document.querySelector('main')?.scrollTo(0,0)`)
+  const capture = async (name: string, resetScroll = true) => {
+    if (resetScroll) await evaluate(`document.querySelector('.workspace-scroll')?.scrollTo(0,0);document.querySelector('.page-content')?.scrollTo(0,0);document.querySelector('main')?.scrollTo(0,0)`)
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
     const target = path.join(outputDir, `${name}.png`)
     let paintedFrame:Electron.NativeImage|undefined
@@ -153,6 +153,21 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await click('Characters', '.navigation a')
       await wait(`document.body.innerText.includes('Bring your characters together')`, 'return to empty roster')
       return { savedTheme: (await db.call('getSettings')).theme, page: '/settings', background: 'rgb(0, 0, 0)' }
+    })
+    await step('Update settings expose version and track with isolated acceptance updates disabled', async () => {
+      await click('Open settings')
+      await wait(`document.querySelector('h1')?.textContent==='Settings'`, 'update settings route')
+      await wait(`document.querySelector('.updates-settings')?.textContent.includes('Version ')`, 'installed updater version')
+      const state = await evaluate<{ status: string; channel: string; currentVersion: string; disabledReason: string | null }>(`window.companion.updateState()`)
+      assert(state.status === 'disabled' && !!state.disabledReason && !!state.currentVersion, 'Acceptance updater was enabled or missing its version')
+      assert(await evaluate(`document.querySelector('[aria-label="Update track"]')?.disabled&&[...document.querySelectorAll('.updates-actions button')].find(n=>n.textContent.includes('Check for updates'))?.disabled&&!document.querySelector('.updates-settings select')`), 'Disabled update controls or custom track selector are incorrect')
+      await evaluate(`document.querySelector('#updates-heading').scrollIntoView({block:'start'})`)
+      await capture('updates-settings-dark', false)
+      const check = await evaluate<{ status: string }>(`window.companion.checkForUpdates()`)
+      assert(check.status === 'disabled', 'Isolated acceptance performed an update check')
+      await click('Characters', '.navigation a')
+      await wait(`document.querySelector('h1')?.textContent==='Your characters'`, 'roster after update settings')
+      return { version: state.currentVersion, channel: state.channel, isolatedUpdatesDisabled: true, nativeSelectAbsent: true }
     })
     await step('Shadcn sidebar drag and keyboard resizing persist across a renderer reload', async () => {
       await wait(`!!document.querySelector('[data-slot="resizable-handle"][aria-label="Resize sidebar"]')`, 'shadcn resize handle')

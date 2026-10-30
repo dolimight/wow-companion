@@ -1,6 +1,12 @@
 appId: local.wowcompanion.desktop
 productName: WOW Companion
 npmRebuild: false
+artifactName: WOW-Companion-${version}-${os}-${arch}.${ext}
+generateUpdatesFilesForAllChannels: false
+publish:
+  provider: github
+  owner: dolimight
+  repo: wow-companion
 directories:
   output: release
 files:
@@ -22,5 +28,6 @@ mac:
     - dmg
     - zip
 nsis:
+  differentialPackage: true
   oneClick: false
   allowToChangeInstallationDirectory: true

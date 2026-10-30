@@ -8,6 +8,7 @@ import { Button, Badge, Field } from '../../components/ui/primitives'
 import { AppSelect } from '../../components/AppSelect'
 import { Toggle } from '../../components/ui/toggle'
 import { errorMessage, notify } from '../../lib/notify'
+import { useUpdateBlocker } from '../../lib/update-safety'
 import './simulations.css'
 
 export function SimulationsPage({ character }: { character: Character }) {
@@ -21,6 +22,7 @@ function SimulationContent({ character }: { character: Character }) {
   const [threads, setThreads] = useState(4)
   const [timeoutMinutes, setTimeoutMinutes] = useState(30)
   const [text, setText] = useState<string | null>(null)
+  const [savedProfileText, setSavedProfileText] = useState<string | null>(null)
   const [reportUrl, setReportUrl] = useState('')
   const [notes, setNotes] = useState('')
   const workspace = useQuery({ queryKey: ['simulations', character.id], queryFn: () => api.simulationWorkspace({ characterId: character.id }), refetchInterval: query => query.state.data?.jobs.some(job => job.state === 'queued' || job.state === 'running') ? 1500 : false })
@@ -28,6 +30,7 @@ function SimulationContent({ character }: { character: Character }) {
   const mutation = useMutation({ mutationFn: (task: () => Promise<unknown>) => task(), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['simulations', character.id] }) }, onError: error => notify(errorMessage(error)) })
   const perform = (task: () => Promise<unknown>) => mutation.mutate(task)
   const exported = profile.data
+  useUpdateBlocker(text !== null && text !== exported?.text && text !== savedProfileText, 'Save your simulation profile before restarting')
   const data = workspace.data
   const start = () => { const input = { characterId: character.id, activity, scenarioId: scenario, comparePlan, threads, timeoutMinutes }; perform(() => api.startSimulation(input)) }
   return <div className="simulation-page">
@@ -38,7 +41,7 @@ function SimulationContent({ character }: { character: Character }) {
       <p className="muted">{character.name} · {character.specName} · Build {character.gameBuild ?? 'unknown'}</p>
       <p className="muted">Export your observed gear and talents, or import a supported single-character /simc profile</p>
       <Field label="SimulationCraft profile"><textarea className="simulation-profile" aria-label="SimulationCraft profile" spellCheck={false} value={text ?? exported?.text ?? ''} onChange={event => setText(event.target.value)} maxLength={1_048_576} /></Field>
-      <div className="simulation-actions"><Button disabled={!exported} onClick={() => void navigator.clipboard.writeText(text ?? exported?.text ?? '').then(() => notify('Profile copied')).catch(error => notify(errorMessage(error)))}><Copy size={14} />Copy profile</Button><Button disabled={mutation.isPending || !text?.trim()} onClick={() => perform(async () => { const imported = await api.importSimulationProfile({ characterId: character.id, text: text! }); notify(imported.matchesCurrent ? 'Profile saved for this baseline' : 'Profile saved with a baseline mismatch') })}>Save imported profile</Button><Button variant="quiet" disabled={mutation.isPending} onClick={() => perform(async () => { await api.clearSimulationProfile({ characterId: character.id }); setText(null); await profile.refetch() })}>Use current export</Button></div>
+      <div className="simulation-actions"><Button disabled={!exported} onClick={() => void navigator.clipboard.writeText(text ?? exported?.text ?? '').then(() => notify('Profile copied')).catch(error => notify(errorMessage(error)))}><Copy size={14} />Copy profile</Button><Button disabled={mutation.isPending || !text?.trim()} onClick={() => perform(async () => { const imported = await api.importSimulationProfile({ characterId: character.id, text: text! }); setSavedProfileText(text!); notify(imported.matchesCurrent ? 'Profile saved for this baseline' : 'Profile saved with a baseline mismatch') })}>Save imported profile</Button><Button variant="quiet" disabled={mutation.isPending} onClick={() => perform(async () => { await api.clearSimulationProfile({ characterId: character.id }); setText(null); await profile.refetch() })}>Use current export</Button></div>
       {exported?.reasons.length ? <details className="simulation-details"><summary>{exported.reasons.length} fields need attention before local execution</summary><ul>{exported.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></details> : null}
       {data?.profile && <p className="muted">Saved import: {data.profile.matchesCurrent ? 'matches the recorded baseline' : 'does not match the recorded baseline'} · {new Date(data.profile.createdAt).toLocaleString()}</p>}
     </section>

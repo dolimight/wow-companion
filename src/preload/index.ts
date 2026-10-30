@@ -1,7 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { NativeBridge, WindowState } from '../shared/bridge'
+import type { UpdateState } from '../shared/updates'
 
 const bridge:NativeBridge={
+  updateState:()=>ipcRenderer.invoke('companion:update-state'),
+  checkForUpdates:()=>ipcRenderer.invoke('companion:update-check'),
+  downloadUpdate:()=>ipcRenderer.invoke('companion:update-download'),
+  installUpdate:()=>ipcRenderer.invoke('companion:update-install'),
+  setUpdateChannel:(channel)=>ipcRenderer.invoke('companion:update-channel',channel),
+  setUpdateBlockers:(blockers)=>ipcRenderer.invoke('companion:update-blockers',blockers),
+  onUpdateState:(listener)=>{
+    const receive=(_event:Electron.IpcRendererEvent,state:UpdateState)=>listener(state)
+    ipcRenderer.on('companion:update-state-changed',receive)
+    return ()=>ipcRenderer.removeListener('companion:update-state-changed',receive)
+  },
   windowState:()=>ipcRenderer.invoke('companion:window-state'),
   onWindowState:(listener)=>{
     const receive=(_event:Electron.IpcRendererEvent,state:WindowState)=>listener(state)

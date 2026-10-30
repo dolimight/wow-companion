@@ -36,6 +36,14 @@ Keep that executable with its sibling files; use `npm run dist:win` to produce a
 - Dated seasonal-rule validation and legal-set calculations in a worker, with shared currency budgets and explicit unknown results when evidence is incomplete
 - Local JSON backup export/import, with validation before writes
 
+## Desktop updates
+
+Installed release builds support in-app updates from the public GitHub releases
+Open Settings → Updates & About to choose Stable or Nightly, check for updates, download, and restart when ready
+Development builds and isolated test profiles do not fetch desktop updates
+Existing builds without the updater need one manual installation of an updater-enabled release first
+See [release channels and publishing](docs/releases.md) for scheduling, promotion, signing, and verification
+
 ## Addon
 
 Copy the `addon` folder's addon files into `_retail_/Interface/AddOns/WoWCompanion`

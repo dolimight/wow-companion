@@ -1,0 +1,20 @@
+.updates-settings { display: grid; gap: 18px; padding: 22px; }
+.updates-identity { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.updates-identity > div { flex: 1; min-width: 140px; }
+.updates-settings h3, .updates-settings p { margin: 0; }
+.updates-settings p { font-size: 13px; line-height: 1.65; max-width: 70ch; overflow-wrap: anywhere; }
+.updates-identity h3 { font-size: 15px; }
+.updates-identity p, .updates-status small { color: var(--secondary); font-size: 12px; }
+.updates-settings > .field { max-width: 320px; }
+.updates-status { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.updates-status > span { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.updates-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.updates-progress { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+.updates-progress progress { width: min(100%, 360px); accent-color: var(--accent); }
+.updates-blockers { background: var(--surface2); padding: 14px; border-radius: 8px; font-size: 12px; line-height: 1.65; }
+.updates-blockers ul { padding-left: 18px; margin: 6px 0 0; }
+.updates-notes { border-top: 1px solid var(--line); padding-top: 16px; font-size: 13px; }
+.updates-notes summary { cursor: pointer; font-weight: 600; }
+.updates-notes > div { margin-top: 12px; }
+.updates-notes h4 { margin: 14px 0 6px; font-size: 13px; }
+.updates-notes summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
