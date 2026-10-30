@@ -23,7 +23,8 @@ Nightly eligibility is checked every 30 minutes with changed-commit and six-hour
 See [releases](releases.md) for signing, versioning, bootstrap installation, and release commands
 
 Actions are pinned to commit SHAs, workflow tokens default to read-only, and Actions cannot approve pull requests
-Dependabot opens dependency and Actions updates; dependency alerts, security fixes, secret scanning/push protection, and CodeQL default setup are enabled in GitHub
+Dependabot version and security update pull requests are turned off; update dependencies and pinned Actions by hand when needed
+Dependency alerts, secret scanning/push protection, and CodeQL default setup stay enabled in GitHub
 
 ## Scripts
 
