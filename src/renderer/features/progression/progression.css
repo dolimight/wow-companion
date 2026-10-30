@@ -1,0 +1,300 @@
+.progression-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.progression-result-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+.progression-result-heading h2 {
+  font-size: 18px;
+}
+.progression-result-heading p {
+  color: var(--secondary);
+  font-size: 13px;
+  margin-top: 6px;
+  max-width: 65ch;
+}
+.progression-result-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.progression-result-value > strong {
+  font-size: 25px;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+.progression-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  background: var(--surface);
+  border-radius: 12px;
+  line-height: 1.65;
+  color: var(--secondary);
+  font-size: 13px;
+}
+.progression-notice > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.progression-notice > div {
+  flex: 1;
+  min-width: 0;
+}
+.progression-notice small {
+  display: block;
+  margin-top: 5px;
+}
+.progression-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 28px;
+}
+.progression-slots {
+  min-width: 0;
+}
+.progression-slots .surface-heading {
+  align-items: flex-start;
+}
+.progression-slots .surface-heading h2 {
+  font-size: 17px;
+}
+.progression-table {
+  min-width: 650px;
+  width: 100%;
+  table-layout: fixed;
+}
+.progression-table th:first-child {
+  width: 16%;
+}
+.progression-table th:nth-child(2),
+.progression-table th:nth-child(3) {
+  width: 30%;
+}
+.progression-table th:nth-child(4) {
+  width: 14%;
+}
+.progression-table th:last-child {
+  width: 10%;
+}
+.progression-table td,
+.progression-table tbody th {
+  vertical-align: top;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.progression-table tbody th {
+  font-weight: 550;
+  text-align: left;
+}
+.progression-item-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.progression-table td small {
+  display: block;
+  color: var(--secondary);
+  margin-top: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.progression-gap {
+  font-variant-numeric: tabular-nums;
+  color: var(--secondary);
+}
+.progression-item-name[data-unknown] { color: var(--muted); font-weight: 400; }
+.progression-matched {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.progression-settings {
+  display: grid;
+  gap: 18px;
+}
+.progression-settings h2 {
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+.progression-settings fieldset {
+  padding: 0;
+  margin: 18px 0;
+  border: 0;
+  min-width: 0;
+}
+.progression-settings legend {
+  padding: 0;
+  font-weight: 550;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.progression-settings fieldset > p {
+  margin-top: -1px;
+  margin-bottom: 8px;
+}
+.progression-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.progression-toggles button,
+.progression-settings fieldset > button {
+  min-height: 32px;
+  padding: 5px 9px;
+  font-size: 12px;
+  height: auto;
+  white-space: normal;
+}
+.progression-settings .field {
+  margin: 16px 0 12px;
+}
+.progression-budget {
+  margin-top: 14px;
+  font-size: 12px;
+}
+.progression-budget > div {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.progression-budget dt {
+  font-weight: 550;
+}
+.progression-budget dd {
+  color: var(--secondary);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.progression-summary {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 16px;
+}
+.progression-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.progression-summary > div span {
+  color: var(--secondary);
+}
+.progression-summary strong {
+  font-variant-numeric: tabular-nums;
+}
+.progression-summary p {
+  color: var(--secondary);
+  font-size: 12px;
+  margin: 7px 0;
+}
+.progression-summary .button {
+  font-size: 12px;
+}
+.progression-footnote {
+  margin-top: 20px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+.progression-error {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+}
+.progression-evidence {
+  display: grid;
+  gap: 22px;
+}
+.progression-evidence h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.progression-evidence-item > strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.progression-evidence dl {
+  font-size: 12px;
+}
+.progression-evidence dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+.progression-evidence dt {
+  color: var(--secondary);
+}
+.progression-evidence dd {
+  text-align: right;
+  max-width: 65%;
+  overflow-wrap: anywhere;
+}
+.progression-reasons {
+  list-style: disc;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.progression-reasons li + li {
+  margin-top: 8px;
+}
+.progression-source {
+  display: grid;
+  gap: 3px;
+  margin-top: 12px;
+}
+.progression-source small {
+  color: var(--secondary);
+  font-size: 12px;
+}
+.progression-source-link {
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.progression-source-link svg {
+  flex: none;
+}
+@media (max-width: 1150px) {
+  .progression-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .progression-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+@media (max-width: 760px) {
+  .progression-result-heading {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .progression-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .progression-notice {
+    flex-wrap: wrap;
+  }
+  .progression-toolbar .app-select-trigger {
+    max-width: 100%;
+  }
+}
+.progression-season-reference{padding:18px;margin:20px 0;min-width:0}.progression-season-reference summary{cursor:pointer;font-size:13px;font-weight:600}.progression-season-reference .table-wrap{margin-top:16px}.progression-season-reference li{margin:6px 0;line-height:1.5}

@@ -1,0 +1,145 @@
+/* Item quality colours follow WoW's convention, tuned per theme for 4.5:1 text contrast; epic reuses the system violet */
+:root {
+  --quality-poor: #6b7280;
+  --quality-common: var(--ink);
+  --quality-uncommon: #1f7a32;
+  --quality-rare: #0b63c4;
+  --quality-epic: var(--purple);
+  --quality-legendary: #a85400;
+  --quality-artifact: #8a6a1f;
+  --quality-heirloom: #0a7ea3;
+}
+:root[data-theme="dark"] {
+  --quality-poor: #9d9d9d;
+  --quality-uncommon: #5fd35f;
+  --quality-rare: #4aa8ff;
+  --quality-legendary: #ff9b3d;
+  --quality-artifact: #e6cc80;
+  --quality-heirloom: #4fd6ff;
+}
+.quality-text-0 { color: var(--quality-poor); }
+.quality-text-1 { color: var(--quality-common); }
+.quality-text-2 { color: var(--quality-uncommon); }
+.quality-text-3 { color: var(--quality-rare); }
+.quality-text-4 { color: var(--quality-epic); }
+.quality-text-5 { color: var(--quality-legendary); }
+.quality-text-6 { color: var(--quality-artifact); }
+.quality-text-7 { color: var(--quality-heirloom); }
+
+.game-icon {
+  --icon-edge: var(--line);
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  background: var(--surface2);
+  color: var(--secondary);
+  box-shadow: 0 0 0 1px var(--icon-edge);
+}
+.game-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.game-icon svg { width: 17px; height: 17px; }
+.game-icon-small { width: 26px; height: 26px; border-radius: 6px; }
+.game-icon-small svg { width: 14px; height: 14px; }
+.game-icon-large { width: 52px; height: 52px; border-radius: 10px; }
+.game-icon-large svg { width: 24px; height: 24px; }
+.game-icon.quality-2 { --icon-edge: color-mix(in srgb, var(--quality-uncommon) 55%, transparent); }
+.game-icon.quality-3 { --icon-edge: color-mix(in srgb, var(--quality-rare) 55%, transparent); }
+.game-icon.quality-4 { --icon-edge: color-mix(in srgb, var(--quality-epic) 60%, transparent); }
+.game-icon.quality-5 { --icon-edge: color-mix(in srgb, var(--quality-legendary) 60%, transparent); }
+
+.title-search {
+  min-width: 210px;
+  justify-content: flex-start;
+  color: var(--muted);
+  background: var(--surface);
+}
+.title-search span { flex: 1; text-align: left; }
+.title-search kbd {
+  font: inherit;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--surface2);
+}
+
+.item-search-dialog {
+  width: min(880px, calc(100vw - 48px)) !important;
+  max-width: none !important;
+  padding: 0 !important;
+  top: 12vh !important;
+  translate: -50% 0 !important;
+  border-radius: 14px !important;
+  background: var(--surface) !important;
+  box-shadow: 0 16px 48px rgba(27, 44, 68, 0.16);
+}
+:root[data-theme="dark"] .item-search-dialog { box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45); border: 1px solid var(--line); }
+.item-search { background: transparent !important; padding: 0 !important; border-radius: 14px !important; }
+.item-search [data-slot="command-input-wrapper"] { padding: 12px 12px 0; }
+.item-search [data-slot="command-input-wrapper"] [data-slot="input-group"] { height: 40px !important; border-radius: 9px !important; }
+.item-search [data-slot="input-group-control"] { font-size: 14px; }
+.item-search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.item-search-filters .app-select-trigger { min-height: 32px; }
+.item-search-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--secondary);
+  font-size: 12px;
+}
+.item-search-context strong { color: var(--ink); font-weight: 600; }
+.item-search-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-height: 380px; }
+.item-search-list { max-height: 440px !important; padding: 6px; border-right: 1px solid var(--line); }
+.item-search-detail { padding: 16px 18px; max-height: 440px; overflow: auto; }
+.item-search-empty { display: flex; gap: 8px; align-items: center; justify-content: center; padding: 48px 20px; color: var(--secondary); font-size: 13px; text-align: center; }
+.item-result { gap: 10px !important; padding: 8px 10px !important; border-radius: 8px !important; }
+.item-result[data-selected="true"] { background: var(--selected) !important; }
+.item-result > svg:last-child { display: none; }
+.item-result-text { display: grid; min-width: 0; gap: 1px; }
+.item-result-text strong { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-result-text small { font-size: 12px; color: var(--secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-result-source { color: var(--muted) !important; }
+.item-search-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.item-sheet { display: grid; gap: 18px; }
+.item-sheet-title { display: grid; gap: 2px; }
+.item-sheet-title strong { font-size: 15px; font-weight: 650; }
+.item-sheet-title small { font-size: 12px; color: var(--secondary); }
+.item-sheet-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.item-sheet h3 { font-size: 13px; margin-bottom: 8px; }
+.item-sheet-description { font-size: 12px; color: var(--amber); font-style: italic; }
+.item-sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; font-size: 12px; }
+.item-sources li { display: flex; gap: 8px; align-items: center; }
+
+.term { border-bottom: 1px dotted color-mix(in srgb, currentColor 55%, transparent); cursor: help; }
+.term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.term-tip { max-width: 280px !important; line-height: 1.45; font-size: 12px !important; }
+
+@media (max-width: 760px) {
+  .item-search-body { grid-template-columns: 1fr; }
+  .item-search-detail { display: none; }
+  .item-search-list { border-right: 0; }
+  .title-search span, .title-search kbd { display: none; }
+  .title-search { min-width: 0; }
+}

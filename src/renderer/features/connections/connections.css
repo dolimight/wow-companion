@@ -1,0 +1,67 @@
+.connection-progress {
+  height: 5px;
+  width: min(280px, 100%);
+  margin-top: 9px;
+  border-radius: 4px;
+  background: var(--surface3);
+  overflow: hidden;
+}
+.connection-progress span { display: block; height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+.guide-steps { margin: 0; padding-left: 20px; display: grid; gap: 18px; font-size: 13px; }
+.guide-steps li { display: grid; gap: 8px; padding-left: 4px; }
+.guide-steps li::marker { color: var(--accent); font-weight: 650; }
+.guide-steps span { color: var(--secondary); font-size: 12px; }
+.guide-steps .button { justify-self: start; }
+.copy-field {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface2);
+}
+.copy-field > span { font-size: 12px; color: var(--secondary) !important; }
+.copy-field code { font: 12px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; user-select: all; }
+
+.account-list { display: grid; gap: 6px; max-height: 52vh; overflow: auto; padding: 2px; }
+.account-choice {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  height: auto !important;
+  min-height: 48px;
+  padding: 8px 11px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  text-align: left;
+}
+.account-choice[aria-pressed="true"] { border-color: var(--accent) !important; background: var(--selected) !important; }
+.account-check { display: grid; place-items: center; width: 18px; height: 18px; flex: none; border-radius: 50%; border: 1.5px solid var(--line); color: var(--on-accent); }
+.account-choice[aria-pressed="true"] .account-check { background: var(--accent); border-color: var(--accent); }
+.account-text { display: grid; gap: 1px; min-width: 0; }
+.account-text strong { font-size: 13px; }
+.account-text small { font-size: 12px; color: var(--secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.setup-page { max-width: 760px; }
+.setup-steps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; }
+.setup-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; padding: 20px 0; border-top: 1px solid var(--line); }
+.setup-step:first-child { border-top: 0; padding-top: 4px; }
+.setup-mark { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface3); color: var(--secondary); margin-top: 1px; }
+.setup-step-done .setup-mark { background: color-mix(in srgb, var(--green) 16%, var(--surface)); color: var(--green); }
+.setup-step-current .setup-mark { background: var(--accent-soft); color: var(--accent); }
+.setup-step-todo { opacity: 0.62; }
+.setup-step-body h2 { font-size: 16px; letter-spacing: -0.015em; }
+.setup-step-body p { font-size: 13px; color: var(--secondary); margin-top: 4px; }
+.setup-step-body .actions { margin-top: 12px; }
+
+.spin { animation: connection-spin 0.9s linear infinite; }
+@keyframes connection-spin { to { transform: rotate(360deg); } }
+
+.character-render { width: auto; max-width: 100%; object-fit: contain; }

@@ -1,0 +1,198 @@
+.app-shell {
+  display: block;
+  height: 100vh;
+  padding-top: 0;
+}
+
+.workspace-panels {
+  height: 100%;
+  width: 100%;
+}
+
+.sidebar {
+  position: relative;
+  top: 0;
+  height: 100%;
+  overflow: auto;
+}
+
+/* Only the page scrolls, so the scrollbar never runs under the title bar or native window controls */
+.workspace {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.toolbar {
+  position: relative;
+  flex: none;
+}
+.workspace-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+:root[data-title-bar="integrated"] .toolbar {
+  height: env(titlebar-area-height, 48px);
+  min-height: 0;
+  padding-block: 0;
+  padding-right: max(30px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 12px));
+  background: var(--bg);
+  backdrop-filter: none;
+  -webkit-app-region: drag;
+  app-region: drag;
+  user-select: none;
+}
+:root[data-title-bar="integrated"] .toolbar :is(button, a, input, [role="button"]) {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.brand { -webkit-app-region: drag; }
+:root[data-platform="darwin"] .sidebar { padding-top: 48px; }
+
+.sidebar-resize-handle {
+  position: relative;
+  z-index: 8;
+  width: 1px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+}
+
+.sidebar-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: transparent;
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle:focus-visible::after,
+.sidebar-resize-handle[data-separator="active"]::after {
+  background: var(--accent);
+}
+
+.sidebar-resize-handle:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.settings-link {
+  width: 100%;
+}
+.settings-page {
+  max-width: 900px;
+}
+.settings-section + .settings-section {
+  margin-top: 36px;
+}
+.settings-section > h2 {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.settings-section > p {
+  color: var(--secondary);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.settings-section-body {
+  margin-top: 14px;
+}
+.settings-section-body .setting-row:last-child {
+  border-bottom: 0;
+}
+.settings-section .setting-row {
+  min-height: 85px;
+}
+.settings-section .setting-row h3 {
+  font-size: 13px;
+  font-weight: 550;
+}
+.settings-section .setting-row p {
+  max-width: 52ch;
+  line-height: 1.65;
+}
+.provider-settings-body { padding: 22px; display: grid; gap: 16px; margin-top: 14px; }
+.provider-settings-body > h3 { border-top: 1px solid var(--line); padding-top: 22px; font-size: 13px; margin-top: 6px; }
+.provider-settings-body > div:first-child { display: grid; gap: 10px; justify-items: start; }
+.provider-settings-body p { font-size: 13px; line-height: 1.65; max-width: 65ch; }
+.provider-settings-body > .field { max-width: 560px; }
+.provider-settings-body > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+.settings-section .setting-row .actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.settings-section .help-box {
+  margin-top: 18px;
+}
+.sidebar-width-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sidebar-width-control {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.workspace-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--secondary);
+  font-size: 12px;
+  white-space: normal;
+  text-align: left;
+  cursor: pointer;
+}
+.workspace-toggle:hover {
+  background: var(--surface2);
+  color: var(--ink);
+}
+.workspace-toggle[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.workspace-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.workspace-toggle .toggle-state {
+  font-weight: 650;
+  margin-left: auto;
+}
+.setting-row .workspace-toggle {
+  min-width: 65px;
+  justify-content: center;
+  flex: none;
+}
+
+@media (max-width: 1000px) {
+  .sidebar-resize-handle {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .settings-section .setting-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .settings-section .setting-row .actions {
+    justify-content: flex-start;
+  }
+}

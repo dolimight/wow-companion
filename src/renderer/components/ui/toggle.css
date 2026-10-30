@@ -1,0 +1,18 @@
+[data-slot="toggle"] {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--secondary);
+  border-radius: 8px;
+  min-height: 34px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.45;
+  box-shadow: none;
+  text-align: center;
+}
+[data-slot="toggle"]:hover:not(:disabled) { background: var(--surface2); color: var(--ink); }
+[data-slot="toggle"][aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb,var(--accent) 38%,var(--line)); }
+[data-slot="toggle"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+[data-slot="toggle"]:disabled { opacity: .45; cursor: not-allowed; }

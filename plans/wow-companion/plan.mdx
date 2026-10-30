@@ -1,0 +1,246 @@
+---
+title: "WoW Character Companion"
+brief: "Know your Retail character, measure the gap to maximum gear, and compare your standing in Mythic+, raiding, and PvP."
+kind: "plan"
+localOnly: true
+---
+
+# WoW Character Companion
+
+A Retail character dashboard that answers, in order: **What is my character wearing, how close am I to maximum gear, and where do I stand against top players, comparable peers, and the wider ladder?**
+
+The app brings equipment, gems, enchants, talents, outfits, ratings, and progression into one place. "Overpowered" means making better choices for a selected goal: stronger damage, better survival, better healing, or higher competitive rating. Gear alone cannot guarantee those outcomes.
+
+<Callout id="starting-assumptions" tone="decision">
+
+Confirmed priorities: Retail; character identity, equipped gear, and distance to maximum first; competitive standing second. Support Mythic+ dungeons, raiding, and PvP in separate views, with Mythic+ and Mythic raiding the primary focus. This is a personal local application. Choose Electron with React, shadcn/ui, TanStack Router / Query / Table, Effect v4, and Vite+ as the development toolchain. Gear editing, explained next actions, and 3D outfits remain part of the application.
+
+</Callout>
+
+The canvas shows concept screens, not a functioning app. Names, item choices, task counts, and comparisons in the sketches are illustrative. Current season caps stay blank until a validated ruleset and character context are available.
+
+## Home screen priorities
+
+The first screen is a character sheet with a progression summary. Show name, realm, region, class, active specialization, character level, equipped average item level, and an inspectable slot-by-slot loadout. Expand a slot to see its variant, upgrade rank, stats, gems, enchants, and acquisition source. Keep the source snapshot and observation time visible.
+
+Place current equipped item level, the validated legal season maximum for this character, the remaining gap, and the largest slot gaps above the weekly task list. Show the user's attainable target alongside the season maximum. Label character level, item level, and performance separately; reaching the item-level ceiling does not mean reaching the top of a ladder.
+
+The second section answers "Where do I stand?" It has Mythic+, Raiding, and PvP tabs. Each tab retains its own metric, cohort, filters, and history. Users can move between their same-spec standing, peers near their rating or progression, and the wider activity ladder without changing characters. A smaller next-actions section turns the clearest gaps into useful steps.
+
+## Product areas
+
+<Table id="feature-map" columns={["Area", "What you can do", "What makes it useful"]} rows={[
+["Overview", "Inspect your character and equipped loadout; select the comparison activity.", "See current versus maximum item level, slot gaps, competitive standing, and then next actions."],
+["Gear Workshop", "Import equipped and available gear; create sets; change items, gems, enchants, and talents.", "Compare current / planned / best available / aspirational builds and explain tradeoffs."],
+["Wardrobe", "View your current look, browse collected and uncollected appearances, save outfits, and preview them in 3D.", "Rotate, zoom, pose, hide slots, compare outfits, and track sources for missing pieces."],
+["Compare", "Browse relevant top players and compare yourself with a selected peer or a cohort.", "Match spec, season, region, and content; inspect rating, gear, talents, and available performance evidence."],
+["Progression", "See level progress, item-level ceilings, attainable upgrades, and weekly progress.", "Turn a distant target into actions you can actually complete."],
+["Next Actions", "Rank upgrades and practice goals by impact, time, cost, eligibility, and confidence.", "Understand why each action matters and what to do after it."]
+]} />
+
+## Character import and build planning
+
+Start with region, realm, and character name. Add optional Battle.net sign-in to discover owned characters and access account-scoped information where supported. Public character lookup never proves ownership.
+
+Use a Blizzard profile snapshot for equipped gear and profile data; accept pasted **SimulationCraft /simc** exports for gear candidates and details the public profile cannot supply. The addon documents bag exports and copy/paste usage. Banks, weekly currencies, lockouts, account collections, and saved in-game outfits each need an explicit coverage check; use manual fields or a later companion addon where coverage is incomplete. Never present unknown data as zero or unavailable.
+
+### Addon sync and the 60-second check
+
+Plan for an in-game companion addon that records character and gear changes using the available Retail addon APIs. An addon can maintain its snapshot in memory, but the standard WoW addon environment does not expose a direct WebSocket / HTTP client to connect to Electron. A timer can refresh that in-memory snapshot; it does not force the SavedVariables file to be written.
+
+Use a **SavedVariables watcher plus a 60-second fallback rescan** of the selected addon's export file while the desktop app is running. SavedVariables reach disk at UI reload or a normal logout/exit, so the desktop view refreshes after that flush. The fallback rescans recover missed filesystem notifications; they do not turn the file into a live feed of every gear swap. On app startup and resume, check immediately rather than waiting for the next interval.
+
+Offer an in-game export panel for user-initiated copy/paste, which can refresh the desktop snapshot without waiting for a logout. This is a manual export, not automatic clipboard access by the addon. Keep SimulationCraft paste import as the first working path; add the custom addon and file watcher after the export format is proven.
+
+Read only the selected addon's file in a user-selected WoW account folder. Debounce duplicate file events, retry incomplete writes, and import only complete, schema-valid snapshots. Parse the generated Lua data as a restricted literal format; never evaluate it as Lua or JavaScript. The app does not write back to the running game's SavedVariables.
+
+Version the addon envelope with schema version, addon version, game build, character GUID, session ID, sequence, and observation time. Record import time separately, deduplicate identical exports, and preserve provenance. Handle empty gear slots explicitly and distinguish them from item details that have not loaded yet.
+
+After committing a snapshot, the local service emits a tRPC subscription event. The UI refetches or updates the affected TanStack Query entries and recomputes progression. Show **last observed in game**, **last imported**, and **last file check** separately. A successful 60-second check must not make an old gear snapshot appear current. Sleep, disconnection, or a missed event triggers a fresh snapshot query on reconnect.
+
+An optional API refresh can also run on a configurable interval, subject to provider limits, backoff, and freshness. A 60-second API request does not guarantee that Blizzard has published an in-game gear change. Unknown or older source data cannot replace a newer addon observation.
+
+Technical references: [tRPC WebSocket transport](https://trpc.io/docs/server/websockets), [tRPC subscriptions and reconnect behavior](https://trpc.io/docs/server/subscriptions), [addon developer discussion of SavedVariables persistence](https://us.forums.blizzard.com/en/wow/t/saving-local-variables-between-sessions/380081), and [addon sandbox discussion](https://us.forums.blizzard.com/en/wow/t/documentation-for-addons/415658). The addon API and export behavior still require a real Retail test; no live gear transport has been demonstrated.
+
+Every import records its source, game version, observation time, and parser version. Keep source snapshots separate; a stale API refresh must not silently replace a newer addon import. Show disagreements and allow a preferred source. A refresh updates the character snapshot while preserving saved builds.
+
+Gear sets are editable drafts with per-slot item variants, upgrade rank, gems, enchants, crafted choices, talent export, spec, and activity context. Preserve bonus IDs and modifiers rather than identifying an item by its base item ID alone. Validate equip rules, unique-equipped restrictions, weapon combinations, eligible sockets and enchants, crafted limits, and set bonuses using versioned rules. Offer reset, duplicate, and side-by-side comparison.
+
+## What "maximum" means
+
+Show separate targets:
+
+- **Character level cap**, with leveling guidance while below it.
+- **Highest legal equipped average item level available in the selected season**, accounting for currently released content and special item exceptions.
+- **Your attainable target**, based on the content, difficulty, time, and spending limits you choose.
+- **Best performance build for your goal**, which may differ from the set with the highest average item level.
+
+Store season, patch/build, region, content mode, availability dates, upgrade tracks, crafted restrictions, and exceptional items in a reviewed ruleset. Compute a legal full loadout maximum; summing independently highest items can produce an impossible set. Keep PvE item level separate from any applicable PvP scaling.
+
+For Retail, implement the game's averaging rules, including two-handed weapon treatment, as a versioned calculation checked against in-game observations. Do not hardcode a denominator across game editions. Store full precision and label display rounding.
+
+Use remaining average item levels, per-slot gaps, and milestones as the primary progress indicators. An optional percentage measures **gap closed since the first snapshot for this target**: clamp((current - start) / (target - start), 0, 1). Handle a zero gap as complete. Retargeting starts a new series; it never rewrites history. Do not imply that current item level divided by a cap measures combat power.
+
+If the active cap cannot be verified, show "season cap awaiting validation" and the known per-slot facts. Avoid a guessed maximum or an unsupported completion date.
+
+## Recommendations that explain themselves
+
+A recommendation includes the action, prerequisite, source activity, difficulty, expected reward, certainty, estimated effort, relevant currency or gold cost, reset deadline, and why it ranks above alternatives. Distinguish guaranteed upgrades, random-drop opportunities, and goals gated by weekly systems.
+
+First filter invalid, unavailable, already completed, and unwanted actions. Prioritize clear fixes, then evaluate reachable upgrades against the user's goal and scarce resources. Rank dependent actions as a sequence, reserve currency across the whole plan, and avoid recommending several purchases that spend the same budget.
+
+Begin with deterministic rules: missing eligible enchants or gems, affordable upgrades, set completion, craft planning, and useful weekly activity thresholds. Reset tracking uses region and the relevant week. API gaps allow manual completion and expire at reset.
+
+Add SimulationCraft jobs for supported damage builds. Record engine version, profile hash, fight style, duration, target count, talents, iterations, and uncertainty; invalidate results when inputs change. Report simulated gains only when a job produces them. Tanks, healers, and PvP need goal-specific rules and contextual evidence; a damage simulation is not a universal recommendation engine.
+
+A later coaching layer can explain missed cooldowns, deaths, or other evidenced differences from logs. Sample size and encounter context remain visible. An optional language model may explain structured results, with links to evidence; it cannot invent caps, upgrade rules, or numerical gains.
+
+A below-cap character gets eligible leveling and catch-up actions before endgame optimization. A fully geared character gets performance practice and optional collection goals. Recompute after an import, chosen goal change, completed action, or relevant ruleset update.
+
+## Competitive comparisons
+
+Support all three activities with separate views. Mythic+ dungeons and Mythic raid progression receive the primary product attention; the Raiding view also exposes other supported difficulties through an explicit filter. Mythic+ applies to dungeons, while Mythic is the raid difficulty.
+
+<Table id="ranking-contexts" columns={["View", "Primary standing", "Context needed for useful comparison"]} rows={[
+["Mythic+", "Season rating, best runs, and per-dungeon gaps.", "Season, region/world coverage, spec, and a selectable rating band."],
+["Raiding", "Boss progression at the selected difficulty; encounter performance where logs support it.", "Raid tier, difficulty, boss, role/spec, and relevant item-level or progression band."],
+["PvP", "Rating and ladder position for the selected bracket.", "Season, bracket, region, spec, and a selectable rating band."]
+]} />
+
+Within each activity, offer four comparison scopes: top players of the same class/spec; same-spec peers near the user's rating or progression; class-wide standing with specialization identified; and overall activity standing across the supported population. Default to same-spec comparisons because class specializations can serve different roles. "Rank" means position on the selected metric; the peer band is a separate filter, with its boundaries visible and adjustable.
+
+Define "overall" within the selected activity, season, and geographic scope. It does not combine dungeon rating, raid performance, and PvP rating into one score. Overall raid progression can compare boss completion at the same difficulty; performance percentiles retain encounter and spec/role context. Never rank healers and damage dealers together using raw damage.
+
+Let users browse a top-player cohort and also select peers near their own level. Filter by spec, role, region, season, activity, and relevant encounter or dungeon context; show cohort size and snapshot time. Compare loadouts, talents, gems, enchants, set choices, and accessible performance evidence.
+
+Every rank or percentile includes the metric, geography, season, applicable filters, population size if known, source, and freshness. Show exact ladder position only when the provider supplies it or the dataset covers the complete stated population. With partial data, label the result "within indexed players" or "within this sample"; never turn a top-player-only sample into a global percentile. Show ties consistently and exclude unknown observations from the denominator. Missing coverage appears as "ranking unavailable."
+
+Where a provider supports performance comparisons, separate all-item-level encounter results from comparisons in the same item-level band. A raid parse percentile describes the provider's eligible logged performances, not every WoW player. Match the gear snapshot to the run or log when available; label a current loadout that may differ from the recorded performance. Break a comparison into gear access, build choices, and evidenced execution differences rather than attributing the whole rating gap to gear.
+
+Explain the difference between "popular among this cohort" and "best for your character." Top-player equipment can reflect coordinated groups or access to content the user cannot yet complete. Missing or private log data appears as unknown. Gear comparisons can ship before log-derived coaching.
+
+## 3D transmog planning
+
+Keep appearance identity separate from combat item identity. Outfit slots reference appearance IDs and relevant variants, plus character customization, hidden-slot state, and supported weapon effects. Account collection status and character equip eligibility remain distinct.
+
+Import the currently worn look when available. The Blizzard transmog collection API supports collection discovery; it does not establish that named outfits saved in-game can be imported. Save outfits in this app initially and investigate addon export for in-game saved sets. Round-trip applying outfits to WoW is a later addon capability, subject to available game APIs.
+
+Run a bounded feasibility spike before committing to a renderer. It must render a representative real character with customization and equipped appearances; swap armor and weapons, test supported special forms, rotate/zoom, and survive a missing model or WebGL failure. Confirm the asset route, permitted use, mapping between appearance and display IDs, browser loading requirements, and current patch compatibility.
+
+A community web viewer is research material, not an approved production dependency: its README relies on Wowhead libraries/data and describes external hosting requirements. Three.js can draw assets but does not supply WoW models or customization logic. Choose a renderer only after proving the full asset path. Electron can support a local asset adapter if a permitted, compatible route exists, but packaging the app as a desktop application does not itself solve model access. A static character image is only a temporary fallback while the 3D requirement remains open.
+
+Give the wardrobe a collected-only filter, missing-piece checklist, per-piece acquisition source, and a wishlist. Start with slot selection and saved outfits; color matching, public outfit galleries, and animated scenes can wait.
+
+## Data sources and limits
+
+<Table id="sources" columns={["Source", "Proposed use", "Integration decision"]} rows={[
+["Blizzard Profile / Game Data", "Character, equipment, appearance/collection metadata, and available progression or ladder data.", "Primary online adapter in the Electron service. Validate endpoint coverage and authorization with test characters; credentials stay outside the renderer."],
+["Personal companion addon", "Record gear snapshots in game and export them for the local app.", "SavedVariables watcher plus a 60-second fallback rescan. Reload/logout flushes or manual copy/paste provide updates; direct addon WebSockets are unavailable."],
+["SimulationCraft addon + engine", "Paste imports and asynchronous simulations of supported damage builds.", "Reuse documented import format and engine; pin versions. Begin with manual simulation export/import, then add a worker."],
+["Raider.IO", "Optional richer Mythic+ and raid profile context.", "Do not make launch dependent on it. Confirm permitted use for the companion and any top-player features; honor attribution and backoff."],
+["Warcraft Logs", "Optional encounter rankings and evidence for performance comparisons.", "Authenticated GraphQL adapter, subject to access, private-report rules, quotas, and terms."],
+["3D provider or local asset pipeline", "Character models, customization, and equipment rendering.", "Unresolved until the asset and renderer spike passes. Blizzard media images alone do not establish a 3D asset feed."]
+]} />
+
+Primary references checked on 2026-10-14: [Blizzard API reference](https://community.developer.battle.net/documentation/world-of-warcraft/profile-apis), [Blizzard transmog API announcement](https://us.forums.blizzard.com/en/blizzard/t/item-appearance-and-transmog-apis/51532), [SimulationCraft addon](https://github.com/simulationcraft/simc-addon), [SimulationCraft engine](https://github.com/simulationcraft/simc), [Raider.IO developer API](https://raider.io/api), [Warcraft Logs API](https://www.warcraftlogs.com/api/docs), and [community web viewer](https://github.com/Miorey/wow-model-viewer). The Blizzard portal could not be fetched by the research tool; the transmog announcement was readable. Warcraft Logs authentication details were visible in indexed official documentation; a direct fetch returned 403. No authenticated requests or 3D compatibility tests have run.
+
+Raider.IO currently documents restrictions on competing services and commercial use. Treat its adapter as conditional; use Blizzard data and approved links while permission is unresolved. Do not depend on an undocumented Raidbots API or copy the archived Raidbots bundles into the app.
+
+## Proposed technical shape
+
+This folder currently contains research artifacts and an image, with no application scaffold or Git repository. All application paths below are proposals. Reuse public data contracts and open-source tools where their use is permitted; existing research files remain reference material.
+
+Build a single-user Electron desktop application, initially for Windows because this is the user's current environment. Windows-first is an engineering choice; broader OS packaging can follow. Its UI, SQLite database, saved builds/outfits, and cached snapshots live on this computer. Fresh provider data and any remote 3D assets still need internet access. Saved plans and cached observations remain usable offline, with their original timestamps.
+
+### Chosen stack and responsibilities
+
+<Table id="desktop-stack" columns={["Choice", "Role", "Boundary"]} rows={[
+["Electron + React + TypeScript", "Native desktop shell and component UI.", "Packaged local renderer; Electron main owns lifecycle and native integrations."],
+["shadcn/ui + Tailwind CSS", "Dialogs, navigation, forms, sheets, tables, and shared visual tokens.", "App-owned components with accessible keyboard behavior."],
+["TanStack Router", "Typed client navigation and view filters.", "Renderer routing with hash history; character, activity, and comparison selection remain restorable."],
+["TanStack Query + tRPC", "Typed reads/mutations and observable refresh state.", "Queries use the local service; subscriptions invalidate affected queries. SQLite remains the durable source of truth."],
+["TanStack Table", "Sortable and filterable gear, player, and comparison tables.", "Add TanStack Virtual when large appearance/player lists justify it."],
+["Effect v4 + Effect Schema", "Application services, domain/input validation, cancellation, retries, source adapters, and job lifetimes.", "Effect owns work; Query owns UI request state. Convert Effect results/errors at the tRPC boundary."],
+["Vite+ + electron-vite", "Unified development checks/tests/tooling and Electron main/preload/renderer builds.", "Prove the combined dependency graph and packaged runtime in milestone 0 before freezing versions."],
+["SQLite + Drizzle + better-sqlite3", "Local persistence, typed queries, and schema migrations.", "One database worker owns connections and transactions. Package/rebuild the native driver for the chosen Electron version."],
+["electron-builder", "Produce a locally installable Windows build.", "First release uses manual install/update with database backup before migrations."]
+]} />
+
+Use TanStack Router and Query as the application framework pieces; server rendering and a hosted application service do not serve this personal desktop scope. Keep ordinary draft UI state in React and durable builds in SQLite rather than adding a second client database.
+
+Effect 4 is documented as a stable release. Its current installation guide requires TypeScript 5.9 or newer and Node 22.18 or newer. Select a compatible pinned set at implementation kickoff, checking Electron's embedded Node version as well as the development runtime. Avoid copying Effect v3 examples into v4 services.
+
+Vite+ documents a Vite-compatible dependency alias and unified check/test commands, while electron-vite owns the Electron build layout. This is a proposed combination, not a tested compatibility claim. The first technical spike must demonstrate renderer HMR, preload/main rebuilds, TanStack route generation, shadcn styles, Effect v4, and a packaged SQLite round-trip using one resolved Vite core. If the combination needs adaptation, record it before implementation continues; do not hide a second competing Vite installation.
+
+### Local service and realtime transport
+
+Host a tRPC router with the official WebSocket adapter on a dynamically selected **127.0.0.1** port owned by Electron main. Use it for renderer queries, mutations, and subscriptions. The small preload bridge supplies connection details and narrowly defined native actions such as choosing the import folder. The renderer does not receive generic filesystem access or raw Electron IPC primitives.
+
+Authenticate local connections with a per-launch random token and validate the packaged renderer origin, or the exact development origin. Keep tokens out of URLs, exported backups, and logs. Loopback binding alone does not authorize a client. Dispose the server, subscriptions, watchers, and Effect scopes when the app exits.
+
+Shared Effect Schema contracts validate runtime inputs as well as TypeScript types. Expose domain procedures such as character latest/refresh, build save, import status, and character-changed subscriptions. Keep the wire contract versioned and JSON-compatible; use an explicit parser adapter where needed rather than assuming Effect Schema v4 and tRPC interoperate automatically.
+
+The database worker commits snapshots and their revision before the service broadcasts a change. Events identify the character and committed revision. Query keys include character, source context, season, activity, and applicable cohort filters. Reconnect always fetches current persisted state so a missed event does not leave an outdated screen. This is a refreshable state stream, not a promise to replay every transient event.
+
+Run SimulationCraft in a separate bounded child process when that milestone ships. Keep the UI responsive, expose progress/cancel, and stop child jobs on shutdown. Simulation input becomes validated engine configuration, never a shell command.
+
+<Diagram id="architecture" frame="hide" caption="Separate the changing WoW data and rules from saved user plans.">
+
+```html
+<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px'><section class='diagram-panel'><strong>Inside WoW</strong><p>Addon observes gear in memory</p><p>Reload/logout flush or manual export</p><p>No direct socket to the desktop</p></section><section class='diagram-panel'><strong>Local Electron service</strong><p>Watcher + 60-second file rescan</p><p>Effect validates and imports snapshots</p><p>Online adapters refresh separately</p></section><section class='diagram-panel'><strong>Local storage and workers</strong><p>SQLite + Drizzle: committed snapshots</p><p>Saved builds, outfits, goals, and history</p><p>Separate SimulationCraft process later</p></section><section class='diagram-panel'><strong>Electron renderer</strong><p>React + shadcn/ui</p><p>TanStack Router / Query / Table</p><p>tRPC WebSocket notifications after commit</p></section></div>
+```
+
+</Diagram>
+
+Use app-owned IDs for saved objects and namespaced provider IDs for imported entities. Character identity includes edition, region, realm, and provider character ID where available; names are display and lookup fields. Explicitly link a rename or realm move. Account collection snapshots belong to the owner, while outfit eligibility belongs to the selected character.
+
+The load-bearing records are CharacterSnapshot, ItemVariant, Build, Outfit, CollectionSnapshot, SeasonRuleset, Goal, Recommendation, RankingSnapshot, ComparisonCohort, and SimulationRun. Rankings store the metric and provider, edition/season/activity/region, class/spec/role and bracket/encounter/difficulty where relevant, observation time, coverage type, population size when known, and tie policy. Cohorts retain their explicit filters and peer-band bounds. Recommendations store input snapshot/ruleset IDs, rationale, confidence, dependencies, and completion state. Simulation results are immutable and keyed by every meaningful input. Saved objects support local JSON export and reimport.
+
+Proposed modules: `src/main/` for Electron lifecycle, tRPC, Effect services, providers, credentials, and the addon watcher; `src/preload/` for the narrow native bridge; `src/renderer/` for React routes, shadcn components, and Query/Table features; `src/shared/` for schemas, wire types, and pure game rules; `src/workers/database/` for SQLite/Drizzle; `src/workers/simc/` for later jobs; `addon/` for the Lua collector and export format; and `rulesets/` for reviewed game versions. Proposed config files are `electron.vite.config.ts`, the Vite+ check/test config, and `electron-builder.yml`. Confirm actual configuration filenames against the selected versions before scaffolding.
+
+A single local owner is the access model. Store the database and model/import caches in the application's user-data directory, with explicit export and backup controls. SavedVariables remain in the selected WoW folder. Use transactional migrations with a recoverable backup, and keep API/transport secrets out of exported data.
+
+Provider credentials belong to the Electron service and use OS-protected storage through Electron safeStorage where available. Personal developer credentials may be needed for Blizzard or log integrations; never bundle a reusable secret into the installer. Validate provider-specific desktop OAuth and callback support in the coverage spike before promising one-click sign-in. Addon and SimulationCraft imports work independently of provider credentials.
+
+Load packaged local UI with a restricted app protocol, context isolation and renderer sandboxing enabled, and Node integration disabled. Validate IPC and WebSocket callers, restrict file access to selected paths, and keep remote content outside privileged contexts. Provide disconnect, delete, and export controls. These are implementation boundaries for the native app, not extra steps in the normal character-review flow.
+
+Stack references checked on 2026-10-14: [Effect v4 installation](https://effect.website/docs/v4/getting-started/installation), [Vite+ guide](https://www.viteplus.dev/guide), [Vite+ dependency migration rules](https://www.viteplus.dev/guide/migrate-rules), [electron-vite guide](https://electron-vite.org/guide/), [shadcn/ui Vite setup](https://ui.shadcn.com/docs/installation/vite), [tRPC TanStack Query integration](https://trpc.io/docs/client/tanstack-react-query), [Drizzle SQLite drivers](https://orm.drizzle.team/docs/sqlite/get-started-sqlite), [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial/security), and [safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage). Documentation review does not establish that the combined Electron/Vite+ build has been tested.
+
+Cache source responses with visible freshness; use independent fetch states, bounded retries, and provider backoff. A source outage leaves saved builds and outfits usable. Mark dependent recommendations stale until recomputed. Unavailable 3D assets show the saved outfit list and a retry path.
+
+## Delivery sequence
+
+<Table id="roadmap" columns={["Milestone", "Usable result", "Exit check"]} rows={[
+["0 · Prove the uncertain inputs", "Desktop toolchain/SQLite packaging spike, addon export proof, provider/ranking coverage matrix, verified season rules, and a 3D feasibility result.", "A packaged Electron build opens, stores/reloads a fixture, runs Effect v4, and receives a tRPC event. Test addon flush timing and the 60-second fallback; verify a legal cap and the renderer asset path."],
+["1 · Character and distance to maximum", "Local character sheet, paste imports, addon export watcher with 60-second fallback, gear inspection, progress targets, editable builds, and basic next actions.", "Import and refresh without losing a draft; retain data after restart; update the renderer after a committed export; show source freshness accurately; reproduce cap and slot gaps."],
+["2 · Standing and comparisons", "Separate Mythic+, Raiding, and PvP views; top same-spec players, peer bands, class-wide and overall activity standing where supported.", "Changing activity/spec/season changes the cohort; partial samples never produce global percentiles; missing data stays unknown."],
+["3 · 3D wardrobe", "Save/import the current look, edit outfits, preview in 3D, and track missing appearances.", "Save an outfit, reload it, swap a weapon, and retain data through a model load failure."],
+["4 · Simulation and coaching", "Queued damage simulations, upgrade comparisons, and evidence-based performance practice.", "Identical inputs reuse results; changed inputs invalidate them; unsupported roles receive explicitly limited guidance."]
+]} />
+
+Milestone 1 is the first usable slice. The initial release target includes milestones 1 and 2 because character progression and competitive standing are the user's first and second priorities. The full application also includes milestones 3 and 4. Start wardrobe feasibility in milestone 0 so a 3D blocker appears early.
+
+Defer Classic-specific rules, public accounts/hosting, cloud sync, a general plugin marketplace, automatic gameplay, advanced collection routing, and cross-platform installers. The scoped addon export watcher is in the initial desktop scope; broad game-file scanning and changes to the WoW client are outside it. Leveling guidance covers reaching the active cap; a full quest-by-quest leveling guide is separate scope.
+
+## Acceptance and verification
+
+Use fixed fixtures for duplicate item IDs with different variants, unique-equipped conflicts, a two-handed weapon, a missing socket, tier/crafted constraints, incomplete imports, and a below-cap character. Check cap calculations against an observed in-game average and an independently reviewed legal target loadout.
+
+Exercise the complete packaged Electron journey: import a test character, choose a goal, edit a build, inspect a recommendation, mark an action done, refresh the source, close the app, and restart it. Confirm SQLite persistence and that no task or draft disappears. Then save an outfit, reload it in 3D, and compare a same-spec peer in the same season.
+
+Test the real addon path separately: equip a different item, observe the in-memory change, run a 60-second desktop check before a flush, and confirm it does not claim new data. Reload the UI or log out normally, then confirm the desktop imports the saved snapshot and pushes its committed revision to the renderer. Drop a watcher notification and prove the fallback catches the changed file. Cover incomplete Lua writes, duplicate snapshots, schema upgrades, sleep/resume, stale API responses, lost WebSocket connections, and reconnect resynchronization.
+
+Verify Vite+ checks/tests, the electron-vite production build, and a packaged Windows launch with the native SQLite driver present. Verify the selected Electron runtime meets Effect v4 requirements. Check renderer isolation, authenticated loopback access, origin rejection, and safe handling of imported text; no automated product checks have run during this planning task.
+
+Test an unavailable provider, 429 backoff, expired authorization, stale data, an unknown item, missing models, a low-power browser, region reset changes, and a new ruleset. Confirm keyboard access, readable comparison tables, and a list-based wardrobe fallback.
+
+For rankings, verify a tie, a complete ladder, a partial top-player sample, an empty peer band, a season change, and a missing spec. Check that an indexed sample never receives a global-percentile label. Switch among Mythic+, Mythic raid progression, a raid encounter comparison, and a PvP bracket; confirm independent metrics and filters.
+
+Success means every recommended action has a valid acquisition path and explanation, every metric names its context and timestamp, and the app clearly identifies unsupported inputs. Measure useful completed actions and progress toward the selected goal; avoid a fabricated universal power score.
+
+### Open Questions
+
+<QuestionForm id="open-questions" questions={[
+{id:"3d-fallback",title:"If no compatible 3D asset path is available, how should development proceed?",mode:"single",options:[{id:"continue",label:"Ship gearing while investigating 3D",recommended:true,detail:"Keep the full wardrobe requirement open and provide saved outfit lists in the meantime."},{id:"pause",label:"Wait for a viable 3D approach",detail:"Treat a functioning 3D wardrobe as a release prerequisite."}]},
+{id:"constraints",title:"What should the app know about your play time, spending limits, character/spec, and strongest preferences?",mode:"freeform",placeholder:"For example: region / realm / character, hours per week, and content you enjoy or avoid."}
+]} submitLabel="Record local review answers" />

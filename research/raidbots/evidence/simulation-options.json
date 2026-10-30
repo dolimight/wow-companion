@@ -1,0 +1,391 @@
+{
+  "url": "https://www.raidbots.com/simbot/topgear",
+  "text": "LOGIN\nENGLISH\nInitial 12.1.5 support is now live. Take results with a grain of salt - hotfixes/bugs/changes may come quickly on patch day.\nSign up for Raidbots Premium! Skip the line, run larger sims, and more!\nTOP GEAR\nDROPTIMIZER\nQUICK SIM\nADVANCED\nMORE\n\nSIMC ADDON\n\nARMORY\n\nHISTORY\n\n1\n\n\n\nNo character loaded\n\nCopy/paste the text from the SimulationCraft addon. How to install and use the SimC addon\n\nPaste input from the SimulationCraft addon.\n\nTop Gear makes it easy to select multiple pieces of gear and automatically try all combinations of them to find the best for your character.\n\nSimulation Options:\nFight Style\nPatchwerk\nDungeon Slice\nTarget Dummy\nExecute Patchwerk\nHectic Add Cleave\nLight Movement\nHeavy Movement\nCasting Patchwerk\nCleave Add\n\nNo movement, single target\n\nNumber of Bosses\n1 Boss\n2 Bosses\n3 Bosses\n4 Bosses\n5 Bosses\n6 Bosses\n7 Bosses\n8 Bosses\n9 Bosses\n10 Bosses\n\nDefault and best for single target sims\n\nFight Length\n20 seconds\n40 seconds\n1 minute\n1 minute, 30 seconds\n2 minutes\n3 minutes\n4 minutes\n5 minutes\n6 minutes\n7 minutes\n8 minutes\n9 minutes\n10 minutes\n\nBy default, fight length will vary up to 20% for each iteration\n\nSimC Version\nWeekly\nNightly\nLatest\n\nBuilt from source every Monday\n\nTRINKETS\nCRUCIBLE OF ERRATIC ENERGIES\n\nViolence\n\nSustenance\n\nPredation\n\nRuby Whelp Shell Training\nNone (Random Ability Usage)\nFire Shot (Single target damage)\nLobbing Fire Nova (AOE damage)\nSleepy Ruby Warmth (Crit buff)\nUnder Red Wings (Haste buff)\nCuring Whiff (Single target healing)\nMending Breath (AOE healing)\n\nYou can use nearly any SimC expansion-specific options in the Custom APL and SimC Options\n\nRAID BUFF PRESETS\nOPTIMAL RAID BUFFSNO BUFFS\nCONSUMABLES\n\n\"SimC Default\" uses the default consumables defined in the class APL/module. To verify, you can run a Quick Sim and check buffs to see what was used.\n\nFood\n\nSimC Default\n\nFlask\n\nSimC Default\n\nPotion\n\nSimC Default\n\nAugmentation\n\nSimC Default\n\nWeapon Rune\nSimC Default\n[Main Hand] Refulgent Whetstone (AP)\n[Main Hand] Thalassian Phoenix Oil (Crit/Haste)\n[Main Hand] Oil of Dawn (Holy Damage)\n[Main Hand] Smuggler's Enchanted Edge (Damage)\n[Dual Wield] Refulgent Whetstone (AP)\n[Dual Wield] Thalassian Phoenix Oil (Crit/Haste)\n[Dual Wield] Oil of Dawn (Holy Damage)\n[Dual Wield] Smuggler's Enchanted Edge (Damage)\n[Dual Wield] Refulgent Whetstone (AP) / Thalassian Phoenix Oil (Crit/Haste)\n[Dual Wield] Refulgent Whetstone (AP) / Oil of Dawn (Holy Damage)\n[Dual Wield] Refulgent Whetstone (AP) / Smuggler's Enchanted Edge (Damage)\n[Dual Wield] Thalassian Phoenix Oil (Crit/Haste) / Oil of Dawn (Holy Damage)\n[Dual Wield] Thalassian Phoenix Oil (Crit/Haste) / Smuggler's Enchanted Edge (Damage)\n[Dual Wield] Oil of Dawn (Holy Damage) / Smuggler's Enchanted Edge (Damage)\n[Main Hand] Laced Zoomshots (Haste - Hunter)\n[Main Hand] Weighted Boomshots (Damage - Hunter)\nTWW - [Main Hand] Ironclaw Whetstone (AP)\nTWW - [Main Hand] Oil of Deep Toxins (Direct Damage)\nTWW - [Main Hand] Algari Mana Oil (Crit/Haste)\nTWW - [Dual Wield] Ironclaw Whetstone (AP)\nTWW - [Dual Wield] Oil of Deep Toxins (Direct Damage)\nTWW - [Dual Wield] Algari Mana Oil (Crit/Haste)\nTWW - [Dual Wield] Ironclaw Whetstone (AP) / Oil of Deep Toxins (Direct Damage)\nTWW - [Dual Wield] Ironclaw Whetstone (AP) / Algari Mana Oil (Crit/Haste)\nTWW - [Dual Wield] Oil of Deep Toxins (Direct Damage) / Algari Mana Oil (Crit/Haste)\nDragonflight - AP (Main Hand)\nDragonflight - AP (Both Hands)\nDragonflight - AP + Buzzing (Crit)\nDragonflight - AP + Howling (Haste)\nDragonflight - AP + Hissing (Mastery)\nDragonflight - Howling (Haste) + Hissing (Mastery)\nDragonflight - Buzzing (Crit) + Hissing (Mastery)\nDragonflight - Buzzing (Crit) + Howling (Haste)\nDragonflight - Hissing (Mastery) (Both Hands)\nDragonflight - Howling (Haste) (Both Hands)\nDragonflight - Buzzing (Crit) (Both Hands)\nDragonflight - Hissing (Mastery) (Main Hand)\nDragonflight - Buzzing (Crit) (Main Hand)\nDragonflight - Howling (Haste) (Main Hand)\nDragonflight - Completely Safe Rockets (Hunter)\nDragonflight - Endless Stack of Needles (Hunter)\nDisabled\nRAID BUFFS\n\nIf your character provides one of these buffs, it may be used even if disabled here\n\nBloodlust\nArcane Intellect\nPower Word: Fortitude\nMark of the Wild\nBattle Shout\nMystic Touch (5% Physical Damage)\nChaos Brand (3% Magic Damage)\nSkyfury\nHunter's Mark\nPower Infusion (Beta)\n\n?\n\nBleeding\n\n?\n\nVantus Rune\nMISC OPTIONS\nDetailed SimC Report\nSHOW FEWER OPTIONS\nRestore Default Options\nCustom APL and SimC Options:\nSimC Defaults\nReport and Notification Options\nShow Simc Input\nSHARE SETUP\nFIND TOP GEAR\nHigh Precision (2x more precise, 4x slower)\nResults are only as good as the SimulationCraft model for your spec! Check other trusted sources to figure out if your spec is well supported and/or dive into SimulationCraft itself and get involved!\nETC\n\nDevelopers\n\n\n\n\nBlog Archive\n\n\n\n\nTerms of Use\n\nPrivacy Policy\n\nCONTACT\n\nSupport / Help\n\n\n\n\nRaidbots Discord\n\n\n\n\nMade by Seriallos\n\nREPORTS\n\nCreate an account to save reports",
+  "selects": [
+    {
+      "name": "fightStyle",
+      "id": "AdvancedSimOptions-fightStyle",
+      "value": "Patchwerk",
+      "options": [
+        {
+          "value": "Patchwerk",
+          "label": "Patchwerk"
+        },
+        {
+          "value": "DungeonSlice",
+          "label": "Dungeon Slice"
+        },
+        {
+          "value": "TargetDummy",
+          "label": "Target Dummy"
+        },
+        {
+          "value": "ExecutePatchwerk",
+          "label": "Execute Patchwerk"
+        },
+        {
+          "value": "HecticAddCleave",
+          "label": "Hectic Add Cleave"
+        },
+        {
+          "value": "LightMovement",
+          "label": "Light Movement"
+        },
+        {
+          "value": "HeavyMovement",
+          "label": "Heavy Movement"
+        },
+        {
+          "value": "CastingPatchwerk",
+          "label": "Casting Patchwerk"
+        },
+        {
+          "value": "CleaveAdd",
+          "label": "Cleave Add"
+        }
+      ]
+    },
+    {
+      "name": "numEnemies",
+      "id": "AdvancedSimOptions-numEnemies",
+      "value": "1",
+      "options": [
+        {
+          "value": "1",
+          "label": "1 Boss"
+        },
+        {
+          "value": "2",
+          "label": "2 Bosses"
+        },
+        {
+          "value": "3",
+          "label": "3 Bosses"
+        },
+        {
+          "value": "4",
+          "label": "4 Bosses"
+        },
+        {
+          "value": "5",
+          "label": "5 Bosses"
+        },
+        {
+          "value": "6",
+          "label": "6 Bosses"
+        },
+        {
+          "value": "7",
+          "label": "7 Bosses"
+        },
+        {
+          "value": "8",
+          "label": "8 Bosses"
+        },
+        {
+          "value": "9",
+          "label": "9 Bosses"
+        },
+        {
+          "value": "10",
+          "label": "10 Bosses"
+        }
+      ]
+    },
+    {
+      "name": "fightLength",
+      "id": "AdvancedSimOptions-fightLength",
+      "value": "300",
+      "options": [
+        {
+          "value": "20",
+          "label": "20 seconds"
+        },
+        {
+          "value": "40",
+          "label": "40 seconds"
+        },
+        {
+          "value": "60",
+          "label": "1 minute"
+        },
+        {
+          "value": "90",
+          "label": "1 minute, 30 seconds"
+        },
+        {
+          "value": "120",
+          "label": "2 minutes"
+        },
+        {
+          "value": "180",
+          "label": "3 minutes"
+        },
+        {
+          "value": "240",
+          "label": "4 minutes"
+        },
+        {
+          "value": "300",
+          "label": "5 minutes"
+        },
+        {
+          "value": "360",
+          "label": "6 minutes"
+        },
+        {
+          "value": "420",
+          "label": "7 minutes"
+        },
+        {
+          "value": "480",
+          "label": "8 minutes"
+        },
+        {
+          "value": "540",
+          "label": "9 minutes"
+        },
+        {
+          "value": "600",
+          "label": "10 minutes"
+        }
+      ]
+    },
+    {
+      "name": "simcVersion",
+      "id": "AdvancedSimOptions-simcVersion",
+      "value": "weekly",
+      "options": [
+        {
+          "value": "weekly",
+          "label": "Weekly"
+        },
+        {
+          "value": "nightly",
+          "label": "Nightly"
+        },
+        {
+          "value": "latest",
+          "label": "Latest"
+        }
+      ]
+    },
+    {
+      "name": "rubyWhelpShellTraining",
+      "id": "AdvancedSimOptions-ExpansionOption-rubyWhelpShellTraining",
+      "value": "",
+      "options": [
+        {
+          "value": "",
+          "label": "None (Random Ability Usage)"
+        },
+        {
+          "value": "fire_shot:6",
+          "label": "Fire Shot (Single target damage)"
+        },
+        {
+          "value": "lobbing_fire_nova:6",
+          "label": "Lobbing Fire Nova (AOE damage)"
+        },
+        {
+          "value": "sleepy_ruby_warmth:6",
+          "label": "Sleepy Ruby Warmth (Crit buff)"
+        },
+        {
+          "value": "under_red_wings:6",
+          "label": "Under Red Wings (Haste buff)"
+        },
+        {
+          "value": "curing_whiff:6",
+          "label": "Curing Whiff (Single target healing)"
+        },
+        {
+          "value": "mending_breath:6",
+          "label": "Mending Breath (AOE healing)"
+        }
+      ]
+    },
+    {
+      "name": "temporaryEnchant",
+      "id": "AdvancedSimOptions-ExpansionOption-temporaryEnchant",
+      "value": "",
+      "options": [
+        {
+          "value": "",
+          "label": "SimC Default"
+        },
+        {
+          "value": "main_hand:refulgent_whetstone_2",
+          "label": "[Main Hand] Refulgent Whetstone (AP)"
+        },
+        {
+          "value": "main_hand:thalassian_phoenix_oil_2",
+          "label": "[Main Hand] Thalassian Phoenix Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:oil_of_dawn_2",
+          "label": "[Main Hand] Oil of Dawn (Holy Damage)"
+        },
+        {
+          "value": "main_hand:smugglers_enchanted_edge_2",
+          "label": "[Main Hand] Smuggler's Enchanted Edge (Damage)"
+        },
+        {
+          "value": "main_hand:refulgent_whetstone_2/off_hand:refulgent_whetstone_2",
+          "label": "[Dual Wield] Refulgent Whetstone (AP)"
+        },
+        {
+          "value": "main_hand:thalassian_phoenix_oil_2/off_hand:thalassian_phoenix_oil_2",
+          "label": "[Dual Wield] Thalassian Phoenix Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:oil_of_dawn_2/off_hand:oil_of_dawn_2",
+          "label": "[Dual Wield] Oil of Dawn (Holy Damage)"
+        },
+        {
+          "value": "main_hand:smugglers_enchanted_edge_2/off_hand:smugglers_enchanted_edge_2",
+          "label": "[Dual Wield] Smuggler's Enchanted Edge (Damage)"
+        },
+        {
+          "value": "main_hand:refulgent_whetstone_2/off_hand:thalassian_phoenix_oil_2",
+          "label": "[Dual Wield] Refulgent Whetstone (AP) / Thalassian Phoenix Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:refulgent_whetstone_2/off_hand:oil_of_dawn_2",
+          "label": "[Dual Wield] Refulgent Whetstone (AP) / Oil of Dawn (Holy Damage)"
+        },
+        {
+          "value": "main_hand:refulgent_whetstone_2/off_hand:smugglers_enchanted_edge_2",
+          "label": "[Dual Wield] Refulgent Whetstone (AP) / Smuggler's Enchanted Edge (Damage)"
+        },
+        {
+          "value": "main_hand:thalassian_phoenix_oil_2/off_hand:oil_of_dawn_2",
+          "label": "[Dual Wield] Thalassian Phoenix Oil (Crit/Haste) / Oil of Dawn (Holy Damage)"
+        },
+        {
+          "value": "main_hand:thalassian_phoenix_oil_2/off_hand:smugglers_enchanted_edge_2",
+          "label": "[Dual Wield] Thalassian Phoenix Oil (Crit/Haste) / Smuggler's Enchanted Edge (Damage)"
+        },
+        {
+          "value": "main_hand:oil_of_dawn_2/off_hand:smugglers_enchanted_edge_2",
+          "label": "[Dual Wield] Oil of Dawn (Holy Damage) / Smuggler's Enchanted Edge (Damage)"
+        },
+        {
+          "value": "main_hand:laced_zoomshots_2",
+          "label": "[Main Hand] Laced Zoomshots (Haste - Hunter)"
+        },
+        {
+          "value": "main_hand:weighted_boomshots_2",
+          "label": "[Main Hand] Weighted Boomshots (Damage - Hunter)"
+        },
+        {
+          "value": "main_hand:ironclaw_whetstone_3",
+          "label": "TWW - [Main Hand] Ironclaw Whetstone (AP)"
+        },
+        {
+          "value": "main_hand:oil_of_deep_toxins_3",
+          "label": "TWW - [Main Hand] Oil of Deep Toxins (Direct Damage)"
+        },
+        {
+          "value": "main_hand:algari_mana_oil_3",
+          "label": "TWW - [Main Hand] Algari Mana Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:ironclaw_whetstone_3/off_hand:ironclaw_whetstone_3",
+          "label": "TWW - [Dual Wield] Ironclaw Whetstone (AP)"
+        },
+        {
+          "value": "main_hand:oil_of_deep_toxins_3/off_hand:oil_of_deep_toxins_3",
+          "label": "TWW - [Dual Wield] Oil of Deep Toxins (Direct Damage)"
+        },
+        {
+          "value": "main_hand:algari_mana_oil_3/off_hand:algari_mana_oil_3",
+          "label": "TWW - [Dual Wield] Algari Mana Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:ironclaw_whetstone_3/off_hand:oil_of_deep_toxins_3",
+          "label": "TWW - [Dual Wield] Ironclaw Whetstone (AP) / Oil of Deep Toxins (Direct Damage)"
+        },
+        {
+          "value": "main_hand:ironclaw_whetstone_3/off_hand:algari_mana_oil_3",
+          "label": "TWW - [Dual Wield] Ironclaw Whetstone (AP) / Algari Mana Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:oil_of_deep_toxins_3/off_hand:algari_mana_oil_3",
+          "label": "TWW - [Dual Wield] Oil of Deep Toxins (Direct Damage) / Algari Mana Oil (Crit/Haste)"
+        },
+        {
+          "value": "main_hand:primal_whetstone_3",
+          "label": "Dragonflight - AP (Main Hand)"
+        },
+        {
+          "value": "main_hand:primal_whetstone_3/off_hand:primal_whetstone_3",
+          "label": "Dragonflight - AP (Both Hands)"
+        },
+        {
+          "value": "main_hand:primal_whetstone_3/off_hand:buzzing_rune_3",
+          "label": "Dragonflight - AP + Buzzing (Crit)"
+        },
+        {
+          "value": "main_hand:primal_whetstone_3/off_hand:howling_rune_3",
+          "label": "Dragonflight - AP + Howling (Haste)"
+        },
+        {
+          "value": "main_hand:primal_whetstone_3/off_hand:hissing_rune_3",
+          "label": "Dragonflight - AP + Hissing (Mastery)"
+        },
+        {
+          "value": "main_hand:howling_rune_3/off_hand:hissing_rune_3",
+          "label": "Dragonflight - Howling (Haste) + Hissing (Mastery)"
+        },
+        {
+          "value": "main_hand:buzzing_rune_3/off_hand:hissing_rune_3",
+          "label": "Dragonflight - Buzzing (Crit) + Hissing (Mastery)"
+        },
+        {
+          "value": "main_hand:buzzing_rune_3/off_hand:howling_rune_3",
+          "label": "Dragonflight - Buzzing (Crit) + Howling (Haste)"
+        },
+        {
+          "value": "main_hand:hissing_rune_3/off_hand:hissing_rune_3",
+          "label": "Dragonflight - Hissing (Mastery) (Both Hands)"
+        },
+        {
+          "value": "main_hand:howling_rune_3/off_hand:howling_rune_3",
+          "label": "Dragonflight - Howling (Haste) (Both Hands)"
+        },
+        {
+          "value": "main_hand:buzzing_rune_3/off_hand:buzzing_rune_3",
+          "label": "Dragonflight - Buzzing (Crit) (Both Hands)"
+        },
+        {
+          "value": "main_hand:hissing_rune_3",
+          "label": "Dragonflight - Hissing (Mastery) (Main Hand)"
+        },
+        {
+          "value": "main_hand:buzzing_rune_3",
+          "label": "Dragonflight - Buzzing (Crit) (Main Hand)"
+        },
+        {
+          "value": "main_hand:howling_rune_3",
+          "label": "Dragonflight - Howling (Haste) (Main Hand)"
+        },
+        {
+          "value": "main_hand:completely_safe_rockets_3",
+          "label": "Dragonflight - Completely Safe Rockets (Hunter)"
+        },
+        {
+          "value": "main_hand:endless_stack_of_needles_3",
+          "label": "Dragonflight - Endless Stack of Needles (Hunter)"
+        },
+        {
+          "value": "disabled",
+          "label": "Disabled"
+        }
+      ]
+    }
+  ],
+  "storageKeys": [
+    "store"
+  ]
+}

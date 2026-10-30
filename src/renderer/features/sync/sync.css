@@ -1,0 +1,28 @@
+.sync-button.has-issue svg { color: var(--amber); }
+
+.sync-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.sync-summary strong { font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
+.sync-summary p { font-size: 12px; color: var(--secondary); margin-top: 3px; }
+
+.sync-results { list-style: none; margin: 0; padding: 0; display: grid; }
+.sync-results li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.sync-results li:first-child { border-top: 0; }
+.sync-results svg { width: 15px; height: 15px; color: var(--green); }
+.sync-results small { font-size: 12px; color: var(--secondary); text-align: right; max-width: 220px; }
+.sync-results li.failed svg { color: var(--amber); }
+.sync-results li.failed small { color: var(--amber); }
+
+.sync-addon { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px; border-radius: 10px; background: var(--surface2); }
+.sync-addon > svg { width: 18px; height: 18px; color: var(--secondary); }
+.sync-addon.ok > svg { color: var(--green); }
+.sync-addon strong { font-size: 13px; font-weight: 600; }
+.sync-addon p { font-size: 12px; color: var(--secondary); margin-top: 2px; }
+.sync-error { color: var(--amber) !important; }
+
+.sync-manual { border-top: 1px solid var(--line); padding-top: 14px; }
+.sync-manual-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 4px 2px; border: 0; background: none; color: var(--secondary); font: inherit; font-size: 12px; cursor: pointer; }
+.sync-manual-toggle:hover { color: var(--ink); }
+.sync-manual-toggle svg { width: 14px; height: 14px; transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+.sync-manual-toggle svg.open { transform: rotate(90deg); }
+.sync-manual .form-stack { margin-top: 12px; }
+

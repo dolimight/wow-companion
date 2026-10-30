@@ -1,0 +1,9 @@
+## Interface: 120105
+## Title: WOW Companion
+## Notes: Local roster snapshots for the WOW Companion desktop app, plus 3D previews of mounts, pets, appearance sets, gear, and housing decor on hover
+## Author: Local companion
+## Version: 0.4.2
+## SavedVariables: WoWCompanionDB
+WoWCompanion.lua
+MountPreview.lua
+OutfitPreview.lua

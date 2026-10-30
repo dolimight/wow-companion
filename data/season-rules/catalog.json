@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "rulesets": [
+    {
+      "schemaVersion": 1,
+      "id": "midnight-s2-12.1.5.70575",
+      "name": "Midnight Season 2 · installed-client reference",
+      "seasonId": "midnight-season-2",
+      "builds": {
+        "min": "12.1.5.70575",
+        "max": "12.1.5.70575"
+      },
+      "regions": [
+        "us",
+        "eu",
+        "kr",
+        "tw"
+      ],
+      "effectiveFrom": "2026-10-29T14:02:33.767Z",
+      "effectiveUntil": "2026-11-05T14:02:33.767Z",
+      "status": "active",
+      "validated": true,
+      "sources": [
+        {
+          "title": "Installed Retail 12.1.5.70575 numeric tables · mapping definitions",
+          "url": "https://github.com/wowdev/WoWDBDefs",
+          "checkedAt": "2026-10-29T14:02:33.767Z"
+        },
+        {
+          "title": "Blizzard 12.1.5 content notes",
+          "url": "https://news.blizzard.com/en-gb/article/24304162/12-1-5-content-update-notes",
+          "checkedAt": "2026-10-29T14:02:33.767Z"
+        },
+        {
+          "title": "Blizzard hotfixes · Venomstone item-level correction",
+          "url": "https://news.blizzard.com/en-gb/article/24307310/hotfixes-october-27-2026",
+          "checkedAt": "2026-10-29T14:02:33.767Z"
+        }
+      ],
+      "validationFixtures": [
+        "src/main/progression/season-bundle.test.ts"
+      ],
+      "candidateCoverage": "partial",
+      "constraintsCoverage": "partial",
+      "upgradeTracks": [
+        {
+          "id": "client-group-614",
+          "name": "Adventurer",
+          "ranks": [
+            {
+              "rank": 1,
+              "itemLevel": 266,
+              "cost": [],
+              "discountRequired": false
+            },
+            {
+              "rank": 2,
+              "itemLevel": 269,
+              "cost": [
+                {
+                  "currencyId": "3442",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 100000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 3,
+              "itemLevel": 272,
+              "cost": [
+                {
+                  "currencyId": "3442",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 100000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 4,
+              "itemLevel": 276,
+              "cost": [
+                {
+                  "currencyId": "3442",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 100000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 5,
+              "itemLevel": 279,
+              "cost": [
+                {
+                  "currencyId": "3442",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 100000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 6,
+              "itemLevel": 282,
+              "cost": [
+                {
+                  "currencyId": "3442",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 100000
+                }
+              ],
+              "discountRequired": true
+            }
+          ]
+        },
+        {
+          "id": "client-group-615",
+          "name": "Veteran",
+          "ranks": [
+            {
+              "rank": 1,
+              "itemLevel": 279,
+              "cost": [],
+              "discountRequired": false
+            },
+            {
+              "rank": 2,
+              "itemLevel": 282,
+              "cost": [
+                {
+                  "currencyId": "3443",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 200000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 3,
+              "itemLevel": 285,
+              "cost": [
+                {
+                  "currencyId": "3443",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 200000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 4,
+              "itemLevel": 289,
+              "cost": [
+                {
+                  "currencyId": "3443",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 200000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 5,
+              "itemLevel": 292,
+              "cost": [
+                {
+                  "currencyId": "3443",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 200000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 6,
+              "itemLevel": 295,
+              "cost": [
+                {
+                  "currencyId": "3443",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 200000
+                }
+              ],
+              "discountRequired": true
+            }
+          ]
+        },
+        {
+          "id": "client-group-616",
+          "name": "Champion",
+          "ranks": [
+            {
+              "rank": 1,
+              "itemLevel": 292,
+              "cost": [],
+              "discountRequired": false
+            },
+            {
+              "rank": 2,
+              "itemLevel": 295,
+              "cost": [
+                {
+                  "currencyId": "3444",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 300000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 3,
+              "itemLevel": 298,
+              "cost": [
+                {
+                  "currencyId": "3444",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 300000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 4,
+              "itemLevel": 302,
+              "cost": [
+                {
+                  "currencyId": "3444",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 300000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 5,
+              "itemLevel": 305,
+              "cost": [
+                {
+                  "currencyId": "3444",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 300000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 6,
+              "itemLevel": 308,
+              "cost": [
+                {
+                  "currencyId": "3444",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 300000
+                }
+              ],
+              "discountRequired": true
+            }
+          ]
+        },
+        {
+          "id": "client-group-617",
+          "name": "Hero",
+          "ranks": [
+            {
+              "rank": 1,
+              "itemLevel": 305,
+              "cost": [],
+              "discountRequired": false
+            },
+            {
+              "rank": 2,
+              "itemLevel": 308,
+              "cost": [
+                {
+                  "currencyId": "3445",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 400000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 3,
+              "itemLevel": 311,
+              "cost": [
+                {
+                  "currencyId": "3445",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 400000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 4,
+              "itemLevel": 315,
+              "cost": [
+                {
+                  "currencyId": "3445",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 400000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 5,
+              "itemLevel": 318,
+              "cost": [
+                {
+                  "currencyId": "3445",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 400000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 6,
+              "itemLevel": 321,
+              "cost": [
+                {
+                  "currencyId": "3445",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 400000
+                }
+              ],
+              "discountRequired": true
+            }
+          ]
+        },
+        {
+          "id": "client-group-618",
+          "name": "Myth",
+          "ranks": [
+            {
+              "rank": 1,
+              "itemLevel": 318,
+              "cost": [],
+              "discountRequired": false
+            },
+            {
+              "rank": 2,
+              "itemLevel": 321,
+              "cost": [
+                {
+                  "currencyId": "3446",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 500000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 3,
+              "itemLevel": 324,
+              "cost": [
+                {
+                  "currencyId": "3446",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 500000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 4,
+              "itemLevel": 328,
+              "cost": [
+                {
+                  "currencyId": "3446",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 500000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 5,
+              "itemLevel": 331,
+              "cost": [
+                {
+                  "currencyId": "3446",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 500000
+                }
+              ],
+              "discountRequired": true
+            },
+            {
+              "rank": 6,
+              "itemLevel": 334,
+              "cost": [
+                {
+                  "currencyId": "3446",
+                  "amount": 20
+                },
+                {
+                  "currencyId": "money",
+                  "amount": 500000
+                }
+              ],
+              "discountRequired": true
+            }
+          ]
+        }
+      ],
+      "restrictions": [],
+      "minimumGroups": [],
+      "rewardTables": []
+    }
+  ]
+}

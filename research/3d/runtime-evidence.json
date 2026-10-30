@@ -1,0 +1,156 @@
+{
+  "observedAt": "2026-10-15T13:24:13.472Z",
+  "decision": "partial",
+  "dynamicWowWardrobeGate": "not-passed",
+  "scope": "Packaged Electron app and imported Khronos Fox GLB only",
+  "sourceEvidence": ".local/debug-acceptance-1792070641431",
+  "stack": {
+    "electron": "44.7.2",
+    "fiber": "9.8.2",
+    "three": "0.186.1",
+    "react": "19.3.1"
+  },
+  "verification": {
+    "transportAndPersistenceChecks": 10,
+    "unitTests": 45,
+    "typecheck": "pass",
+    "rendererConsoleErrors": 0,
+    "testFiles": 9,
+    "desktopChecks": 15,
+    "desktopPassed": true
+  },
+  "mainDebugger": {
+    "attached": true,
+    "pauses": [
+      {
+        "reason": "Break on start",
+        "functionName": "",
+        "url": "",
+        "location": {
+          "scriptId": "139",
+          "lineNumber": 0,
+          "columnNumber": 0
+        }
+      }
+    ],
+    "exceptions": [],
+    "probe": {
+      "pid": 36300,
+      "electron": "44.7.2",
+      "node": "24.21.0",
+      "processType": "browser"
+    }
+  },
+  "rendererDebugger": {
+    "attached": true,
+    "pauses": [
+      {
+        "reason": "other",
+        "functionName": "companionRendererDebugProbe",
+        "url": ""
+      }
+    ],
+    "exceptions": [],
+    "probe": {
+      "nodeUnavailable": true,
+      "resumed": true,
+      "url": "app://companion/index.html"
+    }
+  },
+  "fixture": {
+    "path": "C:\\Users\\wesleyj\\Documents\\Code\\Personal\\wow\\.local\\test-assets\\Fox.glb",
+    "license": "Model CC0 PixelMannen; rigging/animation CC-BY-4.0 tomkranis; conversion CC-BY-4.0 AsoboStudio and scurest",
+    "source": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox",
+    "sha256": "d97044e701822bac5a62696459b27d7b375aada5de8574ed4362edbba94771f7"
+  },
+  "modelTelemetry": {
+    "animations": [
+      "Survey",
+      "Walk",
+      "Run"
+    ],
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 (0x00002F04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "vendor": "Google Inc. (NVIDIA)",
+    "width": 523,
+    "height": 430,
+    "canvasCount": 1
+  },
+  "importedModelSwitches": {
+    "gpuAllocationReclamationProven": false,
+    "pausedEveryArrival": true,
+    "samples": 20,
+    "p95Ms": 123,
+    "singleCanvasEverySample": true,
+    "medianMs": 119.5
+  },
+  "checks": [
+    {
+      "name": "Renderer debugger attaches and resumes an actual JavaScript pause",
+      "status": "pass"
+    },
+    {
+      "name": "Empty local workspace is usable",
+      "status": "pass"
+    },
+    {
+      "name": "Roster overview contains four isolated fictional characters",
+      "status": "pass"
+    },
+    {
+      "name": "Roster selection updates the selected character pane",
+      "status": "pass"
+    },
+    {
+      "name": "Gear draft edits travel through the UI and persist in SQLite",
+      "status": "pass"
+    },
+    {
+      "name": "Switching characters keeps gear drafts isolated",
+      "status": "pass"
+    },
+    {
+      "name": "Favorite toggle persists through the real roster control",
+      "status": "pass"
+    },
+    {
+      "name": "Archive and restore preserve the character and its saved plan",
+      "status": "pass"
+    },
+    {
+      "name": "Pasted addon snapshot imports through the UI",
+      "status": "pass"
+    },
+    {
+      "name": "Wardrobe edits save independently of model availability",
+      "status": "pass"
+    },
+    {
+      "name": "Actual GLB loads over the local protocol and exposes animated inspection controls",
+      "status": "pass"
+    },
+    {
+      "name": "GPU context loss exposes recovery and preserves the outfit",
+      "status": "pass"
+    },
+    {
+      "name": "Twenty imported-model character switches retain one live viewport",
+      "status": "pass"
+    },
+    {
+      "name": "External-HTTP-denied renderer reopen restores the saved gear plan",
+      "status": "pass"
+    },
+    {
+      "name": "Light appearance and minimum desktop width preserve usable layout",
+      "status": "pass"
+    }
+  ],
+  "appAsarSha256": "6c7460f826f4ebe12440d7d3bb2ce16737cfbb50e75f37fce528f7b5f59c2342",
+  "limitations": [
+    "No actual Retail character model reference match",
+    "No dynamic armor or weapon recomposition",
+    "No WoW race, form or animation compatibility proven",
+    "No GPU allocation reclamation proof",
+    "Seasonal legal item-level caps remain unknown for real characters"
+  ]
+}

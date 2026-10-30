@@ -1,0 +1,68 @@
+.app-select-trigger {
+  min-height: 34px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 8px 9px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.app-select-trigger:hover {
+  background: var(--surface2);
+}
+.app-select-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.app-select-trigger [data-slot="select-value"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-select-trigger:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.field .app-select-trigger {
+  width: 100%;
+}
+.select-inline .app-select-trigger {
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+  width: auto;
+}
+.setting-row .app-select-trigger {
+  width: 145px;
+  flex: none;
+}
+.standings-filters .app-select-trigger {
+  min-width: 140px;
+}
+.app-select-content {
+  z-index: 60;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 4px;
+  box-shadow: 0 10px 28px #0003;
+}
+.app-select-item {
+  color: var(--ink);
+  min-height: 32px;
+  border-radius: 5px;
+  font-size: 13px;
+}
+.app-select-item[data-highlighted],
+.app-select-item:focus {
+  background: var(--selected);
+  color: var(--ink);
+}
+.app-select-item[data-disabled] {
+  opacity: 0.5;
+}

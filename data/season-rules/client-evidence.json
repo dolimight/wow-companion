@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "build": "12.1.5.70575",
+  "checkedAt": "2026-10-29T14:02:33.767Z",
+  "tableHashes": {
+    "CurrencyTypes": "6871973aee9e4f73d71faf7e1baa0aac21db778f21c4836243b7c03af71c01f3",
+    "ItemBonusListGroupEntry": "bfe87761ddcf42026dbe4683435032d6ba04b260d403ef7bb54af4193b9ecf71",
+    "ItemExtendedCost": "a32fdb743fa53212734ba1c74a4a4cc628a8ac44f2237823e20f39dcea4c9a4f",
+    "ItemBonus": "1249c3b3552eea8045e37225102f2d13bdffac15556937ec93cfeacf31c46287",
+    "ItemScalingConfig": "d8d5ae440f1db96dfd6a4a81a992975bc9d186c60391f2ad13445dc3f8628684",
+    "ItemXBonusTree": "8bd9899292664e22277dcf1be0501757f1dd3daaf9e038693a0149cedb4a5e76",
+    "ItemBonusTreeNode": "fcfbdea5af9529f6c54742007bbc9ca9614da47f663b8ec5f5fd6d73af39dc2b",
+    "JournalTierXInstance": "60f565af46b15ddd41e37b85831d8dfd680976a9f00532e47844a98340bc13d9",
+    "JournalInstance": "bbd4819bca0ef73c4af063d77e6dc4d280ee8b8925d3e4c0584b34328bc6947f",
+    "JournalEncounter": "f09f054e270717fbb9ec8af0edb9edaebd5263061614687201adb2d51c3093b8",
+    "JournalEncounterItem": "36bb373d9b06a2abe52b921ca924de4c6803ae46ea9ef58deab0b0275c2b4a29"
+  },
+  "bonusRanks": {
+    "12817": {
+      "trackId": "client-group-614",
+      "rank": 1,
+      "itemLevel": 266
+    },
+    "12818": {
+      "trackId": "client-group-614",
+      "rank": 2,
+      "itemLevel": 269
+    },
+    "12819": {
+      "trackId": "client-group-614",
+      "rank": 3,
+      "itemLevel": 272
+    },
+    "12820": {
+      "trackId": "client-group-614",
+      "rank": 4,
+      "itemLevel": 276
+    },
+    "12821": {
+      "trackId": "client-group-614",
+      "rank": 5,
+      "itemLevel": 279
+    },
+    "12822": {
+      "trackId": "client-group-614",
+      "rank": 6,
+      "itemLevel": 282
+    },
+    "12825": {
+      "trackId": "client-group-615",
+      "rank": 1,
+      "itemLevel": 279
+    },
+    "12826": {
+      "trackId": "client-group-615",
+      "rank": 2,
+      "itemLevel": 282
+    },
+    "12827": {
+      "trackId": "client-group-615",
+      "rank": 3,
+      "itemLevel": 285
+    },
+    "12828": {
+      "trackId": "client-group-615",
+      "rank": 4,
+      "itemLevel": 289
+    },
+    "12829": {
+      "trackId": "client-group-615",
+      "rank": 5,
+      "itemLevel": 292
+    },
+    "12830": {
+      "trackId": "client-group-615",
+      "rank": 6,
+      "itemLevel": 295
+    },
+    "12833": {
+      "trackId": "client-group-616",
+      "rank": 1,
+      "itemLevel": 292
+    },
+    "12834": {
+      "trackId": "client-group-616",
+      "rank": 2,
+      "itemLevel": 295
+    },
+    "12835": {
+      "trackId": "client-group-616",
+      "rank": 3,
+      "itemLevel": 298
+    },
+    "12836": {
+      "trackId": "client-group-616",
+      "rank": 4,
+      "itemLevel": 302
+    },
+    "12837": {
+      "trackId": "client-group-616",
+      "rank": 5,
+      "itemLevel": 305
+    },
+    "12838": {
+      "trackId": "client-group-616",
+      "rank": 6,
+      "itemLevel": 308
+    },
+    "12841": {
+      "trackId": "client-group-617",
+      "rank": 1,
+      "itemLevel": 305
+    },
+    "12842": {
+      "trackId": "client-group-617",
+      "rank": 2,
+      "itemLevel": 308
+    },
+    "12843": {
+      "trackId": "client-group-617",
+      "rank": 3,
+      "itemLevel": 311
+    },
+    "12844": {
+      "trackId": "client-group-617",
+      "rank": 4,
+      "itemLevel": 315
+    },
+    "12845": {
+      "trackId": "client-group-617",
+      "rank": 5,
+      "itemLevel": 318
+    },
+    "12846": {
+      "trackId": "client-group-617",
+      "rank": 6,
+      "itemLevel": 321
+    },
+    "12849": {
+      "trackId": "client-group-618",
+      "rank": 1,
+      "itemLevel": 318
+    },
+    "12850": {
+      "trackId": "client-group-618",
+      "rank": 2,
+      "itemLevel": 321
+    },
+    "12851": {
+      "trackId": "client-group-618",
+      "rank": 3,
+      "itemLevel": 324
+    },
+    "12852": {
+      "trackId": "client-group-618",
+      "rank": 4,
+      "itemLevel": 328
+    },
+    "12853": {
+      "trackId": "client-group-618",
+      "rank": 5,
+      "itemLevel": 331
+    },
+    "12854": {
+      "trackId": "client-group-618",
+      "rank": 6,
+      "itemLevel": 334
+    }
+  },
+  "currencyNames": {
+    "3442": "Adventurer Mistcrest",
+    "3443": "Veteran Mistcrest",
+    "3444": "Champion Mistcrest",
+    "3445": "Hero Mistcrest",
+    "3446": "Myth Mistcrest"
+  },
+  "limitations": [
+    "Server availability conditions and boss/difficulty branches are not fully resolved",
+    "Crafted item caps, embellishment limits, PvP scaling and Ascendant Venomstone eligibility are not validated",
+    "These are candidate references, not a proven legal seasonal maximum",
+    "Base costs exclude character-specific discounts; fresh addon vendor quotes take precedence"
+  ]
+}

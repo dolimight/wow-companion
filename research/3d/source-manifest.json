@@ -1,0 +1,25 @@
+{
+  "software": {
+    "name": "wow.export",
+    "repository": "https://github.com/Kruithne/wow.export",
+    "commit": "c2fd7bde36a712be78a5da896c995b84fbfa2545",
+    "version": "0.2.19",
+    "license": "MIT",
+    "usage": "source inspection only, no source bundled into application",
+    "hashEvidence": "source-probe.json"
+  },
+  "gameData": {
+    "edition": "retail",
+    "build": "12.1.5.70391",
+    "localInstallPresent": true,
+    "source": "user local installation, read-only metadata probe",
+    "assetsCopied": false,
+    "redistributed": false,
+    "extractedCharacterModels": 0
+  },
+  "network": {
+    "research": "GitHub source checkout/downloads only",
+    "inspectionStage": "app-owned local protocol, no external image/buffer URLs",
+    "futureAssembly": "DBD definitions, listfiles, optional CASC/CDN fallback need explicit build pinning and a reviewed policy"
+  }
+}

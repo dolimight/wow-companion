@@ -1,0 +1,19 @@
+.simulation-page{display:grid;gap:20px;min-width:0}.simulation-section{padding:22px;display:grid;gap:14px;min-width:0}.simulation-section h2,.simulation-section p{margin:0}.simulation-section h2{font-size:18px;letter-spacing:-.02em}.simulation-heading,.simulation-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.simulation-heading>div{min-width:0;flex:1}.simulation-heading>h2{flex:1}.simulation-actions{padding-top:4px}.simulation-profile{font:11px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;min-height:190px;resize:vertical;tab-size:2}.simulation-section textarea,.simulation-section input{width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink);padding:10px}.simulation-section textarea:focus-visible,.simulation-section input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.simulation-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.simulation-details{font-size:12px;color:var(--muted)}.simulation-details summary{cursor:pointer;color:var(--ink);padding:5px 0}.simulation-details ul{padding-left:18px;display:grid;gap:5px}.simulation-details dd{margin:3px 0 10px;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.simulation-details dt{font-weight:600}.simulation-empty{display:grid;justify-items:center;text-align:center;gap:10px;padding:26px 12px;color:var(--muted)}.simulation-empty p{color:var(--ink);font-weight:600}.simulation-job{padding:18px 0;border-top:1px solid var(--line);display:grid;gap:12px;min-width:0}.simulation-job .simulation-heading p{font-size:12px;margin-top:5px}.simulation-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.simulation-values>div{display:grid;gap:6px}.simulation-values strong{font-size:23px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.simulation-values small{line-height:1.5}.simulation-report{display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid var(--line);min-width:0}.simulation-report>div{flex:1;min-width:0}.simulation-report p{margin:5px 0;overflow-wrap:anywhere;white-space:pre-wrap}.simulation-report strong{overflow-wrap:anywhere}@media(max-width:1000px){.simulation-section{padding:16px}.simulation-options,.simulation-values{grid-template-columns:minmax(0,1fr)}}
+/* Keep the baseline and its run configuration together on a wide desktop */
+@media (min-width: 1300px) {
+  .simulation-page { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  .simulation-page > .page-heading, .simulation-page > [role="alert"] { grid-column: 1 / -1; }
+  .simulation-page > .page-heading { margin-bottom: 6px; }
+  .simulation-page > .simulation-section { height: 100%; }
+  .simulation-page .simulation-options { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+}
+.simulation-section .field { min-width: 0; }
+.simulation-section .muted { line-height: 1.65; }
+.simulation-profile { font-size: 12px; min-height: 220px; }
+.simulation-section .simulation-actions .button { white-space: normal; height: auto; min-height: 34px; }
+.simulation-section [data-slot="toggle"] { justify-content: flex-start; text-align: left; white-space: normal; height: auto; min-height: 38px; }
+.simulation-job .simulation-heading { align-items: flex-start; }
+.simulation-report { padding-bottom: 4px; }
+.simulation-report small { display: block; line-height: 1.6; }
+.simulation-section { align-content: start; }
+.simulation-section .simulation-profile { min-height: 220px; font-size: 12px; }

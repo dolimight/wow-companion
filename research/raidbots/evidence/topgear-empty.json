@@ -1,0 +1,204 @@
+{
+  "url": "https://www.raidbots.com/simbot/topgear",
+  "text": "LOGIN\nENGLISH\nInitial 12.1.5 support is now live. Take results with a grain of salt - hotfixes/bugs/changes may come quickly on patch day.\nSign up for Raidbots Premium! Skip the line, run larger sims, and more!\nTOP GEAR\nDROPTIMIZER\nQUICK SIM\nADVANCED\nMORE\n\nSIMC ADDON\n\nARMORY\n\nHISTORY\n\n1\n\n\n\nNo character loaded\n\nCopy/paste the text from the SimulationCraft addon. How to install and use the SimC addon\n\nPaste input from the SimulationCraft addon.\n\nTop Gear makes it easy to select multiple pieces of gear and automatically try all combinations of them to find the best for your character.\n\nSimulation Options: Smart Sim, Patchwerk, 1 Boss, 5 minutes, SimC Weekly\nCustom APL and SimC Options:\nSimC Defaults\nReport and Notification Options\nShow Simc Input\nSHARE SETUP\nFIND TOP GEAR\nHigh Precision (2x more precise, 4x slower)\nResults are only as good as the SimulationCraft model for your spec! Check other trusted sources to figure out if your spec is well supported and/or dive into SimulationCraft itself and get involved!\nETC\n\nDevelopers\n\n\n\n\nBlog Archive\n\n\n\n\nTerms of Use\n\nPrivacy Policy\n\nCONTACT\n\nSupport / Help\n\n\n\n\nRaidbots Discord\n\n\n\n\nMade by Seriallos\n\nREPORTS\n\nCreate an account to save reports",
+  "resources": [
+    {
+      "url": "https://www.raidbots.com/frontend/simbot.db182f567df30ba1c77b.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/metadata.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-affix-names.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-crafted-stats.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-effects.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-id-levels.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-id-base-levels.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-level-deltas.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-sockets.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-upgrade-sets.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonus-roll-sources.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/crafting.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/currency-types.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/enchantments.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/encounter-names.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/foods.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/instance-names.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/instances.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/item-conversions.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/item-sets.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/item-squish-era.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/talents.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/omnium-talents.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/weapon-specs.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/potions.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/flasks.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/augments.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/seasons.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/level-selector-sequences.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/item-curves.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/content-tuning.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/item-level-bonus-lookup.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/item-level-offset-bonuses.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/static/data/4ed6426b74997e9212cf81c4c09d4edb/bonuses.json",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/112.d49efabf79cc3c5a0b8d.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/875.f4f20551fd580fcb71cf.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/308.f485267a62e86eec4983.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/510.001b241fce444156646c.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/399.064595fc275411ed2469.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/567.6a791839bdd365df067e.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/597.7c3d4bfe7a3dbb092432.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/426.f8acad1091e0bbf90b07.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/237.6fb496fff169c77b7723.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/99.2304faa9cc1c8b7bc60b.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/323.339f643830403c8308a2.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/591.2f92899bbfe3ce1e2b9b.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/frontend/602.f2ce12c112fd84024115.js",
+      "type": "script"
+    },
+    {
+      "url": "https://www.raidbots.com/api/site-state",
+      "type": "xmlhttprequest"
+    },
+    {
+      "url": "https://www.raidbots.com/api/me",
+      "type": "xmlhttprequest"
+    }
+  ],
+  "storageKeys": [],
+  "font": "\"Times New Roman\""
+}

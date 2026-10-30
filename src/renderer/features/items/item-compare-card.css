@@ -1,0 +1,26 @@
+.item-compare-card { width: min(460px, calc(100vw - 32px)); }
+.compare-heads { display: grid; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 10px; align-items: center; }
+.compare-side small { display: block; font-size: 11px; font-weight: 600; color: var(--secondary); margin-bottom: 6px; }
+.compare-item { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.compare-item > div { display: grid; gap: 2px; min-width: 0; }
+.compare-item strong { font-size: 13px; font-weight: 650; line-height: 1.3; }
+.compare-item span { font-size: 12px; color: var(--secondary); font-variant-numeric: tabular-nums; }
+.compare-arrow { width: 16px; height: 16px; color: var(--muted); margin-top: 18px; }
+.compare-summary { margin: 14px 0 4px !important; font-size: 13px; font-weight: 600; }
+.compare-summary.up { color: var(--green); }
+.compare-summary.down { color: var(--amber); }
+.compare-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.compare-table th { text-align: right; font-size: 11px; font-weight: 600; color: var(--secondary); padding: 0 0 6px; }
+.compare-table th:first-child, .compare-table td:first-child { text-align: left; }
+.compare-table td { text-align: right; padding: 5px 0; border-top: 1px solid var(--line); }
+.compare-table td:first-child { color: var(--ink); }
+.compare-table tr.secondary td:first-child { color: var(--quality-uncommon); }
+.compare-table td.up { color: var(--green); font-weight: 600; }
+.compare-table td.down { color: var(--amber); font-weight: 600; }
+.compare-verdict { margin: 14px 0 4px; padding: 10px 12px; border-radius: 9px; background: var(--surface2); }
+.compare-verdict strong { font-size: 13px; font-weight: 650; }
+.compare-verdict.better strong { color: var(--green); }
+.compare-verdict.worse strong { color: var(--amber); }
+.compare-verdict ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12px; color: var(--secondary); }
+.compare-dr { margin-top: 14px; }
+.compare-dr td:first-child small { display: block; font-size: 11px; color: var(--muted); }

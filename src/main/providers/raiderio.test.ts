@@ -1,0 +1,15 @@
+import { describe,expect,it } from 'vite-plus/test'
+import { parseRaiderIoProfile } from './raiderio'
+const profile={name:'Astra',realm:'Realm One',region:'us',class:'Mage',race:'Human',profile_url:'https://raider.io/characters/us/realm-one/astra',last_crawled_at:'2026-10-14T10:30:00Z'}
+describe('Raider.IO profile adapter',()=>{
+  it('normalizes zero specialization IDs and falls back to a known active spec for talents',()=>{
+    const unknown=parseRaiderIoProfile({...profile,active_spec_id:0,talentLoadout:{loadout_text:'Talents',loadout_spec_id:0}})
+    expect(unknown.character.specId).toBeNull();expect(unknown.extras.talents?.specId).toBeNull()
+    const known=parseRaiderIoProfile({...profile,active_spec_id:250,talentLoadout:{loadout_text:'Talents',loadout_spec_id:0}})
+    expect(known.character.specId).toBe(250);expect(known.extras.talents?.specId).toBe(250)
+  })
+  it('preserves source observation times and separates score from raid progression',()=>{const result=parseRaiderIoProfile({...profile,gear:{item_level_equipped:270,items:{head:{item_id:123,item_level:268,enchant:null,gems:[]}}},mythic_plus_scores_by_season:[{season:'season-test',scores:{all:2580}}],mythic_plus_ranks:{overall:{world:1200},class:{world:72}},raid_progression:{'example-raid':{summary:'3/8 M',mythic_bosses_killed:3,total_bosses:8}}});expect(result.character.itemLevel).toBe(270);expect(result.character.maxItemLevel).toBeNull();expect(result.ratings.mythicPlus?.rank).toBe(1200);expect(result.ratings.mythicPlus?.rankScope).toBe('World · overall');expect(result.ratings.raiding?.value).toBeNull();expect(result.ratings.raiding?.label).toContain('3/8 M');expect(result.observedAt).toBe('2026-10-14T10:30:00.000Z')})
+  it('leaves missing/private activity coverage unknown without manufacturing a zero',()=>{const result=parseRaiderIoProfile({...profile,mythic_plus_scores_by_season:null,raid_progression:{},gear:null});expect(result.ratings.mythicPlus).toBeNull();expect(result.ratings.raiding).toBeNull();expect(result.character.itemLevel).toBeNull();expect(result.character.ratings?.pvp).toBeNull()})
+  it('rejects malformed identities and untrusted source URLs',()=>{expect(()=>parseRaiderIoProfile({statusCode:400,error:'private'})).toThrow();expect(()=>parseRaiderIoProfile({...profile,profile_url:'https://evil.example/'})).toThrow();expect(()=>parseRaiderIoProfile({...profile,mythic_plus_scores_by_season:[{scores:{all:'invalid'}}]})).toThrow()})
+  it('distinguishes missing gem/enchant coverage from explicitly observed empty values',()=>{const unknown=parseRaiderIoProfile({...profile,gear:{items:{head:{item_id:1}}}}).character.gear?.[0];const empty=parseRaiderIoProfile({...profile,gear:{items:{head:{item_id:1,enchant:0,gems:[]}}}}).character.gear?.[0];expect(unknown?.itemId).toBe(1);expect(unknown?.itemLevel).toBeNull();expect(unknown?.gemsCoverage).toBe('unknown');expect(unknown?.enchantCoverage).toBe('unknown');expect(empty?.gems).toEqual([]);expect(empty?.enchant).toBeNull();expect(empty?.gemsCoverage).toBe('complete');expect(empty?.enchantCoverage).toBe('complete')})
+})

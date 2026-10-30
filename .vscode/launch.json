@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Electron main",
+      "type": "pwa-node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/electron/dist/electron.exe",
+      "runtimeArgs": [".", "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=9222"],
+      "cwd": "${workspaceFolder}",
+      "env": {"ELECTRON_RUN_AS_NODE": null},
+      "preLaunchTask": "build",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/out/main/**/*.js"],
+      "skipFiles": ["<node_internals>/**"],
+      "outputCapture": "std"
+    },
+    {
+      "name": "Electron renderer",
+      "type": "pwa-chrome",
+      "request": "attach",
+      "address": "127.0.0.1",
+      "port": 9222,
+      "timeout": 30000,
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true
+    }
+  ],
+  "compounds": [{"name": "Electron main + renderer", "configurations": ["Electron main", "Electron renderer"], "stopAll": true}]
+}

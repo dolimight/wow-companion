@@ -1,0 +1,26 @@
+appId: local.wowcompanion.desktop
+productName: WOW Companion
+npmRebuild: false
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+extraResources:
+  - from: addon
+    to: addon
+win:
+  icon: public/assets/wow-companion.ico
+  target: nsis
+  signExecutable: false
+mac:
+  icon: public/assets/wow-companion.icns
+  category: public.app-category.utilities
+  target:
+    - dmg
+    - zip
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
