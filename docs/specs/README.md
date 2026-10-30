@@ -18,7 +18,8 @@ They describe required future behavior, not completed features or verified curre
 
 Execution order differs from feature numbering because evidence and variant capture underpin the other features
 
-Read the [complete implementation plan](../../plans/wow-companion/product-roadmap-implementation.md) for tasks, file ownership, dependencies, tests, and release gates
+Read the [current implementation status](../roadmap-implementation-2026-10-29.md) for shipped capabilities and remaining release gates
+The [navigation redesign](2026-10-30-navigation-redesign.md) and [user-flow map](2026-10-30-user-flow-map.md) describe the next UI work
 
 ## Shared product requirements
 

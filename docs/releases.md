@@ -65,12 +65,12 @@ Changes loaded inside WoW still need `/reload` or a new login
 ## Local checks
 
 ```powershell
-node --test scripts/release/*.test.mjs
+node --import tsx --test scripts/release/*.test.ts
 npm run check
 npm run build
 ```
 
-`scripts/release/prepare.mjs` is the authenticated GitHub Actions entrypoint and must not be used with a token embedded in a command line or committed configuration
+`scripts/release/prepare.ts` is the authenticated GitHub Actions entrypoint and must not be used with a token embedded in a command line or committed configuration
 The scripts that stamp package versions are intended for disposable release checkouts
 
 ## Implementation verification · October 30, 2026

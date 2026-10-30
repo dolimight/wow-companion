@@ -220,7 +220,7 @@ components:
 
 A calm desktop companion gives character identity and progression room to lead, with a persistent translucent sidebar, quiet silver separators, system typography, and blue selection. Apple design principles guide hierarchy, feedback, and material depth within an Electron-shaped shell and familiar shadcn-style controls
 
-This system began as the five-screen clickable HTML mock in plans/wow-companion/ui-mocks.html and now ships as the Electron, React, and shadcn (Base UI) app in src/renderer. Where the two differ, the app wins. Home opens the roster with a selected-character pane; there is no demo roster
+The Electron, React, and shadcn Base UI implementation in src/renderer is the visual authority. Home opens the roster with a selected-character pane; fictional demo data is explicitly labeled
 
 The app now runs on real data: the player's installed game files supply item names, icons, and sources; the Blizzard API (the player's own key) supplies renders, gear, stats, and raid history; Raider.IO supplies ratings, top players, and weekly keys; and the companion addon supplies the exact Great Vault. The interface assumes a player who knows little about WoW and nothing about files, so every source is named in plain words, estimates say they are estimates, and nothing asks the player to locate a file
 

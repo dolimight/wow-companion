@@ -1,0 +1,7 @@
+---
+description: Shared repository guidance for every coding assistant
+alwaysApply: true
+---
+
+Read AGENTS.md at the repository root before working
+It is the canonical guidance for commands, product constraints, scripts, testing, and the PR-only workflow
