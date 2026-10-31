@@ -4,6 +4,8 @@ Status: proposed design for review, no application changes made
 
 Companion to [the audited flow map](2026-10-30-user-flow-map.md)
 
+Interactive mock: [mocks/navigation-redesign](../mocks/navigation-redesign/README.md)
+
 ## Intent
 
 Make the app answer three questions before logging in: which character needs attention, how far its gear is from an attainable maximum, and how it compares with relevant players

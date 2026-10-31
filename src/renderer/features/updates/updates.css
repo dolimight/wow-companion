@@ -18,3 +18,9 @@
 .updates-notes > div { margin-top: 12px; }
 .updates-notes h4 { margin: 14px 0 6px; font-size: 13px; }
 .updates-notes summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.update-button { position: relative; }
+.update-badge { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--sidebar); }
+.update-popover { width: 280px; gap: 12px; padding: 14px; }
+.update-popover-progress { width: 100%; accent-color: var(--accent); }
+.update-popover-note { margin: 0; padding: 0; font-size: 12px; line-height: 1.5; color: var(--secondary); list-style: none; }
+.update-popover-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

@@ -61,7 +61,8 @@ import { ProgressionPage, ProgressionSummary } from "./features/progression/prog
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
-import { UpdateSettings, UpdateIndicator } from "./features/updates/UpdateSettings";
+import { UpdateSettings } from "./features/updates/UpdateSettings";
+import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
 import { InventoryPage } from "./features/inventory/InventoryPage";
 import { ComparisonPage } from "./features/comparisons/ComparisonPage";
@@ -665,6 +666,8 @@ function Shell() {
               )}
             </nav>
             <div className="sidebar-footer">
+              <SyncButton onClick={() => setSheet("sync")} />
+              <UpdateButton onOpenSettings={() => void navigate({ to: '/settings' })} />
               <Tooltip>
                 <TooltipTrigger
                   render={
@@ -680,8 +683,6 @@ function Shell() {
                 </TooltipTrigger>
                 <TooltipContent side="top">Settings</TooltipContent>
               </Tooltip>
-              <SyncButton onClick={() => setSheet("sync")} />
-              <UpdateIndicator onOpen={() => void navigate({ to: '/settings' })} />
             </div>
           </aside>
         </ResizablePanel>

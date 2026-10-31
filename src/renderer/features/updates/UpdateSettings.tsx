@@ -14,21 +14,6 @@ const labels: Record<UpdateState['status'], string> = {
   installing: 'Restarting WOW Companion…', error: 'Update needs attention',
 }
 
-export function UpdateIndicator({ onOpen }: { onOpen: () => void }) {
-  const [state, setState] = useState<UpdateState | null>(null)
-  useEffect(() => {
-    const bridge = window.companion
-    if (!bridge) return
-    let active = true
-    void bridge.updateState().then(value => { if (active) setState(value) }).catch(() => undefined)
-    const unsubscribe = bridge.onUpdateState(value => { if (active) setState(value) })
-    return () => { active = false; unsubscribe() }
-  }, [])
-  if (!state || !['available', 'downloading', 'ready'].includes(state.status)) return null
-  const title = state.status === 'ready' ? 'Update ready to restart · Open Settings' : state.status === 'downloading' ? 'Update downloading · Open Settings' : 'Update available · Open Settings'
-  return <button className="footer-icon update-available" aria-label={title} title={title} onClick={onOpen}><ArrowUpCircle size={18} /></button>
-}
-
 export function UpdateSettings() {
   const [state, setState] = useState<UpdateState | null>(null)
   const [busy, setBusy] = useState(false)

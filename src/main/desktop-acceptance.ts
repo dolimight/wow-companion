@@ -169,6 +169,17 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`document.querySelector('h1')?.textContent==='Your characters'`, 'roster after update settings')
       return { version: state.currentVersion, channel: state.channel, isolatedUpdatesDisabled: true, nativeSelectAbsent: true }
     })
+    await step('Footer update button opens the update panel and stays inert while acceptance updates are disabled', async () => {
+      await click('Check for application updates')
+      await wait(`!!document.querySelector('.update-popover')`, 'update panel')
+      await wait(`document.querySelector('.update-popover')?.textContent.includes('Updates unavailable')`, 'disabled update panel copy')
+      assert(await evaluate(`![...document.querySelectorAll('.update-popover button')].some(n=>/Check for updates|Download|Restart/.test(n.textContent))`), 'Disabled update panel offered an update action')
+      const state = await evaluate<{ status: string }>(`window.companion.updateState()`)
+      assert(state.status === 'disabled', 'Opening the update panel started an update check')
+      await capture('update-panel-dark', false)
+      await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`)
+      return { panel: 'Updates unavailable', checkStarted: false }
+    })
     await step('Shadcn sidebar drag and keyboard resizing persist across a renderer reload', async () => {
       await wait(`!!document.querySelector('[data-slot="resizable-handle"][aria-label="Resize sidebar"]')`, 'shadcn resize handle')
       const before = await evaluate<number>(`document.querySelector('.sidebar').getBoundingClientRect().width`)
