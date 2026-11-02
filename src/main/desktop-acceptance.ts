@@ -535,10 +535,17 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       const before = await db.call('getCharacter', progressionId)
       assert(before, 'Progression fixture was not saved')
       await wait(`!document.querySelector('.progression-settings button[aria-label="Allow crafted gear"]').disabled`, 'progression preferences loaded')
-      await click('Allow crafted gear')
-      await click('Include Raiding')
-      await click('Include Heroic difficulty')
-      await click('Exclude Vendors')
+      // Programmatic clicks can outpace React commits and reuse the previous draft
+      // Wait for each visible choice before issuing the next interaction
+      for (const [label, pressed] of [
+        ['Allow crafted gear', 'false'],
+        ['Include Raiding', 'true'],
+        ['Include Heroic difficulty', 'true'],
+        ['Exclude Vendors', 'true'],
+      ] as const) {
+        await click(label)
+        await wait(`document.querySelector(${literal(`[aria-label="${label}"]`)})?.getAttribute('aria-pressed')===${literal(pressed)}`, `${label} rendered`)
+      }
       // The save button enables after React renders the edited draft, which a slow runner can delay
       await wait(`[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='Save content preferences'&&!n.disabled)`, 'save content preferences enabled')
       await click('Save content preferences')
