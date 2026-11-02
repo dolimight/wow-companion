@@ -239,13 +239,18 @@ Use PRODUCT.md for durable product constraints and .impeccable/surfaces/src-rend
 
 ## Colors
 
-The palette combines cool paper and silver neutrals with a clear blue interaction accent, with each semantic variable replaced in the dark theme
+The palette combines cool paper and silver neutrals with an icon-selected interaction accent, with each semantic variable replaced in the dark theme
 
 ### Primary
 
-- **Companion blue** (`accent` / `dark-accent`): primary actions, active navigation, focus outlines, progression fills, and the player's standing
-- **Blue wash** (`accent-soft` / `dark-accent-soft`): quiet selected context and blue tags
-- **On accent** (`on-accent` / `dark-on-accent`): text and SVG strokes on filled blue controls, including the selected appearance check
+- **Interaction accent** (`accent` / `dark-accent`): primary actions, active navigation, focus outlines, progression fills, and the player's standing
+- **Selection wash** (`accent-soft` / `dark-accent-soft`): quiet selected context and accent tags
+- **On accent** (`on-accent` / `dark-on-accent`): text and SVG strokes on filled primary controls, including the selected appearance check
+
+The App icon preference also selects the primary color through `data-app-icon` on the document root and `src/renderer/app-accent.css`
+Classic uses the blue values above; Nightly uses violet `#7132c4` in Light and lavender `#c5a0ff` in Dark; Halloween uses burnt orange `#ac4b00` in Light and warm orange `#ffad66` in Dark
+Each variant provides matching `accent-soft`, `on-accent`, and `selected` overrides
+Light, Dark, or System appearance remains independent, including the pure-black dark canvas; item-quality, success, warning, and error colors keep their semantic meanings
 
 ### Secondary
 

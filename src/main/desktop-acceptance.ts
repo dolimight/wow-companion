@@ -193,18 +193,23 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await step('App icons update the sidebar, favicon and native window and preserve the saved choice', async () => {
       await click('Open settings')
       await wait(`!!document.querySelector('[aria-label="App icon"]')`, 'icon picker')
+      const primaryColors = new Set<string>()
       for (const choice of appIconChoices.filter(choice => choice.value !== 'auto')) {
         await choose('App icon', choice.label)
         await waitDb(async () => (await db.call('getSettings')).appIcon === choice.value, `saved ${choice.label}`)
         const variant = resolveAppIcon(choice.value, app.getVersion())
+        await wait(`document.documentElement.dataset.appIcon===${literal(variant)}`, `${choice.label} primary color`)
+        primaryColors.add(await evaluate<string>(`getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()`))
+        assert(await evaluate(`getComputedStyle(document.documentElement).backgroundColor==='rgb(0, 0, 0)'`), 'Icon selection changed the dark canvas')
         const logo = appIconFiles[variant].logo
         await wait(`document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0&&document.querySelector('link[rel="icon"]')?.href.endsWith(${literal(logo)})`, `${choice.label} branding`)
         assert(await evaluate(`window.companion.applyAppIcon()`) === variant, 'Native icon did not use the saved choice')
         await window.loadURL(contents.getURL())
-        await wait(`document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0`, `${choice.label} after reload`)
+        await wait(`document.documentElement.dataset.appIcon===${literal(variant)}&&document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0`, `${choice.label} after reload`)
         await click('Open settings')
         await wait(`document.querySelector('[aria-label="App icon"]')?.dataset.value===${literal(choice.value)}`, `${choice.label} restored picker`)
       }
+      assert(primaryColors.size === 3, 'Each icon must provide a distinct primary color')
       await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
       await capture('app-icon-halloween-dark', false)
       const size = window.getContentSize()

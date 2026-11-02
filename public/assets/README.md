@@ -31,4 +31,5 @@ npm run icons -- --variant halloween
 Settings → Appearance → App icon offers Build default, Classic blue, Nightly purple, and Halloween
 Build default follows the installed version: purple for Nightly, blue for Stable
 The saved choice updates the sidebar, favicon, and running native window or macOS Dock
+The same choice sets the primary color and its selection/focus highlights to Classic blue, Nightly purple, or Halloween orange in either Light or Dark appearance
 Windows pinned shortcuts retain the installer icon; nightly release packaging embeds the purple ICO

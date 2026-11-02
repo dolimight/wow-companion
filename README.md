@@ -19,6 +19,7 @@ Reopening a minimized window restores its previous mode, and disconnected monito
 
 Choose Classic blue, Nightly purple, or Halloween under Settings → Appearance → App icon
 Build default follows the installed release track, and your choice is remembered between launches
+The primary color follows the selected icon while Light, Dark, and System appearance remain separate
 
 An unpacked Windows build is available after running
 

@@ -120,6 +120,7 @@ import type {
 import "./style.css";
 import "./sidebar-settings.css";
 import "./navigation.css";
+import "./app-accent.css";
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -537,6 +538,7 @@ function Shell() {
   const settings = useSettings();
   const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
   useEffect(() => {
+    document.documentElement.dataset.appIcon = appIcon;
     const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (favicon) favicon.href = `${import.meta.env.BASE_URL}assets/${appIconFiles[appIcon].logo}`;
     if (settings.data) void window.companion?.applyAppIcon().catch(error => notify(errorMessage(error)));
@@ -2158,6 +2160,7 @@ function SettingsPage() {
                 <div>
                   <h3>App icon</h3>
                   <p>Build default uses purple for Nightly and blue for Stable</p>
+                  <p>The primary color follows your icon</p>
                   <p>Pinned shortcuts keep the icon from installation</p>
                 </div>
                 <div className="app-icon-control">

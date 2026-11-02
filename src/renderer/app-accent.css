@@ -1,0 +1,25 @@
+/* Icon selection owns brand color; appearance and semantic game colors stay independent */
+:root[data-app-icon="nightly"] {
+  --accent: #7132c4;
+  --accent-soft: #f1eaff;
+  --on-accent: #fff;
+  --selected: #eee5ff;
+}
+:root[data-theme="dark"][data-app-icon="nightly"] {
+  --accent: #c5a0ff;
+  --accent-soft: #251534;
+  --on-accent: #24143b;
+  --selected: #2e1b48;
+}
+:root[data-app-icon="halloween"] {
+  --accent: #ac4b00;
+  --accent-soft: #fff0e1;
+  --on-accent: #fff;
+  --selected: #ffe5cf;
+}
+:root[data-theme="dark"][data-app-icon="halloween"] {
+  --accent: #ffad66;
+  --accent-soft: #301c10;
+  --on-accent: #381a08;
+  --selected: #3b2314;
+}
