@@ -14,6 +14,9 @@ npm run dev
 The app starts empty, stores its SQLite database under Electron's user-data directory, and works offline with saved data
 Add a character or import an addon snapshot to begin
 
+Window size, position, and maximized or fullscreen mode are remembered between launches
+Reopening a minimized window restores its previous mode, and disconnected monitors fall back to the primary display
+
 An unpacked Windows build is available after running
 
 ```powershell
