@@ -539,6 +539,8 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await click('Include Raiding')
       await click('Include Heroic difficulty')
       await click('Exclude Vendors')
+      // The save button enables after React renders the edited draft, which a slow runner can delay
+      await wait(`[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='Save content preferences'&&!n.disabled)`, 'save content preferences enabled')
       await click('Save content preferences')
       await waitDb(async () => {
         const preferences = await db.call('getContentPreferences', progressionId, 'mythicPlus')
