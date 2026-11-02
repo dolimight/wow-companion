@@ -35,7 +35,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     assert(success, `Timed out: ${label} (at ${await evaluate<string>('location.hash')})`)
   }
   // JSON.stringify leaves < > / and the U+2028 and U+2029 separators raw, so escape them before building code
-  const literal = (value: string) => JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (character) => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'))
+  const literal = (value: unknown) => (JSON.stringify(value) ?? 'undefined').replace(/[<>/\u2028\u2029]/g, (character) => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'))
   const click = async (label: string, selector = 'button,a') => {
     const result = await evaluate<boolean>(`(()=>{const nodes=[...document.querySelectorAll(${literal(selector)})];const node=nodes.find(node=>node.getAttribute('aria-label')===${literal(label)})??nodes.find(node=>node.textContent.trim()===${literal(label)});if(!node||node.disabled)return false;node.click();return true})()`)
     assert(result, `Clickable control missing: ${label}`)
@@ -44,10 +44,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await click(label)
     await wait(`!!document.querySelector('[role="option"]')`, `${label} options`)
     await click(option, '[role="option"]')
-    await wait(`document.querySelector(${JSON.stringify(`[aria-label="${label}"]`)})?.getAttribute('aria-expanded')!=='true'`, `${label} selection`)
+    await wait(`document.querySelector(${literal(`[aria-label="${label}"]`)})?.getAttribute('aria-expanded')!=='true'`, `${label} selection`)
   }
   const field = async (label: string, value: string) => {
-    const result = await evaluate<boolean>(`(()=>{const group=[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent.trim()===${JSON.stringify(label)});const node=group?.querySelector('input,textarea');if(!node)return false;const prototype=node.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(prototype,'value').set.call(node,${JSON.stringify(value)});node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}));return true})()`)
+    const result = await evaluate<boolean>(`(()=>{const group=[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent.trim()===${literal(label)});const node=group?.querySelector('input,textarea');if(!node)return false;const prototype=node.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(prototype,'value').set.call(node,${literal(value)});node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}));return true})()`)
     assert(result, `Editable field missing: ${label}`)
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
   }
@@ -88,12 +88,12 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     while (Date.now() < end) { if (await condition()) return; await new Promise((resolve) => setTimeout(resolve, 75)) }
     throw new Error(`Persisted state not observed: ${label}`)
   }
-  const nav = async (label: string, heading: string) => { await click(label, '.navigation a'); await wait(`document.querySelector('h1')?.textContent===${JSON.stringify(heading)}`, heading) }
+  const nav = async (label: string, heading: string) => { await click(label, '.navigation a'); await wait(`document.querySelector('h1')?.textContent===${literal(heading)}`, heading) }
   const openView = async (section: string, view: string) => {
     await click(section, '.navigation a')
-    await wait(`document.querySelector('h1')?.textContent.startsWith(${JSON.stringify(section + ' for')})`, section)
+    await wait(`document.querySelector('h1')?.textContent.startsWith(${literal(section + ' for')})`, section)
     await click(view, '.subnav a')
-    await wait(`document.querySelector('.subnav a[aria-current="page"]')?.textContent===${JSON.stringify(view)}`, section + ' ' + view)
+    await wait(`document.querySelector('.subnav a[aria-current="page"]')?.textContent===${literal(view)}`, section + ' ' + view)
   }
   // Click the whole switcher choice: strong clicks bubble through the real React handler
   const switchCharacter = async (name: string) => {
@@ -107,9 +107,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     }
     await click('Switch character')
     await wait(`document.querySelector('.character-popover')`, 'character switcher')
-    const chosen = await evaluate<boolean>(`(()=>{const node=[...document.querySelectorAll('.switcher-choice')].find(node=>node.querySelector('.identity strong')?.firstChild?.textContent===${JSON.stringify(name)});if(!node)return false;node.click();return true})()`)
+    const chosen = await evaluate<boolean>(`(()=>{const node=[...document.querySelectorAll('.switcher-choice')].find(node=>node.querySelector('.identity strong')?.firstChild?.textContent===${literal(name)});if(!node)return false;node.click();return true})()`)
     assert(chosen, `Switcher character missing: ${name}`)
-    await wait(`document.querySelector('.switcher strong')?.textContent===${JSON.stringify(name)}`, `selected ${name}`)
+    await wait(`document.querySelector('.switcher strong')?.textContent===${literal(name)}`, `selected ${name}`)
   }
 
   try {
@@ -510,7 +510,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       const labels = ['Equipped gear', 'Upgrade gear you own', 'Your content ceiling', 'Season legal maximum', 'Affordable now']
       for (const label of labels) {
         await choose('Progression view', label)
-        await wait(`document.querySelector('.progression-result-heading h2')?.textContent===${JSON.stringify(label)}`, `progression view ${label}`)
+        await wait(`document.querySelector('.progression-result-heading h2')?.textContent===${literal(label)}`, `progression view ${label}`)
       }
       await choose('Progression view', 'Season legal maximum')
       assert(await evaluate(`document.querySelector('.progression-result-value > strong')?.textContent==='Unknown'&&document.querySelector('.progression-result-value .badge')?.textContent==='Unavailable'&&!!document.querySelector('.progression-notice')`), 'Unsupported build displayed a verified numeric maximum')
@@ -559,7 +559,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await click('Mythic+', '.segments button')
       await wait(`document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='false'`, 'return to Mythic+ preferences')
       await switchCharacter('Progression alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${progressionAltId}/gear/progress`)})&&document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='true'`, 'independent alt content preferences')
+      await wait(`location.hash.includes(${literal(`/${progressionAltId}/gear/progress`)})&&document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='true'`, 'independent alt content preferences')
       const altPreferences = await db.call('getContentPreferences', progressionAltId, 'mythicPlus')
       assert(altPreferences.allowCrafting && !altPreferences.difficulties.length && !altPreferences.excludedMethods.length, 'Progression preferences leaked into an alt')
       await switchCharacter('Progression fixture')
@@ -662,7 +662,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(wide.includes('"handles":1') && wide.includes('"menu":false'), 'Wide windows must keep the resizable sidebar without a drawer button: ' + wide)
       for (const [old, now, view] of [['standings', 'performance/standing', 'Your standing'], ['top', 'performance/leaders', 'Leaders'], ['progression', 'gear/progress', 'Progress'], ['inventory', 'gear/owned', 'Owned'], ['simulations', 'gear/simulations', 'Simulations'], ['gear', 'gear/plan', 'Plan']] as const) {
         await window.loadURL(base + `#/characters/${workflowId}/${old}`)
-        await wait(`location.hash.includes(${JSON.stringify('/' + now)})&&document.querySelector('.subnav a[aria-current="page"]')?.textContent===${JSON.stringify(view)}`, `legacy ${old} redirect`)
+        await wait(`location.hash.includes(${literal('/' + now)})&&document.querySelector('.subnav a[aria-current="page"]')?.textContent===${literal(view)}`, `legacy ${old} redirect`)
       }
       await window.loadURL(base + `#/characters/${workflowId}/nonsense`)
       await wait(`document.body.innerText.includes("That page doesn't exist")`, 'unknown section recovery')
@@ -735,7 +735,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`document.querySelector('.simulation-report')?.textContent.includes('Acceptance report bookmark')&&document.body.innerText.includes('Saved import: matches the recorded baseline')`, 'report/profile persistence after reload')
       await capture('simulations-baseline-dark')
       await switchCharacter('Workflow alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/gear/simulations`)})&&document.querySelector('[aria-label="SimulationCraft profile"]')?.value.includes('spec=arcane')`, 'alt simulation baseline')
+      await wait(`location.hash.includes(${literal(`/${workflowAltId}/gear/simulations`)})&&document.querySelector('[aria-label="SimulationCraft profile"]')?.value.includes('spec=arcane')`, 'alt simulation baseline')
       assert(await evaluate(`!document.querySelector('.simulation-report')&&!document.body.innerText.includes('Saved import:')&&!document.body.innerText.includes('Acceptance report bookmark')`), 'Simulation profile or bookmark leaked into another character')
       return { profileExport: true, baselineHashPresent: true, incompleteExecutionDisabled: true, directiveRejected: true, profileReload: true, reportReload: true, characterIsolation: true }
     })
@@ -768,7 +768,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       const originalSize = window.getContentSize()
       try { window.setContentSize(820, 760); await wait(`innerWidth===820`, 'minimum wardrobe width'); assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Wardrobe overflows the minimum desktop width'); await capture('wardrobe-minimum-width') } finally { window.setContentSize(originalSize[0], originalSize[1]) }
       await switchCharacter('Workflow alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/wardrobe`)})&&document.body.innerText.includes('Start an outfit')`, 'isolated alt wardrobe')
+      await wait(`location.hash.includes(${literal(`/${workflowAltId}/wardrobe`)})&&document.body.innerText.includes('Start an outfit')`, 'isolated alt wardrobe')
       assert((await db.call('listOutfits', workflowAltId)).length === 0, 'The outfit was copied to another character')
       await switchCharacter('Workflow fixture')
       await wait(`document.querySelector('.wardrobe-editor input')?.value==='Workflow outfit round trip'`, 'original wardrobe restored')
@@ -821,7 +821,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await capture('comparisons-peers-dark')
       await openView('Performance', 'Your standing')
       await switchCharacter('Workflow alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/performance/standing`)})&&document.querySelector('.comparison-page')`, 'alt comparison context')
+      await wait(`location.hash.includes(${literal(`/${workflowAltId}/performance/standing`)})&&document.querySelector('.comparison-page')`, 'alt comparison context')
       await wait(`!document.querySelector('.comparison-report-list article')`, 'alt report list loaded')
       assert(await evaluate(`!document.body.innerText.includes('Acceptance public report bookmark')`), 'A saved report leaked into another character')
       return { sourceAndSeason: true, noInventedPercentile: true, historyIsolation: true, unsupportedFiltersWithheld: true, publicReportBookmark: true, reportReload: true, characterIsolation: true }
@@ -841,7 +841,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await db.call('setSettings',{theme:variant.theme});await service.changed();window.setContentSize(variant.width,900)
         for(const [name,route,heading]of screens){
           await window.loadURL(contents.getURL().split('#')[0]+'#'+route)
-          await wait(`document.querySelector('h1')?.textContent===${JSON.stringify(heading)}&&document.documentElement.dataset.theme===${JSON.stringify(variant.theme)}`,'polish '+name+' '+variant.theme)
+          await wait(`document.querySelector('h1')?.textContent===${literal(heading)}&&document.documentElement.dataset.theme===${literal(variant.theme)}`,'polish '+name+' '+variant.theme)
           contents.sendInputEvent({type:'mouseMove',x:1,y:1})
           contents.sendInputEvent({type:'keyDown',keyCode:'Escape'});contents.sendInputEvent({type:'keyUp',keyCode:'Escape'})
           await wait(`!document.querySelector('.character-popover')`,'character switcher fully unmounted before screen capture')
