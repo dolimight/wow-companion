@@ -91,6 +91,12 @@ main h1[tabindex]:focus, main h1[tabindex]:focus-visible { outline: none; }
 .settings-dialog [data-slot="dialog-description"] { color: var(--secondary); font-size: 13px; line-height: 1.5; }
 .settings-dialog > [data-slot="dialog-close"] { top: 20px; right: 20px; width: 32px; height: 32px; border-radius: 8px; color: var(--secondary); }
 .settings-dialog > [data-slot="dialog-close"]:hover { background: var(--surface3); color: var(--ink); }
+:root[data-theme="dark"] [data-slot="dialog-content"] > [data-slot="dialog-close"] {
+  background: transparent; color: var(--muted); border-color: transparent;
+}
+:root[data-theme="dark"] [data-slot="dialog-content"] > [data-slot="dialog-close"]:hover {
+  background: var(--surface3); color: var(--ink);
+}
 .settings-dialog-body { overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 0 28px 28px; min-height: 0; scrollbar-gutter: stable; }
 .settings-dialog .settings-page { max-width: none; }
 .settings-dialog .settings-section h2[id] { scroll-margin-top: 76px; }
