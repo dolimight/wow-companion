@@ -370,18 +370,20 @@ export function ProgressionPage({
   const view = result?.[viewKey];
   const selection = views.find((option) => option.value === viewKey)!;
   function setPreference<K extends keyof ContentPreferences>(key: K, value: ContentPreferences[K]) {
-    setDraft({ ...selectedPreferences, [key]: value });
+    setDraft(previous => ({ ...(previous ?? preferences.data ?? defaultContentPreferences(activity)), [key]: value }));
   }
   function toggleList(
     key: "activities" | "difficulties" | "excludedMethods",
     value: string,
     pressed: boolean,
   ) {
-    const next = pressed
-      ? [...new Set([...selectedPreferences[key], value])]
-      : selectedPreferences[key].filter((entry) => entry !== value);
-    if (key === "activities") setPreference("activities", next as Activity[]);
-    else setPreference(key, next);
+    setDraft(previous => {
+      const current = previous ?? preferences.data ?? defaultContentPreferences(activity);
+      const next = pressed
+        ? [...new Set([...current[key], value])]
+        : current[key].filter((entry) => entry !== value);
+      return key === "activities" ? { ...current, activities: next as Activity[] } : { ...current, [key]: next };
+    });
   }
   return (
     <>
