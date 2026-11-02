@@ -311,7 +311,7 @@ The spacing inventory in frontmatter is extracted from observed repeated padding
 - **Gear Progress:** equipment-slot glyphs and locally decoded item artwork pair with text labels in the comparison table; missing artwork uses the slot glyph, and unknown levels use secondary ink. The table and content preferences have 24px separation, stacking below 1300px
 - **Planner:** grouped plan-name and personal-target controls sit above a flexible comparison table, beside a sticky slot editor with 24px separation. Rows use 16px vertical padding, slot glyphs, and genuine item-quality colors when available. The editor moves below the table below 1150px; the table can scroll horizontally
 - **Standings:** three comparison columns with quiet dividing rules
-- **Wardrobe:** model stage and outfit editor use minmax(300px, 1fr) and minmax(0, 1.05fr), separated by 24px; appearance cards form three columns with 10px gaps
+- **Wardrobe:** a 190px saved-outfit list sits beside the editor with 24px separation, becoming a horizontal list below 1000px. Grouped name and save controls lead slot rows with local artwork or slot glyphs, followed by the collection checklist and icon-led preview/import disclosures. The observed-render panel is 220px wide on desktop and becomes a compact row below 1250px; missing or failed artwork uses a quiet placeholder without suggesting a live outfit preview. An empty wardrobe uses the full workspace width
 
 At 1350px and above, body minimum height becomes 850px, page padding becomes 30px 34px, the character gap is 34px, and the stage is 450px tall. At 1100px and below, navigation becomes a 62px icon rail, page padding is 24px, the planner panel narrows to 235px, and slot labels hide
 

@@ -838,9 +838,16 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await waitDb(async () => (await db.call('listOutfits', workflowId)).some(outfit => outfit.name === 'Workflow outfit round trip' && outfit.hiddenSlots.includes('head') && outfit.slots.head?.modifiedAppearanceId === 300), 'outfit code round trip')
       await window.loadURL(contents.getURL())
       await wait(`document.querySelector('.wardrobe-editor input')?.value==='Workflow outfit round trip'`, 'saved outfit after reload')
-      await capture('wardrobe-outfit-dark')
       const originalSize = window.getContentSize()
-      try { window.setContentSize(820, 760); await wait(`innerWidth===820`, 'minimum wardrobe width'); assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Wardrobe overflows the minimum desktop width'); await capture('wardrobe-minimum-width') } finally { window.setContentSize(originalSize[0], originalSize[1]) }
+      try {
+        for (const variant of [{ theme: 'dark' as const, width: 1460 }, { theme: 'light' as const, width: 820 }]) {
+          await db.call('setSettings', { theme: variant.theme }); await service.changed()
+          window.setContentSize(variant.width, 900)
+          await wait(`innerWidth===${variant.width}&&document.documentElement.dataset.theme===${literal(variant.theme)}`, 'wardrobe layout ' + variant.theme)
+          assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Wardrobe overflows at ' + variant.width)
+          await capture(`wardrobe-outfit-${variant.theme}-${variant.width}`)
+        }
+      } finally { window.setContentSize(originalSize[0], originalSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
       await switchCharacter('Workflow alt')
       await wait(`location.hash.includes(${literal(`/${workflowAltId}/wardrobe`)})&&document.body.innerText.includes('Start an outfit')`, 'isolated alt wardrobe')
       assert((await db.call('listOutfits', workflowAltId)).length === 0, 'The outfit was copied to another character')
