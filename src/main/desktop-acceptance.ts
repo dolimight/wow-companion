@@ -2,6 +2,7 @@ import { app, type BrowserWindow } from 'electron'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { DatabaseClient } from './database'
+import { checkWindowPlacement } from './window-placement-acceptance'
 
 type Step = { name: string; status: 'pass' | 'fail' | 'skip'; detail?: unknown }
 export type DesktopAcceptanceReport = { startedAt: string; finishedAt?: string; passed: boolean; steps: Step[]; screenshots: string[]; consoleErrors: string[]; debugger?: { attached: boolean; pauses: Array<{ reason: string; functionName?: string; url?: string }>; exceptions: string[]; probe?: unknown }; gpu?: unknown }
@@ -264,6 +265,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(!window.isMaximized(), 'Electron window did not restore')
       return { platform: state.platform, controls: state.controls, overlay, actualMaximizeRestore: true, nativeButtonClicksAutomated: false, macRuntimeTested: false }
     })
+    await step('Window size, maximized and fullscreen modes survive closing and reopening', () => checkWindowPlacement(outputDir))
     const seeded = await step('Roster overview contains four isolated fictional characters', async () => {
       await db.call('seedDemo')
       await db.call('addCharacter', { id: 'acceptance-cinder', name: 'Cinder', region: 'us', realm: 'Acceptance Realm', className: 'Warlock', demo: true })

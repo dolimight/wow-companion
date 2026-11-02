@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, safeStorage, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, safeStorage, screen, shell } from 'electron'
 import { mkdirSync } from 'node:fs'
 import { readFile, writeFile, mkdir, realpath, stat, rename } from 'node:fs/promises'
 import { dirname, extname, resolve, sep } from 'node:path'
@@ -13,6 +13,7 @@ import type { WindowState } from '../shared/bridge'
 import { createUpdateService, type UpdatePreferences } from './updates/service'
 import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
+import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
 
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
@@ -26,6 +27,7 @@ let window:BrowserWindow|null=null
 let cleanup:(()=>Promise<void>)|undefined
 let closing=false
 let installingUpdate=false
+let saveWindowPlacement:(()=>void)|undefined
 const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: wow-asset:; connect-src 'self' blob: data: ws://127.0.0.1:* wow-asset:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'"
 async function main(){
   const userDir=process.env.WOW_COMPANION_DATA_DIR?resolve(process.env.WOW_COMPANION_DATA_DIR):app.getPath('userData')
@@ -50,6 +52,7 @@ async function main(){
     writePreferences:async(value:UpdatePreferences)=>{const temporary=updatePreferences+'.tmp';await writeFile(temporary,JSON.stringify(value),{encoding:'utf8',mode:0o600});await rename(temporary,updatePreferences)},
     blockers:()=>[...(Date.now()-updateBlockerAcknowledgedAt>10_000?['Waiting for the app to confirm that your work is saved']:[]),...(service.simulations.busy?['A simulation or simulation save is in progress']:[]),...(service.sync.state.running?['Character sync is in progress']:[]),...(nativeOperations?['A file import, backup, or other file action is in progress']:[])],
     beforeInstall:async()=>{
+      saveWindowPlacement?.()
       installingUpdate=true
       try{
         const backup=await db.call('exportBackup')
@@ -111,7 +114,11 @@ async function main(){
   if(process.platform==='win32')app.setAppUserModelId('local.wowcompanion.desktop')
   if(process.platform==='darwin')app.dock?.setIcon(windowIcon)
   const titleBarOverlay=()=>({color:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',symbolColor:nativeTheme.shouldUseDarkColors?'#f5f5f5':'#1c2430',height:48})
-  window=new BrowserWindow({title:'WOW Companion',width:1460,height:1050,minWidth:820,minHeight:650,show:false,backgroundColor:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',autoHideMenuBar:true,icon:windowIcon,...(process.platform==='darwin'?{titleBarStyle:'hiddenInset' as const,trafficLightPosition:{x:14,y:16}}:{titleBarStyle:'hidden' as const,titleBarOverlay:titleBarOverlay()}),webPreferences:{preload:resolve(root,'../preload/index.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true,offscreen:process.env.WOW_COMPANION_HEADLESS==='1',backgroundThrottling:process.env.WOW_COMPANION_HEADLESS!=='1'}})
+  const placementFile=resolve(userDir,'window-placement.json')
+  const placement=readWindowPlacement(placementFile,[screen.getPrimaryDisplay().workArea,...screen.getAllDisplays().filter(display=>display.id!==screen.getPrimaryDisplay().id).map(display=>display.workArea)])
+  window=new BrowserWindow({title:'WOW Companion',...placement.bounds,...minimumWindowSize,show:false,backgroundColor:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',autoHideMenuBar:true,icon:windowIcon,...(process.platform==='darwin'?{titleBarStyle:'hiddenInset' as const,trafficLightPosition:{x:14,y:16}}:{titleBarStyle:'hidden' as const,titleBarOverlay:titleBarOverlay()}),webPreferences:{preload:resolve(root,'../preload/index.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true,offscreen:process.env.WOW_COMPANION_HEADLESS==='1',backgroundThrottling:process.env.WOW_COMPANION_HEADLESS!=='1'}})
+  const rememberedWindow=rememberWindowPlacement(window,placementFile,placement)
+  saveWindowPlacement=rememberedWindow.save
   const publishWindowState=()=>{if(window&&!window.webContents.isDestroyed())window.webContents.send('companion:window-state-changed',windowState())}
   window.on('maximize',publishWindowState)
   window.on('unmaximize',publishWindowState)
@@ -123,7 +130,7 @@ async function main(){
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}))
   window.webContents.on('will-navigate',(event,url)=>{if(!origins.includes(rendererOrigin(url)??''))event.preventDefault()})
   window.webContents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false))
-  window.once('ready-to-show',()=>{if(!process.env.WOW_COMPANION_HEADLESS)window?.show()})
+  window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show()})
   window.on('closed',()=>{window=null})
   if(devUrl)await window.loadURL(devUrl);else await window.loadURL('app://companion/index.html')
   updates.startPolling()
@@ -131,5 +138,5 @@ async function main(){
   if(process.argv.includes('--smoke')){const result=await window.webContents.executeJavaScript(`new Promise(resolve=>{let n=0;const t=setInterval(()=>{if(document.querySelector('h1')||++n>100){clearInterval(t);resolve({title:document.title,heading:document.querySelector('h1')?.textContent,body:document.body.innerText.slice(0,500)})}},100)})`);console.log('COMPANION_SMOKE',JSON.stringify(result));app.quit()}
 }
 app.on('window-all-closed',()=>app.quit())
-app.on('before-quit',event=>{if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
+app.on('before-quit',event=>{saveWindowPlacement?.();if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
 app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})
