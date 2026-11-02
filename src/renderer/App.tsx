@@ -54,6 +54,7 @@ import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
 import { errorMessage, notify, setToastDispatch } from "./lib/notify";
 import { Term } from "./components/Term";
+import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
@@ -92,6 +93,7 @@ import { comparePlanCompletion } from "../shared/plan-completion";
 import { SyncButton, SyncSheet, useSyncOnFocus } from "./features/sync/sync";
 import { AppSelect } from "./components/AppSelect";
 import { Toggle } from "./components/ui/toggle";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./components/ui/tooltip";
 import { DEFAULT_SIDEBAR_WIDTH, useSidebarLayout } from "./components/SidebarResize";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "./components/ui/resizable";
@@ -605,7 +607,12 @@ function Shell() {
     return () => media.removeEventListener("change", apply);
   }, [settings.data]);
   const destination = match ? sameDestinationFor(currentPath) : null;
-  const isSettings = currentPath === "/settings";
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setSettingsOpen(true);
+    window.addEventListener(openSettingsEvent, open);
+    return () => window.removeEventListener(openSettingsEvent, open);
+  }, []);
   const isSetup = currentPath === "/setup";
   const isWeek = currentPath === "/week";
   const isTonight = currentPath === "/tonight";
@@ -618,9 +625,7 @@ function Shell() {
   };
   const title = isTonight
     ? "Tonight"
-    : isSettings
-      ? "Settings"
-      : isSetup
+    : isSetup
         ? "Setup"
         : isWeek
           ? "This week"
@@ -730,15 +735,16 @@ function Shell() {
       )}
       <div className="sidebar-footer">
         <SyncButton onClick={() => setSheet("sync")} />
-        <UpdateButton onOpenSettings={() => void navigate({ to: '/settings' })} />
+        <UpdateButton onOpenSettings={openSettings} />
         <Tooltip>
           <TooltipTrigger
             render={
-              <Link
-                to="/settings"
-                className={`footer-icon ${isSettings ? "active" : ""}`}
+              <button
+                type="button"
+                className={`footer-icon ${settingsOpen ? "active" : ""}`}
                 aria-label="Open settings"
-                aria-current={isSettings ? "page" : undefined}
+                aria-haspopup="dialog"
+                onClick={() => setSettingsOpen(true)}
               />
             }
           >
@@ -836,6 +842,7 @@ function Shell() {
       <div className="sr-only" role="status" aria-live="polite">{title}</div>
       <AddCharacter open={sheet === "add"} onOpenChange={(o) => !o && setSheet(null)} />
       <SyncSheet open={sheet === "sync"} onOpenChange={(o) => !o && setSheet(null)} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <ManagePanel open={sheet === "manage"} onOpenChange={(o) => !o && setSheet(null)} />
       <ItemSearchDialog
         open={searchOpen}
@@ -1358,6 +1365,53 @@ function OverviewPage({ character }: { character: Character }) {
         <div className="progress-section">
           <section className="surface">
             <div className="surface-heading">
+              <h2>Next steps</h2>
+            </div>
+            <div className="next-action-list">
+              <div className="action-row">
+                <Sparkles />
+                <div>
+                  <h3>{action.title}</h3>
+                  <p>{action.description}</p>
+                </div>
+                <CharacterLink
+                  characterId={character.id}
+                  destination={{ section: "gear", view: "progress" }}
+                  className="button button-primary"
+                >
+                  Review gear
+                </CharacterLink>
+              </div>
+              {needsGear && (
+                <div className="action-row">
+                  <Upload />
+                  <div>
+                    <h3>Capture equipped gear in game</h3>
+                    <p>Export with the addon, then reload the UI or log out to write SavedVariables</p>
+                  </div>
+                  <Link className="button" to="/setup">
+                    Open setup
+                  </Link>
+                </div>
+              )}
+              <div className="action-row">
+                <Crown />
+                <div>
+                  <h3>Compare with other {character.specName !== "Unknown" ? character.specName : ""} {character.className} players</h3>
+                  <p>See the gear and builds the highest-rated players in your sample use</p>
+                </div>
+                <CharacterLink
+                  characterId={character.id}
+                  destination={{ section: "performance", view: "leaders" }}
+                  className="button"
+                >
+                  Open leaders
+                </CharacterLink>
+              </div>
+            </div>
+          </section>
+          <section className="surface">
+            <div className="surface-heading">
               <h2>Gear gap</h2>
               <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-primary">
                 Review gear <ArrowRight size={14} />
@@ -1429,53 +1483,6 @@ function OverviewPage({ character }: { character: Character }) {
             <ExternalSource url={character.ratings[activity]?.sourceUrl}>
               Open source profile externally
             </ExternalSource>
-          </section>
-          <section className="surface">
-            <div className="surface-heading">
-              <h2>Next steps</h2>
-            </div>
-            <div className="next-action-list">
-              <div className="action-row">
-                <Sparkles />
-                <div>
-                  <h3>{action.title}</h3>
-                  <p>{action.description}</p>
-                </div>
-                <CharacterLink
-                  characterId={character.id}
-                  destination={{ section: "gear", view: "progress" }}
-                  className="button button-primary"
-                >
-                  Review gear
-                </CharacterLink>
-              </div>
-              {needsGear && (
-                <div className="action-row">
-                  <Upload />
-                  <div>
-                    <h3>Capture equipped gear in game</h3>
-                    <p>Export with the addon, then reload the UI or log out to write SavedVariables</p>
-                  </div>
-                  <Link className="button" to="/setup">
-                    Open setup
-                  </Link>
-                </div>
-              )}
-              <div className="action-row">
-                <Crown />
-                <div>
-                  <h3>Compare with other {character.specName !== "Unknown" ? character.specName : ""} {character.className} players</h3>
-                  <p>See the gear and builds the highest-rated players in your sample use</p>
-                </div>
-                <CharacterLink
-                  characterId={character.id}
-                  destination={{ section: "performance", view: "leaders" }}
-                  className="button"
-                >
-                  Open leaders
-                </CharacterLink>
-              </div>
-            </div>
           </section>
           <CharacterWeek
             character={character}
@@ -1658,16 +1665,15 @@ function GearEditor({
       <div className="gear-summary">
         <Metrics character={character} planned={draftLevel} />
       </div>
-      {blocker.status === "blocked" && (
-        <div className="plan-unsaved" role="alert">
-          <p>This plan has unsaved changes</p>
-          <div className="actions">
-            <Button onClick={() => blocker.reset()}>Keep editing</Button>
-            <Button variant="primary" disabled={save.isPending} onClick={() => savePlan(() => blocker.proceed())}>Save and leave</Button>
-            <Button variant="quiet" onClick={() => { gearMemory.delete(memoryKey); blocker.proceed(); }}>Leave without saving</Button>
-          </div>
-        </div>
-      )}
+      <LeaveGuard
+        open={blocker.status === "blocked"}
+        title="Leave this plan without saving?"
+        description="This plan has changes that are not saved"
+        saving={save.isPending}
+        onKeep={() => blocker.status === "blocked" && blocker.reset()}
+        onSave={() => savePlan(() => blocker.proceed?.())}
+        onDiscard={() => { gearMemory.delete(memoryKey); blocker.proceed?.(); }}
+      />
       {query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
@@ -2015,6 +2021,34 @@ function AddCharacter({
     </Sheet>
   );
 }
+const openSettingsEvent = "wow-companion:open-settings";
+function openSettings() {
+  window.dispatchEvent(new Event(openSettingsEvent));
+}
+/** Settings opens over whatever the player is doing, so closing it never loses their place */
+function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="settings-dialog sm:max-w-[920px]" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Make WOW Companion feel at home on your desktop</DialogDescription>
+        </DialogHeader>
+        <div className="settings-dialog-body">
+          <SettingsPage />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+function SettingsRedirect() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    void navigate({ to: "/characters", replace: true });
+    openSettings();
+  }, [navigate]);
+  return null;
+}
 function SettingsPage() {
   const settings = useSettings();
   const save = useAction(api.saveSettings, "Preferences saved");
@@ -2041,12 +2075,6 @@ function SettingsPage() {
   }
   return (
     <div className="settings-page">
-      <div className="page-heading">
-        <div>
-          <h1>Settings</h1>
-          <p>Make WOW Companion feel at home on your desktop</p>
-        </div>
-      </div>
       {settings.isPending ? (
         <div className="loading-surface" role="status">
           Loading preferences…
@@ -2343,7 +2371,7 @@ const characterViewRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: SettingsPage,
+  component: SettingsRedirect,
 });
 function SetupRoute() {
   const [adding, setAdding] = useState(false);

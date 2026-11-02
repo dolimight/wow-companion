@@ -870,8 +870,13 @@ textarea::placeholder {
 }
 .overview-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 28px;
+  align-items: start;
+}
+.overview-layout > .character-surface {
+  position: sticky;
+  top: 0;
 }
 .character-identity {
   display: flex;
@@ -1848,12 +1853,23 @@ input[type="checkbox"] {
   flex-direction: column;
 }
 .character-surface .portrait-preview {
-  flex: 1;
+  flex: none;
   height: auto;
-  min-height: 300px;
+  min-height: 0;
+  margin: 14px auto 18px;
+  gap: 8px;
 }
 .character-surface .portrait-preview img {
-  height: 380px;
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.character-surface .portrait-preview.empty-portrait {
+  width: 200px;
+  height: 200px;
+}
+.character-surface .portrait-preview figcaption {
+  text-align: center;
 }
 .character-surface > .button {
   align-self: flex-start;
@@ -1871,19 +1887,6 @@ input[type="checkbox"] {
 }
 .wardrobe-layout .model-stage-disclosure {
   padding-inline: 0;
-}
-@media (max-width: 1200px) {
-  .character-surface .portrait-preview img {
-    height: 300px;
-  }
-}
-@media (max-width: 850px) {
-  .character-surface .portrait-preview {
-    min-height: 0;
-  }
-  .character-surface .portrait-preview img {
-    height: 260px;
-  }
 }
 .standings-sources {
   display: flex;

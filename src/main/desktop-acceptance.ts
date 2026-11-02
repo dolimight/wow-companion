@@ -144,8 +144,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     if (!emptyWorkspace) return report
     await step('Settings page preserves custom dropdown and toggle preferences with a pure-black theme', async () => {
       await click('Open settings')
-      await wait(`location.hash.includes('/settings')&&document.querySelector('h1')?.textContent==='Settings'`, 'dedicated settings route')
-      assert(await evaluate(`!document.querySelector('[role="dialog"]')`), 'Settings still opens in a dialog')
+      await wait(`document.querySelector('[role="dialog"] [data-slot="dialog-title"]')?.textContent==='Settings'`, 'settings modal over the current page')
       await choose('Appearance', 'Dark')
       await waitDb(async () => (await db.call('getSettings')).theme === 'dark', 'saved dark appearance')
       await wait(`getComputedStyle(document.documentElement).backgroundColor==='rgb(0, 0, 0)'`, 'pure-black ground')
@@ -155,7 +154,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await click('Reduce motion')
       await waitDb(async () => (await db.call('getSettings')).reducedMotion === true, 'shadcn motion toggle')
       await window.loadURL(contents.getURL())
-      await wait(`location.hash.includes('/settings')&&document.querySelector('[aria-label="Appearance"]')?.dataset.value==='dark'&&document.querySelector('[aria-label="Reduce motion"]')?.getAttribute('aria-pressed')==='true'`, 'custom settings controls after reload')
+      await wait(`!!document.querySelector('[aria-label="Open settings"]')`, 'app after reload')
+      await click('Open settings')
+      await wait(`document.querySelector('[aria-label="Appearance"]')?.dataset.value==='dark'&&document.querySelector('[aria-label="Reduce motion"]')?.getAttribute('aria-pressed')==='true'`, 'custom settings controls after reload')
       assert(await evaluate(`!document.querySelector('select,input[type="checkbox"]')`), 'Native selection controls remain in the settings UI')
       await click('Reduce motion')
       await waitDb(async () => (await db.call('getSettings')).reducedMotion === false, 'motion toggle off')
@@ -164,13 +165,16 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`document.querySelectorAll('[role="option"]').length===3`, 'custom theme popup')
       await capture('settings-dropdown-black')
       await click('Dark', '[role="option"]')
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`!document.querySelector('[role="dialog"]')`, 'Escape closes settings')
       await click('Characters', '.navigation a')
       await wait(`document.body.innerText.includes('Bring your characters together')`, 'return to empty roster')
-      return { savedTheme: (await db.call('getSettings')).theme, page: '/settings', background: 'rgb(0, 0, 0)' }
+      return { savedTheme: (await db.call('getSettings')).theme, page: 'settings modal', background: 'rgb(0, 0, 0)' }
     })
     await step('Update settings expose version and track with isolated acceptance updates disabled', async () => {
       await click('Open settings')
-      await wait(`document.querySelector('h1')?.textContent==='Settings'`, 'update settings route')
+      await wait(`document.querySelector('[role="dialog"] [data-slot="dialog-title"]')?.textContent==='Settings'`, 'update settings modal')
       await wait(`document.querySelector('.updates-settings')?.textContent.includes('Version ')`, 'installed updater version')
       const state = await evaluate<{ status: string; channel: string; currentVersion: string; disabledReason: string | null }>(`window.companion.updateState()`)
       assert(state.status === 'disabled' && !!state.disabledReason && !!state.currentVersion, 'Acceptance updater was enabled or missing its version')
@@ -179,6 +183,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await capture('updates-settings-dark', false)
       const check = await evaluate<{ status: string }>(`window.companion.checkForUpdates()`)
       assert(check.status === 'disabled', 'Isolated acceptance performed an update check')
+
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`!document.querySelector('[role="dialog"]')`, 'Escape closes settings')
       await click('Characters', '.navigation a')
       await wait(`document.querySelector('h1')?.textContent==='Characters'`, 'roster after update settings')
       return { version: state.currentVersion, channel: state.channel, isolatedUpdatesDisabled: true, nativeSelectAbsent: true }
@@ -216,9 +224,12 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-${saved})<2`, 'sidebar width after reload')
       await capture('sidebar-resized-black')
       await click('Open settings')
-      await wait(`document.querySelector('h1')?.textContent==='Settings'`, 'sidebar reset settings')
+      await wait(`document.querySelector('[role="dialog"] [data-slot="dialog-title"]')?.textContent==='Settings'`, 'sidebar reset settings')
       await click('Reset width')
       await waitDb(async () => (await db.call('getSettings')).sidebarWidth === 240, 'reset sidebar width')
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`!document.querySelector('[role="dialog"]')`, 'Escape closes settings')
       await click('Characters', '.navigation a')
       return { before, saved, library: 'shadcn Base UI Resizable / react-resizable-panels' }
     })
@@ -686,9 +697,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`location.hash.includes('/gear/plan')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')&&document.querySelector('.save-status')?.textContent.includes('Unsaved changes')`, 'staged copy opens Plan as an unsaved draft')
       assert(!(await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes'), 'Staging saved the plan before Save plan')
       await click('Overview', '.navigation a')
-      await wait(`!!document.querySelector('.plan-unsaved')&&location.hash.includes('/gear/plan')`, 'unsaved plan blocks leaving')
+      await wait(`document.querySelector('[role="alertdialog"]')?.textContent.includes('Leave this plan without saving?')&&location.hash.includes('/gear/plan')`, 'unsaved plan blocks leaving')
       await click('Keep editing')
-      await wait(`!document.querySelector('.plan-unsaved')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')`, 'keep editing preserves the draft')
+      await wait(`!document.querySelector('[role="alertdialog"]')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')`, 'keep editing preserves the draft')
       await click('Save plan')
       await waitDb(async () => (await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes') ?? false, 'saved staged plan')
       await click('Overview', '.navigation a')
@@ -817,7 +828,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     let deletionId = ''
     await step('Every polished screen fits dark desktop and light minimum-width layouts',async()=>{
       const unknown=await db.call('addCharacter',{name:'Polish unknown spec',region:'us',realm:'Acceptance Realm',className:'Mage',specId:null})
-      const screens=[['characters',`/characters?selected=${workflowId}`,'Characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear for Workflow fixture'],['gear',`/characters/${workflowId}/gear`,'Gear for Workflow fixture'],['inventory',`/characters/${workflowId}/inventory`,'Gear for Workflow fixture'],['simulations',`/characters/${workflowId}/simulations`,'Gear for Workflow fixture'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe for Workflow fixture'],['standings',`/characters/${workflowId}/standings`,'Performance for Workflow fixture'],['top',`/characters/${unknown.id}/top`,`Performance for ${unknown.name}`],['settings','/settings','Settings']]
+      const screens=[['characters',`/characters?selected=${workflowId}`,'Characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear for Workflow fixture'],['gear',`/characters/${workflowId}/gear`,'Gear for Workflow fixture'],['inventory',`/characters/${workflowId}/inventory`,'Gear for Workflow fixture'],['simulations',`/characters/${workflowId}/simulations`,'Gear for Workflow fixture'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe for Workflow fixture'],['standings',`/characters/${workflowId}/standings`,'Performance for Workflow fixture'],['top',`/characters/${unknown.id}/top`,`Performance for ${unknown.name}`]]
       const size=window.getContentSize()
       try{for(const variant of [{theme:'dark' as const,width:1460},{theme:'light' as const,width:820}]){
         await db.call('setSettings',{theme:variant.theme});await service.changed();window.setContentSize(variant.width,900)
