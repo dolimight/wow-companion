@@ -34,8 +34,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     const success = await evaluate<boolean>(`new Promise(resolve=>{const until=Date.now()+${timeout};const check=()=>{try{if(${expression})return resolve(true)}catch{}if(Date.now()>until)return resolve(false);setTimeout(check,50)};check()})`)
     assert(success, `Timed out: ${label} (at ${await evaluate<string>('location.hash')})`)
   }
+  // JSON.stringify leaves < > / and the U+2028 and U+2029 separators raw, so escape them before building code
+  const literal = (value: string) => JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (character) => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'))
   const click = async (label: string, selector = 'button,a') => {
-    const result = await evaluate<boolean>(`(()=>{const nodes=[...document.querySelectorAll(${JSON.stringify(selector)})];const node=nodes.find(node=>node.getAttribute('aria-label')===${JSON.stringify(label)})??nodes.find(node=>node.textContent.trim()===${JSON.stringify(label)});if(!node||node.disabled)return false;node.click();return true})()`)
+    const result = await evaluate<boolean>(`(()=>{const nodes=[...document.querySelectorAll(${literal(selector)})];const node=nodes.find(node=>node.getAttribute('aria-label')===${literal(label)})??nodes.find(node=>node.textContent.trim()===${literal(label)});if(!node||node.disabled)return false;node.click();return true})()`)
     assert(result, `Clickable control missing: ${label}`)
   }
   const choose = async (label: string, option: string) => {
