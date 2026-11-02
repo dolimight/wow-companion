@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
-import { addItemToPlan, gearMemory, itemToGear, pickPlanSlot, planKey } from './plan-item'
+import { addItemToPlan, authoredGoals, gearMemory, itemToGear, pickPlanSlot, planKey, stagePlanItem } from './plan-item'
 import { characterSchema } from '../../shared/domain'
 import { api } from './client'
 import type { GearItem } from '../../shared/domain'
@@ -72,5 +72,49 @@ describe('plan item placement', () => {
     expect(planned.itemId).toBe(42)
     expect(planned.itemLevel).toBe(720)
     expect(planned.enchant).toBeNull()
+  })
+})
+
+describe('shared plan staging policy', () => {
+  const dk = () => characterSchema.parse({ id: 'dk', name: 'Astra', region: 'us', realm: 'One', className: 'Death Knight', specId: 250, level: 90, gear: [gear('head', 7)] })
+  const plate = { ...item, classId: 4, subclassId: 4, allowableClassMask: -1, specIds: [], primaryStats: ['strength' as const] }
+  it('puts a target on a slot that still holds the observed item without asking', async () => {
+    expect(await stagePlanItem({ character: dk(), activity: 'mythicPlus', item: plate, preferredSlot: 'head' })).toEqual({ status: 'added', slot: 'head' })
+    const staged = gearMemory.get(planKey('dk', 'mythicPlus', 250))
+    expect(staged?.dirty).toBe(true)
+    expect(staged?.items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
+  })
+  it('treats the identical exact variant as a no-op that keeps authored goals', async () => {
+    const character = dk()
+    await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })
+    const key = planKey('dk', 'mythicPlus', 250), memory = gearMemory.get(key)!
+    gearMemory.set(key, { ...memory, items: memory.items.map(entry => ({ ...entry, enchant: 'Authored enchant' })) })
+    expect(await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })).toEqual({ status: 'noop', slot: 'head' })
+    expect(gearMemory.get(key)?.items.find(entry => entry.slot === 'head')?.enchant).toBe('Authored enchant')
+  })
+  it('asks before replacing a different target, then clears the old goals on confirmation', async () => {
+    const character = dk()
+    await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })
+    const key = planKey('dk', 'mythicPlus', 250), memory = gearMemory.get(key)!
+    gearMemory.set(key, { ...memory, items: memory.items.map(entry => ({ ...entry, enchant: 'Old enchant', gems: ['Old gem'] })) })
+    const other = { ...plate, id: 99, name: 'Other Helm' }
+    const conflict = await stagePlanItem({ character, activity: 'mythicPlus', item: other, preferredSlot: 'head' })
+    expect(conflict.status).toBe('conflict')
+    expect(gearMemory.get(key)?.items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
+    if (conflict.status === 'conflict') expect(authoredGoals(conflict.current)).toEqual(['Item level 720', 'Enchant: Old enchant', 'Gems: Old gem'])
+    expect(await stagePlanItem({ character, activity: 'mythicPlus', item: other, preferredSlot: 'head', replace: true })).toEqual({ status: 'replaced', slot: 'head' })
+    const replaced = gearMemory.get(key)?.items.find(entry => entry.slot === 'head')
+    expect(replaced).toMatchObject({ itemId: 99, enchant: null, gems: [] })
+  })
+  it('keeps the exact owned copy identity without turning observed enhancements into goals', async () => {
+    const owned = { ...gear('head', 555), itemLink: '|cnIQ4:|Hitem:555|h[Owned]|h|r', instanceId: 'abc', enchant: 'Observed enchant', gems: ['Observed gem'] }
+    vi.mocked(api.getItem).mockResolvedValue(null as never)
+    expect(await stagePlanItem({ character: dk(), activity: 'mythicPlus', exact: owned })).toEqual({ status: 'added', slot: 'head' })
+    expect(gearMemory.get(planKey('dk', 'mythicPlus', 250))?.items.find(entry => entry.slot === 'head')).toMatchObject({ itemId: 555, itemLink: owned.itemLink, instanceId: 'abc', enchant: null, gems: [] })
+  })
+  it('does not stage an item the class cannot use', async () => {
+    const mage = characterSchema.parse({ id: 'mage', name: 'Astra', region: 'us', realm: 'One', className: 'Mage', specId: 62, level: 90 })
+    expect(await stagePlanItem({ character: mage, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })).toEqual({ status: 'incompatible' })
+    expect(gearMemory.size).toBe(0)
   })
 })

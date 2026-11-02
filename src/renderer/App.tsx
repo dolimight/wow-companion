@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,7 +9,10 @@ import {
   Outlet,
   RouterProvider,
   Link,
+  useBlocker,
   useNavigate,
+  useParams,
+  useRouter,
   useRouterState,
 } from "@tanstack/react-router";
 import {
@@ -23,16 +26,17 @@ import {
 import {
   Archive,
   ArrowDownUp,
+  ArrowLeft,
   ArrowRight,
   CalendarClock,
   Check,
-  ChevronDown,
-  ChevronRight,
+  ChevronsUpDown,
   CircleHelp,
   Crown,
   Download,
   ExternalLink,
   Info,
+  Menu,
   Plus,
   RefreshCw,
   Search,
@@ -50,26 +54,46 @@ import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
 import { errorMessage, notify, setToastDispatch } from "./lib/notify";
 import { Term } from "./components/Term";
+import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
 import { clearRenamedPlanIdentity, isPlannedItemEquipped } from "./lib/gear-plan-match";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
+import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { TopPlayersPage } from "./features/top/top-players";
-import { ProgressionPage, ProgressionSummary } from "./features/progression/progression";
+import { useStagePlan } from "./features/plan/StagePlan";
+import { vaultTracks } from "../shared/weekly";
+import { ProgressionPage, ProgressionSummary, useSeasonCeiling } from "./features/progression/progression";
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
-import { UpdateSettings, UpdateIndicator } from "./features/updates/UpdateSettings";
+import { UpdateSettings } from "./features/updates/UpdateSettings";
+import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
+import {
+  defaultDestination,
+  destinationLabel,
+  destinationPath,
+  gearViewLabels,
+  gearViews,
+  performanceViewLabels,
+  performanceViews,
+  resolveCharacterPath,
+  safeReturn,
+  sameDestinationFor,
+  sectionLabels,
+  type CharacterDestination,
+  type CharacterSection,
+} from "./lib/destinations";
 import { InventoryPage } from "./features/inventory/InventoryPage";
-import { ComparisonPage } from "./features/comparisons/ComparisonPage";
 import {ProviderSettings} from './features/comparisons/ProviderSettings';
 import { comparePlanCompletion } from "../shared/plan-completion";
 import { SyncButton, SyncSheet, useSyncOnFocus } from "./features/sync/sync";
 import { AppSelect } from "./components/AppSelect";
 import { Toggle } from "./components/ui/toggle";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./components/ui/tooltip";
 import { DEFAULT_SIDEBAR_WIDTH, useSidebarLayout } from "./components/SidebarResize";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "./components/ui/resizable";
@@ -93,6 +117,7 @@ import type {
 } from "../shared/domain";
 import "./style.css";
 import "./sidebar-settings.css";
+import "./navigation.css";
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -126,6 +151,12 @@ const slotNames: Record<string, string> = {
   shirt: "Shirt",
   tabard: "Tabard",
 };
+const characterSections: Array<{ id: CharacterSection; label: string; icon: typeof Shield }> = [
+  { id: "overview", label: "Overview", icon: Shield },
+  { id: "gear", label: "Gear", icon: WandSparkles },
+  { id: "performance", label: "Performance", icon: Trophy },
+  { id: "wardrobe", label: "Wardrobe", icon: Star },
+];
 const allSlots: GearSlot[] = [
   "head",
   "neck",
@@ -329,7 +360,9 @@ function Portrait({ character }: { character: Character }) {
     </div>
   );
 }
-function Metrics({ character, planned }: { character: Character; planned?: number | null }) {
+function Metrics({ character, planned, activity }: { character: Character; planned?: number | null; activity?: Activity }) {
+  const own = useActivity(character.id).activity;
+  const ceiling = useSeasonCeiling(character.id, activity ?? own);
   return (
     <div className="metric-strip">
       <div>
@@ -341,13 +374,13 @@ function Metrics({ character, planned }: { character: Character; planned?: numbe
         <strong data-unknown={(planned ?? character.targetItemLevel) == null}>{level(planned ?? character.targetItemLevel)}</strong>
       </div>
       <div>
-        <small>Legal max</small>
-        <strong data-unknown={character.maxItemLevel == null}>{level(character.maxItemLevel)}</strong>
+        <small>{ceiling.exact || ceiling.level == null ? "Legal max" : "Best known"}</small>
+        <strong data-unknown={ceiling.level == null}>{level(ceiling.level)}</strong>
       </div>
     </div>
   );
 }
-function nextAction(character: Character) {
+function nextAction(character: Character, hasCeiling: boolean) {
   if (!character.observedAt)
     return {
       title: "Import a character snapshot",
@@ -376,7 +409,7 @@ function nextAction(character: Character) {
       description:
         "This source does not establish whether every eligible slot is enchanted — import an addon snapshot or check in game",
     };
-  if (character.maxItemLevel == null)
+  if (!hasCeiling)
     return {
       title: "Establish your season gear ceiling",
       description: "A validated current ruleset is needed before calculating a legal maximum",
@@ -386,11 +419,23 @@ function nextAction(character: Character) {
     description: "Inspect options in the planner and check their actual source in game",
   };
 }
+/** Weekly attention comes only from supported observations; unknown coverage is never counted as a warning */
+function attention(character: Character): { label: string; tone: "amber" | "neutral" } | null {
+  if (!character.observedAt) return { label: "Not observed", tone: "neutral" };
+  const exact = vaultTracks(character.weekly, character.region).filter((track) => track.exact && track.slots.length);
+  if (exact.length) {
+    const total = exact.reduce((sum, track) => sum + track.slots.length, 0);
+    const open = exact.reduce((sum, track) => sum + track.slots.filter((slot) => slot.unlocked).length, 0);
+    if (open < total) return { label: `Vault ${open} of ${total}`, tone: "amber" };
+  }
+  return null;
+}
 function SelectedPane({ character, activity }: { character: Character; activity: Activity }) {
-  const action = nextAction(character);
+  const ceiling = useSeasonCeiling(character.id, activity);
+  const action = nextAction(character, ceiling.level != null);
   const gap =
-    character.maxItemLevel != null && character.itemLevel != null
-      ? Math.max(0, character.maxItemLevel - character.itemLevel)
+    ceiling.level != null && character.itemLevel != null
+      ? Math.max(0, ceiling.level - character.itemLevel)
       : null;
   return (
     <aside className="selected-pane" aria-label={`${character.name} selected character`}>
@@ -406,14 +451,14 @@ function SelectedPane({ character, activity }: { character: Character; activity:
         <Badge tone="blue">Selected</Badge>
       </div>
       <Portrait character={character} />
-      <Metrics character={character} />
+      <Metrics character={character} activity={activity} />
       <div className="detail-list">
         <div className="detail-row">
           <span>{metricNames[activity]}</span>
           <strong>{activityValue(character.ratings[activity], activity)}</strong>
         </div>
         <div className="detail-row">
-          <span>Gap to maximum</span>
+          <span>{ceiling.exact || ceiling.level == null ? "Gap to maximum" : "Gap to best known"}</span>
           <strong>{level(gap)}</strong>
         </div>
       </div>
@@ -423,16 +468,66 @@ function SelectedPane({ character, activity }: { character: Character; activity:
         <p>{action.description}</p>
       </div>
       <div className="pane-observation">Observed {age(character.observedAt).toLowerCase()}</div>
-      <Link
-        className="button button-primary full-width"
-        to="/characters/$characterId/$section"
-        params={{ characterId: character.id, section: "overview" }}
-      >
-        <ArrowRight size={14} />
-        Open character
-      </Link>
+      <div className="pane-exits">
+        <CharacterLink characterId={character.id} destination={{ section: "overview" }} className="button button-primary full-width">
+          <ArrowRight size={14} />
+          Open overview
+        </CharacterLink>
+        <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button full-width">
+          Review gear
+        </CharacterLink>
+        <CharacterLink characterId={character.id} destination={{ section: "performance", view: "standing" }} className="button full-width">
+          Compare performance
+        </CharacterLink>
+      </div>
     </aside>
   );
+}
+function CharacterLink({
+  characterId,
+  destination,
+  returnTo,
+  children,
+  ...props
+}: {
+  characterId: string;
+  destination: CharacterDestination;
+  returnTo?: string;
+  children: ReactNode;
+} & Omit<ComponentProps<"a">, "href" | "children">) {
+  const search = returnTo ? { return: returnTo } : {};
+  return "view" in destination ? (
+    <Link
+      to="/characters/$characterId/$section/$view"
+      params={{ characterId, section: destination.section, view: destination.view }}
+      search={search}
+      {...props}
+    >
+      {children}
+    </Link>
+  ) : (
+    <Link
+      to="/characters/$characterId/$section"
+      params={{ characterId, section: destination.section }}
+      search={search}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+}
+function useDrawerNavigation(path: string, drawerMode: boolean) {
+  const [open, setOpen] = useState(false);
+  const menu = useRef<HTMLButtonElement>(null);
+  const drawer = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
+  useEffect(() => setOpen(false), [path, drawerMode]);
+  useEffect(() => {
+    if (open) drawer.current?.querySelector<HTMLElement>("a, button")?.focus();
+    else if (wasOpen.current) menu.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+  return { open, setOpen, menu, drawer };
 }
 function Shell() {
   useUpdateSafety();
@@ -441,8 +536,20 @@ function Shell() {
   const navigate = useNavigate();
   const route = useRouterState({ select: (s) => s.location });
   const currentPath = route.pathname;
+  const firstRoute = useRef(true);
   useEffect(() => {
     document.querySelector(".workspace-scroll")?.scrollTo(0, 0);
+    if (firstRoute.current) {
+      firstRoute.current = false;
+      return;
+    }
+    // A deliberate destination change moves focus to the new page heading for keyboard and screen reader users
+    const frame = requestAnimationFrame(() => {
+      const heading = document.querySelector<HTMLElement>("main h1");
+      heading?.setAttribute("tabindex", "-1");
+      heading?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [currentPath]);
   const match = currentPath.match(/^\/characters\/([^/]+)/);
   const selectedId =
@@ -452,6 +559,7 @@ function Shell() {
   const active = roster.data?.filter((c) => !c.archived) ?? [];
   const character =
     active.find((c) => c.id === selectedId) ?? active.find((c) => c.isMain) ?? active[0];
+  const client = useQueryClient();
   useEffect(()=>{if(match?.[1]&&character?.id===match[1]&&settings.data&&settings.data.lastCharacterId!==character.id){void api.saveSettings({lastCharacterId:character.id}).then(()=>client.invalidateQueries({queryKey:['settings']}));}},[currentPath,character?.id,settings.data?.lastCharacterId]);
   const [sheet, setSheet] = useState<"add" | "sync" | "manage" | null>(null);
   useSyncOnFocus();
@@ -461,11 +569,13 @@ function Shell() {
   const { activity } = useActivity(character?.id);
   const [switchSearch, setSwitchSearch] = useState("");
   const [toast, setToast] = useState("");
-  const client = useQueryClient();
   const saveSidebar = useAction((sidebarWidth: number) => api.saveSettings({ sidebarWidth }));
   const sidebar = useSidebarLayout(settings.data?.sidebarWidth, (width) =>
     saveSidebar.mutate(width),
   );
+  const { stage, dialog: stageDialog } = useStagePlan();
+  const drawerMode = sidebar.compact;
+  const drawer = useDrawerNavigation(currentPath, drawerMode);
   useEffect(() => {
     setToastDispatch(setToast);
     return () => setToastDispatch(undefined);
@@ -499,252 +609,258 @@ function Shell() {
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
   }, [settings.data]);
-  const changeCharacter = (id: string) => {
-    void api.saveSettings({ lastCharacterId: id }).then(saved=>client.setQueryData(['settings'],saved));
-    const section = currentPath.split("/")[3];
-    if (match && section)
-      void navigate({
-        to: "/characters/$characterId/$section",
-        params: { characterId: id, section },
-      });
-    else void navigate({ to: "/characters", search: { selected: id } });
-  };
-  const sections = [
-    { id: "overview", label: "Character", icon: Shield },
-    { id: "progression", label: "Progression", icon: ArrowRight },
-    { id: "gear", label: "Gear planner", icon: WandSparkles },
-    { id: "inventory", label: "Inventory", icon: Archive },
-    { id: "simulations", label: "Simulations", icon: Sparkles },
-    { id: "wardrobe", label: "Wardrobe", icon: Star },
-    { id: "standings", label: "Standings", icon: Trophy },
-    { id: "top", label: "Top players", icon: Crown },
-  ];
-  const section = currentPath.split("/")[3];
-  const isSettings = currentPath === "/settings";
+  const destination = match ? sameDestinationFor(currentPath) : null;
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setSettingsOpen(true);
+    window.addEventListener(openSettingsEvent, open);
+    return () => window.removeEventListener(openSettingsEvent, open);
+  }, []);
   const isSetup = currentPath === "/setup";
   const isWeek = currentPath === "/week";
   const isTonight = currentPath === "/tonight";
   const isRoster = currentPath === "/" || currentPath === "/characters";
-  const title = isTonight ? "Tonight" : isSettings
-    ? "Settings"
+  const changeCharacter = (id: string) => {
+    void api.saveSettings({ lastCharacterId: id }).then(saved=>client.setQueryData(['settings'],saved));
+    // Character pages keep their section and view; global pages stay where they are
+    if (match && destination) void navigate({ to: destinationPath(id, destination) as never, search: {} as never });
+    else if (isRoster) void navigate({ to: "/characters", search: { selected: id } });
+  };
+  const title = isTonight
+    ? "Tonight"
     : isSetup
-      ? "Setup"
-    : isWeek
-      ? "This week"
-    : section
-      ? (sections.find((s) => s.id === section)?.label ?? "Character")
-      : "Characters";
-  return (
-    <div className="app-shell">
-      <ResizablePanelGroup
-        className="workspace-panels"
-        orientation="horizontal"
-        onLayoutChanged={sidebar.onLayoutChanged}
-        resizeTargetMinimumSize={{ coarse: 24, fine: 12 }}
-      >
-        <ResizablePanel
-          id="sidebar"
-          panelRef={sidebar.panelRef}
-          elementRef={sidebar.elementRef}
-          defaultSize={sidebar.defaultSize}
-          minSize={sidebar.minimum}
-          maxSize={sidebar.maximum}
-          groupResizeBehavior="preserve-relative-size"
-          onResize={(size) =>
-            document.documentElement.style.setProperty("--sidebar-chrome-width", `${size.inPixels}px`)
-          }
-        >
-          <aside className="sidebar" id="workspace-sidebar">
-            <div className="brand">
-              <img
-                className="brand-logo"
-                src={`${import.meta.env.BASE_URL}assets/wow-companion-logo.png`}
-                alt=""
-              />
-              <span className="brand-name">WOW Companion</span>
-            </div>
-            <CharacterPopover
-              resetKey={currentPath+route.searchStr}
-              trigger={
-                <button className="switcher" aria-label="Switch character">
-                  {character ? (
-                    <>
-                      <Avatar character={character} />
-                      <div className="identity">
-                        <strong>{character.name}</strong>
-                        <small>{spec(character)}</small>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="avatar">
-                        <Users size={19} />
-                      </span>
-                      <span className="identity">
-                        <strong>Your roster</strong>
-                        <small>No character selected</small>
-                      </span>
-                    </>
-                  )}
-                  <ChevronDown size={14} />
-                </button>
-              }
-            >
-              <label className="search-field switcher-search">
-                <Search />
-                <input
-                  value={switchSearch}
-                  onChange={(e) => setSwitchSearch(e.target.value)}
-                  placeholder="Find a character"
-                  aria-label="Find a character"
-                />
-              </label>
-              {active
-                .filter((c) =>
-                  `${c.name} ${c.realm} ${c.className}`
-                    .toLowerCase()
-                    .includes(switchSearch.toLowerCase()),
-                )
-                .map((c) => (
-                  <button
-                    className={`switcher-choice ${c.id === character?.id ? "active" : ""}`}
-                    key={c.id}
-                    onClick={() => changeCharacter(c.id)}
-                  >
-                    <Avatar character={c} />
-                    <Identity character={c} />
-                    {c.id === character?.id && <Check size={15} />}
-                  </button>
-                ))}
-              {!active.length && <p className="inline-empty">Add your first Retail character</p>}
-              <Button variant="quiet" onClick={() => setSheet("add")}>
-                <Plus />
-                Add character
-              </Button>
-            </CharacterPopover>
-            <div className="nav-group-label">Your workspace</div>
-            <nav className="navigation" aria-label="Main navigation">
-              <Link
-                to="/characters"
-                search={{ selected: character?.id }}
-                className={`nav-link ${isRoster ? "active" : ""}`}
-                aria-current={isRoster ? "page" : undefined}
-              >
-                <Users />
-                <span>Characters</span>
-              </Link>
-              <Link
-                to="/week"
-                className={`nav-link ${isWeek ? "active" : ""}`}
-                aria-current={isWeek ? "page" : undefined}
-              >
-                <CalendarClock />
-                <span>This week</span>
-              </Link>
-              <Link to="/tonight" className={`nav-link ${isTonight ? "active" : ""}`} aria-current={isTonight ? "page" : undefined}>
-                <Sparkles /><span>Tonight</span>
-              </Link>
-              {sections.map(({ id, label, icon: Icon }) =>
-                character ? (
-                  <Link
-                    key={id}
-                    to="/characters/$characterId/$section"
-                    params={{ characterId: character.id, section: id }}
-                    className={`nav-link ${section === id ? "active" : ""}`}
-                    aria-current={section === id ? "page" : undefined}
-                  >
-                    <Icon />
-                    <span>{label}</span>
-                  </Link>
-                ) : (
-                  <span className="nav-link disabled" key={id}>
-                    <Icon />
-                    <span>{label}</span>
-                  </span>
-                ),
-              )}
-            </nav>
-            <div className="sidebar-footer">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Link
-                      to="/settings"
-                      className={`footer-icon ${isSettings ? "active" : ""}`}
-                      aria-label="Open settings"
-                      aria-current={isSettings ? "page" : undefined}
-                    />
-                  }
-                >
-                  <Settings />
-                </TooltipTrigger>
-                <TooltipContent side="top">Settings</TooltipContent>
-              </Tooltip>
-              <SyncButton onClick={() => setSheet("sync")} />
-              <UpdateIndicator onOpen={() => void navigate({ to: '/settings' })} />
-            </div>
-          </aside>
-        </ResizablePanel>
-        <ResizableHandle
-          className="sidebar-resize-handle"
-          aria-label="Resize sidebar"
-          disabled={sidebar.compact}
-          disableDoubleClick
-          onDoubleClick={sidebar.reset}
+        ? "Setup"
+        : isWeek
+          ? "This week"
+          : match
+            ? `${character?.name ?? "Character"} · ${destination ? destinationLabel(destination) : "Not found"}`
+            : "Characters";
+  const sidebarNode = (
+    <aside className="sidebar" id="workspace-sidebar" aria-label="Sidebar">
+      <div className="brand">
+        <img
+          className="brand-logo"
+          src={`${import.meta.env.BASE_URL}assets/wow-companion-logo.png`}
+          alt=""
         />
-        <ResizablePanel id="workspace" minSize={0}>
-          <div className="workspace">
-            <header className="toolbar" aria-label="Application title bar">
-              <div className="breadcrumbs">
-                <span>Workspace</span>
-                <ChevronRight />
-                {character && section && (
-                  <>
-                    <span>{character.name}</span>
-                    <ChevronRight />
-                  </>
-                )}
-                <span>{title}</span>
-              </div>
-              <div className="toolbar-meta">
-                <SearchButton onClick={openSearch} />
-              </div>
-            </header>
-            <div className="workspace-scroll">
-              <main className="page">
-                <Outlet />
-              </main>
-            </div>
+        <span className="brand-name">WOW Companion</span>
+      </div>
+      <div className="nav-group-label">Workspace</div>
+      <nav className="navigation" aria-label="Workspace">
+        <Link
+          to="/characters"
+          search={{ selected: character?.id }}
+          className={`nav-link ${isRoster ? "active" : ""}`}
+          aria-current={isRoster ? "page" : undefined}
+        >
+          <Users />
+          <span>Characters</span>
+        </Link>
+        <Link to="/tonight" className={`nav-link ${isTonight ? "active" : ""}`} aria-current={isTonight ? "page" : undefined}>
+          <Sparkles /><span>Tonight</span>
+        </Link>
+        <Link
+          to="/week"
+          className={`nav-link ${isWeek ? "active" : ""}`}
+          aria-current={isWeek ? "page" : undefined}
+        >
+          <CalendarClock />
+          <span>This week</span>
+        </Link>
+      </nav>
+      <div className="nav-group-label">Selected character</div>
+      {character ? (
+        <>
+          <CharacterPopover
+            resetKey={currentPath+route.searchStr}
+            trigger={
+              <button className="switcher" aria-label="Switch character">
+                <Avatar character={character} />
+                <div className="identity">
+                  <strong>{character.name}</strong>
+                  <small>{spec(character)} · {character.realm} {character.region.toUpperCase()}</small>
+                </div>
+                <ChevronsUpDown size={14} />
+              </button>
+            }
+          >
+            <label className="search-field switcher-search">
+              <Search />
+              <input
+                value={switchSearch}
+                onChange={(e) => setSwitchSearch(e.target.value)}
+                placeholder="Find a character"
+                aria-label="Find a character"
+              />
+            </label>
+            {active
+              .filter((c) =>
+                `${c.name} ${c.realm} ${c.className}`
+                  .toLowerCase()
+                  .includes(switchSearch.toLowerCase()),
+              )
+              .map((c) => (
+                <button
+                  className={`switcher-choice ${c.id === character.id ? "active" : ""}`}
+                  key={c.id}
+                  onClick={() => changeCharacter(c.id)}
+                >
+                  <Avatar character={c} />
+                  <Identity character={c} />
+                  {c.id === character.id && <Check size={15} />}
+                </button>
+              ))}
+            <Button variant="quiet" onClick={() => setSheet("add")}>
+              <Plus />
+              Add character
+            </Button>
+          </CharacterPopover>
+          <nav className="navigation" aria-label="Selected character">
+            {characterSections.map(({ id, label, icon: Icon }) => (
+              <CharacterLink
+                key={id}
+                characterId={character.id}
+                destination={defaultDestination(id)}
+                className={`nav-link ${destination?.section === id ? "active" : ""}`}
+                aria-current={destination?.section === id ? "page" : undefined}
+              >
+                <Icon />
+                <span>{label}</span>
+              </CharacterLink>
+            ))}
+          </nav>
+        </>
+      ) : (
+        <button className="add-cta" onClick={() => setSheet("add")}>
+          <Plus size={15} />
+          Add a character to unlock Overview, Gear, Performance, and Wardrobe
+        </button>
+      )}
+      <div className="sidebar-footer">
+        <SyncButton onClick={() => setSheet("sync")} />
+        <UpdateButton onOpenSettings={openSettings} />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                className={`footer-icon ${settingsOpen ? "active" : ""}`}
+                aria-label="Open settings"
+                aria-haspopup="dialog"
+                onClick={() => setSettingsOpen(true)}
+              />
+            }
+          >
+            <Settings />
+          </TooltipTrigger>
+          <TooltipContent side="top">Settings</TooltipContent>
+        </Tooltip>
+      </div>
+    </aside>
+  );
+  const workspaceNode = (
+    <div className="workspace">
+      <header className="toolbar" aria-label="Application title bar">
+        <div className="breadcrumbs">
+          {drawerMode && (
+            <Button
+              variant="icon"
+              ref={drawer.menu}
+              aria-label="Open navigation"
+              aria-expanded={drawer.open}
+              aria-controls="workspace-sidebar"
+              onClick={() => drawer.setOpen((open) => !open)}
+            >
+              <Menu />
+            </Button>
+          )}
+          <strong>{title}</strong>
+        </div>
+        <div className="toolbar-meta">
+          <SearchButton onClick={openSearch} />
+        </div>
+      </header>
+      <div className="workspace-scroll">
+        <main className="page">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+  return (
+    <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
+      {drawerMode ? (
+        <>
+          <div className="workspace-flat">{workspaceNode}</div>
+          {drawer.open && <div className="drawer-scrim" onClick={() => drawer.setOpen(false)} aria-hidden="true" />}
+          <div
+            className={`navigation-drawer ${drawer.open ? "open" : ""}`}
+            ref={drawer.drawer}
+            inert={drawer.open ? undefined : true}
+            role={drawer.open ? "dialog" : undefined}
+            aria-modal={drawer.open ? true : undefined}
+            aria-label="Navigation"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                drawer.setOpen(false);
+              }
+            }}
+          >
+            {sidebarNode}
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        </>
+      ) : (
+        <ResizablePanelGroup
+          className="workspace-panels"
+          orientation="horizontal"
+          onLayoutChanged={sidebar.onLayoutChanged}
+          resizeTargetMinimumSize={{ coarse: 24, fine: 12 }}
+        >
+          <ResizablePanel
+            id="sidebar"
+            panelRef={sidebar.panelRef}
+            elementRef={sidebar.elementRef}
+            defaultSize={sidebar.defaultSize}
+            minSize={sidebar.minimum}
+            maxSize={sidebar.maximum}
+            groupResizeBehavior="preserve-relative-size"
+            onResize={(size) =>
+              document.documentElement.style.setProperty("--sidebar-chrome-width", `${size.inPixels}px`)
+            }
+          >
+            {sidebarNode}
+          </ResizablePanel>
+          <ResizableHandle
+            className="sidebar-resize-handle"
+            aria-label="Resize sidebar"
+            disableDoubleClick
+            onDoubleClick={sidebar.reset}
+          />
+          <ResizablePanel id="workspace" minSize={0}>
+            {workspaceNode}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
+      <div className="sr-only" role="status" aria-live="polite">{title}</div>
       <AddCharacter open={sheet === "add"} onOpenChange={(o) => !o && setSheet(null)} />
       <SyncSheet open={sheet === "sync"} onOpenChange={(o) => !o && setSheet(null)} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <ManagePanel open={sheet === "manage"} onOpenChange={(o) => !o && setSheet(null)} />
       <ItemSearchDialog
         open={searchOpen}
         onOpenChange={setSearchOpen}
         character={character}
+        addLabel={character ? `Add to ${character.name}’s ${activityNames[activity]} plan` : undefined}
         onPick={(item) => {
           if (!character) {
             notify("Choose a character before adding items to a plan");
             return;
           }
-          void addItemToPlan({ character, activity, item }).then((slot) => {
-            if (!slot) {
-              notify(`${item.name} doesn't match this character's class, specialization, or gear slot`);
-              return;
-            }
-            notify(`Added ${item.name} to ${slotNames[slot]}`);
-            if (section !== "gear") {
-              void navigate({
-                to: "/characters/$characterId/$section",
-                params: { characterId: character.id, section: "gear" },
-              });
-            }
-          }).catch((error) => notify(errorMessage(error)));
+          void stage({ character, activity, item });
         }}
       />
+      {stageDialog}
       {toast && (
         <div className="toast" role="status">
           <Info />
@@ -817,6 +933,15 @@ function RosterPage() {
         meta: { numeric: true },
       },
       {
+        id: "attention",
+        accessorFn: (c) => attention(c)?.label ?? "",
+        header: "Attention",
+        cell: ({ row }) => {
+          const flag = attention(row.original);
+          return flag ? <Badge tone={flag.tone}>{flag.label}</Badge> : <span className="muted">—</span>;
+        },
+      },
+      {
         accessorKey: "observedAt",
         header: "Observed",
         cell: ({ getValue }) => age(getValue<string | null>()),
@@ -862,10 +987,10 @@ function RosterPage() {
     <>
       <div className="page-heading">
         <div>
-          <h1>Your characters</h1>
+          <h1>Characters</h1>
           <p>
             {active.length
-              ? `${active.length} Retail characters · One personal workspace`
+              ? `${active.length} Retail ${active.length === 1 ? "character" : "characters"} · Who needs attention, and how far each is from a maximum`
               : "Your Retail roster, gear goals, and next steps in one place"}
           </p>
         </div>
@@ -1036,10 +1161,101 @@ function ErrorState({ error, retry }: { error: unknown; retry: () => void }) {
     </div>
   );
 }
+function backLabel(path: string) {
+  if (path === "/tonight") return "Back to Tonight";
+  if (path === "/week") return "Back to This week";
+  if (path.startsWith("/characters/")) return "Back to the previous screen";
+  return "Back to Characters";
+}
+/** One consistent header for every character screen: identity, the single activity control, and real-link views */
+function CharacterFrame({
+  character,
+  destination,
+  children,
+}: {
+  character: Character;
+  destination: CharacterDestination;
+  children: ReactNode;
+}) {
+  const { activity, setActivity } = useActivity(character.id);
+  const router = useRouter();
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
+  const back = safeReturn(new URLSearchParams(searchStr).get("return"));
+  const section = destination.section;
+  const views =
+    section === "gear"
+      ? gearViews.map((id) => ({ id, label: gearViewLabels[id] }))
+      : section === "performance"
+        ? performanceViews.map((id) => ({ id, label: performanceViewLabels[id] }))
+        : null;
+  const heading = section === "overview" ? character.name : `${sectionLabels[section]} for ${character.name}`;
+  return (
+    <>
+      <DemoNotice character={character} />
+      {back && (
+        <Button variant="quiet" className="back-link" onClick={() => router.history.push(back)}>
+          <ArrowLeft size={14} />
+          {backLabel(back)}
+        </Button>
+      )}
+      <div className="page-heading character-heading">
+        {section === "overview" && <Avatar character={character} large />}
+        <div className="character-heading-text">
+          <div className="crumb">{destinationLabel(destination)}</div>
+          <h1>{heading}</h1>
+          <p>
+            {spec(character)} · {character.region.toUpperCase()} / {character.realm}
+            {character.level != null ? ` · Level ${character.level}` : ""} · Observed {age(character.observedAt).toLowerCase()}
+          </p>
+        </div>
+        {section !== "wardrobe" && <ActivityTabs value={activity} onChange={setActivity} />}
+      </div>
+      {views && "view" in destination && (
+        <nav className="subnav" aria-label={`${sectionLabels[section]} views`}>
+          {views.map(({ id, label }) => (
+            <CharacterLink
+              key={id}
+              characterId={character.id}
+              destination={{ section, view: id } as CharacterDestination}
+              returnTo={back ?? undefined}
+              className="subnav-link"
+              aria-current={destination.view === id ? "page" : undefined}
+            >
+              {label}
+            </CharacterLink>
+          ))}
+        </nav>
+      )}
+      {children}
+    </>
+  );
+}
 function CharacterRoute() {
-  const params = characterRoute.useParams();
+  const params = useParams({ strict: false }) as { characterId: string; section: string; view?: string };
   const result = useCharacter(params.characterId);
-  const section = params.section;
+  const navigate = useNavigate();
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
+  const resolved = resolveCharacterPath(params.section, params.view);
+  const redirect = resolved.kind === "redirect" ? destinationPath(params.characterId, resolved.destination) : null;
+  useEffect(() => {
+    if (!redirect) return;
+    // Old links land on their new home with their return context intact, and never loop
+    const back = safeReturn(new URLSearchParams(searchStr).get("return"));
+    void navigate({ to: redirect as never, search: (back ? { return: back } : {}) as never, replace: true });
+  }, [redirect, searchStr, navigate]);
+  if (resolved.kind === "unknown")
+    return (
+      <EmptyState icon={CircleHelp} title="That page doesn't exist" description="Open this character's overview to continue">
+        <Link
+          className="button button-primary"
+          to="/characters/$characterId/$section"
+          params={{ characterId: params.characterId, section: "overview" }}
+        >
+          Open overview
+        </Link>
+      </EmptyState>
+    );
+  if (resolved.kind === "redirect") return null;
   if (result.isPending)
     return (
       <div className="loading-surface" role="status">
@@ -1061,70 +1277,79 @@ function CharacterRoute() {
       </EmptyState>
     );
   const character = result.character;
+  const destination = resolved.destination;
+  const view = "view" in destination ? destination.view : null;
   return (
-    <>
-      <DemoNotice character={character} />
-      {section === "gear" ? (
-        <GearPage key={character.id} character={character} />
-      ) : section === "progression" ? (
-        <CharacterProgression key={character.id} character={character} />
-      ) : section === "simulations" ? (
-        <SimulationsPage key={character.id} character={character} />
-      ) : section === "inventory" ? (
-        <InventoryPage key={character.id} character={character} />
-      ) : section === "wardrobe" ? (
-        <WardrobePage key={character.id} character={character} />
-      ) : section === "standings" ? (
-        <StandingsPage key={character.id} character={character} />
-      ) : section === "top" ? (
-        <TopPlayersPage key={character.id} character={character} />
-      ) : (
+    <CharacterFrame key={character.id} character={character} destination={destination}>
+      {destination.section === "overview" ? (
         <OverviewPage character={character} />
+      ) : destination.section === "wardrobe" ? (
+        <WardrobePage character={character} />
+      ) : view === "progress" ? (
+        <CharacterProgression character={character} />
+      ) : view === "plan" ? (
+        <GearPage character={character} />
+      ) : view === "owned" ? (
+        <InventoryPage character={character} />
+      ) : view === "simulations" ? (
+        <SimulationsRoute character={character} />
+      ) : view === "leaders" ? (
+        <LeadersView character={character} />
+      ) : (
+        <PerformanceView character={character} view={view as ComparisonView} />
       )}
-    </>
+    </CharacterFrame>
   );
+}
+function SimulationsRoute({ character }: { character: Character }) {
+  const { activity } = useActivity(character.id);
+  return <SimulationsPage character={character} activity={activity} />;
 }
 function CharacterProgression({ character }: { character: Character }) {
-  const { activity, setActivity } = useActivity(character.id);
-  return <ProgressionPage character={character} activity={activity} onActivityChange={setActivity} />;
+  const { activity } = useActivity(character.id);
+  return <ProgressionPage character={character} activity={activity} />;
 }
-function OverviewPage({ character }: { character: Character }) {
-  const { activity, setActivity } = useActivity(character.id);
-  const refresh = useAction(
-    ({ id }: { id: string }) => api.refreshCharacter({ id }),
-    "Character refreshed",
-  );
-  const action = nextAction(character);
-  const progress =
-    character.itemLevel != null && character.maxItemLevel != null
-      ? Math.min(100, (character.itemLevel / character.maxItemLevel) * 100)
-      : null;
+function PerformanceView({ character, view }: { character: Character; view: ComparisonView }) {
+  const { activity } = useActivity(character.id);
+  const refresh = useAction(({ id }: { id: string }) => api.refreshCharacter({ id }), "Public activity data refreshed");
   return (
     <>
-      <div className="page-heading">
-        <div>
-          <h1>{character.name}</h1>
-          <p>
-            {spec(character)} · {character.raceName} · {character.region.toUpperCase()} /{" "}
-            {character.realm}
-            {character.level != null ? ` · Level ${character.level}` : ""}
-          </p>
-        </div>
-        <div className="actions">
+      {view === "standing" && (
+        <div className="view-actions">
           <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
             <RefreshCw />
             {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
           </Button>
-          <Link
-            className="button button-primary"
-            to="/characters/$characterId/$section"
-            params={{ characterId: character.id, section: "gear" }}
-          >
-            <WandSparkles />
-            Plan upgrades
-          </Link>
         </div>
-      </div>
+      )}
+      <ComparisonPage key={character.id + ":" + activity + ":" + view} character={character} activity={activity} view={view} />
+    </>
+  );
+}
+function LeadersView({ character }: { character: Character }) {
+  const { activity } = useActivity(character.id);
+  return (
+    <>
+      <TopPlayersPage key={character.id} character={character} />
+      <ComparisonPage key={character.id + ":" + activity + ":leaders"} character={character} activity={activity} view="leaders" />
+    </>
+  );
+}
+function OverviewPage({ character }: { character: Character }) {
+  const { activity } = useActivity(character.id);
+  const refresh = useAction(
+    ({ id }: { id: string }) => api.refreshCharacter({ id }),
+    "Character refreshed",
+  );
+  const ceiling = useSeasonCeiling(character.id, activity);
+  const action = nextAction(character, ceiling.level != null);
+  const progress =
+    character.itemLevel != null && ceiling.level != null
+      ? Math.min(100, (character.itemLevel / ceiling.level) * 100)
+      : null;
+  const needsGear = character.gear.length === 0;
+  return (
+    <>
       <div className="overview-layout">
         <section className="surface character-surface">
           <div className="surface-heading">
@@ -1136,57 +1361,15 @@ function OverviewPage({ character }: { character: Character }) {
             <span>In-game observation · {age(character.observedAt)}</span>
             <span>Imported · {age(character.importedAt)}</span>
           </div>
+          <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
+            <RefreshCw />
+            {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
+          </Button>
         </section>
         <div className="progress-section">
           <section className="surface">
             <div className="surface-heading">
-              <h2>Gear progression</h2>
-              <Link className="button button-quiet" to="/characters/$characterId/$section" params={{characterId:character.id,section:"progression"}}>See slot details <ArrowRight size={14}/></Link>
-            </div>
-            <Metrics character={character} />
-            {progress != null && (
-              <>
-                <div
-                  className="progress-track"
-                  role="progressbar"
-                  aria-label="Equipped item level compared with legal maximum"
-                  aria-valuenow={Math.round(progress)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <span style={{ width: `${progress}%` }} />
-                </div>
-                <div className="progress-label">
-                  <span>Item-level ratio</span>
-                  <span>{progress.toFixed(1)}%</span>
-                </div>
-              </>
-            )}
-            {character.maxItemLevel == null && (
-              <div className="unknown-note">
-                <CircleHelp />
-                <p>The legal maximum is unknown until a current season ruleset is validated</p>
-              </div>
-            )}
-            {character.targetItemLevel != null && (
-              <p className="unknown-note">
-                Your target is a planning goal, not a guaranteed drop or combat-performance estimate
-              </p>
-            )}
-          </section>
-          <CharacterWeek
-            character={character}
-            action={
-              <Link className="button button-secondary week-link" to="/week">
-                <CalendarClock size={15} />
-                See every character's week
-              </Link>
-            }
-          />
-          <StatsSurface character={character} />
-          <section className="surface">
-            <div className="surface-heading">
-              <h2>Before your next session</h2>
+              <h2>Next steps</h2>
             </div>
             <div className="next-action-list">
               <div className="action-row">
@@ -1195,31 +1378,90 @@ function OverviewPage({ character }: { character: Character }) {
                   <h3>{action.title}</h3>
                   <p>{action.description}</p>
                 </div>
+                <CharacterLink
+                  characterId={character.id}
+                  destination={{ section: "gear", view: "progress" }}
+                  className="button button-primary"
+                >
+                  Review gear
+                </CharacterLink>
               </div>
-              {character.gear.length === 0 && (
+              {needsGear && (
                 <div className="action-row">
                   <Upload />
                   <div>
                     <h3>Capture equipped gear in game</h3>
-                    <p>
-                      Export with the addon, then reload the UI or log out to write SavedVariables
-                    </p>
+                    <p>Export with the addon, then reload the UI or log out to write SavedVariables</p>
                   </div>
+                  <Link className="button" to="/setup">
+                    Open setup
+                  </Link>
                 </div>
               )}
               <div className="action-row">
-                <Trophy />
+                <Crown />
                 <div>
-                  <h3>Review one activity at a time</h3>
-                  <p>Mythic+, Raiding, and PvP keep their own metrics and comparison populations</p>
+                  <h3>Compare with other {character.specName !== "Unknown" ? character.specName : ""} {character.className} players</h3>
+                  <p>See the gear and builds the highest-rated players in your sample use</p>
                 </div>
+                <CharacterLink
+                  characterId={character.id}
+                  destination={{ section: "performance", view: "leaders" }}
+                  className="button"
+                >
+                  Open leaders
+                </CharacterLink>
               </div>
             </div>
           </section>
           <section className="surface">
             <div className="surface-heading">
-              <h2>Activity</h2>
-              <ActivityTabs value={activity} onChange={setActivity} />
+              <h2>Gear gap</h2>
+              <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-primary">
+                Review gear <ArrowRight size={14} />
+              </CharacterLink>
+            </div>
+            <Metrics character={character} activity={activity} />
+            {progress != null && (
+              <>
+                <div
+                  className="progress-track"
+                  role="progressbar"
+                  aria-label={ceiling.exact ? "Equipped item level compared with legal maximum" : "Equipped item level compared with the best known ceiling"}
+                  aria-valuenow={Math.round(progress)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <span style={{ width: `${progress}%` }} />
+                </div>
+                <div className="progress-label">
+                  <span>{ceiling.exact ? "Item-level ratio" : "Ratio to best known ceiling"}</span>
+                  <span>{progress.toFixed(1)}%</span>
+                </div>
+              </>
+            )}
+            {!ceiling.exact && (
+              <div className="unknown-note">
+                <CircleHelp />
+                <p>
+                  {ceiling.level == null
+                    ? `The legal maximum is unknown: ${(ceiling.reason ?? "seasonal rules are still being checked").replace(/^./, (c) => c.toLowerCase())}`
+                    : "This is the best known ceiling from the installed game files · Server-side conditions and crafted limits are not checked, so the true maximum may differ"}
+                </p>
+              </div>
+            )}
+            {character.targetItemLevel != null && (
+              <p className="unknown-note">
+                Your target is a planning goal, not a guaranteed drop or combat-performance estimate
+              </p>
+            )}
+          </section>
+          <section className="surface">
+            <div className="surface-heading">
+              <h2>{activityNames[activity]} standing</h2>
+              <CharacterLink characterId={character.id} destination={{ section: "performance", view: "standing" }} className="button button-secondary">
+                Compare performance <ArrowRight size={14} />
+              </CharacterLink>
             </div>
             <div className="detail-list">
               <div className="detail-row">
@@ -1250,30 +1492,37 @@ function OverviewPage({ character }: { character: Character }) {
               Open source profile externally
             </ExternalSource>
           </section>
+          <CharacterWeek
+            character={character}
+            action={
+              <Link className="button button-secondary week-link" to="/week">
+                <CalendarClock size={15} />
+                Open this week
+              </Link>
+            }
+          />
+          <StatsSurface character={character} />
         </div>
       </div>
     </>
   );
 }
 function GearPage({ character }: { character: Character }) {
-  const { activity, setActivity } = useActivity(character.id);
+  const { activity } = useActivity(character.id);
   return (
     <GearEditor
       key={character.id + activity}
       character={character}
       activity={activity}
-      setActivity={setActivity}
     />
   );
 }
 function GearEditor({
   character,
   activity,
-  setActivity,
 }: {
   character: Character;
   activity: Activity;
-  setActivity: (activity: Activity) => void;
 }) {
   const memoryKey = character.id + ":" + activity + ":" + character.specId;
   const memory = gearMemory.get(memoryKey);
@@ -1345,15 +1594,19 @@ function GearEditor({
     },
     onError: (e) => notify(errorMessage(e)),
   });
+  // Leaving the plan by route, character, subsection, or window close asks first while changes are unsaved
+  const unsaved = dirty || inspectorDirty;
+  const blocker = useBlocker({ shouldBlockFn: () => unsaved, enableBeforeUnload: unsaved, withResolver: true });
   const equipped = character.gear.find((i) => i.slot === selected);
   const values = items.map((i) => i.itemLevel).filter((v): v is number => v != null);
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
-  function updateItem() {
+  /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
+  function updateItem(quiet = false): GearItem[] | null {
     const ilvl = itemLevel.trim() ? Number(itemLevel) : null;
     if (ilvl != null && (!Number.isFinite(ilvl) || ilvl < 0)) {
       notify("Enter a valid item level");
-      return;
+      return null;
     }
     const next = clearRenamedPlanIdentity(current, {
       slot: selected,
@@ -1372,51 +1625,63 @@ function GearEditor({
       stats: current?.itemLevel === ilvl ? current.stats : [],
       effects: current?.itemLevel === ilvl ? current.effects : [],
     });
-    setItems((previous) => [...previous.filter((i) => i.slot !== selected), next]);
+    const nextItems = [...items.filter((i) => i.slot !== selected), next];
+    setItems(nextItems);
     setDirty(true);
-    notify("Slot updated in your draft");
+    if (!quiet) notify("Slot updated in your draft");
+    return nextItems;
+  }
+  function savePlan(onSaved?: () => void) {
+    const planned = inspectorDirty ? updateItem(true) : items;
+    if (!planned) return;
+    save.mutate({
+      id: query.data?.id ?? crypto.randomUUID(),
+      characterId: character.id,
+      specId: character.specId,
+      activity,
+      rulesetId: query.data?.rulesetId ?? "unknown",
+      name: name.trim() || "My upgrade plan",
+      items: planned,
+      updatedAt: new Date().toISOString(),
+    }, { onSuccess: onSaved });
+  }
+  function selectSlot(slot: GearSlot) {
+    if (inspectorDirty && !updateItem(true)) return;
+    setSelected(slot);
   }
   return (
     <>
       <div className="page-heading">
         <div>
-          <h1>Gear planner</h1>
-          <p>
-            {character.name} · {spec(character)} · Your imported gear stays separate from this plan
-          </p>
+          <h2>Plan</h2>
+          <p>Your imported gear stays separate from this plan · Edits update the draft, and Save plan keeps them</p>
         </div>
         <div className="actions">
-          {!dirty && query.data && (
-            <span className="save-status">
-              <Check size={14} />
-              Saved locally
-            </span>
-          )}
+          <span className="save-status" role="status" data-state={save.isError ? "error" : save.isPending ? "saving" : dirty || inspectorDirty ? "unsaved" : "saved"}>
+            {save.isError ? <><CircleHelp size={14} />Could not save</> : save.isPending ? "Saving…" : dirty || inspectorDirty ? <Badge tone="amber">Unsaved changes</Badge> : query.data ? <><Check size={14} />Saved locally</> : null}
+          </span>
           <Button
             variant="primary"
             disabled={save.isPending || query.isPending}
-            onClick={() =>
-              save.mutate({
-                id: query.data?.id ?? crypto.randomUUID(),
-                characterId: character.id,
-                specId: character.specId,
-                activity,
-                rulesetId: query.data?.rulesetId ?? "unknown",
-                name: name.trim() || "My upgrade plan",
-                items,
-                updatedAt: new Date().toISOString(),
-              })
-            }
+            onClick={() => savePlan()}
           >
             <Download />
-            {save.isPending ? "Saving…" : dirty ? "Save changes" : "Save plan"}
+            {save.isPending ? "Saving…" : "Save plan"}
           </Button>
         </div>
       </div>
       <div className="gear-summary">
-        <Metrics character={character} planned={draftLevel} />
-        <ActivityTabs value={activity} onChange={setActivity} />
+        <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
+      <LeaveGuard
+        open={blocker.status === "blocked"}
+        title="Leave this plan without saving?"
+        description="This plan has changes that are not saved"
+        saving={save.isPending}
+        onKeep={() => blocker.status === "blocked" && blocker.reset()}
+        onSave={() => savePlan(() => blocker.proceed?.())}
+        onDiscard={() => { gearMemory.delete(memoryKey); blocker.proceed?.(); }}
+      />
       {query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
@@ -1489,12 +1754,12 @@ function GearEditor({
                         tabIndex={0}
                         aria-label={`Edit ${slotNames[slot]}`}
                         aria-description={targetEquipped ? "Target equipped" : undefined}
-                        onClick={() => setSelected(slot)}
+                        onClick={() => selectSlot(slot)}
                         onKeyDown={(e) => {
                           if (e.target !== e.currentTarget) return;
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            setSelected(slot);
+                            selectSlot(slot);
                           }
                         }}
                       >
@@ -1569,6 +1834,7 @@ function GearEditor({
                 value={itemName}
                 maxLength={200}
                 onChange={(e) => setItemName(e.target.value)}
+                onBlur={() => { if (inspectorDirty) updateItem(true); }}
                 placeholder="Search or name your planned item"
               />
             </Field>
@@ -1579,6 +1845,7 @@ function GearEditor({
                 step="0.1"
                 value={itemLevel}
                 onChange={(e) => setItemLevel(e.target.value)}
+                onBlur={() => { if (inspectorDirty) updateItem(true); }}
                 placeholder="Unknown"
               />
             </Field>
@@ -1590,6 +1857,7 @@ function GearEditor({
                   setEnchant(e.target.value);
                   setEnchantEdited(true);
                 }}
+                onBlur={() => { if (inspectorDirty) updateItem(true); }}
                 placeholder="Plan an enchant"
               />
             </Field>
@@ -1600,13 +1868,10 @@ function GearEditor({
                   setGems(e.target.value);
                   setGemsEdited(true);
                 }}
+                onBlur={() => { if (inspectorDirty) updateItem(true); }}
                 placeholder="Plan your gems"
               />
             </Field>
-            <Button variant="primary" onClick={updateItem}>
-              <Check />
-              Update draft slot
-            </Button>
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}
               {activityNames[activity]}
@@ -1634,11 +1899,6 @@ function GearEditor({
       />
     </>
   );
-}
-function StandingsPage({ character }: { character: Character }) {
-  const {activity,setActivity}=useActivity(character.id);
-  const refresh=useAction(({id}:{id:string})=>api.refreshCharacter({id}),"Public activity data refreshed");
-  return <><div className="page-heading"><div><h1>Standings</h1><p>{character.name} · Compare one activity and population at a time</p></div><Button disabled={refresh.isPending} onClick={()=>refresh.mutate({id:character.id})}><RefreshCw/>{refresh.isPending?"Refreshing…":"Refresh public profile"}</Button></div><div className="standings-tabs"><ActivityTabs value={activity} onChange={setActivity}/></div><ComparisonPage key={character.id+':'+activity} character={character} activity={activity}/></>;
 }
 function AddCharacter({
   open,
@@ -1769,6 +2029,34 @@ function AddCharacter({
     </Sheet>
   );
 }
+const openSettingsEvent = "wow-companion:open-settings";
+function openSettings() {
+  window.dispatchEvent(new Event(openSettingsEvent));
+}
+/** Settings opens over whatever the player is doing, so closing it never loses their place */
+function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="settings-dialog sm:max-w-[920px]" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Make WOW Companion feel at home on your desktop</DialogDescription>
+        </DialogHeader>
+        <div className="settings-dialog-body">
+          <SettingsPage />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+function SettingsRedirect() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    void navigate({ to: "/characters", replace: true });
+    openSettings();
+  }, [navigate]);
+  return null;
+}
 function SettingsPage() {
   const settings = useSettings();
   const save = useAction(api.saveSettings, "Preferences saved");
@@ -1795,12 +2083,6 @@ function SettingsPage() {
   }
   return (
     <div className="settings-page">
-      <div className="page-heading">
-        <div>
-          <h1>Settings</h1>
-          <p>Make WOW Companion feel at home on your desktop</p>
-        </div>
-      </div>
       {settings.isPending ? (
         <div className="loading-surface" role="status">
           Loading preferences…
@@ -1809,6 +2091,28 @@ function SettingsPage() {
         <ErrorState error={settings.error} retry={() => void settings.refetch()} />
       ) : (
         <>
+          <nav className="settings-anchors" aria-label="Settings sections">
+            {[
+              ["connections-heading", "Connections"],
+              ["appearance-heading", "Appearance"],
+              ["workspace-heading", "Workspace"],
+              ["data-heading", "Local data"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className="subnav-link"
+                onClick={() => {
+                  const heading = document.getElementById(id);
+                  heading?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  heading?.setAttribute("tabindex", "-1");
+                  heading?.focus({ preventScroll: true });
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
           <ConnectionsSection />
           <ProviderSettings />
           <UpdateSettings />
@@ -2057,15 +2361,25 @@ const rosterRoute = createRoute({
   }),
   component: RosterPage,
 });
+const returnSearch = (search: Record<string, unknown>): { return?: string } => ({
+  return: safeReturn(search.return) ?? undefined,
+});
 const characterRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/characters/$characterId/$section",
+  validateSearch: returnSearch,
+  component: CharacterRoute,
+});
+const characterViewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/characters/$characterId/$section/$view",
+  validateSearch: returnSearch,
   component: CharacterRoute,
 });
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: SettingsPage,
+  component: SettingsRedirect,
 });
 function SetupRoute() {
   const [adding, setAdding] = useState(false);
@@ -2084,9 +2398,13 @@ const setupRoute = createRoute({
 function WeekRoute() {
   const roster = useRoster();
   const navigate = useNavigate();
+  const { expanded } = weekRoute.useSearch();
+  const back = expanded ? `/week?expanded=${expanded}` : "/week";
   return (
     <WeekPage
       characters={roster.data ?? []}
+      expandedId={expanded ?? null}
+      onExpand={(id) => void navigate({ to: "/week", search: id ? { expanded: id } : {}, replace: true })}
       identity={(character) => (
         <div className="table-identity">
           <Avatar character={character} />
@@ -2094,7 +2412,10 @@ function WeekRoute() {
         </div>
       )}
       onOpen={(character) =>
-        void navigate({ to: "/characters/$characterId/$section", params: { characterId: character.id, section: "overview" } })
+        void navigate({ to: "/characters/$characterId/$section", params: { characterId: character.id, section: "overview" }, search: { return: back } })
+      }
+      onReview={(character) =>
+        void navigate({ to: "/characters/$characterId/$section/$view", params: { characterId: character.id, section: "gear", view: "progress" }, search: { return: back } })
       }
     />
   );
@@ -2102,19 +2423,32 @@ function WeekRoute() {
 const weekRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/week",
+  validateSearch: (search: Record<string, unknown>): { expanded?: string } => ({
+    expanded: typeof search.expanded === "string" && /^[w-]{1,100}$/.test(search.expanded) ? search.expanded : undefined,
+  }),
   component: WeekRoute,
 });
 function TonightRoute() {
   const roster=useRoster();const settings=useSettings();const navigate=useNavigate();
-  return <TonightPage characters={(roster.data??[]).filter(c=>!c.archived)} selectedCharacterId={settings.data?.lastCharacterId??null} onOpen={(id,section)=>{
+  const active=(roster.data??[]).filter(c=>!c.archived);
+  const client=useQueryClient();
+  // The session plan stays pinned to its own character, so changing the selected character never switches it
+  const pinned=active.find(c=>c.id===settings.data?.tonightAnchorCharacterId)?.id??null;
+  const anchor=pinned??active.find(c=>c.id===settings.data?.lastCharacterId)?.id??active.find(c=>c.isMain)?.id??active[0]?.id??null;
+  useEffect(()=>{if(settings.data&&anchor&&!pinned)void api.saveSettings({tonightAnchorCharacterId:anchor}).then(saved=>client.setQueryData(['settings'],saved))},[anchor,pinned,settings.data]);
+  return <TonightPage characters={active} selectedCharacterId={anchor} onChangeAnchor={id=>void api.saveSettings({tonightAnchorCharacterId:id}).then(saved=>client.setQueryData(['settings'],saved))} onOpen={(id,section)=>{
+    // Every Tonight action names its destination and carries Back to Tonight
     if(section==='week')void navigate({to:'/week'});
-    else void navigate({to:'/characters/$characterId/$section',params:{characterId:id,section}});
+    else{
+      const destination:CharacterDestination=section==='gear'?{section:'gear',view:'plan'}:section==='progression'?{section:'gear',view:'progress'}:section==='standings'?{section:'performance',view:'standing'}:{section:'wardrobe'};
+      void navigate({to:destinationPath(id,destination) as never,search:{return:'/tonight'} as never});
+    }
   }}/>;
 }
 const tonightRoute=createRoute({getParentRoute:()=>rootRoute,path:'/tonight',component:TonightRoute});
 const router = createRouter({
   history: createHashHistory(),
-  routeTree: rootRoute.addChildren([indexRoute, rosterRoute, characterRoute, settingsRoute, setupRoute, weekRoute, tonightRoute]),
+  routeTree: rootRoute.addChildren([indexRoute, rosterRoute, characterRoute, characterViewRoute, settingsRoute, setupRoute, weekRoute, tonightRoute]),
 });
 declare module "@tanstack/react-router" {
   interface Register {

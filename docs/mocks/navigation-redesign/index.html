@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WOW Companion navigation redesign mock</title>
+<style>
+:root {
+  --bg: #f7f8fa; --surface: #fff; --surface2: #f0f2f5; --surface3: #e8ecf1; --sidebar: rgba(231,237,245,.82);
+  --ink: #1c2430; --secondary: #566374; --muted: #647184; --line: #dde3eb;
+  --accent: #0065c7; --accent-soft: #e4f0fd; --on-accent: #fff; --purple: #8455b9; --green: #237548; --amber: #93600a; --red: #b3261e; --selected: #e6f0ff;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+:root[data-theme="dark"] {
+  --bg: #000; --surface: #0a0a0a; --surface2: #111; --surface3: #1b1b1b; --sidebar: #000;
+  --ink: #f5f5f5; --secondary: #bfbfbf; --muted: #9b9b9b; --line: #292929;
+  --accent: #77b9ff; --accent-soft: #101e2c; --on-accent: #12263d; --purple: #ceb0f3; --green: #8fd4a6; --amber: #ecc17a; --red: #f2a9a3; --selected: #102239;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { font: 14px/1.45 var(--font); color: var(--ink); background: #20242b; display: grid; grid-template-rows: auto 1fr; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+svg { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Review controls sit outside the app so the mock itself stays faithful */
+.review { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 16px; background: #14171c; color: #cfd6e0; font-size: 12.5px; }
+.review strong { color: #fff; margin-right: 6px; }
+.review button { background: #232830; border: 1px solid #343b46; color: #e8edf4; border-radius: 8px; padding: 5px 10px; }
+.review button[aria-pressed="true"] { background: #2b4a78; border-color: #4a7cc4; }
+.review .spacer { flex: 1; }
+.review .seg { background: #232830; border: 1px solid #343b46; }
+.review .seg button { border: 0; background: transparent; padding: 4px 9px; color: #cfd6e0; }
+.review .seg button[aria-pressed="true"] { background: #2b4a78; color: #fff; }
+.stage { display: grid; place-items: start center; padding: 18px; overflow: auto; }
+.window { width: 1280px; max-width: 100%; height: 820px; display: grid; grid-template-rows: 40px 1fr; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+.window.narrow { width: 900px; }
+
+/* Title bar with native controls */
+.titlebar { display: flex; align-items: center; gap: 12px; padding: 0 0 0 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.titlebar .menu { display: none; border: 0; background: transparent; padding: 6px; border-radius: 8px; color: var(--secondary); }
+.window.narrow .titlebar .menu { display: grid; }
+.titlebar .brand { flex: none; font-weight: 650; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
+.titlebar .brand i { width: 16px; height: 16px; border-radius: 5px; background: linear-gradient(135deg, var(--accent), var(--purple)); }
+.search { flex: 1; max-width: 420px; margin: 0 auto; min-width: 0; overflow: hidden; white-space: nowrap; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--surface2); color: var(--muted); border-radius: 9px; padding: 5px 10px; font-size: 13px; }
+.search kbd { margin-left: auto; font: 11px var(--font); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; }
+.controls { display: flex; height: 100%; margin-left: auto; flex: none; }
+.titlebar .search + .controls { margin-left: 0; }
+.controls span { width: 46px; display: grid; place-items: center; color: var(--secondary); font-size: 13px; }
+
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 0; position: relative; }
+.window.narrow .shell { grid-template-columns: 1fr; }
+
+/* Sidebar */
+.sidebar { background: var(--sidebar); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 12px 10px; gap: 4px; overflow: auto; }
+.window.narrow .sidebar { position: absolute; inset: 0 auto 0 0; width: 260px; z-index: 5; transform: translateX(-102%); transition: transform .25s cubic-bezier(.2,.8,.2,1); box-shadow: 12px 0 40px rgba(0,0,0,.35); background: var(--surface); }
+.window.narrow.drawer .sidebar { transform: none; }
+.scrim { display: none; }
+.window.narrow.drawer .scrim { display: block; position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 4; }
+.group-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 12px 10px 4px; }
+.nav { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; color: var(--secondary); border: 0; background: transparent; width: 100%; text-align: left; }
+.nav:hover { background: var(--surface3); }
+.nav[aria-current="page"] { background: var(--selected); color: var(--ink); font-weight: 600; }
+.nav[aria-current="page"] svg { color: var(--accent); }
+.nav .count { margin-left: auto; font-size: 12px; color: var(--muted); }
+.nav .dot { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+.switcher { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin: 2px 0 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); width: 100%; text-align: left; }
+.switcher .sw { min-width: 0; line-height: 1.25; }
+.switcher .sw b { display: block; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.switcher .sw span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.switcher svg { margin-left: auto; color: var(--muted); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 650; font-size: 13px; color: #fff; flex: none; }
+.av1 { background: linear-gradient(135deg, #b3261e, #6b1a3a); } .av2 { background: linear-gradient(135deg, #2f7dd1, #1d3f78); } .av3 { background: linear-gradient(135deg, #3aa56b, #1d5d44); } .av4 { background: linear-gradient(135deg, #8455b9, #4a2f7a); }
+.avatar.lg { width: 56px; height: 56px; font-size: 20px; }
+.spacer-grow { flex: 1; min-height: 12px; }
+.footer { display: flex; gap: 4px; border-top: 1px solid var(--line); padding-top: 10px; position: relative; }
+.footer .fbtn { display: grid; place-items: center; border: 0; background: transparent; padding: 8px 10px; border-radius: 9px; color: var(--secondary); flex: 1; position: relative; }
+.footer .fbtn:hover, .footer .fbtn[aria-expanded="true"] { background: var(--surface3); color: var(--ink); }
+.footer .ok { color: var(--green); }
+.badge { position: absolute; top: 5px; right: calc(50% - 15px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--sidebar); }
+.window.narrow .badge { border-color: var(--surface); }
+.popover { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); z-index: 7; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 14px; box-shadow: 0 12px 36px rgba(0,0,0,.4); }
+.popover[hidden] { display: none; }
+.popover h3 { display: flex; align-items: center; gap: 8px; }
+.popover .meta { color: var(--secondary); font-size: 13px; margin-top: 4px; }
+.popover .small { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.popover .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.popover .bar { margin: 10px 0 2px; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.add-cta { margin: 6px 0; padding: 10px; border: 1px dashed var(--line); border-radius: 11px; color: var(--secondary); text-align: center; background: transparent; width: 100%; }
+
+/* Content */
+.content { overflow: auto; padding: 22px 28px 40px; min-width: 0; }
+.crumb { color: var(--muted); font-size: 12.5px; margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+h1 { font-size: 27px; font-weight: 650; letter-spacing: -.025em; line-height: 1.15; }
+h2 { font-size: 17px; font-weight: 650; letter-spacing: -.015em; }
+h3 { font-size: 15px; font-weight: 600; }
+.lede { color: var(--secondary); margin-top: 4px; max-width: 62ch; }
+.pagehead { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+.pagehead .grow { flex: 1; min-width: 0; }
+.ctx { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 16px; padding: 8px 12px; border: 1px solid var(--line); background: var(--surface); border-radius: 11px; font-size: 13px; }
+.ctx .avatar { width: 24px; height: 24px; font-size: 11px; }
+.ctx .sep { color: var(--line); }
+.ctx .fresh { margin-left: auto; color: var(--muted); }
+.seg { display: inline-flex; background: var(--surface3); border-radius: 9px; padding: 2px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 3px 11px; border-radius: 7px; color: var(--secondary); font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.subnav { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 18px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.subnav button { border: 0; background: transparent; padding: 8px 14px; color: var(--secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.subnav button[aria-current="page"] { color: var(--ink); font-weight: 600; border-color: var(--accent); }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 6px 13px; border-radius: 9px; display: inline-flex; gap: 7px; align-items: center; }
+.btn:hover { background: var(--surface3); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 16px 18px; }
+.card + .card { margin-top: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.window.narrow .grid3 { grid-template-columns: 1fr; }
+.window.narrow .grid2 { grid-template-columns: 1fr; }
+.muted { color: var(--muted); } .secondary { color: var(--secondary); }
+.pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; padding: 1px 9px; font-size: 12px; background: var(--surface3); color: var(--secondary); }
+.pill.green { color: var(--green); background: color-mix(in srgb, var(--green) 14%, transparent); }
+.pill.amber { color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); }
+.pill.blue { color: var(--accent); background: var(--accent-soft); }
+.pill.purple { color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); }
+.stat { font-size: 30px; font-weight: 650; letter-spacing: -.025em; line-height: 1.1; }
+.bar { height: 8px; background: var(--surface3); border-radius: 9px; overflow: hidden; margin: 8px 0 4px; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 9px; }
+.bar.amber i { background: var(--amber); }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 7px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr.sel { background: var(--selected); }
+tbody tr.row { cursor: pointer; }
+tbody tr.row:hover { background: var(--surface2); }
+.num { font-variant-numeric: tabular-nums; text-align: right; }
+.who { display: flex; align-items: center; gap: 10px; }
+.who .avatar { width: 28px; height: 28px; font-size: 12px; }
+.next { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.next:last-child { border-bottom: 0; }
+.next .grow { flex: 1; }
+.annot { margin-top: 18px; display: grid; gap: 8px; padding: 12px 14px; border-left: 3px solid var(--purple); background: color-mix(in srgb, var(--purple) 8%, transparent); border-radius: 0 10px 10px 0; font-size: 13px; color: var(--secondary); }
+.annot b { color: var(--ink); }
+.slot { display: grid; grid-template-columns: 90px 1fr 1fr 130px; gap: 12px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; width: 100%; text-align: left; border-left: 0; border-right: 0; border-top: 0; }
+.slot:hover { background: var(--surface2); }
+.slot.sel { background: var(--selected); }
+.slot .name { font-weight: 600; }
+.ilvl { font-variant-numeric: tabular-nums; font-weight: 600; }
+.up { color: var(--green); font-weight: 600; } .down { color: var(--red); font-weight: 600; }
+.inspector { margin-top: 14px; }
+.savebar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; margin-bottom: 14px; position: sticky; top: -12px; z-index: 2; }
+.savebar .state { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--amber); }
+.track { display: grid; grid-template-columns: 1fr 110px; gap: 10px; align-items: center; margin: 6px 0; }
+.ceiling { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.empty { text-align: center; padding: 40px 20px; color: var(--secondary); }
+.empty h1 { color: var(--ink); }
+.view { display: none; }
+.view.on { display: block; }
+.sub { display: none; }
+.sub.on { display: block; }
+.note-badge { position: absolute; right: 14px; bottom: 14px; z-index: 3; background: var(--ink); color: var(--bg); border-radius: 99px; padding: 5px 12px; font-size: 12px; opacity: .85; }
+@media (max-width: 1100px) { .stage { padding: 8px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 3 5-6"/></symbol>
+    <symbol id="i-shirt" viewBox="0 0 24 24"><path d="M20.4 6.7 16 3a4 4 0 0 1-8 0L3.6 6.7a1 1 0 0 0-.3 1.3l2 3.5a1 1 0 0 0 1.3.4L8 11v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9l1.4.9a1 1 0 0 0 1.3-.4l2-3.5a1 1 0 0 0-.3-1.3Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7L21 16M16 16h5v5"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </defs>
+</svg>
+
+<div class="review" role="toolbar" aria-label="Mock controls">
+  <strong>Navigation redesign mock</strong>
+  <span>Fictional characters and numbers</span>
+  <span class="spacer"></span>
+  <span>Window</span>
+  <button id="wide" aria-pressed="true">Desktop 1280</button>
+  <button id="narrow" aria-pressed="false">Narrow 900 with drawer</button>
+  <span>Theme</span>
+  <button id="light" aria-pressed="false">Light</button>
+  <button id="dark" aria-pressed="true">Dark</button>
+  <span>Roster</span>
+  <button id="empty" aria-pressed="false">Empty first run</button>
+  <span>Update</span>
+  <span class="seg" id="updateStates"><button data-state="idle" aria-pressed="false">Current</button><button data-state="available" aria-pressed="false">Available</button><button data-state="downloading" aria-pressed="false">Downloading</button><button data-state="ready" aria-pressed="false">Ready</button><button data-state="error" aria-pressed="false">Error</button></span>
+</div>
+
+<div class="stage">
+<div class="window" id="win">
+  <header class="titlebar">
+    <button class="menu" id="menu" aria-label="Open navigation"><svg><use href="#i-menu"/></svg></button>
+    <div class="brand" id="brand"><i></i>WOW Companion</div>
+    <div class="search"><svg><use href="#i-search"/></svg><span>Search items, then choose what to do with one</span><kbd>Ctrl K</kbd></div>
+    <div class="controls" aria-label="Native window controls"><span>&#8212;</span><span>&#9633;</span><span>&#10005;</span></div>
+  </header>
+  <div class="shell">
+    <div class="scrim" id="scrim"></div>
+    <nav class="sidebar" aria-label="Primary">
+      <div class="group-label" style="padding-top:2px">Workspace</div>
+      <button class="nav" data-go="characters"><svg><use href="#i-users"/></svg>Characters<span class="count" data-roster-count>4</span></button>
+      <button class="nav" data-go="tonight"><svg><use href="#i-moon"/></svg>Tonight</button>
+      <button class="nav" data-go="week"><svg><use href="#i-cal"/></svg>This week<span class="dot" title="2 characters need attention"></span></button>
+
+      <div id="char-section">
+        <div class="group-label">Selected character</div>
+        <button class="switcher" id="switcher" aria-haspopup="listbox"><span class="avatar av1" data-char-avatar>V</span><span class="sw"><b data-char-name>Veyra</b><span data-char-sub>Blood Death Knight · Stormrage US</span></span><svg><use href="#i-chev"/></svg></button>
+        <button class="nav" data-go="overview"><svg><use href="#i-home"/></svg>Overview</button>
+        <button class="nav" data-go="gear"><svg><use href="#i-shield"/></svg>Gear</button>
+        <button class="nav" data-go="performance"><svg><use href="#i-chart"/></svg>Performance</button>
+        <button class="nav" data-go="wardrobe"><svg><use href="#i-shirt"/></svg>Wardrobe</button>
+      </div>
+      <div id="empty-section" hidden>
+        <div class="group-label">Selected character</div>
+        <button class="add-cta" data-go="characters">Add a character to unlock Overview, Gear, Performance, and Wardrobe</button>
+      </div>
+
+      <div class="spacer-grow"></div>
+      <div class="footer">
+        <div class="popover" id="updatePop" role="dialog" aria-label="Application updates" hidden></div>
+        <button class="fbtn" title="Sync: last check 2 minutes ago, all sources current" aria-label="Sync status"><svg class="ok"><use href="#i-sync"/></svg></button>
+        <button class="fbtn" id="updateBtn" title="Check for application updates" aria-label="Application updates" aria-expanded="false"><svg><use href="#i-download"/></svg><span class="badge" id="updateBadge" hidden></span></button>
+        <button class="fbtn" data-go="settings" title="Settings" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
+      </div>
+    </nav>
+
+    <main class="content" id="content" tabindex="-1">
+
+      <!-- Characters -->
+      <section class="view" data-view="characters">
+        <div class="pagehead"><div class="grow"><h1>Characters</h1><p class="lede">Who needs attention, and how far each one is from an attainable maximum</p></div><button class="btn" id="manage">Manage roster</button><button class="btn primary"><svg><use href="#i-plus"/></svg>Add character</button></div>
+        <div class="grid2" style="grid-template-columns: 1.6fr 1fr; align-items:start">
+          <div class="card" style="padding:6px 8px">
+            <table>
+              <thead><tr><th>Character</th><th class="num">Equipped</th><th class="num">To target</th><th>Mythic+</th><th>Attention</th></tr></thead>
+              <tbody id="roster"></tbody>
+            </table>
+          </div>
+          <aside class="card" id="pane"></aside>
+        </div>
+        <div class="annot"><div><b>What changed:</b> the table now leads with identity, equipped level, gap to target, standing, and weekly attention. The selected pane offers three named exits instead of one generic Open character.</div><div><b>Unknown stays unknown:</b> a dash means the source has not reported it, and it never counts as a warning.</div><div><b>Footer utilities:</b> Sync, Updates, and Settings are icon buttons. Updates opens a small panel that checks for a new version, shows download progress, and offers Restart and update. A dot appears on the icon when one is ready.</div></div>
+      </section>
+
+      <!-- First run -->
+      <section class="view" data-view="first-run">
+        <div class="empty card" style="margin-top:40px;padding:56px 20px">
+          <h1>Set up WOW Companion</h1>
+          <p class="lede" style="margin:8px auto 18px">We find your game, install the addon, and import your characters. You can skip anything and add characters by name instead</p>
+          <button class="btn primary">Set up WOW Companion</button>
+          <p style="margin-top:12px"><button class="btn quiet">Add a character by name</button></p>
+        </div>
+        <div class="annot"><div><b>One dominant action</b> with a quiet fallback. The sidebar replaces eight disabled links with a single Add a character prompt.</div></div>
+      </section>
+
+      <!-- Overview -->
+      <section class="view" data-view="overview">
+        <div class="pagehead"><div class="avatar lg av1" data-char-avatar>V</div><div class="grow"><div class="crumb">Overview</div><h1 data-char-name>Veyra</h1><p class="lede"><span data-char-sub>Blood Death Knight · Stormrage US</span> · level 90</p></div><div class="seg" data-activity><button aria-pressed="true">Mythic+</button><button aria-pressed="false">Raiding</button><button aria-pressed="false">PvP</button></div></div>
+        <div class="grid3">
+          <div class="card"><div class="muted">Equipped item level</div><div class="stat">296.3</div><div class="bar"><i style="width:88%"></i></div><div class="muted">8.7 below the Mythic+ target of 305</div></div>
+          <div class="card"><div class="muted">Mythic+ standing</div><div class="stat">2,847</div><div class="muted">Top 14% of tracked Blood Death Knights in the US</div><div class="muted" style="margin-top:6px">Sample of 1,204 players · Raider.IO</div></div>
+          <div class="card"><div class="muted">This week</div><div class="stat">2 of 3</div><div class="muted">Vault slots unlocked, one more key to the next</div><p style="margin-top:6px"><button class="btn quiet" data-go="week">Open this week</button></p></div>
+        </div>
+        <div class="card"><h2>Next steps</h2>
+          <div class="next"><div class="grow"><b>Review head upgrade</b><div class="muted">Your head slot is 24 levels below your best piece and drops in a dungeon you are already running</div></div><button class="btn primary" data-go="gear">Review gear<svg><use href="#i-arrow"/></svg></button></div>
+          <div class="next"><div class="grow"><b>Add an enchant to your boots</b><div class="muted">One equipped slot has no enchant</div></div><button class="btn" data-go="gear">Open plan</button></div>
+          <div class="next"><div class="grow"><b>Compare with other Blood Death Knights</b><div class="muted">See which gear the highest-rated players use</div></div><button class="btn" data-go="performance">Open leaders</button></div>
+        </div>
+        <div class="annot"><div><b>Answers one question:</b> what is this character right now? Every number opens its detail screen, and none of the downstream tables are repeated here.</div></div>
+      </section>
+
+      <!-- Gear -->
+      <section class="view" data-view="gear">
+        <div class="pagehead"><div class="grow"><div class="crumb">Gear</div><h1>Gear for <span data-char-name>Veyra</span></h1></div><div class="seg" data-activity><button aria-pressed="true">Mythic+</button><button aria-pressed="false">Raiding</button><button aria-pressed="false">PvP</button></div></div>
+        <div class="subnav" data-subnav="gear"><button data-sub="progress" aria-current="page">Progress</button><button data-sub="plan">Plan</button><button data-sub="owned">Owned</button><button data-sub="sims">Simulations</button></div>
+
+        <div data-sub-view="progress" class="sub on">
+          <div class="card"><h2>How close you are</h2>
+            <div class="ceiling"><span class="pill blue">Season maximum 316</span><span class="pill">Raid maximum 316</span><span class="pill">Mythic+ target 305</span></div>
+            <div class="stat" style="margin-top:6px">296.3 <span class="muted" style="font-size:16px;font-weight:400">of 305 target</span></div>
+            <div class="bar"><i style="width:88%"></i></div>
+            <p class="muted">Three slots hold you back: head, hands, and trinket 2</p>
+          </div>
+          <div class="card" style="padding:6px 8px"><table><thead><tr><th>Slot</th><th>Equipped</th><th class="num">Level</th><th class="num">To target</th><th></th></tr></thead><tbody>
+            <tr><td>Head</td><td>Visage of the Frozen Court</td><td class="num ilvl">281</td><td class="num down">24</td><td class="num"><button class="btn quiet" data-sub-go="plan">Review in plan</button></td></tr>
+            <tr><td>Hands</td><td>Gauntlets of Old Winter</td><td class="num ilvl">288</td><td class="num down">17</td><td class="num"><button class="btn quiet" data-sub-go="plan">Review in plan</button></td></tr>
+            <tr><td>Trinket 2</td><td>Sigil of the Gravewarden</td><td class="num ilvl">290</td><td class="num down">15</td><td class="num"><button class="btn quiet" data-sub-go="plan">Review in plan</button></td></tr>
+            <tr><td>Chest</td><td>Breastplate of Dread Oaths</td><td class="num ilvl">303</td><td class="num muted">2</td><td></td></tr>
+          </tbody></table></div>
+          <details class="card" style="margin-top:14px"><summary style="cursor:pointer"><b>Restrictions and assumptions</b> <span class="muted">Sources, budget, crafting</span></summary><p class="muted" style="margin-top:8px">Content restrictions and advanced assumptions live here, beneath the answer, so the player reads the result first</p></details>
+        </div>
+
+        <div data-sub-view="plan" class="sub">
+          <div class="savebar"><b>Plan for Mythic+</b><span class="muted">1 slot changed</span><div class="state"><span class="pill amber">Unsaved changes</span><button class="btn primary" id="savePlan">Save plan</button></div></div>
+          <div class="card" style="padding:0">
+            <div class="slot" style="font-size:12px;font-weight:600;color:var(--muted);border-top:0"><span>Slot</span><span>Current</span><span>Planned</span><span>Status</span></div>
+            <button class="slot sel"><span class="name">Head</span><span>Visage of the Frozen Court <span class="muted ilvl">281</span></span><span>Crown of the Nightfall Warden <span class="up ilvl">305</span></span><span><span class="pill amber">Not acquired</span></span></button>
+            <button class="slot"><span class="name">Hands</span><span>Gauntlets of Old Winter <span class="muted ilvl">288</span></span><span class="muted">Same as current</span><span><span class="pill green">Target equipped</span></span></button>
+            <button class="slot"><span class="name">Trinket 2</span><span>Sigil of the Gravewarden <span class="muted ilvl">290</span></span><span class="muted">No plan yet</span><span></span></button>
+          </div>
+          <div class="card inspector"><h3>Head</h3><div class="grid2" style="margin-top:8px"><div><div class="muted">Where it drops</div><div>Boss 3 in the Ashen Vault, Mythic+ keystone dungeon</div></div><div><div class="muted">Remaining work</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><span class="pill amber">Acquire</span><span class="pill">Upgrade rank</span><span class="pill">Gem</span><span class="pill">Enchant</span></div></div></div></div>
+          <div class="annot"><div><b>One Save plan</b> at the top replaces the separate Update draft slot step. Slot edits update the draft immediately, and the save state sits next to the button.</div><div><b>Slot inspector</b> opens below without losing the selected row. Leaving with unsaved changes asks first.</div></div>
+        </div>
+
+        <div data-sub-view="owned" class="sub">
+          <div class="seg" style="margin-bottom:12px"><button aria-pressed="false">Equipped</button><button aria-pressed="true">Bags</button><button aria-pressed="false">Observed bank</button><button aria-pressed="false">Vault</button></div>
+          <div class="card" style="padding:6px 8px"><table><thead><tr><th>Item</th><th>Slot</th><th class="num">Level</th><th>Seen</th><th></th></tr></thead><tbody>
+            <tr><td>Crown of the Nightfall Warden</td><td>Head</td><td class="num ilvl">302</td><td class="muted">Bags · 2 min ago</td><td class="num"><button class="btn primary">Use in plan</button></td></tr>
+            <tr><td>Greaves of the Hollow King</td><td>Legs</td><td class="num ilvl">294</td><td class="muted">Bags · 2 min ago</td><td class="num"><button class="btn">Use in plan</button></td></tr>
+          </tbody></table></div>
+          <div class="annot"><div><b>New:</b> Use in plan carries the exact variant into the plan draft and opens Plan. It never claims the item is equipped. Vault rewards use Plan this reward instead, because they are mutually exclusive choices.</div></div>
+        </div>
+
+        <div data-sub-view="sims" class="sub">
+          <div class="card"><h2>Current versus planned</h2><p class="muted" style="margin-top:4px">No applicable result yet</p>
+            <div class="next" style="border:0"><div class="grow"><b>Install the simulation engine</b><div class="muted">One time, about 40 MB. Your plan stays as it is</div></div><button class="btn primary">Install and continue</button></div>
+          </div>
+          <div class="annot"><div><b>Repair in place:</b> a missing prerequisite explains itself and offers the fix on this screen, then returns to the simulation you came for. Raw profile and CPU settings stay behind Advanced.</div></div>
+        </div>
+      </section>
+
+      <!-- Performance -->
+      <section class="view" data-view="performance">
+        <div class="pagehead"><div class="grow"><div class="crumb">Performance</div><h1>Performance for <span data-char-name>Veyra</span></h1></div><div class="seg" data-activity><button aria-pressed="true">Mythic+</button><button aria-pressed="false">Raiding</button><button aria-pressed="false">PvP</button></div></div>
+        <div class="subnav" data-subnav="perf"><button data-psub="standing" aria-current="page">Your standing</button><button data-psub="leaders">Leaders</button><button data-psub="history">History</button><button data-psub="reports">Reports</button></div>
+        <div data-psub-view="standing" class="sub on">
+          <div class="grid2"><div class="card"><div class="muted">Mythic+ rating</div><div class="stat">2,847</div><p class="muted">Season 2 · United States · Blood Death Knight</p></div><div class="card"><div class="muted">Compared with</div><div class="stat">14%</div><p class="muted">From the top of 1,204 tracked players with the same specialization</p></div></div>
+          <div class="annot"><div><b>Named population:</b> the sample size and source are always stated. Tracked peers are not a global ladder, and no percentile is invented.</div></div>
+        </div>
+        <div data-psub-view="leaders" class="sub">
+          <div class="card" style="padding:6px 8px"><table><thead><tr><th>Player</th><th class="num">Rating</th><th>Source</th><th></th></tr></thead><tbody>
+            <tr class="row sel"><td>Marrowfrost</td><td class="num">3,412</td><td class="muted">Raider.IO</td><td class="num"><button class="btn quiet">Details</button></td></tr>
+            <tr class="row"><td>Sunderkind</td><td class="num">3,388</td><td class="muted">Raider.IO</td><td class="num"><button class="btn quiet">Details</button></td></tr>
+            <tr class="row"><td>Ashenveil</td><td class="num">3,371</td><td class="muted">Raider.IO</td><td class="num"><button class="btn quiet">Details</button></td></tr>
+          </tbody></table></div>
+          <div class="card"><h2>Gear most of them use</h2><p class="muted">Aggregate sample of 100 players, not any one player's equipment</p>
+            <div class="next"><div class="grow"><b>Head</b> · Crown of the Nightfall Warden<div class="muted">Used by 82 of 100</div></div><button class="btn primary">Stage in plan</button></div>
+          </div>
+          <div class="annot"><div><b>Honest detail panel:</b> a player shows only identity, score, source link, and talents when available. Individual gear stays out until a provider can supply it.</div></div>
+        </div>
+        <div data-psub-view="history" class="sub"><div class="card"><h2>Stored observations</h2><p class="muted">Rating at each sync, with season breaks kept apart</p><div class="bar" style="height:90px;border-radius:10px"></div></div></div>
+        <div data-psub-view="reports" class="sub"><div class="card"><h2>Warcraft Logs</h2><p class="muted">Bookmarks, notes, and supported summaries</p><div class="next" style="border:0"><div class="grow"><b>Connect Warcraft Logs</b><div class="muted">Needed to import report summaries</div></div><button class="btn">Connect</button></div></div></div>
+      </section>
+
+      <!-- Wardrobe -->
+      <section class="view" data-view="wardrobe">
+        <div class="pagehead"><div class="grow"><div class="crumb">Wardrobe</div><h1>Wardrobe for <span data-char-name>Veyra</span></h1><p class="lede">Appearances never change your gear plan, so there is no activity control here</p></div><button class="btn primary">Save outfit</button></div>
+        <div class="grid2" style="grid-template-columns: 1fr 1.2fr"><div class="card"><h2>Frostbound set</h2><p class="muted">Editing: Shoulders</p><div class="bar" style="height:220px;border-radius:12px;margin-top:10px"></div><p class="muted" style="margin-top:8px">Static render, not a 3D inspection</p></div>
+        <div class="card"><h2>Collect these</h2><div class="next"><div class="grow">Shoulders · Frostbound Pauldrons<div class="muted">Dropped by a boss in the Frozen Halls</div></div><span class="pill">Not collected</span></div><div class="next"><div class="grow">Head · Frostbound Helm</div><span class="pill green">Collected</span></div><p style="margin-top:10px"><button class="btn">Preview in game</button></p></div></div>
+      </section>
+
+      <!-- Tonight -->
+      <section class="view" data-view="tonight">
+        <div class="pagehead"><div class="grow"><h1>Tonight</h1><p class="lede">Pick how long you have and what to do with it, across your characters</p></div></div>
+        <div class="ctx"><b>Session plan for Veyra</b><span class="sep">|</span><span class="muted">Change plan</span><div class="fresh">Pinned for this visit</div></div>
+        <div class="card"><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><b>I have</b><div class="seg"><button aria-pressed="false">30 min</button><button aria-pressed="true">1 hour</button><button aria-pressed="false">2 hours</button></div><b>and want</b><div class="seg"><button aria-pressed="true">Gear</button><button aria-pressed="false">Vault</button><button aria-pressed="false">Appearance</button></div></div></div>
+        <div class="card"><h2>Recommended</h2>
+          <div class="next"><div class="who"><span class="avatar av1">V</span></div><div class="grow"><b>Run two keystone dungeons on Veyra</b><div class="muted">Both can drop a head upgrade and finish inside the hour</div></div><button class="btn primary" data-go="gear">Review head upgrade<svg><use href="#i-arrow"/></svg></button></div>
+          <div class="next"><div class="who"><span class="avatar av2">T</span></div><div class="grow"><b>Open Thornwick's Vault</b><div class="muted">Two rewards waiting, pick one</div></div><button class="btn">Review reward</button></div>
+        </div>
+        <div class="annot"><div><b>Each action names its destination.</b> After reviewing, Back returns to Tonight with the same time and goal still set.</div></div>
+      </section>
+
+      <!-- This week -->
+      <section class="view" data-view="week">
+        <div class="pagehead"><div class="grow"><h1>This week</h1><p class="lede">Vault, keys, and lockouts across the roster. Resets in 3 days 14 hours</p></div></div>
+        <div class="card" style="padding:6px 8px"><table><thead><tr><th>Character</th><th>Great Vault</th><th>Keys</th><th>Raid</th><th></th></tr></thead><tbody>
+          <tr><td><div class="who"><span class="avatar av1">V</span>Veyra</div></td><td>2 of 3 <span class="pill amber">1 short</span></td><td>6 runs</td><td>Normal 6 of 8</td><td class="num"><button class="btn quiet" data-go="overview">Open Veyra</button></td></tr>
+          <tr><td><div class="who"><span class="avatar av2">T</span>Thornwick</div></td><td>3 of 3 <span class="pill green">Complete</span></td><td>8 runs</td><td>Heroic 8 of 8</td><td class="num"><button class="btn quiet">Open Thornwick</button></td></tr>
+          <tr><td><div class="who"><span class="avatar av3">M</span>Mirel</div></td><td>0 of 3 <span class="pill amber">Needs attention</span></td><td class="muted">Not reported</td><td class="muted">Not reported</td><td class="num"><button class="btn quiet">Open Mirel</button></td></tr>
+        </tbody></table></div>
+        <div class="annot"><div><b>Roster-wide audit.</b> A row action opens a named character, and the sidebar switcher is left alone so nothing silently changes the plan you were editing.</div></div>
+      </section>
+
+      <section class="view" data-view="settings">
+        <div class="pagehead"><div class="grow"><h1>Settings</h1><p class="lede">Connections, appearance, workspace, and local data</p></div></div>
+        <div class="card"><div class="next" style="padding-top:0"><div class="grow"><b>Updates and About</b><div class="muted">Version 0.1.1-nightly.20261030.4 · Nightly track · checked on launch and every few hours</div></div><button class="btn" id="settingsUpdate">Check for updates</button></div><div class="next"><div class="grow"><b>Game and addon</b><div class="muted">World of Warcraft found · addon 0.3.0 installed</div></div><span class="pill green">Connected</span></div><div class="next"><div class="grow"><b>Battle.net</b><div class="muted">3 characters imported</div></div><span class="pill green">Signed in</span></div></div>
+      </section>
+    </main>
+  </div>
+  <div class="note-badge" id="badge">Characters</div>
+</div>
+</div>
+
+<script>
+const roster = [
+  { id: 'veyra', name: 'Veyra', initial: 'V', av: 'av1', sub: 'Blood Death Knight · Stormrage US', ilvl: '296.3', gap: '8.7', rating: '2,847', attn: 'Vault 1 short' },
+  { id: 'thornwick', name: 'Thornwick', initial: 'T', av: 'av2', sub: 'Protection Paladin · Stormrage US', ilvl: '301.8', gap: '3.2', rating: '2,610', attn: '' },
+  { id: 'mirel', name: 'Mirel', initial: 'M', av: 'av3', sub: 'Restoration Druid · Area 52 US', ilvl: '288.0', gap: '17.0', rating: '—', attn: 'No Vault progress' },
+  { id: 'kaelor', name: 'Kaelor', initial: 'K', av: 'av4', sub: 'Frost Mage · Area 52 US', ilvl: '—', gap: '—', rating: '—', attn: '' },
+];
+let current = roster[0], view = 'characters', isEmpty = false;
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const win = $('#win');
+const labels = { characters: 'Characters', tonight: 'Tonight', week: 'This week', overview: 'Overview', gear: 'Gear', performance: 'Performance', wardrobe: 'Wardrobe', settings: 'Settings', 'first-run': 'First run' };
+const parent = { overview: 'overview', gear: 'gear', performance: 'performance', wardrobe: 'wardrobe', characters: 'characters', tonight: 'tonight', week: 'week' };
+
+function go(name) {
+  view = name;
+  $$('.view').forEach(v => v.classList.toggle('on', v.dataset.view === (isEmpty && name === 'characters' ? 'first-run' : name)));
+  $$('.sidebar .nav[data-go]').forEach(b => b.toggleAttribute('aria-current', b.dataset.go === parent[name] && true));
+  $$('.sidebar .nav[data-go]').forEach(b => { if (b.dataset.go === parent[name]) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $('#badge').textContent = labels[isEmpty && name === 'characters' ? 'first-run' : name] + (['gear'].includes(name) ? ' · ' + (subSel === 'progress' ? 'Progress' : subSel[0].toUpperCase() + subSel.slice(1)) : '');
+  win.classList.remove('drawer');
+  $('#content').scrollTop = 0;
+}
+let subSel = 'progress';
+function setSub(name) {
+  subSel = name;
+  $$('[data-subnav="gear"] button').forEach(b => b.toggleAttribute('aria-current', false));
+  $$('[data-subnav="gear"] button').forEach(b => { if (b.dataset.sub === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $$('[data-sub-view]').forEach(v => v.classList.toggle('on', v.dataset.subView === name));
+  go('gear');
+}
+function setPerf(name) {
+  $$('[data-subnav="perf"] button').forEach(b => { if (b.dataset.psub === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $$('[data-psub-view]').forEach(v => v.classList.toggle('on', v.dataset.psubView === name));
+}
+function renderRoster() {
+  $('#roster').innerHTML = roster.map(c => `<tr class="row ${c.id === current.id ? 'sel' : ''}" data-id="${c.id}"><td><div class="who"><span class="avatar ${c.av}">${c.initial}</span><div><b>${c.name}</b><div class="muted" style="font-size:12px">${c.sub}</div></div></div></td><td class="num ilvl">${c.ilvl}</td><td class="num ${c.gap === '—' ? 'muted' : ''}">${c.gap}</td><td>${c.rating}</td><td>${c.attn ? `<span class="pill amber">${c.attn}</span>` : '<span class="muted">—</span>'}</td></tr>`).join('');
+  $$('#roster tr').forEach(r => r.onclick = () => select(roster.find(c => c.id === r.dataset.id)));
+  $('#pane').innerHTML = `<div class="who" style="margin-bottom:10px"><span class="avatar lg ${current.av}">${current.initial}</span><div><h2>${current.name}</h2><div class="muted">${current.sub}</div></div></div>
+    <div class="muted">Equipped ${current.ilvl} · ${current.gap} to target</div><div class="bar"><i style="width:${current.gap === '—' ? 0 : 88}%"></i></div>
+    <div class="muted" style="margin:6px 0 14px">Mythic+ ${current.rating} · Observed 2 minutes ago from the addon</div>
+    <div style="display:grid;gap:8px"><button class="btn primary" data-go="overview">Open overview<svg><use href="#i-arrow"/></svg></button><button class="btn" data-go="gear">Review gear</button><button class="btn" data-go="performance">Compare performance</button></div>`;
+  bindGo($('#pane'));
+}
+function select(c) {
+  current = c;
+  $$('[data-char-name]').forEach(e => e.textContent = c.name);
+  $$('[data-char-sub]').forEach(e => e.textContent = c.sub);
+  $$('[data-char-avatar]').forEach(e => { e.textContent = c.initial; e.className = e.className.replace(/av\d/, c.av); });
+  renderRoster();
+}
+function bindGo(root) { $$('[data-go]', root).forEach(b => b.onclick = () => go(b.dataset.go)); }
+bindGo(document);
+$$('[data-sub]').forEach(b => b.onclick = () => setSub(b.dataset.sub));
+$$('[data-sub-go]').forEach(b => b.onclick = () => setSub(b.dataset.subGo));
+$$('[data-psub]').forEach(b => b.onclick = () => setPerf(b.dataset.psub));
+$$('.seg').forEach(seg => $$('button', seg).forEach(b => b.onclick = () => { $$('button', seg).forEach(x => x.setAttribute('aria-pressed', x === b)); }));
+$('#savePlan').onclick = e => { const bar = e.target.closest('.savebar'); $('.state', bar).innerHTML = '<span class="pill green">Saved just now</span>'; $('.muted', bar).textContent = 'No unsaved changes'; };
+$('#switcher').onclick = () => { const i = roster.indexOf(current); select(roster[(i + 1) % roster.length]); };
+$('#switcher').title = 'Switching keeps your current section: Gear stays Gear, Plan stays Plan';
+$('#menu').onclick = () => win.classList.toggle('drawer');
+$('#scrim').onclick = () => win.classList.remove('drawer');
+
+const toggle = (a, b, fn) => { $(a).onclick = () => { $(a).setAttribute('aria-pressed', true); $(b).setAttribute('aria-pressed', false); fn(); }; $(b).onclick = () => { $(b).setAttribute('aria-pressed', true); $(a).setAttribute('aria-pressed', false); fn(true); }; };
+$('#wide').onclick = () => { win.classList.remove('narrow', 'drawer'); $('#wide').setAttribute('aria-pressed', true); $('#narrow').setAttribute('aria-pressed', false); };
+$('#narrow').onclick = () => { win.classList.add('narrow'); $('#narrow').setAttribute('aria-pressed', true); $('#wide').setAttribute('aria-pressed', false); };
+$('#light').onclick = () => { document.documentElement.dataset.theme = 'light'; $('#light').setAttribute('aria-pressed', true); $('#dark').setAttribute('aria-pressed', false); };
+$('#dark').onclick = () => { document.documentElement.dataset.theme = 'dark'; $('#dark').setAttribute('aria-pressed', true); $('#light').setAttribute('aria-pressed', false); };
+$('#empty').onclick = () => {
+  isEmpty = !isEmpty; $('#empty').setAttribute('aria-pressed', isEmpty);
+  $('#char-section').hidden = isEmpty; $('#empty-section').hidden = !isEmpty;
+  $$('[data-roster-count]').forEach(e => e.textContent = isEmpty ? '0' : '4');
+  go('characters');
+};
+/* Application updates: the footer button opens one popover that covers every state */
+const versions = { current: '0.1.1-nightly.20261030.4', next: '0.1.2-nightly.20261102.5' };
+let updateState = 'idle', progress = 0, timer = null;
+const pop = $('#updatePop'), updateBtn = $('#updateBtn');
+const states = {
+  idle: () => ({ title: 'WOW Companion is up to date', meta: 'Version ' + versions.current + ' on the Nightly track', small: 'Last checked 2 minutes ago', actions: [['Check for updates', 'btn', check]] }),
+  checking: () => ({ title: '<span class="spin"></span>Checking for updates', meta: 'Asking GitHub for the latest Nightly', actions: [] }),
+  available: () => ({ title: 'Update available', meta: versions.next + ' is ready to download, 130 MB', small: '3 fixes and 1 improvement', actions: [['Download update', 'btn primary', download], ['Later', 'btn quiet', close]] }),
+  downloading: () => ({ title: 'Downloading update', meta: Math.round(progress * 1.3) + ' of 130 MB', bar: progress, small: 'You can keep working while it downloads', actions: [] }),
+  ready: () => ({ title: 'Ready to install', meta: 'WOW Companion restarts to finish. Unsaved gear plans are checked first, and nothing is lost', actions: [['Restart and update', 'btn primary', restart], ['Later', 'btn quiet', close]] }),
+  error: () => ({ title: "Couldn't check for updates", meta: 'GitHub did not answer. The app keeps working as it is', small: 'Checked just now', actions: [['Try again', 'btn', check]] }),
+};
+// Fixed cases keep a state name taken from the URL from ever choosing which function runs
+function viewFor(name) {
+  switch (name) {
+    case 'checking': return states.checking();
+    case 'available': return states.available();
+    case 'downloading': return states.downloading();
+    case 'ready': return states.ready();
+    case 'error': return states.error();
+    default: return states.idle();
+  }
+}
+function renderUpdate() {
+  const v = viewFor(updateState);
+  pop.innerHTML = '<h3>' + v.title + '</h3><div class="meta">' + v.meta + '</div>' + (v.bar != null ? '<div class="bar"><i style="width:' + v.bar + '%"></i></div>' : '') + (v.small ? '<div class="small">' + v.small + '</div>' : '') + (v.actions.length ? '<div class="actions"></div>' : '');
+  v.actions.forEach(([label, cls, fn]) => { const b = document.createElement('button'); b.className = cls; b.textContent = label; b.onclick = fn; $('.actions', pop).append(b); });
+  $('#updateBadge').hidden = !['available', 'downloading', 'ready'].includes(updateState);
+  $$('#updateStates button').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === updateState));
+  updateBtn.title = updateState === 'available' ? 'Update available' : updateState === 'ready' ? 'Update ready, restart to install' : 'Check for application updates';
+}
+function setUpdate(state, open) { clearInterval(timer); updateState = state; if (state === 'downloading') { progress = Math.max(progress, 62); } renderUpdate(); if (open !== false) openPop(); }
+function openPop() { pop.hidden = false; updateBtn.setAttribute('aria-expanded', true); }
+function close() { pop.hidden = true; updateBtn.setAttribute('aria-expanded', false); }
+function check() { setUpdate('checking'); timer = setTimeout(() => setUpdate('available'), 1100); }
+function download() { progress = 0; setUpdate('downloading'); progress = 0; renderUpdate(); timer = setInterval(() => { progress = Math.min(100, progress + 9); if (progress >= 100) setUpdate('ready'); else renderUpdate(); }, 350); }
+function restart() { pop.innerHTML = '<h3><span class="spin"></span>Restarting</h3><div class="meta">Back in a moment</div>'; timer = setTimeout(() => { versions.current = versions.next; setUpdate('idle'); }, 1500); }
+updateBtn.onclick = () => { if (!pop.hidden) close(); else { if (updateState === 'idle') check(); else openPop(); } };
+$('#settingsUpdate').onclick = () => { go('characters'); setUpdate('idle', false); check(); };
+$$('#updateStates button').forEach(b => b.onclick = () => { progress = b.dataset.state === 'downloading' ? 62 : progress; setUpdate(b.dataset.state); });
+document.addEventListener('click', e => { if (!pop.hidden && !e.target.closest('.footer') && !e.target.closest('#updateStates') && !e.target.closest('#settingsUpdate')) close(); });
+renderUpdate();
+document.documentElement.dataset.theme = 'dark';
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { win.classList.remove('drawer'); close(); } });
+const hash = location.hash.slice(1).split('/');
+renderRoster();
+if (hash.includes('light')) $('#light').click();
+if (hash.includes('narrow')) $('#narrow').click();
+if (hash.includes('empty')) $('#empty').click();
+const start = hash.find(h => labels[h]) || 'characters';
+if (start === 'gear' && hash.includes('plan')) setSub('plan'); else if (start === 'gear' && hash.includes('owned')) setSub('owned'); else go(start);
+if (hash.includes('leaders')) { go('performance'); setPerf('leaders'); }
+if (hash.includes('drawer')) win.classList.add('drawer');
+const upd = hash.indexOf('update'); if (upd >= 0) setUpdate(hash[upd + 1] || 'available');
+</script>
+</body>
+</html>

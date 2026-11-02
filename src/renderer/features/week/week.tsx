@@ -331,7 +331,7 @@ export function useRefreshAll(characters: Character[]) {
   return { run, state };
 }
 
-export function WeekPage({ characters, identity, onOpen }: { characters: Character[]; identity: (character: Character) => ReactNode; onOpen: (character: Character) => void }) {
+export function WeekPage({ characters, identity, onOpen, onReview, expandedId, onExpand }: { characters: Character[]; identity: (character: Character) => ReactNode; onOpen: (character: Character) => void; onReview: (character: Character) => void; expandedId: string | null; onExpand: (id: string | null) => void }) {
   const now = useNow();
   const live = characters.filter((character) => !character.archived);
   const refresh = useRefreshAll(live);
@@ -369,18 +369,33 @@ export function WeekPage({ characters, identity, onOpen }: { characters: Charact
             </tr>
           </thead>
           <tbody>
-            {live.map((character) => {
+            {live.flatMap((character) => {
               const tracks = vaultTracks(character.weekly, character.region, now);
               const summary = sourceSummary(tracks);
-              return (
-                <tr key={character.id} className="selectable" tabIndex={0} aria-label={`Open ${character.name} weekly progress`} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpen(character)}}} onClick={() => onOpen(character)}>
+              return [
+                <tr key={character.id} className="selectable" tabIndex={0} aria-label={`${expandedId === character.id ? 'Collapse' : 'Expand'} ${character.name} weekly progress`} aria-expanded={expandedId === character.id} onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();onExpand(expandedId === character.id ? null : character.id)}}} onClick={() => onExpand(expandedId === character.id ? null : character.id)}>
                   <td>{identity(character)}</td>
                   {tracks.map((track) => (
                     <td key={track.kind}><VaultTrackRow track={track} compact /></td>
                   ))}
                   <td><Badge tone={summary.tone}>{character.demo ? "Demo" : summary.label}</Badge></td>
-                </tr>
-              );
+                </tr>,
+                expandedId === character.id && (
+                  <tr key={character.id + ":expanded"} className="week-expanded">
+                    <td colSpan={5}>
+                      <CharacterWeek
+                        character={character}
+                        action={
+                          <div className="week-expanded-actions">
+                            <Button variant="primary" onClick={() => onOpen(character)}>Open {character.name}</Button>
+                            <Button onClick={() => onReview(character)}>Review gear</Button>
+                          </div>
+                        }
+                      />
+                    </td>
+                  </tr>
+                ),
+              ];
             })}
           </tbody>
         </table>

@@ -41,7 +41,7 @@ const slotOptions: Array<{ value: AppearanceSlot | "any"; label: string }> = [
 ];
 
 /** Item search that runs entirely against the local index built from the user's WoW install */
-export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void }) {
+export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string }) {
   const status = useGameData();
   const [text, setText] = useState("");
   const [slot, setSlot] = useState<AppearanceSlot | "any">(fixedSlot ?? "any");
@@ -63,6 +63,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
     if (!compatibility.compatible) { notify(compatibility.reason ?? "This item doesn't match this character or slot"); return; }
     if (onPick) { onPick(item); onOpenChange(false); } else setHighlighted(String(item.id));
   };
+  const previewItem = (item: ItemSummary) => { if (addLabel) setHighlighted(String(item.id)); else pickItem(item); };
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,7 +92,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                 <>
                   <CommandEmpty className="item-search-empty">{results.isFetching ? "Searching…" : character ? "No compatible items match — try another name, source, or season filter" : "No items match — try another name or turn off a filter"}</CommandEmpty>
                   {results.data?.map((item) => (
-                    <ItemHoverCard key={item.id} item={item}><CommandItem value={String(item.id)} onFocus={() => setHighlighted(String(item.id))} onSelect={() => pickItem(item)} className="item-result">
+                    <ItemHoverCard key={item.id} item={item}><CommandItem value={String(item.id)} onFocus={() => setHighlighted(String(item.id))} onSelect={() => previewItem(item)} className="item-result">
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
@@ -105,11 +106,11 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
               )}
             </CommandList>
             <aside className="item-search-detail" aria-live="polite">
-              {ready && results.data?.some(item=>item.id===Number(highlighted)) ? <ItemDetail id={Number(highlighted)} onPick={onPick ? pickItem : undefined} character={context} slot={fixedSlot ?? (slot === "any" ? null : slot)} compact /> : <p className="muted small">Use the arrow keys or hover to see details</p>}
+              {ready && results.data?.some(item=>item.id===Number(highlighted)) ? <ItemDetail id={Number(highlighted)} onPick={onPick ? pickItem : undefined} addLabel={addLabel} character={context} slot={fixedSlot ?? (slot === "any" ? null : slot)} compact /> : <p className="muted small">Use the arrow keys or hover to see details</p>}
             </aside>
             </div>
             <div className="item-search-footer">
-              <span>{onPick ? "Press Enter to add the highlighted item to your plan" : "Use the arrow keys to compare items"}</span>
+              <span>{onPick && !addLabel ? "Press Enter to add the highlighted item to your plan" : "Use the arrow keys to compare items"}</span>
               <span>Item data from your installed game, version {status.data?.indexedVersion ?? "unknown"}</span>
             </div>
           </Command>
@@ -141,7 +142,7 @@ export function ItemSheet({ id, onOpenChange, onPick }: { id: number | null; onO
   );
 }
 
-export function ItemDetail({ id, onPick, compact = false, character = null, slot = null }: { id: number; onPick?: (item: ItemSummary) => void; compact?: boolean; character?: ItemSearchCharacter | null; slot?: AppearanceSlot | null }) {
+export function ItemDetail({ id, onPick, addLabel, compact = false, character = null, slot = null }: { id: number; onPick?: (item: ItemSummary) => void; addLabel?: string; compact?: boolean; character?: ItemSearchCharacter | null; slot?: AppearanceSlot | null }) {
   const item = useQuery({ queryKey: ["item", id], queryFn: () => api.getItem(id) });
   const data = item.data;
   const compatibility = data ? getItemCompatibility(data,character,{slot}) : null;
@@ -169,7 +170,7 @@ export function ItemDetail({ id, onPick, compact = false, character = null, slot
           <p className="muted small">The item level you receive depends on the difficulty and any upgrades. Stats aren't shown because they scale with item level</p>
           {character && compatibility?.reason && <p className="secondary small" role={compatibility.compatible ? undefined : "alert"}>{compatibility.reason}</p>}
           <div className="actions">
-            {onPick && <Button variant="primary" disabled={!compatibility?.compatible} onClick={() => onPick(data)}>Add to plan</Button>}
+            {onPick && <Button variant="primary" disabled={!compatibility?.compatible} onClick={() => onPick(data)}>{addLabel ?? "Add to plan"}</Button>}
             <Button onClick={() => void api.openExternal(`https://www.wowhead.com/item=${data.id}`).catch((error) => notify(errorMessage(error)))}><ExternalLink />Open on Wowhead</Button>
           </div>
         </div>

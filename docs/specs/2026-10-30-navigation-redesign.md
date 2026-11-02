@@ -1,8 +1,10 @@
 # Navigation and workflow redesign
 
-Status: proposed design for review, no application changes made
+Status: implemented in the application; see the shipped behavior in DESIGN.md. Deferred: individual-player gear in Leaders (needs a provider contract), a single account-wide Tonight store, and the wide-screen three-column Wardrobe layout
 
 Companion to [the audited flow map](2026-10-30-user-flow-map.md)
+
+Interactive mock: [mocks/navigation-redesign](../mocks/navigation-redesign/README.md)
 
 ## Intent
 

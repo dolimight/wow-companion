@@ -69,3 +69,6 @@
   .week-top { grid-template-columns: 1fr; }
 }
 .week-link { margin-top: 18px; }
+.week-expanded > td { padding: 0 0 12px; }
+.week-expanded .surface { margin: 0; }
+.week-expanded-actions { display: flex; gap: 8px; flex-wrap: wrap; }

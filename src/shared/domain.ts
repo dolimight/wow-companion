@@ -100,11 +100,12 @@ export const appearanceRefSchema = z.object({ appearanceId: z.number().int().pos
 export type AppearanceRef = z.infer<typeof appearanceRefSchema>
 export const outfitSchema = z.object({ id: z.string(), characterId: z.string(), name: z.string().min(1).max(100), slots: z.partialRecord(appearanceSlotSchema, appearanceRefSchema), hiddenSlots: z.array(appearanceSlotSchema).default([]), illusionIds: z.object({ mainHand: z.number().int().positive().optional(), offHand: z.number().int().positive().optional() }).default({}), acquisitionTargets:z.array(z.object({slot:appearanceSlotSchema,note:z.string().max(500),sourceUrl:z.string().url().refine(value=>new URL(value).protocol==='https:').nullable().default(null)})).max(40).default([]), templateId: z.string().nullable().default(null), updatedAt: z.string().datetime() })
 export type Outfit = z.infer<typeof outfitSchema>
-export const appSettingsSchema = z.object({ theme: z.enum(['system', 'light', 'dark']).default('system'), lastCharacterId: z.string().nullable().default(null), activity: activitySchema.default('mythicPlus'), characterActivities: z.record(z.string(),activitySchema).default({}), addonPath: z.string().nullable().default(null), reducedMotion: z.boolean().default(false), sidebarWidth: z.number().int().min(220).max(360).default(240), wowInstallPath: z.string().max(1000).nullable().default(null), setupDismissed: z.boolean().default(false) })
+export const appSettingsSchema = z.object({ theme: z.enum(['system', 'light', 'dark']).default('system'), lastCharacterId: z.string().nullable().default(null), tonightAnchorCharacterId: z.string().nullable().default(null), activity: activitySchema.default('mythicPlus'), characterActivities: z.record(z.string(),activitySchema).default({}), addonPath: z.string().nullable().default(null), reducedMotion: z.boolean().default(false), sidebarWidth: z.number().int().min(220).max(360).default(240), wowInstallPath: z.string().max(1000).nullable().default(null), setupDismissed: z.boolean().default(false) })
 export type AppSettings = z.infer<typeof appSettingsSchema>
 export const appSettingsPatchSchema = z.object({
   theme: appSettingsSchema.shape.theme.removeDefault().optional(),
   lastCharacterId: appSettingsSchema.shape.lastCharacterId.removeDefault().optional(),
+  tonightAnchorCharacterId: appSettingsSchema.shape.tonightAnchorCharacterId.removeDefault().optional(),
   activity: appSettingsSchema.shape.activity.removeDefault().optional(),
   characterActivities: appSettingsSchema.shape.characterActivities.removeDefault().optional(),
   addonPath: appSettingsSchema.shape.addonPath.removeDefault().optional(),

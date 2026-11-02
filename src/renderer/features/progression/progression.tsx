@@ -95,6 +95,19 @@ export function useProgression(characterId: string, activity: Activity) {
   });
 }
 
+/** The season ceiling from validated rules: exact when the catalog is complete, otherwise the best known set, never a guessed maximum */
+export function useSeasonCeiling(characterId: string, activity: Activity) {
+  const result = useProgression(characterId, activity);
+  const view = result.data?.legalMaximum;
+  const exact = view?.status === "supported" && view.itemLevel != null;
+  return {
+    level: exact ? view.itemLevel : (view?.bestKnownItemLevel ?? null),
+    exact,
+    reason: view?.reasons[0] ?? null,
+    isError: result.isError,
+  };
+}
+
 export function ProgressionSummary({
   character,
   activity,
@@ -104,11 +117,12 @@ export function ProgressionSummary({
 }) {
   const result = useProgression(character.id, activity);
   const maximum = result.data?.legalMaximum;
+  const exact = maximum?.status === "supported" && maximum.itemLevel != null;
   return (
     <div className="progression-summary" aria-label="Gear progression summary">
       <div>
-        <span>Validated season ceiling</span>
-        <strong>{number(maximum?.itemLevel)}</strong>
+        <span>{exact || maximum?.bestKnownItemLevel == null ? "Validated season ceiling" : "Best known season ceiling"}</span>
+        <strong>{number(exact ? maximum?.itemLevel : maximum?.bestKnownItemLevel)}</strong>
       </div>
       <p>
         {maximum?.status === "supported" && maximum.itemLevel != null && character.itemLevel != null
@@ -122,8 +136,8 @@ export function ProgressionSummary({
       </p>
       <Link
         className="button button-quiet"
-        to="/characters/$characterId/$section"
-        params={{ characterId: character.id, section: "progression" }}
+        to="/characters/$characterId/$section/$view"
+        params={{ characterId: character.id, section: "gear", view: "progress" }}
       >
         See progression <ArrowRight size={14} />
       </Link>
@@ -309,11 +323,9 @@ function WhyPanel({
 export function ProgressionPage({
   character,
   activity,
-  onActivityChange,
 }: {
   character: Character;
   activity: Activity;
-  onActivityChange: (activity: Activity) => void;
 }) {
   const query = useProgression(character.id, activity);
   const preferences = useQuery({
@@ -375,7 +387,7 @@ export function ProgressionPage({
     <>
       <div className="page-heading">
         <div>
-          <h1>Gear progression</h1>
+          <h2>Gear progression</h2>
           <p>
             {character.name} · {character.specName !== "Unknown" ? `${character.specName} ` : ""}
             {character.className} · Item-level goals and their requirements
@@ -391,12 +403,6 @@ export function ProgressionPage({
         </Button>
       </div>
       <div className="progression-toolbar">
-        <AppSelect
-          aria-label="Progression activity"
-          value={activity}
-          options={activities}
-          onValueChange={(value) => onActivityChange(value as Activity)}
-        />
         <AppSelect
           aria-label="Progression view"
           value={viewKey}

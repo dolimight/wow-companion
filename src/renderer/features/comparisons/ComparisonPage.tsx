@@ -32,20 +32,21 @@ function SampleChart({result}:{result:ComparisonResult}){
   </div>
 }
 
-export function ComparisonPage({character,activity}:{character:Character;activity:Activity}){
-  return <ComparisonContent key={`${character.id}:${activity}`} character={character} activity={activity}/>
+export type ComparisonView='standing'|'leaders'|'history'|'reports'
+export function ComparisonPage({character,activity,view='standing'}:{character:Character;activity:Activity;view?:ComparisonView}){
+  return <ComparisonContent key={`${character.id}:${activity}:${view}`} character={character} activity={activity} view={view}/>
 }
-function ComparisonContent({character,activity}:{character:Character;activity:Activity}){
+function ComparisonContent({character,activity,view}:{character:Character;activity:Activity;view:ComparisonView}){
   const [bracket,setBracket]=useState('')
   const brackets=useQuery({queryKey:['pvp-brackets',character.id,character.region],queryFn:()=>api.pvpBrackets({characterId:character.id,region:character.region==='eu'?'eu':'us'}),enabled:activity==='pvp'})
   const queryClient=useQueryClient()
-  const [population,setPopulation]=useState<ComparisonInput['population']>('peers')
+  const [population,setPopulation]=useState<ComparisonInput['population']>(view==='leaders'?'leaders':view==='history'?'history':'peers')
   const [region,setRegion]=useState<'us'|'eu'|'world'>(character.region==='eu'?'eu':character.region==='us'?'us':'world')
   const [keyLevel,setKeyLevel]=useState(''),[encounter,setEncounter]=useState(''),[difficulty,setDifficulty]=useState('any')
   const [filters,setFilters]=useState<{keyLevel:number|null;encounter:string|null;difficulty:string|null}>({keyLevel:null,encounter:null,difficulty:null})
   const [reportUrl,setReportUrl]=useState(''),[notes,setNotes]=useState('')
   const input:ComparisonInput={characterId:character.id,activity,population,region,...filters,pvpBracket:bracket||undefined}
-  const query=useQuery({queryKey:['comparisons',character.id,activity,population,region,filters,bracket],queryFn:()=>api.comparePlayers(input),retry:false,staleTime:30_000})
+  const query=useQuery({queryKey:['comparisons',character.id,activity,population,region,filters,bracket],queryFn:()=>api.comparePlayers(input),retry:false,staleTime:30_000,enabled:view!=='reports'})
   const reports=useQuery({queryKey:['comparison-reports',character.id],queryFn:()=>api.comparisonReports({characterId:character.id})})
   const save=useMutation({mutationFn:()=>api.saveComparisonReport({characterId:character.id,url:reportUrl.trim(),notes}),onSuccess:()=>{void queryClient.invalidateQueries({queryKey:['comparison-reports',character.id]});setReportUrl('');setNotes('');notify('Report saved locally')}})
   const result=query.data
@@ -54,11 +55,18 @@ function ComparisonContent({character,activity}:{character:Character;activity:Ac
     if(level!==null&&(!Number.isInteger(level)||level<1||level>100)){notify('Choose a key level from 1 to 100');return}
     setFilters({keyLevel:level,encounter:encounter.trim()||null,difficulty:difficulty==='any'?null:difficulty})
   }
+  if(view==='reports')return <section className="comparison-page" aria-label="Warcraft Logs reports">
+    <section className="comparison-reports"><h3>Warcraft Logs reports</h3><p>Save public report links and your notes · Encounter summaries and event review require a configured, verified adapter</p>
+      <form onSubmit={event=>{event.preventDefault();save.mutate()}}><Field label="Public report URL"><input type="url" required maxLength={2048} value={reportUrl} onChange={event=>setReportUrl(event.target.value)} placeholder="https://www.warcraftlogs.com/reports/…"/></Field><Field label="Your notes"><textarea maxLength={2000} value={notes} onChange={event=>setNotes(event.target.value)} rows={2}/></Field><Button type="submit" disabled={save.isPending||!reportUrl.trim()}>Save report</Button></form>
+      {save.isError&&<p role="alert">{clean(errorMessage(save.error))}</p>}{reports.isError&&<p role="alert">{clean(errorMessage(reports.error))}</p>}
+      <div className="comparison-report-list">{reports.data?.map(report=><article key={report.id}><div><Source url={report.url}>Open Warcraft Logs report</Source><Badge>Link saved</Badge></div>{report.notes&&<p>{report.notes}</p>}<small>Saved {date(report.updatedAt)} · Report contents have not been imported</small><ReportImport characterId={character.id} url={report.url}/></article>)}</div>
+    </section>
+  </section>
   return <section className="comparison-page" aria-label="Contextual player comparisons">
     {activity==='pvp'&&!!brackets.data?.brackets.length&&<AppSelect label="PvP bracket" value={bracket} options={[{value:'',label:'Choose a bracket'},...brackets.data.brackets.map(b=>({value:b.slug,label:b.name}))]} onValueChange={setBracket}/>}
     <div className="comparison-heading"><div><h2>Contextual comparison</h2><p>{label[activity]} · {character.specName} {character.className}</p></div><Button disabled={query.isFetching} onClick={()=>void query.refetch()}><RefreshCw size={14}/>Refresh comparison</Button></div>
     <div className="comparison-toolbar">
-      <AppSelect aria-label="Comparison population" value={population} onValueChange={value=>setPopulation(value as ComparisonInput['population'])} options={[{value:'leaders',label:'Public leaders'},{value:'peers',label:'Relevant tracked peers'},{value:'history',label:'Your history'}]}/>
+      <span className="comparison-context-label">{view==='leaders'?'Public leaders':view==='history'?'Your stored observations':'Relevant tracked peers'}</span>
       <AppSelect aria-label="Comparison region" value={region} onValueChange={value=>setRegion(value as typeof region)} options={[{value:'us',label:'North America'},{value:'eu',label:'Europe'},{value:'world',label:'All regions'}]}/>
       <span className="comparison-context-label">Same specialization and rating season</span>
     </div>
@@ -90,10 +98,5 @@ function ComparisonContent({character,activity}:{character:Character;activity:Ac
       {result.gearDifferences.length>0&&<section className="comparison-sample-details"><h3>Observed gear choices</h3><p>Counts describe the provider’s gear sample · Matching acquisition does not establish the correct rank, gems, or enchant</p><div className="comparison-gear-list">{result.gearDifferences.slice(0,12).map(entry=><div key={`${entry.slot}:${entry.itemId}`}><span><small>{entry.slot}</small><Source url={`https://www.wowhead.com/item=${entry.itemId}`}>{entry.name}</Source></span><span>{entry.count}/{entry.sampleSize} players</span>{entry.equipped&&<Badge tone="blue">Item equipped</Badge>}</div>)}</div></section>}
       {result.builds.length>0&&<section className="comparison-sample-details"><h3>Observed talent loadouts</h3><p>Use these as candidates for a compatible simulation</p>{result.builds.map((build,index)=><div className="comparison-build" key={build.loadout}><span>Loadout {index+1} · {build.count}/{build.sampleSize} players</span>{build.equipped&&<Badge tone="blue">Your recorded loadout</Badge>}<Button variant="quiet" onClick={()=>void navigator.clipboard.writeText(build.loadout).then(()=>notify('Talent loadout copied')).catch(()=>notify('Copy unavailable'))}><Copy size={13}/>Copy loadout</Button></div>)}</section>}
     </>}
-    <section className="comparison-reports"><h3>Warcraft Logs reports</h3><p>Save public report links and your notes · Encounter summaries and event review require a configured, verified adapter</p>
-      <form onSubmit={event=>{event.preventDefault();save.mutate()}}><Field label="Public report URL"><input type="url" required maxLength={2048} value={reportUrl} onChange={event=>setReportUrl(event.target.value)} placeholder="https://www.warcraftlogs.com/reports/…"/></Field><Field label="Your notes"><textarea maxLength={2000} value={notes} onChange={event=>setNotes(event.target.value)} rows={2}/></Field><Button type="submit" disabled={save.isPending||!reportUrl.trim()}>Save report</Button></form>
-      {save.isError&&<p role="alert">{clean(errorMessage(save.error))}</p>}{reports.isError&&<p role="alert">{clean(errorMessage(reports.error))}</p>}
-      <div className="comparison-report-list">{reports.data?.map(report=><article key={report.id}><div><Source url={report.url}>Open Warcraft Logs report</Source><Badge>Link saved</Badge></div>{report.notes&&<p>{report.notes}</p>}<small>Saved {date(report.updatedAt)} · Report contents have not been imported</small><ReportImport characterId={character.id} url={report.url}/></article>)}</div>
-    </section>
   </section>
 }

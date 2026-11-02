@@ -2,7 +2,7 @@
 
 The production catalog deliberately contains no verified seasonal ceiling yet
 
-The installed client checked during S1 implementation was 12.1.5.70575. The local item index is not an exhaustive source of legal, obtainable reward variants, and published base upgrade tracks do not establish every current-season exception
+The installed client last reviewed was 12.1.5.70688. Between 70575 and 70688 the ItemBonus, ItemScalingConfig and ItemBonusTreeNode tables changed, but regenerating produced identical upgrade tracks, costs, and all 4,434 candidate item levels. The local item index is not an exhaustive source of legal, obtainable reward variants, and published base upgrade tracks do not establish every current-season exception
 
 ## Adding a supported ruleset
 
