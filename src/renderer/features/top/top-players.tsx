@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CircleHelp, Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { api } from "../../lib/client";
 import { errorMessage, notify } from "../../lib/notify";
-import { addItemToPlan, usePlanItemIds } from "../../lib/plan-item";
+import { usePlanItemIds } from "../../lib/plan-item";
+import { useStagePlan } from "../plan/StagePlan";
 import { Term } from "../../components/Term";
 import { AppSelect } from "../../components/AppSelect";
 import { Badge, Button } from "../../components/ui/primitives";
@@ -108,6 +109,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => api.getSettings() });
   const activity = settings.data?.characterActivities?.[character.id] ?? settings.data?.activity ?? "mythicPlus";
   const planned = usePlanItemIds(character, activity);
+  const { stage, dialog: stageDialog } = useStagePlan();
   const top = useQuery({
     queryKey: ["top-players", character.specId, region],
     queryFn: () => api.topPlayers({ specId: character.specId!, specName: character.specName, className: character.className, region }),
@@ -145,6 +147,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
     );
   return (
     <>
+      {stageDialog}
       <PageHeading character={character} data={data} region={region} onRegionChange={setRegion} refreshing={top.isFetching || (currentRefresh && refresh.isPending)} onRefresh={() => refresh.mutate({ specId: character.specId!, specName: character.specName, className: character.className, region })} />
       {(top.isError || (currentRefresh && refresh.isError)) && (
         <section className="surface"><p className="secondary small" role="alert">{errorMessage(currentRefresh && refresh.isError ? refresh.error : top.error)}</p></section>
@@ -199,18 +202,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                                 replaces={swapTarget(mine, entry)}
                                 stats={character.stats}
                                 onAdd={mine.some((item) => item.itemId === entry.id) || planned.has(entry.id) ? undefined : () => {
-                                  void addItemToPlan({
-                                    character,
-                                    activity,
-                                    item: planItemFromEntry(entry, itemMap.get(entry.id)),
-                                    slots,
-                                  }).then((slot) => {
-                                    if (!slot) {
-                                      notify(`${entry.name} doesn't match this character's class, specialization, or gear slot`);
-                                      return;
-                                    }
-                                    notify(`Added ${itemMap.get(entry.id)?.name ?? entry.name} to ${character.name}'s ${activityLabel(activity)} plan`);
-                                  }).catch((error) => notify(errorMessage(error)));
+                                  void stage({ character, activity, item: planItemFromEntry(entry, itemMap.get(entry.id)), slots }, { stay: true });
                                 }}
                               />
                             ))}
@@ -288,7 +280,7 @@ function PageHeading({ character, data, region, onRegionChange, refreshing, onRe
   return (
     <div className="page-heading">
       <div>
-        <h1>Top players</h1>
+        <h2>Top players</h2>
         <p>{data ? `${data.population} · ${data.source} · ${new Date(data.observedAt).toLocaleDateString()}` : `What the best ${character.specName} ${character.className} players use in Mythic+`}</p>
       </div>
       {onRefresh && <div className="top-heading-actions">

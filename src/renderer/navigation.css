@@ -1,0 +1,60 @@
+/* Labeled navigation: a resizable sidebar on wide windows and an overlay drawer below 1100px */
+.sidebar { overflow: auto; }
+.sidebar .nav-group-label { padding-top: 14px; }
+.sidebar .brand + .nav-group-label { padding-top: 0; }
+.sidebar .switcher { margin: 2px 0 6px; }
+.sidebar .switcher .identity small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar .add-cta {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px; border: 1px dashed var(--line);
+  border-radius: 11px; background: transparent; color: var(--secondary); text-align: left; font-size: 13px; line-height: 1.4; cursor: pointer;
+}
+.sidebar .add-cta:hover { background: var(--surface3); color: var(--ink); }
+/* Utilities stay reachable when the window is short and the navigation scrolls */
+.sidebar-footer { position: sticky; bottom: 0; margin-top: auto; padding: 14px 4px 0; background: var(--sidebar); border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.navigation-drawer .sidebar-footer { background: var(--surface); }
+
+.app-shell[data-navigation="drawer"] .workspace-flat { height: 100%; }
+.navigation-drawer {
+  position: fixed; inset: 0 auto 0 0; z-index: 40; width: min(300px, 86vw);
+  transform: translateX(-102%); visibility: hidden;
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .25s;
+  box-shadow: 12px 0 40px rgba(0, 0, 0, .35);
+}
+.navigation-drawer.open { transform: none; visibility: visible; transition-delay: 0s; }
+.navigation-drawer .sidebar { background: var(--surface); backdrop-filter: none; }
+.drawer-scrim { position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .4); }
+:root[data-reduced-motion="true"] .navigation-drawer { transition: none; }
+@media (prefers-reduced-motion: reduce) { .navigation-drawer { transition: none; } }
+.breadcrumbs strong { font-weight: 600; color: var(--ink); }
+.breadcrumbs .button { margin-left: -8px; }
+:root[data-platform="darwin"] .app-shell[data-navigation="drawer"] .breadcrumbs { padding-left: 72px; }
+
+/* Character screens */
+.character-heading { align-items: center; }
+.character-heading .crumb { color: var(--muted); font-size: 12.5px; margin-bottom: 4px; }
+.character-heading-text { flex: 1; min-width: 0; }
+.character-heading .avatar { flex: none; }
+.back-link { margin-bottom: 8px; padding-left: 0; }
+.subnav { display: flex; gap: 2px; margin: -4px 0 20px; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.subnav-link {
+  padding: 8px 14px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--secondary);
+  white-space: nowrap; text-decoration: none; border-radius: 6px 6px 0 0;
+}
+.subnav-link:hover { color: var(--ink); background: var(--surface3); }
+.subnav-link[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.subnav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.view-actions { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.pane-exits { display: grid; gap: 8px; margin-top: 14px; }
+.character-heading + .subnav, .subnav + * { margin-top: 0; }
+
+@media (max-width: 1100px) {
+  .roster-layout { display: flex; flex-direction: column; }
+  .roster-layout > .selected-pane { order: -1; }
+}
+.app-shell[data-navigation="drawer"] .toast { left: 50%; }
+main h1[tabindex]:focus, main h1[tabindex]:focus-visible { outline: none; }
+.plan-unsaved { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; border: 1px solid color-mix(in srgb, var(--amber, #93600a) 45%, var(--line)); border-radius: 12px; background: color-mix(in srgb, var(--amber, #93600a) 8%, var(--surface)); }
+.plan-unsaved p { margin: 0; font-weight: 600; }
+.settings-anchors { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: thin; }
+.settings-anchors .subnav-link { background: transparent; border-top: 0; border-left: 0; border-right: 0; cursor: pointer; font: inherit; }
+.settings-section h2[tabindex]:focus, .settings-section h2[tabindex]:focus-visible { outline: none; }

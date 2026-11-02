@@ -141,9 +141,9 @@ export class DatabaseRepository {
       this.sqlite.prepare('DELETE FROM identity_audit WHERE character_id = ?').run(id)
       this.sqlite.prepare('DELETE FROM characters WHERE id = ?').run(id)
       const settings = this.getSettings()
-      if (settings.lastCharacterId === id || id in settings.characterActivities) {
+      if (settings.lastCharacterId === id || settings.tonightAnchorCharacterId === id || id in settings.characterActivities) {
         const { [id]: _gone, ...activities } = settings.characterActivities
-        this.setSettings({ lastCharacterId: settings.lastCharacterId === id ? null : settings.lastCharacterId, characterActivities: activities })
+        this.setSettings({ lastCharacterId: settings.lastCharacterId === id ? null : settings.lastCharacterId, tonightAnchorCharacterId: settings.tonightAnchorCharacterId === id ? null : settings.tonightAnchorCharacterId, characterActivities: activities })
       }
       this.bump()
     })()
@@ -326,7 +326,7 @@ export class DatabaseRepository {
           const activities = {...settings.characterActivities}
           if (activities[previous.id] && !activities[twin.id]) activities[twin.id] = activities[previous.id]!
           delete activities[previous.id]
-          this.setSettings({lastCharacterId:settings.lastCharacterId===previous.id?twin.id:settings.lastCharacterId,characterActivities:activities})
+          this.setSettings({lastCharacterId:settings.lastCharacterId===previous.id?twin.id:settings.lastCharacterId,tonightAnchorCharacterId:settings.tonightAnchorCharacterId===previous.id?twin.id:settings.tonightAnchorCharacterId,characterActivities:activities})
           this.sqlite.prepare('DELETE FROM characters WHERE id = ?').run(previous.id)
           const gear = previous.gear.length && (!twin.gear.length || (Date.parse(previous.gearObservedAt ?? '') || 0) > (Date.parse(twin.gearObservedAt ?? '') || 0)) ? previous : twin
           const collection = twin.collectionCoverage === 'unknown' ? previous : twin

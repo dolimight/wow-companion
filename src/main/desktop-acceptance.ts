@@ -32,10 +32,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
   const assert = (condition: unknown, reason: string) => { if (!condition) throw new Error(reason) }
   const wait = async (expression: string, label: string, timeout = 12_000) => {
     const success = await evaluate<boolean>(`new Promise(resolve=>{const until=Date.now()+${timeout};const check=()=>{try{if(${expression})return resolve(true)}catch{}if(Date.now()>until)return resolve(false);setTimeout(check,50)};check()})`)
-    assert(success, `Timed out: ${label}`)
+    assert(success, `Timed out: ${label} (at ${await evaluate<string>('location.hash')})`)
   }
   const click = async (label: string, selector = 'button,a') => {
-    const result = await evaluate<boolean>(`(()=>{const node=[...document.querySelectorAll(${JSON.stringify(selector)})].find(node=>node.getAttribute('aria-label')===${JSON.stringify(label)}||node.textContent.trim()===${JSON.stringify(label)});if(!node||node.disabled)return false;node.click();return true})()`)
+    const result = await evaluate<boolean>(`(()=>{const nodes=[...document.querySelectorAll(${JSON.stringify(selector)})];const node=nodes.find(node=>node.getAttribute('aria-label')===${JSON.stringify(label)})??nodes.find(node=>node.textContent.trim()===${JSON.stringify(label)});if(!node||node.disabled)return false;node.click();return true})()`)
     assert(result, `Clickable control missing: ${label}`)
   }
   const choose = async (label: string, option: string) => {
@@ -87,8 +87,22 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     throw new Error(`Persisted state not observed: ${label}`)
   }
   const nav = async (label: string, heading: string) => { await click(label, '.navigation a'); await wait(`document.querySelector('h1')?.textContent===${JSON.stringify(heading)}`, heading) }
+  const openView = async (section: string, view: string) => {
+    await click(section, '.navigation a')
+    await wait(`document.querySelector('h1')?.textContent.startsWith(${JSON.stringify(section + ' for')})`, section)
+    await click(view, '.subnav a')
+    await wait(`document.querySelector('.subnav a[aria-current="page"]')?.textContent===${JSON.stringify(view)}`, section + ' ' + view)
+  }
   // Click the whole switcher choice: strong clicks bubble through the real React handler
   const switchCharacter = async (name: string) => {
+    // Below 1100px the sidebar is a drawer, so open it the way a person would
+    await wait(`!!document.querySelector('[aria-label="Open navigation"]')===(innerWidth<1100)`, 'navigation layout settled')
+    if (await evaluate<boolean>(`!!document.querySelector('[aria-label="Open navigation"]')`)) {
+      await click('Open navigation')
+      await new Promise(resolve => setTimeout(resolve, 600))
+      const drawer = await evaluate<string>(`JSON.stringify({cls:document.querySelector('.navigation-drawer')?.className,expanded:document.querySelector('[aria-label="Open navigation"]')?.getAttribute('aria-expanded'),width:innerWidth})`)
+      assert(drawer.includes('open'), 'Navigation drawer did not open: ' + drawer)
+    }
     await click('Switch character')
     await wait(`document.querySelector('.character-popover')`, 'character switcher')
     const chosen = await evaluate<boolean>(`(()=>{const node=[...document.querySelectorAll('.switcher-choice')].find(node=>node.querySelector('.identity strong')?.firstChild?.textContent===${JSON.stringify(name)});if(!node)return false;node.click();return true})()`)
@@ -166,7 +180,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       const check = await evaluate<{ status: string }>(`window.companion.checkForUpdates()`)
       assert(check.status === 'disabled', 'Isolated acceptance performed an update check')
       await click('Characters', '.navigation a')
-      await wait(`document.querySelector('h1')?.textContent==='Your characters'`, 'roster after update settings')
+      await wait(`document.querySelector('h1')?.textContent==='Characters'`, 'roster after update settings')
       return { version: state.currentVersion, channel: state.channel, isolatedUpdatesDisabled: true, nativeSelectAbsent: true }
     })
     await step('Footer update button opens the update panel and stays inert while acceptance updates are disabled', async () => {
@@ -263,19 +277,18 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await step('Roster selection updates the selected character pane', async () => {
         await click('Select Serath', 'tr')
         await wait(`document.querySelector('.selected-pane h2')?.textContent==='Serath'`, 'selected alt pane')
-        await click('Open character', '.selected-pane a')
+        await click('Open overview', '.selected-pane a')
         await wait(`location.hash.includes('/demo-serath/overview')`, 'alt character route')
       })
       await step('Gear draft edits travel through the UI and persist in SQLite', async () => {
-        await nav('Gear planner', 'Gear planner')
+        await openView('Gear', 'Plan')
         await wait(`document.querySelector('.gear-inspector input')?.value==='Illustrative headpiece'`, 'gear hydration')
         await field('Plan name', 'Acceptance Serath plan')
         await field('Planned item name', 'Acceptance local headpiece')
         await field('Planned item level', '275')
         await field('Enchant', 'Acceptance enchant')
         await field('Gems', 'Acceptance gem')
-        await click('Update draft slot')
-        await click('Save changes')
+        await click('Save plan')
         await waitDb(async () => (await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' }))?.items.some((item) => item.slot === 'head' && item.itemLevel === 275 && item.name === 'Acceptance local headpiece') ?? false, 'Serath gear draft')
         await capture('gear-planner')
         return await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' })
@@ -291,7 +304,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await wait(`document.body.innerText.includes('Acceptance local headpiece')`, 'alt saved plan restored')
       })
       await step('Favorite toggle persists through the real roster control', async () => {
-        await nav('Characters', 'Your characters')
+        await nav('Characters', 'Characters')
         await click('Favorite Mosswind')
         await waitDb(async () => (await db.call('getCharacter', 'demo-mosswind'))?.favorite === true, 'favorite Mosswind')
       })
@@ -323,7 +336,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       })
       await step('Gear planner searches items by name for the selected slot', async () => {
         await switchCharacter('Serath')
-        await nav('Gear planner', 'Gear planner')
+        await openView('Gear', 'Plan')
         await click('Search items for this slot')
         await wait(`!!document.querySelector('.item-search-dialog')`, 'slot item search')
         await wait(`document.querySelector('[aria-label="Search items"]')`, 'search field')
@@ -347,7 +360,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       })
       await step('External-HTTP-denied renderer reopen restores the saved gear plan', async () => {
         contents.session.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*'] }, (details, callback) => { const hostname = new URL(details.url).hostname; callback({ cancel: !['127.0.0.1', 'localhost', '[::1]'].includes(hostname) }) })
-        await nav('Gear planner', 'Gear planner')
+        await openView('Gear', 'Plan')
         const url = contents.getURL()
         await window.loadURL(url)
         await wait(`document.body.innerText.includes('Acceptance local headpiece')`, 'saved gear after offline reload')
@@ -363,7 +376,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
           await db.call('setSettings', { theme: 'light' })
           await service.changed()
           await wait(`document.documentElement.dataset.theme==='light'`, 'light appearance')
-          await nav('Characters', 'Your characters')
+          await nav('Characters', 'Characters')
           await capture('roster-light')
           window.setContentSize(820, 760)
           await wait(`innerWidth===820`, 'minimum supported desktop width')
@@ -372,7 +385,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
           assert(layout.page <= layout.viewport + 1, 'The page overflows the minimum desktop width')
           await capture('roster-minimum-light')
           window.setContentSize(originalSize[0], originalSize[1])
-          await nav('Gear planner', 'Gear planner')
+          await openView('Gear', 'Plan')
           await wait(`!!document.querySelector('[aria-label="Search items for this slot"]')`, 'light gear search')
           await capture('gear-search-light')
           return layout
@@ -444,9 +457,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`document.querySelector('.gear-inspector h3')?.textContent==='Neck'&&document.querySelector('.gear-inspector input')?.value==='Matched neck'`, 'dimmed target keyboard selection')
       assert(await evaluate(`getComputedStyle(document.querySelectorAll('.planner-table tbody tr')[1].querySelector('.game-icon')).opacity==='1'`), 'Focused target remains dimmed')
       await field('Planned item name','Manual neck target')
-      await click('Update draft slot')
+      await evaluate(`(()=>{const input=[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent.trim()==='Planned item name')?.querySelector('input');input?.dispatchEvent(new FocusEvent('focusout',{bubbles:true}))})()`)
       await wait(`!document.querySelectorAll('.planner-table tbody tr')[1].dataset.targetEquipped`, 'manual target clears stale item identity')
-      await click('Save changes')
+      await click('Save plan')
       await waitDb(async()=>{const draft=await db.call('getGearDraft',{characterId:fixture.id,specId:64,activity:'mythicPlus'});return draft?.items.some(item=>item.slot==='neck'&&item.name==='Manual neck target'&&item.itemId===null&&item.itemLink===null)??false}, 'manual target saved without old identity')
       const originalSize=window.getContentSize()
       const settings=await db.call('getSettings')
@@ -459,7 +472,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       } finally {window.setContentSize(originalSize[0],originalSize[1]);await db.call('setSettings',{theme:settings.theme});await service.changed()}
       await window.loadURL(contents.getURL())
       await wait(`document.querySelector('.planner-table')?.textContent.includes('Manual neck target')&&!document.querySelectorAll('.planner-table tbody tr')[1].dataset.targetEquipped`, 'comparison state persists after reload')
-      await nav('Characters','Your characters')
+      await nav('Characters','Characters')
       return {currentAndPlanned:true,matchedTargetDimmed:true,missingIdsNotMatched:true,levelsPreserved:true,keyboardEditable:true,manualIdentityCleared:true,minimumWidthLight:true,persisted:true}
     })
     let progressionId = ''
@@ -474,7 +487,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await service.changed()
       await window.loadURL(contents.getURL().split('#')[0] + `#/characters/${fixture.id}/overview`)
       await wait(`document.querySelector('h1')?.textContent==='Progression fixture'`, 'progression fixture overview')
-      await nav('Progression', 'Gear progression')
+      await openView('Gear', 'Progress')
       await wait(`document.querySelector('.progression-table')?.textContent.includes('Recorded progression helm')`, 'recorded per-slot gear')
       const labels = ['Equipped gear', 'Upgrade gear you own', 'Your content ceiling', 'Season legal maximum', 'Affordable now']
       for (const label of labels) {
@@ -521,19 +534,19 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await window.loadURL(contents.getURL())
       await wait(`document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='false'&&document.querySelector('[aria-label="Include Heroic difficulty"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('[aria-label="Exclude Vendors"]')?.getAttribute('aria-pressed')==='true'`, 'saved progression preferences after reload')
       assert(await evaluate(`document.querySelector('input[placeholder="No target set"]')?.value==='301.5'`), 'Personal progression target did not survive reload')
-      await choose('Progression activity', 'Raiding')
-      await wait(`document.querySelector('[aria-label="Progression activity"]')?.getAttribute('data-value')==='raiding'&&document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('[aria-label="Include Heroic difficulty"]')?.getAttribute('aria-pressed')==='false'`, 'independent raiding content preferences')
+      await click('Raiding', '.segments button')
+      await wait(`[...document.querySelectorAll('.segments button')].find(n=>n.textContent==='Raiding')?.getAttribute('aria-pressed')==='true'&&document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='true'&&document.querySelector('[aria-label="Include Heroic difficulty"]')?.getAttribute('aria-pressed')==='false'`, 'independent raiding content preferences')
       const raidPreferences = await db.call('getContentPreferences', progressionId, 'raiding')
       assert(raidPreferences.allowCrafting && !raidPreferences.difficulties.length && !raidPreferences.excludedMethods.length, 'Mythic+ preferences leaked into raiding')
-      await choose('Progression activity', 'Mythic+')
+      await click('Mythic+', '.segments button')
       await wait(`document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='false'`, 'return to Mythic+ preferences')
       await switchCharacter('Progression alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${progressionAltId}/progression`)})&&document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='true'`, 'independent alt content preferences')
+      await wait(`location.hash.includes(${JSON.stringify(`/${progressionAltId}/gear/progress`)})&&document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='true'`, 'independent alt content preferences')
       const altPreferences = await db.call('getContentPreferences', progressionAltId, 'mythicPlus')
       assert(altPreferences.allowCrafting && !altPreferences.difficulties.length && !altPreferences.excludedMethods.length, 'Progression preferences leaked into an alt')
       await switchCharacter('Progression fixture')
       await wait(`document.querySelector('[aria-label="Allow crafted gear"]')?.getAttribute('aria-pressed')==='false'`, 'original progression preferences restored')
-      await nav('Characters', 'Your characters')
+      await nav('Characters', 'Characters')
       return { persisted: true, characterIsolation: true, activityIsolation: true, personalTarget: 301.5, observedGearPreserved: true }
     })
     // New roadmap flows use isolated fictional observations, with no live provider or game dependency
@@ -578,8 +591,11 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`document.querySelector('.tonight-recommended h2')?.textContent==='Work toward Workflow goal helm'`, 'undo restores the action and duration')
       await capture('tonight-scheduled-dark')
       await switchCharacter('Workflow alt')
-      await waitDb(async () => (await db.call('getSettings')).lastCharacterId === workflowAltId, 'alt session anchor')
-      await nav('Tonight', 'Tonight')
+      await waitDb(async () => (await db.call('getSettings')).lastCharacterId === workflowAltId, 'alt selection')
+      assert((await db.call('getSettings')).tonightAnchorCharacterId === workflowId, 'Selecting another character moved the pinned session plan')
+      await wait(`document.body.innerText.includes('Session plan for Workflow fixture')&&!!document.querySelector('.tonight-recommended')`, 'session plan stays on its pinned character')
+      await choose('Change plan', 'Workflow alt')
+      await waitDb(async () => (await db.call('getSettings')).tonightAnchorCharacterId === workflowAltId, 'alt session anchor')
       await wait(`document.body.innerText.includes('No supported next step yet')`, 'alt has its own empty plan')
       assert(await evaluate(`!document.querySelector('.tonight-recommended')&&!document.querySelector('.tonight-history')&&!document.body.innerText.includes('Workflow goal helm')`), 'Session plan or dispositions leaked into the alt')
       assert(await db.call('getFeatureState', workflowAltId, 'session') === null, 'Reading an alt plan copied another character state')
@@ -588,7 +604,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await step('Inventory distinguishes observed bags, unknown bank access, and mutually exclusive Vault choices', async () => {
       assert(workflowSeeded, 'Workflow fixtures must be available')
       await window.loadURL(contents.getURL().split('#')[0] + `#/characters/${workflowId}/inventory`)
-      await wait(`document.querySelector('h1')?.textContent==='Inventory'&&document.body.innerText.includes('Workflow current helm')`, 'observed equipped inventory page')
+      await wait(`document.querySelector('h1')?.textContent==='Gear for Workflow fixture'&&document.querySelector('.subnav a[aria-current="page"]')?.textContent==='Owned'&&document.body.innerText.includes('Workflow current helm')`, 'observed equipped inventory page')
       await click('Bags')
       await wait(`document.querySelector('.inventory-list')?.textContent.includes('Workflow bag robes')`, 'observed bag equipment')
       contents.focus()
@@ -616,6 +632,69 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       try { window.setContentSize(820, 760); await wait(`innerWidth===820`, 'minimum inventory width'); assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Inventory overflows the minimum desktop width'); await capture('inventory-minimum-width') } finally { window.setContentSize(originalSize[0], originalSize[1]) }
       return { bagsObserved: true, rawItemLink: true, instancePreserved: true, keyboardStats: true, bankUnknown: true, vaultAlternativesVisible: true, minimumWidth: true }
     })
+    await step('Navigation shows seven labeled destinations, redirects old links, recovers from unknown pages, and opens a labeled drawer', async () => {
+      assert(workflowSeeded, 'Workflow fixtures must be available')
+      const base = contents.getURL().split('#')[0]
+      await window.loadURL(base + `#/characters/${workflowId}/overview`)
+      await wait(`document.querySelector('h1')?.textContent==='Workflow fixture'`, 'overview heading')
+      const labels = await evaluate<string[]>(`[...document.querySelectorAll('.navigation a')].map(node=>node.textContent.trim())`)
+      assert(JSON.stringify(labels) === JSON.stringify(['Characters', 'Tonight', 'This week', 'Overview', 'Gear', 'Performance', 'Wardrobe']), 'Sidebar destinations are wrong: ' + labels.join(', '))
+      await wait(`!!document.querySelector('[aria-label="Resize sidebar"]')&&!document.querySelector('[aria-label="Open navigation"]')`, 'wide layout settled')
+      const wide = await evaluate<string>(`JSON.stringify({width:innerWidth,handles:document.querySelectorAll('[aria-label="Resize sidebar"]').length,menu:!!document.querySelector('[aria-label="Open navigation"]')})`)
+      assert(wide.includes('"handles":1') && wide.includes('"menu":false'), 'Wide windows must keep the resizable sidebar without a drawer button: ' + wide)
+      for (const [old, now, view] of [['standings', 'performance/standing', 'Your standing'], ['top', 'performance/leaders', 'Leaders'], ['progression', 'gear/progress', 'Progress'], ['inventory', 'gear/owned', 'Owned'], ['simulations', 'gear/simulations', 'Simulations'], ['gear', 'gear/plan', 'Plan']] as const) {
+        await window.loadURL(base + `#/characters/${workflowId}/${old}`)
+        await wait(`location.hash.includes(${JSON.stringify('/' + now)})&&document.querySelector('.subnav a[aria-current="page"]')?.textContent===${JSON.stringify(view)}`, `legacy ${old} redirect`)
+      }
+      await window.loadURL(base + `#/characters/${workflowId}/nonsense`)
+      await wait(`document.body.innerText.includes("That page doesn't exist")`, 'unknown section recovery')
+      await window.loadURL(base + `#/characters/${workflowId}/gear/nonsense`)
+      await wait(`document.body.innerText.includes("That page doesn't exist")`, 'unknown view recovery')
+      await window.loadURL(base + `#/characters/${workflowId}/overview`)
+      await wait(`document.querySelector('h1')?.textContent==='Workflow fixture'`, 'overview after recovery')
+      const originalSize = window.getContentSize()
+      try {
+        window.setContentSize(900, 700)
+        await wait(`innerWidth===900&&!!document.querySelector('[aria-label="Open navigation"]')&&!document.querySelector('[aria-label="Resize sidebar"]')`, 'drawer layout below 1100px')
+        assert(await evaluate(`!!document.querySelector('.navigation-drawer')?.hasAttribute('inert')`), 'A closed drawer must not be reachable')
+        await click('Open navigation')
+        await wait(`!!document.querySelector('.navigation-drawer.open')&&document.querySelector('.navigation-drawer .navigation a')?.textContent.trim()==='Characters'`, 'drawer opens with labels')
+        assert(await evaluate(`document.querySelector('.navigation-drawer .sidebar-footer')?.getBoundingClientRect().bottom<=innerHeight+1`), 'Utility controls are unreachable in the drawer')
+        contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+        contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+        await wait(`!document.querySelector('.navigation-drawer.open')&&document.activeElement?.getAttribute('aria-label')==='Open navigation'`, 'Escape closes the drawer and returns focus')
+        await click('Open navigation')
+        await wait(`!!document.querySelector('.navigation-drawer.open')`, 'drawer reopens')
+        await click('Tonight', '.navigation-drawer .navigation a')
+        await wait(`location.hash==='#/tonight'&&!document.querySelector('.navigation-drawer.open')`, 'drawer closes after navigation')
+        assert((await db.call('getSettings')).sidebarWidth > 0, 'The drawer overwrote the saved desktop width')
+      } finally { window.setContentSize(originalSize[0], originalSize[1]) }
+      await wait(`!!document.querySelector('[aria-label="Resize sidebar"]')&&!document.querySelector('[aria-label="Open navigation"]')`, 'sidebar returns on wide windows')
+      return { destinations: labels.length, legacyRedirects: 6, notFoundRecovery: true, drawer: true }
+    })
+    await step('Owned gear stages an exact copy into the Plan draft, protects unsaved changes, and leaves freely after saving', async () => {
+      assert(workflowSeeded, 'Workflow fixtures must be available')
+      const base = contents.getURL().split('#')[0]
+      await window.loadURL(base + `#/characters/${workflowId}/gear/owned`)
+      await wait(`document.querySelector('.subnav a[aria-current="page"]')?.textContent==='Owned'&&!!document.querySelector('.inventory-list')`, 'owned view')
+      await click('Bags')
+      await wait(`document.querySelector('.inventory-list')?.textContent.includes('Workflow bag robes')`, 'bag robes listed')
+      await click('Inspect Workflow bag robes, Chest, item level 280')
+      await wait(`!!document.querySelector('[role="dialog"] .inventory-use')`, 'use in plan action')
+      assert(await evaluate(`document.querySelector('[role="dialog"] .inventory-use')?.textContent.includes('does not mean the item is equipped')`), 'Use in plan implied the item was equipped')
+      await click('Use in plan', '[role="dialog"] button')
+      await wait(`location.hash.includes('/gear/plan')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')&&document.querySelector('.save-status')?.textContent.includes('Unsaved changes')`, 'staged copy opens Plan as an unsaved draft')
+      assert(!(await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes'), 'Staging saved the plan before Save plan')
+      await click('Overview', '.navigation a')
+      await wait(`!!document.querySelector('.plan-unsaved')&&location.hash.includes('/gear/plan')`, 'unsaved plan blocks leaving')
+      await click('Keep editing')
+      await wait(`!document.querySelector('.plan-unsaved')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')`, 'keep editing preserves the draft')
+      await click('Save plan')
+      await waitDb(async () => (await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes') ?? false, 'saved staged plan')
+      await click('Overview', '.navigation a')
+      await wait(`location.hash.includes('/overview')`, 'leaving after saving is not blocked')
+      return { exactCopyStaged: true, unsavedUntilSave: true, leaveProtection: true }
+    })
     await step('Simulations export a partial baseline, reject executable profile directives, and persist external report bookmarks by character', async () => {
       assert(workflowSeeded, 'Workflow fixtures must be available')
       await window.loadURL(contents.getURL().split('#')[0] + `#/characters/${workflowId}/simulations`)
@@ -638,7 +717,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`document.querySelector('.simulation-report')?.textContent.includes('Acceptance report bookmark')&&document.body.innerText.includes('Saved import: matches the recorded baseline')`, 'report/profile persistence after reload')
       await capture('simulations-baseline-dark')
       await switchCharacter('Workflow alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/simulations`)})&&document.querySelector('[aria-label="SimulationCraft profile"]')?.value.includes('spec=arcane')`, 'alt simulation baseline')
+      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/gear/simulations`)})&&document.querySelector('[aria-label="SimulationCraft profile"]')?.value.includes('spec=arcane')`, 'alt simulation baseline')
       assert(await evaluate(`!document.querySelector('.simulation-report')&&!document.body.innerText.includes('Saved import:')&&!document.body.innerText.includes('Acceptance report bookmark')`), 'Simulation profile or bookmark leaked into another character')
       return { profileExport: true, baselineHashPresent: true, incompleteExecutionDisabled: true, directiveRejected: true, profileReload: true, reportReload: true, characterIsolation: true }
     })
@@ -707,13 +786,14 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(await evaluate(`document.querySelector('.comparison-table')?.textContent.includes('Raider.IO')&&document.querySelector('.comparison-source-meta')?.textContent.includes('acceptance-season')`), 'Peer comparison omitted source or season')
       await click('Applied filters and interpretation', 'summary')
       assert(await evaluate(`document.querySelector('.comparison-evidence')?.textContent.includes('no overall percentile is calculated')`), 'A sampled population did not disclose the missing overall denominator')
-      await choose('Comparison population', 'Your history')
+      await openView('Performance', 'History')
       await wait(`document.querySelector('.comparison-population h3')?.textContent==='Your recorded rating history'&&document.querySelector('.comparison-table tbody tr')`, 'recorded history population')
       assert(await evaluate(`!document.querySelector('.comparison-table tbody')?.textContent.includes('Workflow alt')`), 'Another character appeared in personal rating history')
       await click('Content filters and availability', 'summary')
       await field('Key level', '12')
       await click('Apply filters')
       await wait(`document.querySelector('.comparison-notice')?.textContent.includes('Key-level +12 filtering is unavailable')&&!document.querySelector('.comparison-table tbody tr')`, 'unsupported filters withhold the sample instead of broadening it')
+      await openView('Performance', 'Reports')
       await field('Public report URL', 'https://www.warcraftlogs.com/reports/ABCDEF1234567890')
       await field('Your notes', 'Acceptance public report bookmark')
       await click('Save report', '.comparison-reports button')
@@ -721,8 +801,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await window.loadURL(contents.getURL())
       await wait(`document.querySelector('.comparison-report-list')?.textContent.includes('Acceptance public report bookmark')`, 'comparison report persistence')
       await capture('comparisons-peers-dark')
+      await openView('Performance', 'Your standing')
       await switchCharacter('Workflow alt')
-      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/standings`)})&&document.querySelector('.comparison-page')`, 'alt comparison context')
+      await wait(`location.hash.includes(${JSON.stringify(`/${workflowAltId}/performance/standing`)})&&document.querySelector('.comparison-page')`, 'alt comparison context')
       await wait(`!document.querySelector('.comparison-report-list article')`, 'alt report list loaded')
       assert(await evaluate(`!document.body.innerText.includes('Acceptance public report bookmark')`), 'A saved report leaked into another character')
       return { sourceAndSeason: true, noInventedPercentile: true, historyIsolation: true, unsupportedFiltersWithheld: true, publicReportBookmark: true, reportReload: true, characterIsolation: true }
@@ -736,7 +817,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     let deletionId = ''
     await step('Every polished screen fits dark desktop and light minimum-width layouts',async()=>{
       const unknown=await db.call('addCharacter',{name:'Polish unknown spec',region:'us',realm:'Acceptance Realm',className:'Mage',specId:null})
-      const screens=[['characters',`/characters?selected=${workflowId}`,'Your characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear progression'],['gear',`/characters/${workflowId}/gear`,'Gear planner'],['inventory',`/characters/${workflowId}/inventory`,'Inventory'],['simulations',`/characters/${workflowId}/simulations`,'Simulations'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe'],['standings',`/characters/${workflowId}/standings`,'Standings'],['top',`/characters/${unknown.id}/top`,'Top players'],['settings','/settings','Settings']]
+      const screens=[['characters',`/characters?selected=${workflowId}`,'Characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear for Workflow fixture'],['gear',`/characters/${workflowId}/gear`,'Gear for Workflow fixture'],['inventory',`/characters/${workflowId}/inventory`,'Gear for Workflow fixture'],['simulations',`/characters/${workflowId}/simulations`,'Gear for Workflow fixture'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe for Workflow fixture'],['standings',`/characters/${workflowId}/standings`,'Performance for Workflow fixture'],['top',`/characters/${unknown.id}/top`,`Performance for ${unknown.name}`],['settings','/settings','Settings']]
       const size=window.getContentSize()
       try{for(const variant of [{theme:'dark' as const,width:1460},{theme:'light' as const,width:820}]){
         await db.call('setSettings',{theme:variant.theme});await service.changed();window.setContentSize(variant.width,900)
@@ -766,7 +847,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       const settings = await db.call('getSettings')
       await db.call('setSettings', { characterActivities: { ...settings.characterActivities, [deletionId]: 'mythicPlus' } })
       await service.changed()
-      await nav('Characters', 'Your characters')
+      await nav('Characters', 'Characters')
       await wait(`!!document.querySelector('tr[aria-label="Select Deletion fixture"]')`, 'fictional deletion roster row')
       await click('Select Deletion fixture', 'tr')
       await wait(`document.querySelector('.selected-pane h2')?.textContent==='Deletion fixture'&&document.querySelector('.switcher strong')?.textContent==='Deletion fixture'`, 'selected deletion fixture')
@@ -812,9 +893,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         assert(JSON.stringify(after[key]) === JSON.stringify(remaining), `Deletion changed another character's ${key}`)
       }
       await click('Close panel')
-      await wait(`location.hash.split('?')[0]==='#/characters'&&document.querySelector('h1')?.textContent==='Your characters'&&!document.querySelector('tr[aria-label="Select Deletion fixture"]')&&document.querySelector('.selected-pane h2')?.textContent!=='Deletion fixture'&&document.querySelector('.switcher strong')?.textContent!=='Deletion fixture'`, 'usable roster and surviving selection after deletion')
+      await wait(`location.hash.split('?')[0]==='#/characters'&&document.querySelector('h1')?.textContent==='Characters'&&!document.querySelector('tr[aria-label="Select Deletion fixture"]')&&document.querySelector('.selected-pane h2')?.textContent!=='Deletion fixture'&&document.querySelector('.switcher strong')?.textContent!=='Deletion fixture'`, 'usable roster and surviving selection after deletion')
       await window.loadURL(contents.getURL())
-      await wait(`document.querySelector('h1')?.textContent==='Your characters'&&!!document.querySelector('.selected-pane h2')&&!document.querySelector('tr[aria-label="Select Deletion fixture"]')&&document.querySelector('.selected-pane h2')?.textContent!=='Deletion fixture'`, 'deleted character stays absent after reload')
+      await wait(`document.querySelector('h1')?.textContent==='Characters'&&!!document.querySelector('.selected-pane h2')&&!document.querySelector('tr[aria-label="Select Deletion fixture"]')&&document.querySelector('.selected-pane h2')?.textContent!=='Deletion fixture'`, 'deleted character stays absent after reload')
       await capture('character-deleted-roster')
       return { characterId: deletionId, removedDrafts: 2, removedOutfits: 2, savedSelectionCleared: true, savedActivityCleared: true, unrelatedDataPreserved: true, rosterAfterReload: true }
     })
@@ -841,7 +922,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(after.settings.lastCharacterId === null && !(deletionId in after.settings.characterActivities), 'Reimport restored the deleted selection or activity')
       await click('Close panel')
       await window.loadURL(contents.getURL())
-      await wait(`document.querySelector('h1')?.textContent==='Your characters'&&!!document.querySelector('tr[aria-label="Select Deletion import control"]')&&!document.querySelector('tr[aria-label="Select Deletion fixture"]')`, 'reimport suppression survives renderer reload')
+      await wait(`document.querySelector('h1')?.textContent==='Characters'&&!!document.querySelector('tr[aria-label="Select Deletion import control"]')&&!document.querySelector('tr[aria-label="Select Deletion fixture"]')`, 'reimport suppression survives renderer reload')
       return { suppressedAddonGuid: deletionGuid, newerSequence: 2, importedControlId: control?.id, deletedIdentityAbsent: true, plansRemainRemoved: true }
     })
     report.gpu = await app.getGPUInfo('complete').catch((cause) => ({ error: String(cause) }))

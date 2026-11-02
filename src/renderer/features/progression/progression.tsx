@@ -122,8 +122,8 @@ export function ProgressionSummary({
       </p>
       <Link
         className="button button-quiet"
-        to="/characters/$characterId/$section"
-        params={{ characterId: character.id, section: "progression" }}
+        to="/characters/$characterId/$section/$view"
+        params={{ characterId: character.id, section: "gear", view: "progress" }}
       >
         See progression <ArrowRight size={14} />
       </Link>
@@ -309,11 +309,9 @@ function WhyPanel({
 export function ProgressionPage({
   character,
   activity,
-  onActivityChange,
 }: {
   character: Character;
   activity: Activity;
-  onActivityChange: (activity: Activity) => void;
 }) {
   const query = useProgression(character.id, activity);
   const preferences = useQuery({
@@ -375,7 +373,7 @@ export function ProgressionPage({
     <>
       <div className="page-heading">
         <div>
-          <h1>Gear progression</h1>
+          <h2>Gear progression</h2>
           <p>
             {character.name} · {character.specName !== "Unknown" ? `${character.specName} ` : ""}
             {character.className} · Item-level goals and their requirements
@@ -391,12 +389,6 @@ export function ProgressionPage({
         </Button>
       </div>
       <div className="progression-toolbar">
-        <AppSelect
-          aria-label="Progression activity"
-          value={activity}
-          options={activities}
-          onValueChange={(value) => onActivityChange(value as Activity)}
-        />
         <AppSelect
           aria-label="Progression view"
           value={viewKey}

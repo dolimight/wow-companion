@@ -9,7 +9,7 @@ const MAX_WIDTH = 360;
 function viewport() {
   return {
     width: window.innerWidth,
-    compact: window.innerWidth <= 1000,
+    compact: window.innerWidth < 1100,
     maximum: Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, window.innerWidth - 760)),
   };
 }
