@@ -250,6 +250,7 @@ The palette combines cool paper and silver neutrals with an icon-selected intera
 The App icon preference also selects the primary color through `data-app-icon` on the document root and `src/renderer/app-accent.css`
 Classic uses the blue values above; Nightly uses violet `#7132c4` in Light and lavender `#c5a0ff` in Dark; Halloween uses burnt orange `#ac4b00` in Light and warm orange `#ffad66` in Dark
 Each variant provides matching `accent-soft`, `on-accent`, and `selected` overrides
+Additional holiday choices use champagne gold for New Year’s, rose for Valentine’s Day, emerald for St Patrick’s Day, mint for Easter, red for July 4, copper for Thanksgiving, and evergreen for Christmas
 Light, Dark, or System appearance remains independent, including the pure-black dark canvas; item-quality, success, warning, and error colors keep their semantic meanings
 
 ### Secondary

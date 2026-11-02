@@ -193,6 +193,15 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await step('App icons update the sidebar, favicon and native window and preserve the saved choice', async () => {
       await click('Open settings')
       await wait(`!!document.querySelector('[aria-label="App icon"]')`, 'icon picker')
+      await evaluate(`document.querySelector('[aria-label="App icon"]').scrollIntoView({block:'center'})`)
+      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+      await click('App icon')
+      await wait(`document.querySelector('.app-select-with-images:not([data-closed])')?.querySelectorAll('img').length===${appIconChoices.length}&&[...document.querySelectorAll('.app-select-with-images:not([data-closed]) img')].every(img=>img.complete&&img.naturalWidth>0)`, 'all icon option previews loaded')
+      assert(await evaluate(`(()=>{const list=document.querySelector('.app-select-with-images:not([data-closed])').getBoundingClientRect();return list.width>=240&&list.top>=0&&list.bottom<=innerHeight})()`), 'Icon preview list is outside the visible window')
+      await capture('app-icon-dropdown-previews', false)
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`document.querySelector('[aria-label="App icon"]')?.getAttribute('aria-expanded')==='false'`, 'close icon preview list')
       const primaryColors = new Set<string>()
       for (const choice of appIconChoices.filter(choice => choice.value !== 'auto')) {
         await choose('App icon', choice.label)
@@ -209,9 +218,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await click('Open settings')
         await wait(`document.querySelector('[aria-label="App icon"]')?.dataset.value===${literal(choice.value)}`, `${choice.label} restored picker`)
       }
-      assert(primaryColors.size === 3, 'Each icon must provide a distinct primary color')
+      assert(primaryColors.size === appIconChoices.length - 1, 'Each icon must provide a distinct primary color')
       await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
-      await capture('app-icon-halloween-dark', false)
+      await capture('app-icon-selected-dark', false)
       const size = window.getContentSize()
       try {
         window.setContentSize(820, 900)
@@ -220,7 +229,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await wait(`document.documentElement.dataset.theme==='light'`, 'icon settings light theme')
         await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
         assert(await evaluate(`(()=>{const preview=document.querySelector('.app-icon-control').getBoundingClientRect();return preview.left>=0&&preview.right<=innerWidth})()`), 'Icon controls overflow minimum width')
-        await capture('app-icon-halloween-light-minimum', false)
+        await capture('app-icon-selected-light-minimum', false)
       } finally { window.setContentSize(size[0], size[1]) }
       await choose('Appearance', 'Dark')
       await waitDb(async () => (await db.call('getSettings')).theme === 'dark', 'restore dark theme')

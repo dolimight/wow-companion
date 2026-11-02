@@ -2165,7 +2165,7 @@ function SettingsPage() {
                 </div>
                 <div className="app-icon-control">
                   <img className="app-icon-preview" src={`${import.meta.env.BASE_URL}assets/${appIconFiles[resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion)].logo}`} alt="" />
-                  <AppSelect aria-label="App icon" value={settings.data?.appIcon ?? 'auto'} options={appIconChoices} disabled={save.isPending} onValueChange={value => save.mutate({ appIcon: value as AppIconPreference })} />
+                  <AppSelect aria-label="App icon" value={settings.data?.appIcon ?? 'auto'} options={appIconChoices.map(choice => ({ ...choice, image: `${import.meta.env.BASE_URL}assets/${appIconFiles[resolveAppIcon(choice.value, appVersion)].logo}` }))} disabled={save.isPending} onValueChange={value => save.mutate({ appIcon: value as AppIconPreference })} />
                 </div>
               </div>
               <div className="setting-row">

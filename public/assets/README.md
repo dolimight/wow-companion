@@ -33,3 +33,24 @@ Build default follows the installed version: purple for Nightly, blue for Stable
 The saved choice updates the sidebar, favicon, and running native window or macOS Dock
 The same choice sets the primary color and its selection/focus highlights to Classic blue, Nightly purple, or Halloween orange in either Light or Dark appearance
 Windows pinned shortcuts retain the installer icon; nightly release packaging embeds the purple ICO
+
+## Holiday collection
+
+Generated on 2026-11-02 with the built-in image generation tool as transparent edits of the Classic compass-and-W emblem
+These are manual choices in the icon picker; Build default continues to follow the installed release track
+Each choice supplies a matching primary color in Light and Dark appearance
+The dropdown shows each logo beside its name, including the currently resolved Build default
+
+| Holiday | Logo | Exact prompt |
+| --- | --- | --- |
+| New Year’s | [Champagne gold and navy](wow-companion-newyear-logo.png) | [Prompt](wow-companion-newyear.prompt.md) |
+| Valentine’s Day | [Rose with a faceted heart](wow-companion-valentine-logo.png) | [Prompt](wow-companion-valentine.prompt.md) |
+| St Patrick’s Day | [Emerald with a shamrock](wow-companion-stpatrick-logo.png) | [Prompt](wow-companion-stpatrick.prompt.md) |
+| Easter | [Mint and lilac with a decorated egg](wow-companion-easter-logo.png) | [Prompt](wow-companion-easter.prompt.md) |
+| July 4 | [Red, white, and blue with a star](wow-companion-independence-logo.png) | [Prompt](wow-companion-independence.prompt.md) |
+| Halloween | [Pumpkin-orange carved W](wow-companion-halloween-logo.png) | [Prompt](wow-companion-halloween.prompt.md) |
+| Thanksgiving | [Copper harvest emblem](wow-companion-thanksgiving-logo.png) | [Prompt](wow-companion-thanksgiving.prompt.md) |
+| Christmas | [Evergreen, red, and gold with a Santa hat](wow-companion-christmas-logo.png) | [Prompt](wow-companion-christmas.prompt.md) |
+
+Every logo has matching `-icon.png`, `.ico`, and `.icns` exports
+Regenerate a holiday’s native exports with `npm run icons -- --variant newyear`, substituting `valentine`, `stpatrick`, `easter`, `independence`, `thanksgiving`, or `christmas` as appropriate

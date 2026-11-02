@@ -44,13 +44,14 @@ export function encodeIcns(frames: Array<{ type: string; png: Buffer }>) {
 }
 
 export function iconBuildOptions(args: string[]) {
+  const variants = ['classic', 'nightly', 'newyear', 'valentine', 'stpatrick', 'easter', 'independence', 'halloween', 'thanksgiving', 'christmas']
   let variant = 'classic', output: string | undefined
   for (let index = 0; index < args.length; index += 2) {
     const value = args[index + 1]
     if (!value) throw new Error('Icon option requires a value')
-    if (args[index] === '--variant' && ['classic', 'nightly', 'halloween'].includes(value)) variant = value
+    if (args[index] === '--variant' && variants.includes(value)) variant = value
     else if (args[index] === '--out-dir') output = value
-    else throw new Error('Usage: node --import tsx scripts/build-icons.ts [--variant classic|nightly|halloween] [--out-dir directory]')
+    else throw new Error(`Usage: node --import tsx scripts/build-icons.ts [--variant ${variants.join('|')}] [--out-dir directory]`)
   }
   return { prefix: variant === 'classic' ? 'wow-companion' : `wow-companion-${variant}`, output }
 }

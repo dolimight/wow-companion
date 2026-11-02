@@ -23,3 +23,87 @@
   --on-accent: #381a08;
   --selected: #3b2314;
 }
+:root[data-app-icon="newyear"] {
+  --accent: #805e14;
+  --accent-soft: #f7f0dc;
+  --on-accent: #fff;
+  --selected: #f1e4bd;
+}
+:root[data-theme="dark"][data-app-icon="newyear"] {
+  --accent: #e9c976;
+  --accent-soft: #28220f;
+  --on-accent: #2c230b;
+  --selected: #382d13;
+}
+:root[data-app-icon="valentine"] {
+  --accent: #b22461;
+  --accent-soft: #ffeaf2;
+  --on-accent: #fff;
+  --selected: #ffd9e8;
+}
+:root[data-theme="dark"][data-app-icon="valentine"] {
+  --accent: #ff8cba;
+  --accent-soft: #321322;
+  --on-accent: #3e1024;
+  --selected: #451a2d;
+}
+:root[data-app-icon="stpatrick"] {
+  --accent: #176b43;
+  --accent-soft: #e5f5ea;
+  --on-accent: #fff;
+  --selected: #d7ecde;
+}
+:root[data-theme="dark"][data-app-icon="stpatrick"] {
+  --accent: #6ddda3;
+  --accent-soft: #102b20;
+  --on-accent: #0e2d1e;
+  --selected: #153d2a;
+}
+:root[data-app-icon="easter"] {
+  --accent: #316b62;
+  --accent-soft: #e5f6f0;
+  --on-accent: #fff;
+  --selected: #d7eee8;
+}
+:root[data-theme="dark"][data-app-icon="easter"] {
+  --accent: #8ddbc8;
+  --accent-soft: #122b25;
+  --on-accent: #17372e;
+  --selected: #1d3d32;
+}
+:root[data-app-icon="independence"] {
+  --accent: #b32632;
+  --accent-soft: #fff0f0;
+  --on-accent: #fff;
+  --selected: #fbdcde;
+}
+:root[data-theme="dark"][data-app-icon="independence"] {
+  --accent: #ff929b;
+  --accent-soft: #31171a;
+  --on-accent: #401419;
+  --selected: #451e23;
+}
+:root[data-app-icon="thanksgiving"] {
+  --accent: #975020;
+  --accent-soft: #fcf0e3;
+  --on-accent: #fff;
+  --selected: #f3dfc9;
+}
+:root[data-theme="dark"][data-app-icon="thanksgiving"] {
+  --accent: #edb27b;
+  --accent-soft: #2e2014;
+  --on-accent: #39220f;
+  --selected: #3c2b1a;
+}
+:root[data-app-icon="christmas"] {
+  --accent: #176542;
+  --accent-soft: #e4f4ea;
+  --on-accent: #fff;
+  --selected: #d0e8d9;
+}
+:root[data-theme="dark"][data-app-icon="christmas"] {
+  --accent: #87daa4;
+  --accent-soft: #12291b;
+  --on-accent: #13341e;
+  --selected: #203b29;
+}
