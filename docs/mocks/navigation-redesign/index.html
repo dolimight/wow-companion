@@ -484,8 +484,10 @@ const states = {
   ready: () => ({ title: 'Ready to install', meta: 'WOW Companion restarts to finish. Unsaved gear plans are checked first, and nothing is lost', actions: [['Restart and update', 'btn primary', restart], ['Later', 'btn quiet', close]] }),
   error: () => ({ title: "Couldn't check for updates", meta: 'GitHub did not answer. The app keeps working as it is', small: 'Checked just now', actions: [['Try again', 'btn', check]] }),
 };
+// A Map lookup keeps the state name from ever selecting an arbitrary property
+const stateViews = new Map(Object.entries(states));
 function renderUpdate() {
-  const v = (Object.hasOwn(states, updateState) ? states[updateState] : states.idle)();
+  const v = (stateViews.get(updateState) ?? stateViews.get('idle'))();
   pop.innerHTML = '<h3>' + v.title + '</h3><div class="meta">' + v.meta + '</div>' + (v.bar != null ? '<div class="bar"><i style="width:' + v.bar + '%"></i></div>' : '') + (v.small ? '<div class="small">' + v.small + '</div>' : '') + (v.actions.length ? '<div class="actions"></div>' : '');
   v.actions.forEach(([label, cls, fn]) => { const b = document.createElement('button'); b.className = cls; b.textContent = label; b.onclick = fn; $('.actions', pop).append(b); });
   $('#updateBadge').hidden = !['available', 'downloading', 'ready'].includes(updateState);
