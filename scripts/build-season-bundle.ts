@@ -13,7 +13,7 @@ import {seasonRulesetSchema} from '../src/shared/season-rules'
 import {gearItemSchema} from '../src/shared/domain'
 import {toItemVariant,type ItemVariant} from '../src/shared/gear-variants'
 import {gearSlotsForInventoryType} from '../src/shared/gamedata'
-const version='12.1.5.70575',install=await detectInstall()
+const version='12.1.5.70688',install=await detectInstall()
 if(!install||install.build.version!==version)throw Error(`This reviewed mapping supports exactly ${version}; review another build before generating its rules`)
 if(!process.argv[2])throw Error('Pass the path of the matching item index')
 const index=new Database(process.argv[2],{readonly:true,fileMustExist:true})

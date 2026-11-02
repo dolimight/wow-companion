@@ -20,7 +20,7 @@ The progression page and selected-character summary consume `getProgression` thr
 
 Content preferences persist independently for each character/activity and survive backups. Personal targets remain separate from observed gear and verified ceilings. Addon 0.2.2 retains item-link variant identifiers and available currency observations; unavailable ranks, discounts, and restrictions stay unknown
 
-The production rules catalog remains empty. The installed 12.1.5.70575 client index was verified with 175,625 items, but that index alone does not establish an exhaustive legal seasonal reward catalog
+The production rules catalog remains empty. The installed 12.1.5.70688 client index was verified with 175,625 items, but that index alone does not establish an exhaustive legal seasonal reward catalog
 
 Validation fixtures cover the five views, shared budgets, conflicting unique/crafted groups, two-hand/dual weapons, incomplete searches, future rules, persistence, build-mismatched metadata, and concurrent observation changes. Native Electron acceptance covers the progression page, slot explanation sheet, preferences, personal targets, and minimum desktop width with both debuggers attached
 

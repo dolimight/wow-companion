@@ -95,6 +95,19 @@ export function useProgression(characterId: string, activity: Activity) {
   });
 }
 
+/** The season ceiling from validated rules: exact when the catalog is complete, otherwise the best known set, never a guessed maximum */
+export function useSeasonCeiling(characterId: string, activity: Activity) {
+  const result = useProgression(characterId, activity);
+  const view = result.data?.legalMaximum;
+  const exact = view?.status === "supported" && view.itemLevel != null;
+  return {
+    level: exact ? view.itemLevel : (view?.bestKnownItemLevel ?? null),
+    exact,
+    reason: view?.reasons[0] ?? null,
+    isError: result.isError,
+  };
+}
+
 export function ProgressionSummary({
   character,
   activity,
@@ -104,11 +117,12 @@ export function ProgressionSummary({
 }) {
   const result = useProgression(character.id, activity);
   const maximum = result.data?.legalMaximum;
+  const exact = maximum?.status === "supported" && maximum.itemLevel != null;
   return (
     <div className="progression-summary" aria-label="Gear progression summary">
       <div>
-        <span>Validated season ceiling</span>
-        <strong>{number(maximum?.itemLevel)}</strong>
+        <span>{exact || maximum?.bestKnownItemLevel == null ? "Validated season ceiling" : "Best known season ceiling"}</span>
+        <strong>{number(exact ? maximum?.itemLevel : maximum?.bestKnownItemLevel)}</strong>
       </div>
       <p>
         {maximum?.status === "supported" && maximum.itemLevel != null && character.itemLevel != null

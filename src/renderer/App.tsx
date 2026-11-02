@@ -65,7 +65,7 @@ import { ComparisonPage, type ComparisonView } from "./features/comparisons/Comp
 import { TopPlayersPage } from "./features/top/top-players";
 import { useStagePlan } from "./features/plan/StagePlan";
 import { vaultTracks } from "../shared/weekly";
-import { ProgressionPage, ProgressionSummary } from "./features/progression/progression";
+import { ProgressionPage, ProgressionSummary, useSeasonCeiling } from "./features/progression/progression";
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
@@ -360,7 +360,9 @@ function Portrait({ character }: { character: Character }) {
     </div>
   );
 }
-function Metrics({ character, planned }: { character: Character; planned?: number | null }) {
+function Metrics({ character, planned, activity }: { character: Character; planned?: number | null; activity?: Activity }) {
+  const own = useActivity(character.id).activity;
+  const ceiling = useSeasonCeiling(character.id, activity ?? own);
   return (
     <div className="metric-strip">
       <div>
@@ -372,13 +374,13 @@ function Metrics({ character, planned }: { character: Character; planned?: numbe
         <strong data-unknown={(planned ?? character.targetItemLevel) == null}>{level(planned ?? character.targetItemLevel)}</strong>
       </div>
       <div>
-        <small>Legal max</small>
-        <strong data-unknown={character.maxItemLevel == null}>{level(character.maxItemLevel)}</strong>
+        <small>{ceiling.exact || ceiling.level == null ? "Legal max" : "Best known"}</small>
+        <strong data-unknown={ceiling.level == null}>{level(ceiling.level)}</strong>
       </div>
     </div>
   );
 }
-function nextAction(character: Character) {
+function nextAction(character: Character, hasCeiling: boolean) {
   if (!character.observedAt)
     return {
       title: "Import a character snapshot",
@@ -407,7 +409,7 @@ function nextAction(character: Character) {
       description:
         "This source does not establish whether every eligible slot is enchanted — import an addon snapshot or check in game",
     };
-  if (character.maxItemLevel == null)
+  if (!hasCeiling)
     return {
       title: "Establish your season gear ceiling",
       description: "A validated current ruleset is needed before calculating a legal maximum",
@@ -429,10 +431,11 @@ function attention(character: Character): { label: string; tone: "amber" | "neut
   return null;
 }
 function SelectedPane({ character, activity }: { character: Character; activity: Activity }) {
-  const action = nextAction(character);
+  const ceiling = useSeasonCeiling(character.id, activity);
+  const action = nextAction(character, ceiling.level != null);
   const gap =
-    character.maxItemLevel != null && character.itemLevel != null
-      ? Math.max(0, character.maxItemLevel - character.itemLevel)
+    ceiling.level != null && character.itemLevel != null
+      ? Math.max(0, ceiling.level - character.itemLevel)
       : null;
   return (
     <aside className="selected-pane" aria-label={`${character.name} selected character`}>
@@ -448,14 +451,14 @@ function SelectedPane({ character, activity }: { character: Character; activity:
         <Badge tone="blue">Selected</Badge>
       </div>
       <Portrait character={character} />
-      <Metrics character={character} />
+      <Metrics character={character} activity={activity} />
       <div className="detail-list">
         <div className="detail-row">
           <span>{metricNames[activity]}</span>
           <strong>{activityValue(character.ratings[activity], activity)}</strong>
         </div>
         <div className="detail-row">
-          <span>Gap to maximum</span>
+          <span>{ceiling.exact || ceiling.level == null ? "Gap to maximum" : "Gap to best known"}</span>
           <strong>{level(gap)}</strong>
         </div>
       </div>
@@ -1338,10 +1341,11 @@ function OverviewPage({ character }: { character: Character }) {
     ({ id }: { id: string }) => api.refreshCharacter({ id }),
     "Character refreshed",
   );
-  const action = nextAction(character);
+  const ceiling = useSeasonCeiling(character.id, activity);
+  const action = nextAction(character, ceiling.level != null);
   const progress =
-    character.itemLevel != null && character.maxItemLevel != null
-      ? Math.min(100, (character.itemLevel / character.maxItemLevel) * 100)
+    character.itemLevel != null && ceiling.level != null
+      ? Math.min(100, (character.itemLevel / ceiling.level) * 100)
       : null;
   const needsGear = character.gear.length === 0;
   return (
@@ -1417,13 +1421,13 @@ function OverviewPage({ character }: { character: Character }) {
                 Review gear <ArrowRight size={14} />
               </CharacterLink>
             </div>
-            <Metrics character={character} />
+            <Metrics character={character} activity={activity} />
             {progress != null && (
               <>
                 <div
                   className="progress-track"
                   role="progressbar"
-                  aria-label="Equipped item level compared with legal maximum"
+                  aria-label={ceiling.exact ? "Equipped item level compared with legal maximum" : "Equipped item level compared with the best known ceiling"}
                   aria-valuenow={Math.round(progress)}
                   aria-valuemin={0}
                   aria-valuemax={100}
@@ -1431,15 +1435,19 @@ function OverviewPage({ character }: { character: Character }) {
                   <span style={{ width: `${progress}%` }} />
                 </div>
                 <div className="progress-label">
-                  <span>Item-level ratio</span>
+                  <span>{ceiling.exact ? "Item-level ratio" : "Ratio to best known ceiling"}</span>
                   <span>{progress.toFixed(1)}%</span>
                 </div>
               </>
             )}
-            {character.maxItemLevel == null && (
+            {!ceiling.exact && (
               <div className="unknown-note">
                 <CircleHelp />
-                <p>The legal maximum is unknown until a current season ruleset is validated</p>
+                <p>
+                  {ceiling.level == null
+                    ? `The legal maximum is unknown: ${(ceiling.reason ?? "seasonal rules are still being checked").replace(/^./, (c) => c.toLowerCase())}`
+                    : "This is the best known ceiling from the installed game files · Server-side conditions and crafted limits are not checked, so the true maximum may differ"}
+                </p>
               </div>
             )}
             {character.targetItemLevel != null && (
@@ -1663,7 +1671,7 @@ function GearEditor({
         </div>
       </div>
       <div className="gear-summary">
-        <Metrics character={character} planned={draftLevel} />
+        <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
       <LeaveGuard
         open={blocker.status === "blocked"}

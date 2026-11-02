@@ -4,7 +4,7 @@ import evidence from '../../../data/season-rules/client-evidence.json'
 describe('installed Retail seasonal reference',()=>{
   it('pins real tracks and base costs to source-hashed client tables',()=>{
     const rules=loadBundledProgressionRules().catalog.rulesets[0]!
-    expect(rules.builds).toEqual({min:'12.1.5.70575',max:'12.1.5.70575'})
+    expect(rules.builds).toEqual({min:'12.1.5.70688',max:'12.1.5.70688'})
     expect(rules.upgradeTracks.map(t=>[t.name,t.ranks[0]!.itemLevel,t.ranks.at(-1)!.itemLevel])).toEqual([['Adventurer',266,282],['Veteran',279,295],['Champion',292,308],['Hero',305,321],['Myth',318,334]])
     expect(rules.upgradeTracks.map(t=>t.ranks[1]!.cost?.[0])).toEqual([3442,3443,3444,3445,3446].map(id=>({currencyId:String(id),amount:20})))
     expect(Object.values(evidence.tableHashes).every(hash=>/^[a-f0-9]{64}$/.test(hash))).toBe(true)
