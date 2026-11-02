@@ -17,6 +17,9 @@ Add a character or import an addon snapshot to begin
 Window size, position, and maximized or fullscreen mode are remembered between launches
 Reopening a minimized window restores its previous mode, and disconnected monitors fall back to the primary display
 
+Choose Classic blue, Nightly purple, or Halloween under Settings → Appearance → App icon
+Build default follows the installed release track, and your choice is remembered between launches
+
 An unpacked Windows build is available after running
 
 ```powershell

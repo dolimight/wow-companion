@@ -14,6 +14,7 @@ import { createUpdateService, type UpdatePreferences } from './updates/service'
 import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
+import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
 
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
@@ -110,7 +111,16 @@ async function main(){
   handle('companion:choose-wow-folder',async()=>{const result=await dialog.showOpenDialog(window!,{title:'Choose your World of Warcraft folder',properties:['openDirectory']});if(result.canceled||!result.filePaths[0])return null;return service.connections.useInstallPath(result.filePaths[0])})
   handle('companion:choose-simulation-executable',async()=>{const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft executable',extensions:['exe']}]:[{name:'SimulationCraft',extensions:['*']}]);return selected?service.simulations.configureExecutable(await realpath(selected)):null})
   handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=new URL(value);if(url.protocol!=='https:'||!['raider.io','www.wowhead.com','worldofwarcraft.blizzard.com','news.blizzard.com','github.com','www.warcraftlogs.com','warcraftlogs.com','raidbots.com','www.raidbots.com','simulationcraft.org','www.simulationcraft.org','develop.battle.net','oauth.battle.net','community.developer.battle.net'].includes(url.hostname))throw new Error('This external link is not supported');await shell.openExternal(url.href)})
-  const windowIcon=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets/wow-companion-icon.png':'public/assets/wow-companion-icon.png')
+  const iconRoot=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets':'public/assets')
+  const iconPath=(variant:AppIconVariant)=>resolve(iconRoot,appIconFiles[variant].png)
+  const windowIcon=iconPath(resolveAppIcon(settings.appIcon,app.getVersion()))
+  handle('companion:apply-app-icon',async()=>{
+    const saved=await db.call('getSettings')
+    const variant=resolveAppIcon(saved.appIcon,app.getVersion())
+    if(process.platform==='darwin')app.dock?.setIcon(iconPath(variant))
+    else window?.setIcon(iconPath(variant))
+    return variant
+  })
   if(process.platform==='win32')app.setAppUserModelId('local.wowcompanion.desktop')
   if(process.platform==='darwin')app.dock?.setIcon(windowIcon)
   const titleBarOverlay=()=>({color:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',symbolColor:nativeTheme.shouldUseDarkColors?'#f5f5f5':'#1c2430',height:48})

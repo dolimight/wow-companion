@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { releaseChannel } from './metadata.ts'
+import { installerIcon } from './icon.ts'
 const [requestedVersion, architecture] = process.argv.slice(2)
 const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as { version: string }
 const version = requestedVersion === 'current' ? packageJson.version : requestedVersion
@@ -10,6 +11,7 @@ if (!version || !channel || !architecture || !['x64', 'arm64'].includes(architec
 if (packageJson.version !== version) throw new Error('Stamp the package with the release version before packaging')
 if (process.platform !== 'win32') throw new Error('Release packaging requires Windows')
 const args = [resolve('node_modules/electron-builder/out/cli/cli.js'), '--win', `--${architecture}`, '--publish', 'never', `--config.publish.channel=${channel === 'stable' ? 'latest' : 'nightly'}`, `--config.publish.releaseType=${channel === 'stable' ? 'release' : 'prerelease'}`]
+args.push(`--config.win.icon=${installerIcon(version)}`)
 // Unset repository secrets arrive as empty strings, which the builder would read as a certificate path
 const env: NodeJS.ProcessEnv = { ...process.env }
 for (const name of ['CSC_LINK', 'CSC_KEY_PASSWORD']) if (!env[name]) delete env[name]

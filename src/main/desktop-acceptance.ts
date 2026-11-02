@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { DatabaseClient } from './database'
 import { checkWindowPlacement } from './window-placement-acceptance'
+import { appIconChoices, appIconFiles, resolveAppIcon } from '../shared/app-icons'
 
 type Step = { name: string; status: 'pass' | 'fail' | 'skip'; detail?: unknown }
 export type DesktopAcceptanceReport = { startedAt: string; finishedAt?: string; passed: boolean; steps: Step[]; screenshots: string[]; consoleErrors: string[]; debugger?: { attached: boolean; pauses: Array<{ reason: string; functionName?: string; url?: string }>; exceptions: string[]; probe?: unknown }; gpu?: unknown }
@@ -42,9 +43,13 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     assert(result, `Clickable control missing: ${label}`)
   }
   const choose = async (label: string, option: string) => {
+    const trigger = literal(`[aria-label="${label}"]`)
+    const options = '[data-slot="select-content"]:not([data-closed]) [role="option"]'
+    await wait(`!!document.querySelector(${trigger})&&!document.querySelector(${trigger}).disabled`, `${label} ready`)
     await click(label)
-    await wait(`!!document.querySelector('[role="option"]')`, `${label} options`)
-    await click(option, '[role="option"]')
+    // Base UI keeps closed popups mounted during transitions; interact with the open popup only
+    await wait(`document.querySelector(${trigger})?.getAttribute('aria-expanded')==='true'&&!!document.querySelector(${literal(options)})`, `${label} options`)
+    await click(option, options)
     await wait(`document.querySelector(${literal(`[aria-label="${label}"]`)})?.getAttribute('aria-expanded')!=='true'`, `${label} selection`)
   }
   const field = async (label: string, value: string) => {
@@ -179,6 +184,43 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await click('Characters', '.navigation a')
       await wait(`document.body.innerText.includes('Bring your characters together')`, 'return to empty roster')
       return { savedTheme: (await db.call('getSettings')).theme, page: 'settings modal', background: 'rgb(0, 0, 0)' }
+    })
+    await step('App icons update the sidebar, favicon and native window and preserve the saved choice', async () => {
+      await click('Open settings')
+      await wait(`!!document.querySelector('[aria-label="App icon"]')`, 'icon picker')
+      for (const choice of appIconChoices.filter(choice => choice.value !== 'auto')) {
+        await choose('App icon', choice.label)
+        await waitDb(async () => (await db.call('getSettings')).appIcon === choice.value, `saved ${choice.label}`)
+        const variant = resolveAppIcon(choice.value, app.getVersion())
+        const logo = appIconFiles[variant].logo
+        await wait(`document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0&&document.querySelector('link[rel="icon"]')?.href.endsWith(${literal(logo)})`, `${choice.label} branding`)
+        assert(await evaluate(`window.companion.applyAppIcon()`) === variant, 'Native icon did not use the saved choice')
+        await window.loadURL(contents.getURL())
+        await wait(`document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0`, `${choice.label} after reload`)
+        await click('Open settings')
+        await wait(`document.querySelector('[aria-label="App icon"]')?.dataset.value===${literal(choice.value)}`, `${choice.label} restored picker`)
+      }
+      await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
+      await capture('app-icon-halloween-dark', false)
+      const size = window.getContentSize()
+      try {
+        window.setContentSize(820, 900)
+        await wait(`innerWidth===820`, 'icon settings minimum width')
+        await choose('Appearance', 'Light')
+        await wait(`document.documentElement.dataset.theme==='light'`, 'icon settings light theme')
+        await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
+        assert(await evaluate(`(()=>{const preview=document.querySelector('.app-icon-control').getBoundingClientRect();return preview.left>=0&&preview.right<=innerWidth})()`), 'Icon controls overflow minimum width')
+        await capture('app-icon-halloween-light-minimum', false)
+      } finally { window.setContentSize(size[0], size[1]) }
+      await choose('Appearance', 'Dark')
+      await waitDb(async () => (await db.call('getSettings')).theme === 'dark', 'restore dark theme')
+      await choose('App icon', 'Build default')
+      await waitDb(async () => (await db.call('getSettings')).appIcon === 'auto', 'restore build icon')
+      assert(await evaluate(`window.companion.applyAppIcon()`) === resolveAppIcon('auto', app.getVersion()), 'Build default icon does not match the installed version')
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`!document.querySelector('[role="dialog"]')`, 'close icon settings')
+      return { choices: appIconChoices.map(choice => choice.label), persisted: true, nativeApplied: true, minimumWidth: true }
     })
     await step('Update settings expose version and track with isolated acceptance updates disabled', async () => {
       await click('Open settings')
@@ -547,6 +589,8 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       ] as const) {
         await click(label)
         await wait(`document.querySelector(${literal(`[aria-label="${label}"]`)})?.getAttribute('aria-pressed')===${literal(pressed)}`, `${label} rendered`)
+        // The toggle can update ARIA before its parent's draft commit; let React finish the frame
+        await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
       }
       // The save button enables after React renders the edited draft, which a slow runner can delay
       await wait(`[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='Save content preferences'&&!n.disabled)`, 'save content preferences enabled')

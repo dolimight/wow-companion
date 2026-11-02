@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
+import { version as appVersion } from '../../package.json';
+import { appIconChoices, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createRootRoute,
@@ -533,6 +535,12 @@ function Shell() {
   useUpdateSafety();
   const roster = useRoster();
   const settings = useSettings();
+  const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
+  useEffect(() => {
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (favicon) favicon.href = `${import.meta.env.BASE_URL}assets/${appIconFiles[appIcon].logo}`;
+    if (settings.data) void window.companion?.applyAppIcon().catch(error => notify(errorMessage(error)));
+  }, [appIcon, settings.data?.appIcon]);
   const navigate = useNavigate();
   const route = useRouterState({ select: (s) => s.location });
   const currentPath = route.pathname;
@@ -640,7 +648,7 @@ function Shell() {
       <div className="brand">
         <img
           className="brand-logo"
-          src={`${import.meta.env.BASE_URL}assets/wow-companion-logo.png`}
+          src={`${import.meta.env.BASE_URL}assets/${appIconFiles[appIcon].logo}`}
           alt=""
         />
         <span className="brand-name">WOW Companion</span>
@@ -2118,8 +2126,19 @@ function SettingsPage() {
           <UpdateSettings />
           <section className="settings-section" aria-labelledby="appearance-heading">
             <h2 id="appearance-heading">Appearance</h2>
-            <p>Choose your theme and motion preferences</p>
+            <p>Choose your icon, theme, and motion preferences</p>
             <div className="settings-section-body surface">
+              <div className="setting-row">
+                <div>
+                  <h3>App icon</h3>
+                  <p>Build default uses purple for Nightly and blue for Stable</p>
+                  <p>Pinned shortcuts keep the icon from installation</p>
+                </div>
+                <div className="app-icon-control">
+                  <img className="app-icon-preview" src={`${import.meta.env.BASE_URL}assets/${appIconFiles[resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion)].logo}`} alt="" />
+                  <AppSelect aria-label="App icon" value={settings.data?.appIcon ?? 'auto'} options={appIconChoices} disabled={save.isPending} onValueChange={value => save.mutate({ appIcon: value as AppIconPreference })} />
+                </div>
+              </div>
               <div className="setting-row">
                 <div>
                   <h3>Color theme</h3>

@@ -1,6 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { visibleBounds, encodeIco, encodeIcns } from './build-icons.ts'
+import { visibleBounds, encodeIco, encodeIcns, iconBuildOptions } from './build-icons.ts'
+
+test('icon exports preserve the classic default and isolate variant filenames', () => {
+  assert.deepEqual(iconBuildOptions([]), { prefix: 'wow-companion', output: undefined })
+  assert.deepEqual(iconBuildOptions(['--variant', 'nightly', '--out-dir', '.local/icons']), { prefix: 'wow-companion-nightly', output: '.local/icons' })
+  assert.equal(iconBuildOptions(['--variant', 'halloween']).prefix, 'wow-companion-halloween')
+  assert.throws(() => iconBuildOptions(['--variant', '../bad']), /Usage/)
+  assert.throws(() => iconBuildOptions(['--out-dir']), /requires a value/)
+})
 
 test('icon crop excludes transparent padding and rejects empty or malformed images', () => {
   const pixels = Buffer.alloc(4 * 4 * 4)

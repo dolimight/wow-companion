@@ -22,6 +22,7 @@ export type NativeBridge = {
   windowState():Promise<WindowState>
   onWindowState(listener:(state:WindowState)=>void):()=>void
   setWindowTheme(theme:'system'|'light'|'dark'):Promise<void>
+  applyAppIcon():Promise<import('./app-icons').AppIconVariant>
   toggleMaximizeWindow():Promise<void>
   connection():Promise<ConnectionInfo>
   chooseImportFile():Promise<ImportReport|null>
