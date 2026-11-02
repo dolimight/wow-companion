@@ -121,6 +121,7 @@ import "./style.css";
 import "./sidebar-settings.css";
 import "./navigation.css";
 import "./app-accent.css";
+import "./overview.css";
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -1210,7 +1211,7 @@ function CharacterFrame({
           {backLabel(back)}
         </Button>
       )}
-      <div className="page-heading character-heading">
+      <div className="page-heading character-heading" data-section={section}>
         {section === "overview" && <Avatar character={character} large />}
         <div className="character-heading-text">
           <div className="crumb">{destinationLabel(destination)}</div>
@@ -1366,20 +1367,20 @@ function OverviewPage({ character }: { character: Character }) {
         <section className="surface character-surface">
           <div className="surface-heading">
             <h2>Your character</h2>
-            <Badge>{character.gameBuild ? `Build ${character.gameBuild}` : "Build unknown"}</Badge>
+            <span className="character-build" title={character.gameBuild ? `Build ${character.gameBuild}` : 'Build unknown'}><Badge>{character.gameBuild ? `Build ${character.gameBuild}` : "Build unknown"}</Badge></span>
           </div>
           <Portrait character={character} />
-          <div className="source-bar">
-            <span>In-game observation · {age(character.observedAt)}</span>
-            <span>Imported · {age(character.importedAt)}</span>
-          </div>
+          <dl className="source-bar">
+            <div><dt>In-game observation</dt><dd>{age(character.observedAt)}</dd></div>
+            <div><dt>Imported</dt><dd>{age(character.importedAt)}</dd></div>
+          </dl>
           <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
             <RefreshCw />
             {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
           </Button>
         </section>
         <div className="progress-section">
-          <section className="surface">
+          <section className="surface overview-next-steps">
             <div className="surface-heading">
               <h2>Next steps</h2>
             </div>
@@ -1426,10 +1427,10 @@ function OverviewPage({ character }: { character: Character }) {
               </div>
             </div>
           </section>
-          <section className="surface">
+          <section className="surface overview-gear-gap">
             <div className="surface-heading">
               <h2>Gear gap</h2>
-              <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-primary">
+              <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-quiet">
                 Review gear <ArrowRight size={14} />
               </CharacterLink>
             </div>
@@ -1468,7 +1469,7 @@ function OverviewPage({ character }: { character: Character }) {
               </p>
             )}
           </section>
-          <section className="surface">
+          <section className="surface overview-standing">
             <div className="surface-heading">
               <h2>{activityNames[activity]} standing</h2>
               <CharacterLink characterId={character.id} destination={{ section: "performance", view: "standing" }} className="button button-secondary">

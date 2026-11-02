@@ -910,6 +910,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await step('Every polished screen fits dark desktop and light minimum-width layouts',async()=>{
       const unknown=await db.call('addCharacter',{name:'Polish unknown spec',region:'us',realm:'Acceptance Realm',className:'Mage',specId:null})
       const screens=[['characters',`/characters?selected=${workflowId}`,'Characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear for Workflow fixture'],['gear',`/characters/${workflowId}/gear`,'Gear for Workflow fixture'],['inventory',`/characters/${workflowId}/inventory`,'Gear for Workflow fixture'],['simulations',`/characters/${workflowId}/simulations`,'Gear for Workflow fixture'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe for Workflow fixture'],['standings',`/characters/${workflowId}/standings`,'Performance for Workflow fixture'],['top',`/characters/${unknown.id}/top`,`Performance for ${unknown.name}`]]
+      screens.push(['character-empty', `/characters/${unknown.id}/overview`, unknown.name])
+      const demoPortrait = (await db.call('listCharacters')).find(character => character.demo && character.name === 'Vaelith')
+      if (demoPortrait) screens.push(['character-demo', `/characters/${demoPortrait.id}/overview`, demoPortrait.name])
       const size=window.getContentSize()
       try{for(const variant of [{theme:'dark' as const,width:1460},{theme:'light' as const,width:820}]){
         await db.call('setSettings',{theme:variant.theme});await service.changed();window.setContentSize(variant.width,900)
@@ -920,6 +923,12 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
           contents.sendInputEvent({type:'keyDown',keyCode:'Escape'});contents.sendInputEvent({type:'keyUp',keyCode:'Escape'})
           await wait(`!document.querySelector('.character-popover')`,'character switcher fully unmounted before screen capture')
           assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`),'Polished '+name+' overflows at '+variant.width)
+          if (name.startsWith('character') && name !== 'characters') {
+            assert(await evaluate(`(()=>{const frame=document.querySelector('.overview-layout .portrait-preview').getBoundingClientRect();return frame.width>0&&Math.abs(frame.width-frame.height)<=1})()`), 'Overview portrait must retain square bounds')
+            assert(await evaluate(`document.querySelectorAll('.overview-next-steps .button-primary').length===1&&!document.querySelector('.overview-gear-gap .button-primary')`), 'Overview should emphasize one next action')
+            if (variant.width === 820) assert(await evaluate(`document.querySelector('.character-surface').getBoundingClientRect().height<=210&&document.querySelector('.overview-next-steps').getBoundingClientRect().top<innerHeight`), 'Compact overview should keep next steps in the first viewport')
+            if (name === 'character-demo') await wait(`(()=>{const image=document.querySelector('.character-surface .portrait-preview img');return image?.complete&&image.naturalWidth>0&&image.getBoundingClientRect().height>0})()`, 'demo portrait has visible image bounds')
+          }
           await capture(`polish-${name}-${variant.theme}-${variant.width}`)
         }
       }}finally{window.setContentSize(size[0],size[1]);await db.call('setSettings',{theme:'dark'});await service.changed()}
