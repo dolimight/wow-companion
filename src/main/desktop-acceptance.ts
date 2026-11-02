@@ -137,6 +137,11 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await contents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true })
       assert(await evaluate('document.hasFocus()'), 'Offscreen focus emulation did not activate')
     }
+    // The flows below assume the desktop sidebar, so a small CI display must not leave the window in drawer layout
+    window.setContentSize(1460, 1050)
+    await evaluate('new Promise(resolve=>setTimeout(resolve,300))')
+    const baselineWidth = await evaluate<number>('innerWidth')
+    assert(baselineWidth >= 1100, `The acceptance window is ${baselineWidth}px wide, below the 1100px sidebar layout`)
     const emptyWorkspace = await step('Empty local workspace is usable', async () => {
       assert((await db.call('listCharacters')).length === 0, 'Acceptance requires an empty dedicated database')
       await wait(`document.body.innerText.includes('Bring your characters together')`, 'empty state')
