@@ -173,7 +173,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(await evaluate(`!document.querySelector('select,input[type="checkbox"]')`), 'Native selection controls remain in the settings UI')
       await click('Reduce motion')
       await waitDb(async () => (await db.call('getSettings')).reducedMotion === false, 'motion toggle off')
-      await capture('settings-black')
+      await click('Appearance', '.settings-anchors button')
+      await wait(`document.activeElement?.id==='appearance-heading'&&document.querySelector('.settings-anchors [aria-current="location"]')?.textContent.trim()==='Appearance'`, 'settings section navigation and focus')
+      assert(await evaluate(`(()=>{const header=document.querySelector('.settings-dialog [data-slot="dialog-header"]').getBoundingClientRect();const nav=document.querySelector('.settings-anchors').getBoundingClientRect();return header.top>=0&&nav.top>=header.bottom-1&&nav.bottom<innerHeight})()`), 'Settings header or section navigation scrolled away')
+      await capture('settings-black', false)
       await click('Appearance')
       await wait(`document.querySelectorAll('[role="option"]').length===3`, 'custom theme popup')
       await capture('settings-dropdown-black')
@@ -183,6 +186,8 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`!document.querySelector('[role="dialog"]')`, 'Escape closes settings')
       await click('Characters', '.navigation a')
       await wait(`document.body.innerText.includes('Bring your characters together')`, 'return to empty roster')
+      assert(await evaluate(`JSON.stringify([...document.querySelectorAll('.sidebar-footer .footer-label')].map(n=>n.textContent))===JSON.stringify(['Sync','Updates','Settings'])`), 'Sidebar utilities must have visible labels')
+      await capture('sidebar-utilities-dark')
       return { savedTheme: (await db.call('getSettings')).theme, page: 'settings modal', background: 'rgb(0, 0, 0)' }
     })
     await step('App icons update the sidebar, favicon and native window and preserve the saved choice', async () => {

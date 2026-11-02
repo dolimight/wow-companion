@@ -744,7 +744,7 @@ function Shell() {
           Add a character to unlock Overview, Gear, Performance, and Wardrobe
         </button>
       )}
-      <div className="sidebar-footer">
+      <div className="sidebar-footer" role="group" aria-label="Workspace utilities">
         <SyncButton onClick={() => setSheet("sync")} />
         <UpdateButton onOpenSettings={openSettings} />
         <Tooltip>
@@ -755,11 +755,13 @@ function Shell() {
                 className={`footer-icon ${settingsOpen ? "active" : ""}`}
                 aria-label="Open settings"
                 aria-haspopup="dialog"
+                aria-expanded={settingsOpen}
                 onClick={() => setSettingsOpen(true)}
               />
             }
           >
             <Settings />
+            <span className="footer-label" aria-hidden="true">Settings</span>
           </TooltipTrigger>
           <TooltipContent side="top">Settings</TooltipContent>
         </Tooltip>
@@ -2065,8 +2067,35 @@ function SettingsRedirect() {
   }, [navigate]);
   return null;
 }
+const settingsSections = [
+  ['connections-heading', 'Connections'],
+  ['integrations-heading', 'Integrations'],
+  ['updates-heading', 'Updates'],
+  ['appearance-heading', 'Appearance'],
+  ['workspace-heading', 'Workspace'],
+  ['data-heading', 'Local data'],
+] as const;
 function SettingsPage() {
   const settings = useSettings();
+  const page = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<string>('connections-heading');
+  useEffect(() => {
+    const scroller = page.current?.closest<HTMLElement>('.settings-dialog-body');
+    if (!scroller || settings.isPending) return;
+    const updateSection = () => {
+      const boundary = scroller.getBoundingClientRect().top + (page.current?.querySelector('nav')?.offsetHeight ?? 0) + 32;
+      let current: string = settingsSections[0][0];
+      for (const [id] of settingsSections) {
+        const heading = document.getElementById(id);
+        if (heading && heading.getBoundingClientRect().top <= boundary) current = id;
+      }
+      if (scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = 'data-heading';
+      setActiveSection(current);
+    };
+    updateSection();
+    scroller.addEventListener('scroll', updateSection, { passive: true });
+    return () => scroller.removeEventListener('scroll', updateSection);
+  }, [settings.isPending]);
   const save = useAction(api.saveSettings, "Preferences saved");
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -2090,7 +2119,7 @@ function SettingsPage() {
     }
   }
   return (
-    <div className="settings-page">
+    <div className="settings-page" ref={page}>
       {settings.isPending ? (
         <div className="loading-surface" role="status">
           Loading preferences…
@@ -2100,19 +2129,16 @@ function SettingsPage() {
       ) : (
         <>
           <nav className="settings-anchors" aria-label="Settings sections">
-            {[
-              ["connections-heading", "Connections"],
-              ["appearance-heading", "Appearance"],
-              ["workspace-heading", "Workspace"],
-              ["data-heading", "Local data"],
-            ].map(([id, label]) => (
+            {settingsSections.map(([id, label]) => (
               <button
                 key={id}
                 type="button"
                 className="subnav-link"
+                aria-current={activeSection === id ? 'location' : undefined}
                 onClick={() => {
                   const heading = document.getElementById(id);
-                  heading?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  const reduced = settings.data?.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+                  heading?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: "start" });
                   heading?.setAttribute("tabindex", "-1");
                   heading?.focus({ preventScroll: true });
                 }}
