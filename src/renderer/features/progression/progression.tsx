@@ -1,13 +1,15 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, CircleHelp, ExternalLink, Info, RefreshCw } from "lucide-react";
+import { ArrowRight, Check, CircleHelp, Coins, ExternalLink, Info, RefreshCw, Save, Shield, SlidersHorizontal, Target, TrendingUp, Trophy } from "lucide-react";
 import type { Activity, Character, GearSlot } from "../../../shared/domain";
 import type { ItemVariant } from "../../../shared/gear-variants";
 import type { ProgressionResult } from "../../../shared/progression-evaluation";
 import {formatCurrency} from "../../../shared/currency-display";
 import { defaultContentPreferences, type ContentPreferences } from "../../../shared/season-rules";
 import { AppSelect } from "../../components/AppSelect";
+import { GearSlotIcon } from "../../components/GearSlotIcon";
+import { ItemIcon, useGameData } from "../items/items";
 import { Badge, Button, Field, Sheet } from "../../components/ui/primitives";
 import { Toggle } from "../../components/ui/toggle";
 import { api } from "../../lib/client";
@@ -15,6 +17,7 @@ import { errorMessage, notify } from "../../lib/notify";
 import "./progression.css";
 
 type ViewKey = "equipped" | "ownedUpgrade" | "contentScoped" | "legalMaximum" | "affordable";
+const viewIcons = { equipped: Shield, ownedUpgrade: TrendingUp, contentScoped: SlidersHorizontal, legalMaximum: Trophy, affordable: Coins };
 const views: Array<{ value: ViewKey; label: string; description: string }> = [
   {
     value: "equipped",
@@ -369,6 +372,20 @@ export function ProgressionPage({
   const result = query.data;
   const view = result?.[viewKey];
   const selection = views.find((option) => option.value === viewKey)!;
+  const ViewIcon = viewIcons[viewKey];
+  const gameData = useGameData();
+  const itemIds = useMemo(
+    () => [...new Set((result?.slots ?? [])
+      .flatMap(row => [row.current, viewKey === "equipped" ? row.current : row[viewKey]])
+      .flatMap(item => item?.itemId ? [item.itemId] : []))],
+    [result, viewKey],
+  );
+  const itemData = useQuery({
+    queryKey: ["items", itemIds],
+    queryFn: () => api.getItems(itemIds),
+    enabled: gameData.data?.state === "ready" && itemIds.length > 0,
+  });
+  const itemMap = useMemo(() => new Map((itemData.data ?? []).map(item => [item.id, item])), [itemData.data]);
   function setPreference<K extends keyof ContentPreferences>(key: K, value: ContentPreferences[K]) {
     setDraft(previous => ({ ...(previous ?? preferences.data ?? defaultContentPreferences(activity)), [key]: value }));
   }
@@ -389,7 +406,7 @@ export function ProgressionPage({
     <>
       <div className="page-heading">
         <div>
-          <h2>Gear progression</h2>
+          <h2 className="gear-section-title"><TrendingUp size={18} aria-hidden="true" />Gear progression</h2>
           <p>
             {character.name} · {character.specName !== "Unknown" ? `${character.specName} ` : ""}
             {character.className} · Item-level goals and their requirements
@@ -425,11 +442,11 @@ export function ProgressionPage({
         <>
           <div className="progression-result-heading">
             <div>
-              <h2>{selection.label}</h2>
+              <h2 className="gear-section-title"><ViewIcon size={18} aria-hidden="true" />{selection.label}</h2>
               <p>{selection.description}</p>
             </div>
             <div className="progression-result-value">
-              <strong>{number(view.itemLevel)}</strong>
+              <strong data-unknown={view.itemLevel == null || undefined}>{number(view.itemLevel)}</strong>
               <Badge tone={view.status === "supported" ? "green" : "amber"}>
                 {view.status === "supported"
                   ? "Validated"
@@ -497,25 +514,35 @@ export function ProgressionPage({
                           : null;
                       return (
                         <tr key={row.slot}>
-                          <th scope="row">{slotNames[row.slot]}</th>
+                          <th scope="row"><span className="gear-slot-label"><GearSlotIcon slot={row.slot} size={16} /><span>{slotNames[row.slot]}</span></span></th>
                           <td>
-                            <strong className="progression-item-name" data-unknown={!row.current||undefined}>
-                              {row.current?.name ?? "Not observed"}
-                            </strong>
-                            <small>{number(row.current?.itemLevel)}</small>
+                            <div className="progression-gear-item">
+                              <ItemIcon icon={itemMap.get(row.current?.itemId ?? 0)?.icon} quality={itemMap.get(row.current?.itemId ?? 0)?.quality} fallback={<GearSlotIcon slot={row.slot} />} />
+                              <div>
+                                <strong className="progression-item-name" data-unknown={!row.current || undefined}>
+                                  {row.current?.name ?? "Not observed"}
+                                </strong>
+                                <small>{number(row.current?.itemLevel)}</small>
+                              </div>
+                            </div>
                           </td>
                           <td>
-                            <strong className="progression-item-name" data-unknown={!candidate||undefined}>
-                              {candidate?.name ?? "No supported option"}
-                            </strong>
-                            <small>
-                              {candidate ? number(candidate.itemLevel) : "Unknown"}
-                              {candidate?.upgradeTrackId ? ` · ${candidate.upgradeTrackId}` : ""}
-                              {candidate?.upgradeRank != null ? ` ${candidate.upgradeRank}` : ""}
-                            </small>
-                            {candidate?.source?.name && <small>{candidate.source.name}</small>}
+                            <div className="progression-gear-item">
+                              <ItemIcon icon={itemMap.get(candidate?.itemId ?? 0)?.icon} quality={itemMap.get(candidate?.itemId ?? 0)?.quality} fallback={<GearSlotIcon slot={row.slot} />} />
+                              <div>
+                                <strong className="progression-item-name" data-unknown={!candidate || undefined}>
+                                  {candidate?.name ?? "No supported option"}
+                                </strong>
+                                <small>
+                                  {candidate ? number(candidate.itemLevel) : "Unknown"}
+                                  {candidate?.upgradeTrackId ? ` · ${candidate.upgradeTrackId}` : ""}
+                                  {candidate?.upgradeRank != null ? ` ${candidate.upgradeRank}` : ""}
+                                </small>
+                                {candidate?.source?.name && <small>{candidate.source.name}</small>}
+                              </div>
+                            </div>
                           </td>
-                          <td className="progression-gap">
+                          <td className="progression-gap" data-positive={gap != null && gap > 0 || undefined}>
                             {gap == null ? (
                               "Unknown"
                             ) : gap === 0 ? (
@@ -545,7 +572,7 @@ export function ProgressionPage({
             </section>
             <aside className="progression-settings">
               <section className="surface">
-                <h2>Your content</h2>
+                <h2 className="gear-section-title"><SlidersHorizontal size={17} aria-hidden="true" />Your content</h2>
                 <p className="secondary small">
                   These choices affect your content ceiling, keeping the season legal maximum
                   separate
@@ -647,11 +674,11 @@ export function ProgressionPage({
                     })
                   }
                 >
-                  {save.isPending ? "Saving…" : "Save content preferences"}
+                  <Save size={14} aria-hidden="true" />{save.isPending ? "Saving…" : "Save content preferences"}
                 </Button>
               </section>
               <section className="surface">
-                <h2>Personal target</h2>
+                <h2 className="gear-section-title"><Target size={17} aria-hidden="true" />Personal target</h2>
                 <p className="secondary small">
                   A planning goal, separate from a validated season ceiling
                 </p>

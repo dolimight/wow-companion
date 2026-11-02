@@ -27,6 +27,7 @@ import {
 } from "@tanstack/react-table";
 import {
   Archive,
+  Backpack,
   ArrowDownUp,
   ArrowLeft,
   ArrowRight,
@@ -37,17 +38,22 @@ import {
   Crown,
   Download,
   ExternalLink,
+  FlaskConical,
   Info,
   Menu,
+  NotebookPen,
   Plus,
   RefreshCw,
   Search,
+  Save,
   Settings,
   Shield,
   Sparkles,
   Star,
   Trash2,
   Trophy,
+  Target,
+  TrendingUp,
   Upload,
   Users,
   WandSparkles,
@@ -58,6 +64,7 @@ import { errorMessage, notify, setToastDispatch } from "./lib/notify";
 import { Term } from "./components/Term";
 import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
+import { GearSlotIcon } from "./components/GearSlotIcon";
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
@@ -122,6 +129,9 @@ import "./sidebar-settings.css";
 import "./navigation.css";
 import "./app-accent.css";
 import "./overview.css";
+import "./gear-polish.css";
+
+const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, simulations: FlaskConical };
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -1225,18 +1235,22 @@ function CharacterFrame({
       </div>
       {views && "view" in destination && (
         <nav className="subnav" aria-label={`${sectionLabels[section]} views`}>
-          {views.map(({ id, label }) => (
-            <CharacterLink
-              key={id}
-              characterId={character.id}
-              destination={{ section, view: id } as CharacterDestination}
-              returnTo={back ?? undefined}
-              className="subnav-link"
-              aria-current={destination.view === id ? "page" : undefined}
-            >
-              {label}
-            </CharacterLink>
-          ))}
+          {views.map(({ id, label }) => {
+            const Icon = section === "gear" ? gearViewIcons[id] : null;
+            return (
+              <CharacterLink
+                key={id}
+                characterId={character.id}
+                destination={{ section, view: id } as CharacterDestination}
+                returnTo={back ?? undefined}
+                className="subnav-link"
+                aria-current={destination.view === id ? "page" : undefined}
+              >
+                {Icon && <Icon size={16} aria-hidden="true" />}
+                <span>{label}</span>
+              </CharacterLink>
+            );
+          })}
         </nav>
       )}
       {children}
@@ -1664,9 +1678,9 @@ function GearEditor({
   }
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading gear-plan-heading">
         <div>
-          <h2>Plan</h2>
+          <h2 className="gear-section-title"><NotebookPen size={18} aria-hidden="true" />Plan</h2>
           <p>Your imported gear stays separate from this plan · Edits update the draft, and Save plan keeps them</p>
         </div>
         <div className="actions">
@@ -1678,7 +1692,7 @@ function GearEditor({
             disabled={save.isPending || query.isPending}
             onClick={() => savePlan()}
           >
-            <Download />
+            <Save />
             {save.isPending ? "Saving…" : "Save plan"}
           </Button>
         </div>
@@ -1699,46 +1713,48 @@ function GearEditor({
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
         <div className="planner-layout">
-          <section>
-            <Field label="Plan name">
-              <input
-                value={name}
-                maxLength={100}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setDirty(true);
-                }}
-              />
-            </Field>
-            <div className="goal-editor">
-              <Field
-                label="Your item-level target"
-                hint="A personal goal, separate from a verified legal maximum"
-              >
+          <section className="planner-workspace">
+            <div className="plan-controls">
+              <Field label="Plan name">
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={target}
-                  placeholder="No target set"
-                  onChange={(e) => setTarget(e.target.value)}
+                  value={name}
+                  maxLength={100}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setDirty(true);
+                  }}
                 />
               </Field>
-              <Button
-                onClick={() => {
-                  const value = target.trim() ? Number(target) : null;
-                  if (value != null && (!Number.isFinite(value) || value < 0)) {
-                    notify("Enter a valid target item level");
-                    return;
-                  }
-                  updateGoal.mutate({
-                    id: character.id,
-                    patch: { targetItemLevel: value },
-                  });
-                }}
-              >
-                Save target
-              </Button>
+              <div className="goal-editor">
+                <Field
+                  label="Your item-level target"
+                  hint="A personal goal, separate from a verified legal maximum"
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={target}
+                    placeholder="No target set"
+                    onChange={(e) => setTarget(e.target.value)}
+                  />
+                </Field>
+                <Button
+                  onClick={() => {
+                    const value = target.trim() ? Number(target) : null;
+                    if (value != null && (!Number.isFinite(value) || value < 0)) {
+                      notify("Enter a valid target item level");
+                      return;
+                    }
+                    updateGoal.mutate({
+                      id: character.id,
+                      patch: { targetItemLevel: value },
+                    });
+                  }}
+                >
+                  <Target size={14} aria-hidden="true" />Save target
+                </Button>
+              </div>
             </div>
             <div className="table-wrap planner-table-wrap">
               <table className="data-table planner-table">
@@ -1777,15 +1793,15 @@ function GearEditor({
                         }}
                       >
                         <td>
-                          <div className="planner-slot-name">{slotNames[slot]}</div>
+                          <div className="planner-slot-name"><GearSlotIcon slot={slot} size={16} /><span>{slotNames[slot]}</span></div>
                           {targetEquipped && <span className="planner-match"><Check size={12} aria-hidden="true" />Target equipped</span>}
                           {completion?.acquisition==='complete'&&!completion.complete&&<span className="item-subtitle">{completion.rank!=='complete'?'Upgrade goal outstanding':completion.enhancements!=='complete'?'Gems or enchant outstanding':'Variant details unverified'}</span>}
                         </td>
                         <td>
                           <ItemHoverCard itemId={observed?.itemId} item={observed?.itemId ? itemMap.get(observed.itemId) : undefined} gear={observed}><div className="gear-item planner-gear-item">
-                            <ItemIcon icon={observed?.itemId ? itemMap.get(observed.itemId)?.icon : null} quality={observed?.itemId ? itemMap.get(observed.itemId)?.quality : undefined} />
+                            <ItemIcon icon={observed?.itemId ? itemMap.get(observed.itemId)?.icon : null} quality={observed?.itemId ? itemMap.get(observed.itemId)?.quality : undefined} fallback={<GearSlotIcon slot={slot} />} />
                             <div>
-                              <div className={observed ? "item-name" : "secondary"}>
+                              <div className={observed ? `item-name quality-text-${observed.itemId ? itemMap.get(observed.itemId)?.quality ?? 1 : 1}` : "secondary"}>
                                 {observed?.name ?? "Not imported"}
                               </div>
                               <div className="item-subtitle">Item level <Known>{level(observed?.itemLevel)}</Known></div>
@@ -1794,9 +1810,9 @@ function GearEditor({
                         </td>
                         <td>
                           <ItemHoverCard itemId={item?.itemId} item={item?.itemId ? itemMap.get(item.itemId) : undefined} gear={item}><div className="gear-item planner-gear-item">
-                            <ItemIcon icon={item?.itemId ? itemMap.get(item.itemId)?.icon : null} quality={item?.itemId ? itemMap.get(item.itemId)?.quality : undefined} />
+                            <ItemIcon icon={item?.itemId ? itemMap.get(item.itemId)?.icon : null} quality={item?.itemId ? itemMap.get(item.itemId)?.quality : undefined} fallback={<GearSlotIcon slot={slot} />} />
                             <div>
-                              <div className={item ? "item-name" : "secondary"}>
+                              <div className={item ? `item-name quality-text-${item.itemId ? itemMap.get(item.itemId)?.quality ?? 1 : 1}` : "secondary"}>
                                 {item?.name ?? "No planned item"}
                               </div>
                               <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known></div>
@@ -1829,15 +1845,13 @@ function GearEditor({
             </div>
           </section>
           <aside className="surface gear-inspector">
-            {planned ? (
-              <ItemIcon icon={planned.icon} quality={planned.quality} size="large" />
-            ) : (
-              <span className="item-icon">
-                <Shield size={23} />
-              </span>
-            )}
-            <h3>{slotNames[selected]}</h3>
-            <p>Current gear · {equipped?.name ?? "Not imported"}</p>
+            <div className="gear-inspector-heading">
+              <ItemIcon icon={planned?.icon} quality={planned?.quality} size="large" fallback={<GearSlotIcon slot={selected} />} />
+              <div>
+                <h3>{slotNames[selected]}</h3>
+                <p>Current gear · {equipped?.name ?? "Not imported"}</p>
+              </div>
+            </div>
             <Button onClick={() => setSlotSearch(true)} aria-label="Search items for this slot">
               <Search />
               Search items for this slot

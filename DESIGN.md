@@ -308,7 +308,8 @@ The spacing inventory in frontmatter is extracted from observed repeated padding
 - **Overview:** a 280px character column with a square portrait, separate build label, and aligned source ages sits beside Next steps, Gear gap, and activity details with 24px gaps; below 1000px the character panel becomes a compact row with a 128px square portrait so Next steps remains in the first viewport
 - **Character split:** minmax(0, 1.28fr) and minmax(290px, 1fr), separated by 28px; the paper doll is at least 500px tall with a 405px character stage
 - **Slot alignment:** two opposing gear columns, 16px from the stage edges; weak-slot rows align at 68px / flexible / 38px, with the range and delta right aligned
-- **Planner:** flexible table and 265px detail panel separated by 22px; the table scrolls horizontally and uses 55px minimum row height with 10px 12px cell padding
+- **Gear Progress:** equipment-slot glyphs and locally decoded item artwork pair with text labels in the comparison table; missing artwork uses the slot glyph, and unknown levels use secondary ink. The table and content preferences have 24px separation, stacking below 1300px
+- **Planner:** grouped plan-name and personal-target controls sit above a flexible comparison table, beside a sticky slot editor with 24px separation. Rows use 16px vertical padding, slot glyphs, and genuine item-quality colors when available. The editor moves below the table below 1150px; the table can scroll horizontally
 - **Standings:** three comparison columns with quiet dividing rules
 - **Wardrobe:** model stage and outfit editor use minmax(300px, 1fr) and minmax(0, 1.05fr), separated by 24px; appearance cards form three columns with 10px gaps
 

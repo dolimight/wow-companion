@@ -1,0 +1,79 @@
+.subnav[aria-label="Gear views"] .subnav-link { display: inline-flex; align-items: center; gap: 8px; }
+.subnav[aria-label="Gear views"] .subnav-link svg { flex: none; color: var(--secondary); }
+.subnav[aria-label="Gear views"] .subnav-link[aria-current="page"] svg { color: var(--accent); }
+.gear-section-title { display: flex; align-items: center; gap: 8px; }
+.gear-section-title > svg { flex: none; color: var(--accent); }
+.gear-slot-label, .planner-slot-name { display: inline-flex; align-items: center; gap: 8px; }
+.gear-slot-glyph { flex: none; }
+.gear-slot-label > svg, .planner-slot-name > svg { color: var(--secondary); }
+
+.progression-layout { gap: 24px; }
+.progression-slots { padding: 20px; border-radius: 12px; background: var(--surface); }
+.progression-slots .surface-heading { margin-bottom: 16px; gap: 16px; }
+.progression-slots .surface-heading > .button { flex: none; }
+.progression-result-heading { align-items: center; }
+.progression-result-value > strong { color: var(--accent); }
+.progression-result-value > strong[data-unknown] { color: var(--secondary); font-size: 18px; font-weight: 500; }
+.progression-gear-item { display: flex; align-items: flex-start; gap: 10px; }
+.progression-gear-item > div { min-width: 0; }
+.progression-item-name { line-height: 1.5; }
+.progression-table tbody th, .progression-table td { padding-block: 16px; }
+.progression-gap[data-positive] { color: var(--accent); font-weight: 600; }
+.progression-settings > .surface { padding: 20px; }
+.progression-settings .gear-section-title { font-size: 17px; margin-bottom: 10px; }
+.progression-settings > .surface > .button-primary { width: 100%; justify-content: center; }
+.progression-settings legend { color: var(--ink); }
+.progression-notice { gap: 10px; padding: 16px 20px; }
+.progression-notice .button { flex: none; align-self: center; }
+
+.gear-plan-heading { align-items: flex-start; }
+.gear-plan-heading > div:first-child { min-width: 0; }
+.gear-plan-heading .actions { flex: none; }
+.gear-plan-heading p { max-width: 68ch; line-height: 1.6; }
+.gear-summary .metric-strip { width: min(100%, 560px); }
+.gear-summary .metric-strip strong[data-unknown="true"] { color: var(--secondary); font-size: 17px; font-weight: 500; }
+.planner-layout { gap: 24px; }
+.planner-workspace { min-width: 0; }
+.plan-controls { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.2fr); align-items: start; gap: 20px; padding: 20px; border-radius: 12px; background: var(--surface); margin-bottom: 20px; }
+.plan-controls .goal-editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; margin: 0; }
+.plan-controls .goal-editor .field input { max-width: none; }
+.plan-controls .goal-editor > .button { min-height: 36px; }
+.planner-table caption { line-height: 1.6; max-width: 75ch; padding-bottom: 16px; }
+.planner-table td { padding-block: 16px; }
+.planner-gear-item { gap: 12px; }
+.planner-gear-item .item-name { line-height: 1.5; }
+.planner-gear-item .quality-text-0 { color: var(--quality-poor); }
+.planner-gear-item .quality-text-1 { color: var(--quality-common); }
+.planner-gear-item .quality-text-2 { color: var(--quality-uncommon); }
+.planner-gear-item .quality-text-3 { color: var(--quality-rare); }
+.planner-gear-item .quality-text-4 { color: var(--quality-epic); }
+.planner-gear-item .quality-text-5 { color: var(--quality-legendary); }
+.planner-gear-item .quality-text-6 { color: var(--quality-artifact); }
+.planner-gear-item .quality-text-7 { color: var(--quality-heirloom); }
+.gear-inspector { position: sticky; top: 0; padding: 20px; }
+.gear-inspector-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.gear-inspector-heading > div { min-width: 0; }
+.gear-inspector-heading h3 { margin: 0; font-size: 17px; }
+.gear-inspector-heading p { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--secondary); overflow-wrap: anywhere; }
+.gear-inspector-heading .game-icon svg { width: 24px; height: 24px; }
+.gear-inspector .field { margin-top: 16px; }
+.gear-inspector .field input { min-height: 36px; }
+.gear-inspector .inspector-note { line-height: 1.6; }
+@media (max-width: 1300px) {
+  .progression-layout { grid-template-columns: minmax(0, 1fr); }
+  .progression-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+@media (max-width: 1150px) {
+  .planner-layout { grid-template-columns: minmax(0, 1fr); }
+  .gear-inspector { position: static; }
+}
+@media (max-width: 850px) {
+  .gear-inspector-heading { grid-column: 1 / -1; }
+  .gear-inspector > .button { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .progression-settings { grid-template-columns: minmax(0, 1fr); }
+  .progression-result-heading { flex-wrap: wrap; }
+  .plan-controls { grid-template-columns: minmax(0, 1fr); }
+  .gear-plan-heading { flex-wrap: wrap; }
+}
