@@ -25,10 +25,19 @@ export async function createEnhancementFixture(directory: string) {
     insert.run(99002, 'Enchant Chest - Acceptance Chest Only', 8, 4)
     insert.run(99003, 'Acceptance Ruby', 3, 0)
     insert.run(99004, 'Acceptance Sapphire', 3, 0)
+    db.prepare('UPDATE items SET description = ? WHERE id = ?').run('+42 Intellect · Fictional acceptance enchant', 99001)
+    db.prepare('UPDATE items SET description = ? WHERE id = ?').run('+37 Haste · Fictional acceptance gem', 99003)
     const name = 'Acceptance Crown of the Long-Named Arcane Expedition'
     db.prepare('INSERT INTO items VALUES (?, ?, 4, 300, 90, 1, 4, 1, NULL, 12, 1, 0, \'\', -1, \'[62]\', \'["intellect"]\')').run(99010, name)
     db.prepare('INSERT INTO items_fts(rowid,name) VALUES (?,?)').run(99010, name)
     db.prepare('INSERT INTO sources VALUES (?, ?, ?, ?, ?)').run(99010, 'Acceptance boss', 'Fictional acceptance dungeon', 'dungeon', 1)
+    for (let index = 1; index <= 94; index++) {
+      const id = 99100 + index
+      const itemName = `Acceptance Crown ${String(index).padStart(3, '0')}`
+      db.prepare('INSERT INTO items VALUES (?, ?, 4, ?, 90, 1, 4, 1, NULL, 12, 1, 0, \'\', -1, \'[62]\', \'["intellect"]\')').run(id, itemName, 300 - index)
+      db.prepare('INSERT INTO items_fts(rowid,name) VALUES (?,?)').run(id, itemName)
+      db.prepare('INSERT INTO sources VALUES (?, ?, ?, ?, ?)').run(id, 'Acceptance boss', 'Fictional acceptance dungeon', index % 2 ? 'dungeon' : 'raid', 1)
+    }
   } finally { db.close() }
   return install
 }

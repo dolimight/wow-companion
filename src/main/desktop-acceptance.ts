@@ -967,7 +967,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(await evaluate(`!document.body.innerText.includes('Acceptance public report bookmark')`), 'A saved report leaked into another character')
       return { sourceAndSeason: true, noInventedPercentile: true, historyIsolation: true, unsupportedFiltersWithheld: true, publicReportBookmark: true, reportReload: true, characterIsolation: true }
     })
-    const enhancementWorks = await step('Enchant and gem dropdowns search local choices and preserve multiple gems in the saved plan', async () => {
+    const enhancementWorks = await step('Enhancement stat previews and paginated item search preserve selections, filters, and saved gems', async () => {
       const install = await createEnhancementFixture(path.dirname(outputDir))
       await service.gameData.call('configure', install)
       await service.changed()
@@ -982,11 +982,22 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await openEnhancements('Enchant')
       await wait(`document.querySelector(${literal(options)})?.textContent.includes('Acceptance Fiery Focus')`, 'slot-filtered enchant options')
       assert(await evaluate(`!document.querySelector('[data-slot="combobox-content"]')?.textContent.includes('Chest Only')`), 'Chest enchant leaked into head choices')
+      const hoverEnhancement = async (name: string, stat: string) => {
+        const point = await evaluate<{x:number;y:number}>(`(()=>{const node=[...document.querySelectorAll(${literal(options)})].find(node=>node.textContent.trim()===${literal(name)});const box=node.getBoundingClientRect();return {x:Math.round(box.x+30),y:Math.round(box.y+box.height/2)}})()`)
+        contents.sendInputEvent({type:'mouseMove',...point})
+        await wait(`document.querySelector('.item-hover-card')?.textContent.includes(${literal(stat)})`, name + ' hover stats')
+        assert(await evaluate(`document.querySelector('.item-hover-card')?.textContent.includes('Enhancement effects')`), 'Enhancement stats used an equipment-level label')
+      }
+      await hoverEnhancement('Acceptance Fiery Focus', '+42 Intellect')
+      await capture('enchant-hover-stats-dark', false)
+      contents.sendInputEvent({type:'mouseMove',x:1,y:1})
+      await wait(`!document.querySelector('.item-hover-card')`, 'enchant hover dismissed')
       await field('Enchant', 'Fiery')
       await evaluate(`document.querySelector('input[aria-label="Enchant"]').focus()`)
       await wait(`document.activeElement?.getAttribute('aria-label')==='Enchant'`, 'enchant search receives keyboard focus')
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 })
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 })
+      await wait(`document.querySelector('.item-hover-card')?.textContent.includes('+42 Intellect')`, 'keyboard enchant stat preview')
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
       await wait(`document.querySelector('input[aria-label="Enchant"]')?.value==='Acceptance Fiery Focus'&&document.querySelector('input[aria-label="Enchant"]')?.getAttribute('aria-expanded')!=='true'`, 'keyboard enchant selection')
@@ -995,6 +1006,11 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       for (const gem of ['Acceptance Ruby', 'Acceptance Ruby', 'Acceptance Sapphire']) {
         await openEnhancements('Gems')
         await wait(`!![...document.querySelectorAll(${literal(options)})].find(node=>node.textContent.trim()===${literal(gem)})`, 'gem option')
+        if (!selectedGems.length) {
+          await hoverEnhancement(gem, '+37 Haste')
+          await capture('gem-hover-stats-dark', false)
+          contents.sendInputEvent({type:'mouseMove',x:1,y:1})
+        }
         await click(gem, options)
         selectedGems.push(gem)
         await wait(`document.querySelector('input[aria-label="Gems"]')?.getAttribute('aria-expanded')!=='true'`, 'gem selection closes the dropdown')
@@ -1009,7 +1025,11 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await wait(`innerWidth===820&&document.documentElement.dataset.theme==='light'`, 'light enhancement layout')
         await evaluate(`document.querySelector('input[aria-label="Gems"]').scrollIntoView({block:'center'})`)
         assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Enhancement controls overflow the minimum width')
+        await openEnhancements('Gems')
+        await hoverEnhancement('Acceptance Ruby', '+37 Haste')
+        assert(await evaluate(`(()=>{const box=document.querySelector('.item-hover-card').getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight})()`), 'Enhancement stat preview extends beyond the window')
         await capture('gear-enhancement-dropdown-light-minimum', false)
+        contents.sendInputEvent({type:'mouseMove',x:1,y:1})
       } finally { window.setContentSize(originalSize[0], originalSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
       await wait(`innerWidth===${originalSize[0]}&&document.querySelector('.app-shell')?.dataset.navigation===${literal(originalSize[0] < 1100 ? 'drawer' : 'sidebar')}&&document.documentElement.dataset.theme==='dark'`, 'editor layout restored before saving')
       contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' }); contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
@@ -1035,12 +1055,34 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 })
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 })
       await wait(`document.querySelector('.item-search-detail')?.textContent.includes('Acceptance boss')`, 'keyboard item details')
+      const highlightedItem = await evaluate<string>(`document.querySelector('.item-result[data-selected="true"]')?.getAttribute('data-value')`)
+      assert(await evaluate(`document.querySelectorAll('.item-search-dialog .item-result').length===40`), 'Search first page must contain 40 items')
+      const scrollSearchToEnd = async () => {
+        await evaluate(`(()=>{const list=document.querySelector('.item-search-list');list.scrollTop=list.scrollHeight;list.dispatchEvent(new Event('scroll',{bubbles:true}))})()`)
+      }
+      await scrollSearchToEnd()
+      await wait(`document.querySelectorAll('.item-search-dialog .item-result').length===80`, 'second search page loads on scroll')
+      assert(await evaluate(`document.querySelector('.item-result[data-selected="true"]')?.getAttribute('data-value')===${literal(highlightedItem)}`), 'Pagination lost the highlighted item')
+      await scrollSearchToEnd()
+      await wait(`document.querySelectorAll('.item-search-dialog .item-result').length===95&&document.querySelector('.item-search-pagination')?.textContent.includes('All matching items shown')`, 'final search page and completion state')
+      assert(await evaluate(`new Set([...document.querySelectorAll('.item-search-dialog .item-result')].map(node=>node.getAttribute('data-value'))).size===95`), 'Search pagination repeated items')
+      await choose('Where it comes from', 'Dungeons')
+      await wait(`document.querySelectorAll('.item-search-dialog .item-result').length===40&&document.querySelector('.item-search-list').scrollTop===0`, 'source filter resets pagination and scroll')
+      await scrollSearchToEnd()
+      await wait(`document.querySelectorAll('.item-search-dialog .item-result').length===48`, 'filtered search continues across pages')
+      await choose('Where it comes from', 'Any source')
+      await evaluate(`(()=>{const input=document.querySelector(${literal(searchInput)});Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Acceptance Crown 094');input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+      await wait(`document.querySelectorAll('.item-search-dialog .item-result').length===1&&document.querySelector('.item-result')?.textContent.includes('094')&&document.querySelector('.item-search-list').scrollTop===0`, 'typed query resets pagination')
+      await evaluate(`(()=>{const input=document.querySelector(${literal(searchInput)});Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'');input.dispatchEvent(new Event('input',{bubbles:true}))})()`)
+      await wait(`document.querySelectorAll('.item-search-dialog .item-result').length>=40`, 'restore item browsing after query test')
+      await evaluate(`document.querySelector('.item-search-list').scrollTo(0,0)`)
       const searchSize = window.getContentSize()
       try {
         for (const variant of [{ theme: 'dark' as const, width: 1460 }, { theme: 'light' as const, width: 820 }]) {
           await db.call('setSettings', { theme: variant.theme }); await service.changed()
           window.setContentSize(variant.width, 900)
-          await wait(`innerWidth===${variant.width}&&document.querySelector('.app-shell')?.dataset.navigation===${literal(variant.width < 1100 ? 'drawer' : 'sidebar')}&&document.documentElement.dataset.theme===${literal(variant.theme)}`, 'item search layout ' + variant.theme)
+          await wait(`innerWidth===${variant.width}&&innerHeight===900&&document.querySelector('.app-shell')?.dataset.navigation===${literal(variant.width < 1100 ? 'drawer' : 'sidebar')}&&document.documentElement.dataset.theme===${literal(variant.theme)}`, 'item search layout ' + variant.theme)
+          await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
           // Switching navigation layouts remounts the workspace, so reopen its local dialog
           if (!await evaluate(`!!document.querySelector('.item-search-dialog')`)) {
             await click('Search items for this slot')
@@ -1051,14 +1093,13 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
             await wait(`document.querySelector('.item-search-detail')?.textContent.includes('Acceptance boss')`, 'item details restored at ' + variant.width)
           }
           assert(await evaluate(`(()=>{const box=document.querySelector('.item-search-dialog').getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight})()`), 'Item search extends beyond the window')
+          assert(await evaluate(`(()=>{const box=document.querySelector('.item-search-footer').getBoundingClientRect();return box.bottom<=innerHeight&&box.bottom<=document.querySelector('.item-search-dialog').getBoundingClientRect().bottom})()`), 'Item search footer is clipped by the result list')
           await capture(`item-search-populated-${variant.theme}-${variant.width}`, false)
         }
-      } finally { window.setContentSize(searchSize[0], searchSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
-      if (await evaluate(`!!document.querySelector('.item-search-dialog')`)) {
         await click('Close item search')
         await wait(`!document.querySelector('.item-search-dialog')`, 'visible close control dismisses item search')
-      }
-      return { localData: true, slotFiltered: true, keyboardSelection: true, repeatedGems: true, persisted: true }
+      } finally { window.setContentSize(searchSize[0], searchSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
+      return { localData: true, slotFiltered: true, keyboardSelection: true, enhancementHoverStats: true, repeatedGems: true, persisted: true, infiniteScrolling: true, pages: [40,80,95], filterAndQueryReset: true }
     })
     if (!enhancementWorks) return report
     // This fixture belongs only to the dedicated acceptance database and has no later consumers

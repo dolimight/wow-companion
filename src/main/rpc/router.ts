@@ -91,6 +91,7 @@ export function createRouter(s:RouterServices){return t.router({
   // Item data from the local game install
   gameDataStatus:p.query(()=>s.gameData.currentStatus),
   searchItems:p.input(itemSearchSchema).query(({input})=>run(()=>s.gameData.call('search',input))),
+  searchItemsPage:p.input(itemSearchSchema).query(({input})=>run(()=>s.gameData.call('searchPage',input))),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
   getItems:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('items',input.ids))),
   enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable()})).query(({input})=>run(()=>s.gameData.call('enhancements',input.kind,input.slot))),

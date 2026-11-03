@@ -7,6 +7,7 @@ import type { EnhancementOption } from '../../../shared/gamedata'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { ItemIcon, useGameData } from './items'
+import { ItemHoverCard } from './ItemHoverCard'
 import './enhancement-select.css'
 
 export function EnhancementSelect({ kind, slot, value, onChange, onCommit }: {
@@ -15,6 +16,7 @@ export function EnhancementSelect({ kind, slot, value, onChange, onCommit }: {
   const id = useId()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [keyboardPreview, setKeyboardPreview] = useState<number | null>(null)
   const status = useGameData()
   const ready = status.data?.state === 'ready'
   const options = useQuery({ queryKey: ['enhancements', kind, kind === 'enchant' ? slot : null], queryFn: () => api.enhancements({ kind, slot: kind === 'enchant' ? slot : null }), enabled: open && ready })
@@ -27,7 +29,8 @@ export function EnhancementSelect({ kind, slot, value, onChange, onCommit }: {
   return <div className="field enhancement-field">
     <label htmlFor={id}><LabelIcon size={14} aria-hidden="true" />{label}</label>
     <Combobox<EnhancementOption | string> items={choices} filter={null} value={value} inputValue={value}
-      open={open} onOpenChange={(next, details) => { setOpen(next); if (next && details.reason !== 'input-change') setSearch('') }}
+      open={open} onOpenChange={(next, details) => { setOpen(next); if (!next) setKeyboardPreview(null); if (next && details.reason !== 'input-change') setSearch('') }}
+      onItemHighlighted={(option, details) => setKeyboardPreview(details.reason === 'keyboard' && option && typeof option !== 'string' ? option.itemId : null)}
       itemToStringLabel={option => typeof option === 'string' ? option : option.name}
       onInputValueChange={(next, details) => {
         // Planned names are allowed; library selection/blur resets must not erase them
@@ -52,9 +55,9 @@ export function EnhancementSelect({ kind, slot, value, onChange, onCommit }: {
           : options.isError ? <p className="enhancement-status" role="alert">{errorMessage(options.error)}</p>
             : options.isPending ? <p className="enhancement-status" role="status">Loading choices…</p>
               : !choices.length ? <p className="enhancement-status">No matching {kind === 'enchant' ? 'enchants for this slot' : 'gems'} — you can type a name</p> : null}
-        <ComboboxList>{choices.map(option => <ComboboxItem key={option.itemId} value={option} disabled={kind === 'gem' && gemLimitReached}>
+        <ComboboxList>{choices.map(option => <ItemHoverCard key={option.itemId} enhancement={{...option, kind}} active={open && keyboardPreview === option.itemId} onDismiss={() => setKeyboardPreview(null)}><ComboboxItem value={option} disabled={kind === 'gem' && gemLimitReached}>
           <ItemIcon icon={option.icon} quality={option.quality} size="small" /><span>{option.name}</span>
-        </ComboboxItem>)}</ComboboxList>
+        </ComboboxItem></ItemHoverCard>)}</ComboboxList>
       </ComboboxContent>
     </Combobox>
     {kind === 'gem' && <small>Add another gem from the list, or separate typed names with commas</small>}

@@ -41,8 +41,8 @@ Keep that executable with its sibling files; use `npm run dist:win` to produce a
 - Safe manual JSON or SavedVariables imports, source observation times, deduplication, and a file watcher with a 60-second fallback
 - Separate Mythic+, Raiding, and PvP views; public Raider.IO refresh retains its real metric/rank scope and source timestamps
 - Local comparison of tracked characters, plus links to provider rankings and source profiles
-- Live item search against the local game data index, plus copying popular items from Top players into a gear plan
-- Searchable local enchant and gem choices in gear plans, with typed names available when game data is not ready
+- Live item search with scrolling pagination against the local game data index, plus copying popular items from Top players into a gear plan
+- Searchable local enchant and gem choices in gear plans, with hover stat/effect previews and typed names available when game data is not ready
 - Character/spec-aware item search, including class restrictions, required level, primary stats, and weapon configurations before result limits
 - Gear progression with five separate views, slot explanations, per-character/activity content preferences, and editable personal targets
 - Dated seasonal-rule validation and legal-set calculations in a worker, with shared currency budgets and explicit unknown results when evidence is incomplete
