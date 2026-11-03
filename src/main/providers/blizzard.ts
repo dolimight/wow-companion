@@ -298,6 +298,7 @@ const previewSchema = z.object({ preview_item: z.object({
   level: z.object({ value: z.number() }).optional(), binding: z.object({ name: z.string() }).optional(), inventory_type: z.object({ name: z.string() }).optional(), item_subclass: z.object({ name: z.string() }).optional(),
   armor: z.object({ display: display.optional() }).optional(), stats: z.array(z.object({ display: display.extend({ color: z.object({ r: z.number(), g: z.number(), b: z.number() }).optional() }).optional(), is_negated: z.boolean().optional() })).optional(),
   spells: z.array(z.object({ description: z.string().optional() })).optional(), sockets: z.array(z.object({ socket_type: z.object({ name: z.string() }).optional() })).optional(),
+  gem_properties: z.object({ effect: z.string().optional() }).optional(),
   weapon: z.object({ damage: display.optional(), attack_speed: display.optional(), dps: display.optional() }).optional(),
   requirements: z.object({ level: display.optional() }).optional(), set: z.object({ display_string: z.string().optional() }).optional(),
 }).passthrough() }).passthrough()
@@ -309,6 +310,8 @@ export async function fetchItemPreview(api: BlizzardApi, id: number, signal?: Ab
   if (!parsed.success) return null
   const item = parsed.data.preview_item
   const { stats, effects } = statLines(item)
+  const gemEffect = item.gem_properties?.effect ? clean(item.gem_properties.effect).slice(0, 600) : ''
+  if (gemEffect && !stats.some(stat => stat.text === gemEffect)) stats.push({ text: gemEffect, secondary: true })
   return {
     level: item.level?.value ?? null, binding: item.binding?.name ?? null, slot: item.inventory_type?.name ?? null, subclass: item.item_subclass?.name ?? null,
     weapon: [item.weapon?.damage?.display_string, item.weapon?.attack_speed?.display_string, item.weapon?.dps?.display_string].filter((line): line is string => !!line),

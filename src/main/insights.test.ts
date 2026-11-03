@@ -41,6 +41,16 @@ function fixture(blizzardApi: () => Promise<BlizzardApi | null>) {
 }
 
 describe('item tooltip enrichment', () => {
+  it('includes gem property stats and enchant use effects in item previews', async () => {
+    const { api, get } = apiFor()
+    get.mockResolvedValueOnce({preview_item:{gem_properties:{effect:'+37 Haste'},spells:[{description:'Use: Add a gem to a socket'}]}})
+    const { insights } = fixture(async () => api)
+    const gem = (await insights.itemTooltip(99003)).preview
+    expect(gem?.stats).toEqual([{text:'+37 Haste',secondary:true}])
+    expect(gem?.effects).toEqual(['Use: Add a gem to a socket'])
+    get.mockResolvedValueOnce({preview_item:{spells:[{description:'Use: Permanently enchants a helm with +42 Intellect'}]}})
+    expect((await insights.itemTooltip(99001)).preview?.effects).toEqual(['Use: Permanently enchants a helm with +42 Intellect'])
+  })
   it('keeps indexed details usable without a key and enriches them after connecting', async () => {
     const { api, get } = apiFor()
     let connected = false

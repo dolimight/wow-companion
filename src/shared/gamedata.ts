@@ -16,6 +16,7 @@ export type ItemSummary = { id: number; name: string; quality: number; itemLevel
 export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId: number; modifier: number; icon: number | null }
 export type ItemDetail = ItemSummary & { classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
+export type ItemSearchPage = { items: ItemSummary[]; nextOffset: number | null }
 export type AppearanceOption = { appearanceId: number; modifiedAppearanceId: number; itemId: number; itemName: string; quality: number; icon: number | null }
 
 export const armorTypes = ['cloth', 'leather', 'mail', 'plate'] as const
@@ -36,6 +37,7 @@ export const itemSearchSchema = z.object({
   source: z.enum(['any', 'dungeon', 'raid']).default('any'),
   currentOnly: z.boolean().default(false),
   limit: z.number().int().min(1).max(100).default(40),
+  offset: z.number().int().nonnegative().default(0),
 })
 export type ItemSearch = z.input<typeof itemSearchSchema>
 

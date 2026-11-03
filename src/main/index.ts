@@ -15,6 +15,7 @@ import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
 import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
+import { persistWindowsIcon, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
 
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
@@ -114,19 +115,33 @@ async function main(){
   const iconRoot=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets':'public/assets')
   const iconPath=(variant:AppIconVariant)=>resolve(iconRoot,appIconFiles[variant].png)
   const windowIcon=iconPath(resolveAppIcon(settings.appIcon,app.getVersion()))
-  handle('companion:apply-app-icon',async()=>{
-    const saved=await db.call('getSettings')
-    const variant=resolveAppIcon(saved.appIcon,app.getVersion())
-    if(process.platform==='darwin')app.dock?.setIcon(iconPath(variant))
-    else window?.setIcon(iconPath(variant))
-    return variant
-  })
-  if(process.platform==='win32')app.setAppUserModelId('local.wowcompanion.desktop')
+  const pinnedIcons=resolve(app.getPath('appData'),'Microsoft/Internet Explorer/Quick Launch/User Pinned/TaskBar')
+  let iconUpdate:Promise<unknown>=Promise.resolve()
+  const applyAppIcon=()=>{
+    const next=iconUpdate.catch(()=>{}).then(async()=>{
+      const saved=await db.call('getSettings')
+      const variant=resolveAppIcon(saved.appIcon,app.getVersion())
+      if(process.platform==='darwin')app.dock?.setIcon(iconPath(variant))
+      else window?.setIcon(iconPath(variant))
+      if(process.platform==='win32'){
+        const ico=await persistWindowsIcon(resolve(iconRoot,appIconFiles[variant].ico),resolve(userDir,'app-icons'))
+        window?.setAppDetails(taskbarDetails(process.execPath,ico,app.isPackaged?undefined:app.getAppPath()))
+        // Acceptance profiles exercise native shortcuts in scratch space, never the real taskbar
+        if(!process.env.WOW_COMPANION_DATA_DIR)await updatePinnedAppIcons(pinnedIcons,process.execPath,ico,shell,app.isPackaged?undefined:app.getAppPath())
+      }
+      return variant
+    })
+    iconUpdate=next
+    return next
+  }
+  handle('companion:apply-app-icon',applyAppIcon)
+  if(process.platform==='win32')app.setAppUserModelId(windowsAppId)
   if(process.platform==='darwin')app.dock?.setIcon(windowIcon)
   const titleBarOverlay=()=>({color:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',symbolColor:nativeTheme.shouldUseDarkColors?'#f5f5f5':'#1c2430',height:48})
   const placementFile=resolve(userDir,'window-placement.json')
   const placement=readWindowPlacement(placementFile,[screen.getPrimaryDisplay().workArea,...screen.getAllDisplays().filter(display=>display.id!==screen.getPrimaryDisplay().id).map(display=>display.workArea)])
   window=new BrowserWindow({title:'WOW Companion',...placement.bounds,...minimumWindowSize,show:false,backgroundColor:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',autoHideMenuBar:true,icon:windowIcon,...(process.platform==='darwin'?{titleBarStyle:'hiddenInset' as const,trafficLightPosition:{x:14,y:16}}:{titleBarStyle:'hidden' as const,titleBarOverlay:titleBarOverlay()}),webPreferences:{preload:resolve(root,'../preload/index.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true,offscreen:process.env.WOW_COMPANION_HEADLESS==='1',backgroundThrottling:process.env.WOW_COMPANION_HEADLESS!=='1'}})
+  await applyAppIcon().catch(error=>console.warn('Taskbar icon update:',error.message))
   const rememberedWindow=rememberWindowPlacement(window,placementFile,placement)
   saveWindowPlacement=rememberedWindow.save
   const publishWindowState=()=>{if(window&&!window.webContents.isDestroyed())window.webContents.send('companion:window-state-changed',windowState())}

@@ -67,6 +67,7 @@ import { Term } from "./components/Term";
 import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
+import { EnhancementSelect } from "./features/items/EnhancementSelect";
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
@@ -1590,9 +1591,12 @@ function GearEditor({
     setDirty(stored.dirty);
   }), [memoryKey]);
   const current = items.find((i) => i.slot === selected);
+  const displayedItem = useRef<{ slot: GearSlot; item: GearItem | undefined } | null>(null);
   const inspectorDirty = hydrated.current && (itemName !== (current?.name ?? '') || itemLevel !== (current?.itemLevel?.toString() ?? '') || enchant !== (current?.enchant ?? '') || gems !== (current?.gems.join(', ') ?? ''));
   useUpdateBlocker(dirty || inspectorDirty || target !== (character.targetItemLevel?.toString() ?? ''), 'Save your gear plan and slot edits before restarting');
   useEffect(() => {
+    if (displayedItem.current?.slot === selected && displayedItem.current.item === current) return;
+    displayedItem.current = { slot: selected, item: current };
     setItemName(current?.name ?? "");
     setItemLevel(current?.itemLevel?.toString() ?? "");
     setEnchant(current?.enchant ?? "");
@@ -1617,7 +1621,7 @@ function GearEditor({
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
   /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
-  function updateItem(quiet = false): GearItem[] | null {
+  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string }): GearItem[] | null {
     const ilvl = itemLevel.trim() ? Number(itemLevel) : null;
     if (ilvl != null && (!Number.isFinite(ilvl) || ilvl < 0)) {
       notify("Enter a valid item level");
@@ -1628,10 +1632,10 @@ function GearEditor({
       name: itemName.trim() || `${slotNames[selected]} draft`,
       itemId: current?.itemId ?? null,
       itemLevel: ilvl,
-      enchant: enchant.trim() || null,
-      enchantCoverage: enchantEdited ? "complete" : (current?.enchantCoverage ?? "unknown"),
-      gemsCoverage: gemsEdited ? "complete" : (current?.gemsCoverage ?? "unknown"),
-      gems: gems
+      enchant: (enhancement?.enchant ?? enchant).trim() || null,
+      enchantCoverage: enchantEdited || enhancement?.enchant !== undefined ? "complete" : (current?.enchantCoverage ?? "unknown"),
+      gemsCoverage: gemsEdited || enhancement?.gems !== undefined ? "complete" : (current?.gemsCoverage ?? "unknown"),
+      gems: (enhancement?.gems ?? gems)
         .split(",")
         .map((g) => g.trim())
         .filter(Boolean),
@@ -1641,6 +1645,14 @@ function GearEditor({
       effects: current?.itemLevel === ilvl ? current.effects : [],
     });
     const nextItems = [...items.filter((i) => i.slot !== selected), next];
+    // Local commits must not rehydrate over a newer edit in another inspector field
+    displayedItem.current = { slot: selected, item: next };
+    setItemName(next.name);
+    setItemLevel(next.itemLevel?.toString() ?? "");
+    setEnchant(next.enchant ?? "");
+    setGems(next.gems.join(", "));
+    setEnchantEdited(false);
+    setGemsEdited(false);
     setItems(nextItems);
     setDirty(true);
     if (!quiet) notify("Slot updated in your draft");
@@ -1864,29 +1876,8 @@ function GearEditor({
                 placeholder="Unknown"
               />
             </Field>
-            <Field label="Enchant">
-              <input
-                value={enchant}
-                maxLength={200}
-                onChange={(e) => {
-                  setEnchant(e.target.value);
-                  setEnchantEdited(true);
-                }}
-                onBlur={() => { if (inspectorDirty) updateItem(true); }}
-                placeholder="Plan an enchant"
-              />
-            </Field>
-            <Field label="Gems" hint="Separate gem names with commas">
-              <input
-                value={gems}
-                onChange={(e) => {
-                  setGems(e.target.value);
-                  setGemsEdited(true);
-                }}
-                onBlur={() => { if (inspectorDirty) updateItem(true); }}
-                placeholder="Plan your gems"
-              />
-            </Field>
+            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else { setEnchant(value); setEnchantEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else { setGems(value); setGemsEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}
               {activityNames[activity]}

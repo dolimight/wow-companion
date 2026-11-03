@@ -62,6 +62,7 @@ export const api={
  syncNow:async(trigger:'manual'|'focus'='manual')=>(await client()).syncNow.mutate({trigger}),
  gameDataStatus:async()=>(await client()).gameDataStatus.query(),
  searchItems:async(input:ItemSearch)=>(await client()).searchItems.query(input),
+ searchItemsPage:async(input:ItemSearch)=>(await client()).searchItemsPage.query(input),
  getItem:async(id:number)=>(await client()).getItem.query({id}),
  getItems:async(ids:number[])=>(await client()).getItems.query({ids}),
  enhancements:async(input:{kind:'enchant'|'gem';slot:AppearanceSlot|null})=>(await client()).enhancements.query(input),

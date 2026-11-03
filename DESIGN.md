@@ -392,6 +392,8 @@ Gear drafts, outfits, and activity filters stay scoped to the character ID. An e
 The Character page pairs a render surface (the Blizzard render, or a large initial when none exists) with a column of surfaces: Gear progression, Great Vault this week, Stats, Before your next session, and Activity. Gear rows show the game's own item icon in a quality-edged frame and open an item card on hover or keyboard focus, so inspecting never consumes the row's click action
 
 The Gear planner keeps equipped and drafted gear side by side. Choosing a slot offers a live item search by name rather than an item ID. Drafts are saved locally and never imply an equipped change
+Enchant and gem fields use searchable Base UI comboboxes with local item icons. Enchant choices follow the selected equipment slot, gem choices append to the plan including repeated gems, and typed names remain available without a prepared local index
+Hovering an enhancement choice or highlighting it with the keyboard opens its stat/effect preview without consuming the selection action. Preview values come from Blizzard item data or recorded local effect descriptions; unavailable values stay unknown
 
 ### Standings
 
@@ -422,6 +424,9 @@ A reset surface and a WoW Token surface sit side by side above a table of every 
 A three-measure summary, a talent-build list with copy buttons, and one table of what the best players of the player's specialization wear. Every count is shown as n/N beside the item, enchant, or gem, and the heading names the population ("Top 20 Blood Death Knight players by Mythic+ score in MN Season 2, North America"). Rows pair the popular item with the player's own, marking matches with a green Popular tag and gaps in amber. Region defaults to North America and is changeable from the heading
 
 ### Item Inspection
+
+Item search has a visible title and neutral close control, bounded scrolling inside the dialog, wrapping result names and sources, and a detail pane that remains available at narrow widths. Unavailable local data uses one clear empty state rather than an unused preview column
+Results load in pages as the list approaches the bottom, retaining the highlighted item and existing results. Search and filter changes return scrolling to the top, and page failures retain the loaded list with a retry action
 
 Any item name or icon opens a hover card on the right: a large quality-edged icon, quality-coloured name, item level (labelled Base when it is the unupgraded value), slot and armor type, binding, stat lines, effects, and where it drops. Equipped gear shows its exact recorded stats and says so; other items show base stats from Blizzard with the item level they apply to. Item quality colours are tuned per theme to hold 4.5:1 text contrast, and epic reuses the system violet
 
