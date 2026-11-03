@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { DatabaseClient } from './database'
 import { checkWindowPlacement } from './window-placement-acceptance'
 import { appIconChoices, appIconFiles, resolveAppIcon } from '../shared/app-icons'
+import type { TopPlayers } from '../shared/top-players'
 
 type Step = { name: string; status: 'pass' | 'fail' | 'skip'; detail?: unknown }
 export type DesktopAcceptanceReport = { startedAt: string; finishedAt?: string; passed: boolean; steps: Step[]; screenshots: string[]; consoleErrors: string[]; debugger?: { attached: boolean; pauses: Array<{ reason: string; functionName?: string; url?: string }>; exceptions: string[]; probe?: unknown }; gpu?: unknown }
@@ -16,6 +17,19 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
   outputDir: string
 }): Promise<DesktopAcceptanceReport> {
   await mkdir(outputDir, { recursive: true })
+  // An isolated local cache exercises populated leader UI without contacting a provider
+  const leaderSample: TopPlayers = {
+    season: { slug: 'acceptance-season', name: 'Fictional acceptance season' },
+    specId: 62, specName: 'Arcane', className: 'Mage', region: 'us', observedAt: new Date().toISOString(),
+    runsScanned: 2, source: 'Fictional acceptance sample', population: 'Two fictional Arcane Mage players for desktop acceptance',
+    players: ['Acceptance leader one', 'Acceptance leader two'].map((name, index) => ({ name, realm: 'Acceptance Realm', region: 'us', score: 2500 + index * 100, keyLevel: 12, dungeon: 'Acceptance dungeon', url: `https://raider.io/characters/us/acceptance-realm/leader-${index}`, loadout: 'acceptance-fixture-loadout' })),
+    builds: [{ loadout: 'acceptance-fixture-loadout', count: 2, players: ['Acceptance leader one', 'Acceptance leader two'] }],
+    gearPlayers: 2, averageItemLevel: 290,
+    slots: { head: { items: [{ id: 1002, name: 'Fictional acceptance headpiece', count: 2, level: 290 }], enchants: [{ id: 1, name: 'Fictional acceptance enchant', count: 1 }], gems: [{ id: 2, name: 'Fictional acceptance gem', count: 1 }] } },
+  }
+  const leaderCache = path.join(path.dirname(outputDir), 'cache')
+  await mkdir(leaderCache, { recursive: true })
+  await writeFile(path.join(leaderCache, 'top-players-62-us.json'), JSON.stringify(leaderSample))
   const report: DesktopAcceptanceReport = { startedAt: new Date().toISOString(), passed: false, steps: [], screenshots: [], consoleErrors: [] }
   const contents = window.webContents
   let activeStep = 'startup'
@@ -917,6 +931,8 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await step('Every polished screen fits dark desktop and light minimum-width layouts',async()=>{
       const unknown=await db.call('addCharacter',{name:'Polish unknown spec',region:'us',realm:'Acceptance Realm',className:'Mage',specId:null})
       const screens=[['characters',`/characters?selected=${workflowId}`,'Characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear for Workflow fixture'],['gear',`/characters/${workflowId}/gear`,'Gear for Workflow fixture'],['inventory',`/characters/${workflowId}/inventory`,'Gear for Workflow fixture'],['simulations',`/characters/${workflowId}/simulations`,'Gear for Workflow fixture'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe for Workflow fixture'],['standings',`/characters/${workflowId}/standings`,'Performance for Workflow fixture'],['top',`/characters/${unknown.id}/top`,`Performance for ${unknown.name}`]]
+      screens.push(['performance-history', `/characters/${workflowId}/performance/history`, 'Performance for Workflow fixture'], ['performance-reports', `/characters/${workflowId}/performance/reports`, 'Performance for Workflow fixture'])
+      screens.push(['performance-leaders', `/characters/${workflowId}/performance/leaders`, 'Performance for Workflow fixture'])
       screens.push(['character-empty', `/characters/${unknown.id}/overview`, unknown.name])
       const demoPortrait = (await db.call('listCharacters')).find(character => character.demo && character.name === 'Vaelith')
       if (demoPortrait) screens.push(['character-demo', `/characters/${demoPortrait.id}/overview`, demoPortrait.name])
@@ -930,6 +946,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
           contents.sendInputEvent({type:'keyDown',keyCode:'Escape'});contents.sendInputEvent({type:'keyUp',keyCode:'Escape'})
           await wait(`!document.querySelector('.character-popover')`,'character switcher fully unmounted before screen capture')
           assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`),'Polished '+name+' overflows at '+variant.width)
+          if (name === 'performance-leaders') await wait(`document.querySelector('.top-gear')?.textContent.includes('Fictional acceptance headpiece')`, 'populated local leader sample')
           if (name.startsWith('character') && name !== 'characters') {
             assert(await evaluate(`(()=>{const frame=document.querySelector('.overview-layout .portrait-preview').getBoundingClientRect();return frame.width>0&&Math.abs(frame.width-frame.height)<=1})()`), 'Overview portrait must retain square bounds')
             assert(await evaluate(`document.querySelectorAll('.overview-next-steps .button-primary').length===1&&!document.querySelector('.overview-gear-gap .button-primary')`), 'Overview should emphasize one next action')

@@ -1,6 +1,3 @@
-.subnav[aria-label="Gear views"] .subnav-link { display: inline-flex; align-items: center; gap: 8px; }
-.subnav[aria-label="Gear views"] .subnav-link svg { flex: none; color: var(--secondary); }
-.subnav[aria-label="Gear views"] .subnav-link[aria-current="page"] svg { color: var(--accent); }
 .gear-section-title { display: flex; align-items: center; gap: 8px; }
 .gear-section-title > svg { flex: none; color: var(--accent); }
 .gear-slot-label, .planner-slot-name { display: inline-flex; align-items: center; gap: 8px; }

@@ -39,6 +39,8 @@ import {
   Download,
   ExternalLink,
   FlaskConical,
+  FileText,
+  History,
   Info,
   Menu,
   NotebookPen,
@@ -132,6 +134,7 @@ import "./overview.css";
 import "./gear-polish.css";
 
 const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, simulations: FlaskConical };
+const performanceViewIcons: Record<string, typeof Shield> = { standing: Trophy, leaders: Crown, history: History, reports: FileText };
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -1236,7 +1239,7 @@ function CharacterFrame({
       {views && "view" in destination && (
         <nav className="subnav" aria-label={`${sectionLabels[section]} views`}>
           {views.map(({ id, label }) => {
-            const Icon = section === "gear" ? gearViewIcons[id] : null;
+            const Icon = section === "gear" ? gearViewIcons[id] : section === "performance" ? performanceViewIcons[id] : null;
             return (
               <CharacterLink
                 key={id}
@@ -1340,17 +1343,18 @@ function PerformanceView({ character, view }: { character: Character; view: Comp
   const { activity } = useActivity(character.id);
   const refresh = useAction(({ id }: { id: string }) => api.refreshCharacter({ id }), "Public activity data refreshed");
   return (
-    <>
-      {view === "standing" && (
-        <div className="view-actions">
-          <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
-            <RefreshCw />
-            {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
-          </Button>
-        </div>
+    <ComparisonPage
+      key={character.id + ":" + activity + ":" + view}
+      character={character}
+      activity={activity}
+      view={view}
+      actions={view === "standing" && (
+        <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
+          <RefreshCw />
+          {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
+        </Button>
       )}
-      <ComparisonPage key={character.id + ":" + activity + ":" + view} character={character} activity={activity} view={view} />
-    </>
+    />
   );
 }
 function LeadersView({ character }: { character: Character }) {

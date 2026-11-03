@@ -59,6 +59,9 @@
 .subnav-link:hover { color: var(--ink); background: var(--surface3); }
 .subnav-link[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
 .subnav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.subnav .subnav-link { display: inline-flex; align-items: center; gap: 8px; }
+.subnav .subnav-link > svg { flex: none; color: var(--secondary); }
+.subnav .subnav-link[aria-current="page"] > svg { color: var(--accent); }
 .view-actions { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .pane-exits { display: grid; gap: 8px; margin-top: 14px; }
 .character-heading + .subnav, .subnav + * { margin-top: 0; }
