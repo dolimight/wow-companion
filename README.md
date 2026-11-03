@@ -130,6 +130,10 @@ For packaged verification, set `WOW_COMPANION_DEBUG_EXECUTABLE` to the absolute 
 
 The optional browser development preview uses a separate `.local/browser` database. Run `npm run build`, then `npm run dev:browser`; native dialogs remain desktop-only, and the preview must stay on loopback
 
+## Support the project
+
+<a href="https://www.buymeacoffee.com/dolimight"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=dolimight&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
+
 ## Project notes
 
 Electron hosts a React and TypeScript interface with shadcn Base UI components, TanStack Router/Query/Table, Effect v4, and local SQLite. Worker threads handle the database and game-data index; authenticated tRPC runs on loopback, and the renderer uses context isolation and sandboxing
