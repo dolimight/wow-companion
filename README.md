@@ -21,6 +21,9 @@ Choose Classic blue, Nightly purple, or a holiday logo under Settings → Appear
 Holiday choices include New Year’s, Valentine’s Day, St Patrick’s Day, Easter, July 4, Halloween, Thanksgiving, and Christmas
 Build default follows the installed release track, and your choice is remembered between launches
 The primary color follows the selected icon while Light, Dark, and System appearance remain separate
+On Windows, the choice also updates the running taskbar icon and matching pinned shortcuts for this installation
+Selected ICO files are retained in the app's data folder so a pinned icon remains available after the app closes or updates
+If Explorer retains an older cached icon, unpin WOW Companion and pin the running app again
 
 An unpacked Windows build is available after running
 
@@ -39,6 +42,7 @@ Keep that executable with its sibling files; use `npm run dist:win` to produce a
 - Separate Mythic+, Raiding, and PvP views; public Raider.IO refresh retains its real metric/rank scope and source timestamps
 - Local comparison of tracked characters, plus links to provider rankings and source profiles
 - Live item search against the local game data index, plus copying popular items from Top players into a gear plan
+- Searchable local enchant and gem choices in gear plans, with typed names available when game data is not ready
 - Character/spec-aware item search, including class restrictions, required level, primary stats, and weapon configurations before result limits
 - Gear progression with five separate views, slot explanations, per-character/activity content preferences, and editable personal targets
 - Dated seasonal-rule validation and legal-set calculations in a worker, with shared currency budgets and explicit unknown results when evidence is incomplete

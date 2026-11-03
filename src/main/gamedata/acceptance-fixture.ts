@@ -1,0 +1,34 @@
+import Database from 'better-sqlite3'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { INDEX_VERSION } from './engine'
+
+/** Only invoked by the explicit desktop acceptance runner inside its isolated profile */
+export async function createEnhancementFixture(directory: string) {
+  const install = path.join(directory, 'fictional-game')
+  const index = path.join(directory, 'gamedata')
+  await mkdir(path.join(install, 'Data', 'data'), { recursive: true })
+  await mkdir(index, { recursive: true })
+  const version = '12.1.5.99999'
+  await writeFile(path.join(install, '.build.info'), `Branch|Build Key|CDN Key|Version|Product|Active\nwow|fixture|fixture|${version}|wow|1\n`)
+  const db = new Database(path.join(index, `items-${version}.sqlite`))
+  try {
+    db.exec(`CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT);
+      CREATE TABLE items(id INTEGER PRIMARY KEY,name TEXT,quality INTEGER,item_level INTEGER,required_level INTEGER,inventory_type INTEGER,class_id INTEGER,subclass_id INTEGER,icon INTEGER,expansion INTEGER,bonding INTEGER,sockets INTEGER,description TEXT,allowable_class_mask INTEGER,spec_ids TEXT,primary_stats TEXT);
+      CREATE TABLE sources(item_id INTEGER,encounter TEXT,instance TEXT,kind TEXT,season INTEGER);
+      CREATE TABLE enchants(id INTEGER,name TEXT,icon INTEGER);
+      CREATE TABLE appearances(modified_id INTEGER,item_id INTEGER,appearance_id INTEGER,modifier INTEGER,icon INTEGER);
+      CREATE VIRTUAL TABLE items_fts USING fts5(name,content='items',content_rowid='id');`)
+    db.prepare('INSERT INTO meta VALUES (?,?)').run('index_version', String(INDEX_VERSION))
+    const insert = db.prepare('INSERT INTO items VALUES (?,?,3,0,0,0,?,?,NULL,12,1,0,\'\',-1,\'[]\',\'[]\')')
+    insert.run(99001, 'Enchant Head - Acceptance Fiery Focus', 8, 0)
+    insert.run(99002, 'Enchant Chest - Acceptance Chest Only', 8, 4)
+    insert.run(99003, 'Acceptance Ruby', 3, 0)
+    insert.run(99004, 'Acceptance Sapphire', 3, 0)
+    const name = 'Acceptance Crown of the Long-Named Arcane Expedition'
+    db.prepare('INSERT INTO items VALUES (?, ?, 4, 300, 90, 1, 4, 1, NULL, 12, 1, 0, \'\', -1, \'[62]\', \'["intellect"]\')').run(99010, name)
+    db.prepare('INSERT INTO items_fts(rowid,name) VALUES (?,?)').run(99010, name)
+    db.prepare('INSERT INTO sources VALUES (?, ?, ?, ?, ?)').run(99010, 'Acceptance boss', 'Fictional acceptance dungeon', 'dungeon', 1)
+  } finally { db.close() }
+  return install
+}
