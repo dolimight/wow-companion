@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useMutation,useQuery,useQueryClient } from '@tanstack/react-query'
-import { Copy,ExternalLink,Info,RefreshCw } from 'lucide-react'
+import { ChevronRight, Copy, Crown, ExternalLink, FileText, History, Info, ListFilter, RefreshCw, Save, Shield, SlidersHorizontal, Sparkles, Trophy, Users } from 'lucide-react'
 import type { Activity,Character } from '../../../shared/domain'
 import type { ComparisonInput,ComparisonRecord,ComparisonResult } from '../../../shared/comparisons'
 import { AppSelect } from '../../components/AppSelect'
@@ -33,10 +33,10 @@ function SampleChart({result}:{result:ComparisonResult}){
 }
 
 export type ComparisonView='standing'|'leaders'|'history'|'reports'
-export function ComparisonPage({character,activity,view='standing'}:{character:Character;activity:Activity;view?:ComparisonView}){
-  return <ComparisonContent key={`${character.id}:${activity}:${view}`} character={character} activity={activity} view={view}/>
+export function ComparisonPage({character,activity,view='standing',actions}:{character:Character;activity:Activity;view?:ComparisonView;actions?:ReactNode}){
+  return <ComparisonContent key={`${character.id}:${activity}:${view}`} character={character} activity={activity} view={view} actions={actions}/>
 }
-function ComparisonContent({character,activity,view}:{character:Character;activity:Activity;view:ComparisonView}){
+function ComparisonContent({character,activity,view,actions}:{character:Character;activity:Activity;view:ComparisonView;actions?:ReactNode}){
   const [bracket,setBracket]=useState('')
   const brackets=useQuery({queryKey:['pvp-brackets',character.id,character.region],queryFn:()=>api.pvpBrackets({characterId:character.id,region:character.region==='eu'?'eu':'us'}),enabled:activity==='pvp'})
   const queryClient=useQueryClient()
@@ -50,53 +50,56 @@ function ComparisonContent({character,activity,view}:{character:Character;activi
   const reports=useQuery({queryKey:['comparison-reports',character.id],queryFn:()=>api.comparisonReports({characterId:character.id})})
   const save=useMutation({mutationFn:()=>api.saveComparisonReport({characterId:character.id,url:reportUrl.trim(),notes}),onSuccess:()=>{void queryClient.invalidateQueries({queryKey:['comparison-reports',character.id]});setReportUrl('');setNotes('');notify('Report saved locally')}})
   const result=query.data
+  const ViewIcon = view === 'history' ? History : view === 'leaders' ? Crown : Trophy
   const apply=()=>{
     const level=keyLevel.trim()?Number(keyLevel):null
     if(level!==null&&(!Number.isInteger(level)||level<1||level>100)){notify('Choose a key level from 1 to 100');return}
     setFilters({keyLevel:level,encounter:encounter.trim()||null,difficulty:difficulty==='any'?null:difficulty})
   }
   if(view==='reports')return <section className="comparison-page" aria-label="Warcraft Logs reports">
-    <section className="comparison-reports"><h3>Warcraft Logs reports</h3><p>Save public report links and your notes · Encounter summaries and event review require a configured, verified adapter</p>
-      <form onSubmit={event=>{event.preventDefault();save.mutate()}}><Field label="Public report URL"><input type="url" required maxLength={2048} value={reportUrl} onChange={event=>setReportUrl(event.target.value)} placeholder="https://www.warcraftlogs.com/reports/…"/></Field><Field label="Your notes"><textarea maxLength={2000} value={notes} onChange={event=>setNotes(event.target.value)} rows={2}/></Field><Button type="submit" disabled={save.isPending||!reportUrl.trim()}>Save report</Button></form>
+    <section className="comparison-reports"><h2 className="performance-section-title"><FileText size={18} aria-hidden="true" />Warcraft Logs reports</h2><p>Save public report links and your notes · Encounter summaries and event review require a configured, verified adapter</p>
+      <form onSubmit={event=>{event.preventDefault();save.mutate()}}><Field label="Public report URL"><input type="url" required maxLength={2048} value={reportUrl} onChange={event=>setReportUrl(event.target.value)} placeholder="https://www.warcraftlogs.com/reports/…"/></Field><Field label="Your notes"><textarea maxLength={2000} value={notes} onChange={event=>setNotes(event.target.value)} rows={2}/></Field><Button variant="primary" type="submit" disabled={save.isPending||!reportUrl.trim()}><Save size={14} aria-hidden="true" />{save.isPending?'Saving…':'Save report'}</Button></form>
       {save.isError&&<p role="alert">{clean(errorMessage(save.error))}</p>}{reports.isError&&<p role="alert">{clean(errorMessage(reports.error))}</p>}
-      <div className="comparison-report-list">{reports.data?.map(report=><article key={report.id}><div><Source url={report.url}>Open Warcraft Logs report</Source><Badge>Link saved</Badge></div>{report.notes&&<p>{report.notes}</p>}<small>Saved {date(report.updatedAt)} · Report contents have not been imported</small><ReportImport characterId={character.id} url={report.url}/></article>)}</div>
+      {reports.isPending && <p className="comparison-notice" role="status">Loading saved reports…</p>}
+      {reports.data?.length === 0 && <p className="comparison-report-empty"><FileText size={18} aria-hidden="true" />No saved reports yet</p>}
+      <div className="comparison-report-list">{reports.data?.map(report=><article key={report.id}><div className="comparison-report-heading"><Source url={report.url}>Open Warcraft Logs report</Source><Badge>Link saved</Badge></div>{report.notes&&<p>{report.notes}</p>}<small>Saved {date(report.updatedAt)} · Report contents have not been imported</small><ReportImport characterId={character.id} url={report.url}/></article>)}</div>
     </section>
   </section>
   return <section className="comparison-page" aria-label="Contextual player comparisons">
     {activity==='pvp'&&!!brackets.data?.brackets.length&&<AppSelect label="PvP bracket" value={bracket} options={[{value:'',label:'Choose a bracket'},...brackets.data.brackets.map(b=>({value:b.slug,label:b.name}))]} onValueChange={setBracket}/>}
-    <div className="comparison-heading"><div><h2>Contextual comparison</h2><p>{label[activity]} · {character.specName} {character.className}</p></div><Button disabled={query.isFetching} onClick={()=>void query.refetch()}><RefreshCw size={14}/>Refresh comparison</Button></div>
+    <div className="comparison-heading"><div><h2 className="performance-section-title"><ViewIcon size={18} aria-hidden="true" />Contextual comparison</h2><p>{label[activity]} · {character.specName} {character.className}</p></div><div className="comparison-heading-actions">{actions}<Button disabled={query.isFetching} onClick={()=>void query.refetch()}><RefreshCw size={14}/>Refresh comparison</Button></div></div>
     <div className="comparison-toolbar">
       <span className="comparison-context-label">{view==='leaders'?'Public leaders':view==='history'?'Your stored observations':'Relevant tracked peers'}</span>
       <AppSelect aria-label="Comparison region" value={region} onValueChange={value=>setRegion(value as typeof region)} options={[{value:'us',label:'North America'},{value:'eu',label:'Europe'},{value:'world',label:'All regions'}]}/>
       <span className="comparison-context-label">Same specialization and rating season</span>
     </div>
-    <details className="comparison-filter-details"><summary>Content filters and availability</summary>
+    <details className="comparison-filter-details"><summary><SlidersHorizontal size={17} aria-hidden="true" /><span>Content filters and availability</span><ChevronRight className="comparison-disclosure-chevron" size={16} aria-hidden="true" /></summary>
       <p>Aggregate ratings support specialization, region, and known season · Encounter, difficulty, and key filters require a content-specific adapter</p>
       <div className="comparison-filter-fields">
         <Field label="Key level"><input type="number" min={1} max={100} value={keyLevel} onChange={event=>setKeyLevel(event.target.value)} placeholder="Any"/></Field>
         <Field label="Encounter"><input value={encounter} maxLength={120} onChange={event=>setEncounter(event.target.value)} placeholder="Any encounter"/></Field>
         <Field label="Difficulty"><AppSelect aria-label="Comparison difficulty" value={difficulty} onValueChange={setDifficulty} options={[{value:'any',label:'Any difficulty'},{value:'normal',label:'Normal'},{value:'heroic',label:'Heroic'},{value:'mythic',label:'Mythic'}]}/></Field>
-        <Button onClick={apply}>Apply filters</Button>
+        <Button onClick={apply}><ListFilter size={14} aria-hidden="true" />Apply filters</Button>
       </div>
     </details>
     {query.isPending&&<p className="comparison-notice" role="status">Loading comparable observations</p>}
     {query.isError&&<p className="comparison-notice" role="alert">{clean(errorMessage(query.error))}</p>}
     {result&&<>
       <div className="comparison-metrics">
-        <div><span>Your {clean(result.player.metricName)}</span><strong>{number(result.player.value)}</strong><small>Observed {date(result.player.observedAt)}</small></div>
-        <div><span>Difference to sample best</span><strong>{number(result.gapToSampleBest)}</strong><small>{result.gapToSampleBest===null?'A compatible, current sample is needed':`${result.player.unit} · displayed observations only`}</small></div>
-        <div><span>Native provider rank</span><strong>{result.providerRank?`#${result.providerRank.rank.toLocaleString()}`:'Unknown'}</strong><small>{result.providerRank?.scope??'No provider rank scope recorded'}</small></div>
+        <div><span>Your {clean(result.player.metricName)}</span><strong data-unknown={result.player.value===null||undefined}>{number(result.player.value)}</strong><small>Observed {date(result.player.observedAt)}</small></div>
+        <div><span>Difference to sample best</span><strong data-unknown={result.gapToSampleBest===null||undefined}>{number(result.gapToSampleBest)}</strong><small>{result.gapToSampleBest===null?'A compatible, current sample is needed':`${result.player.unit} · displayed observations only`}</small></div>
+        <div><span>Native provider rank</span><strong data-unknown={!result.providerRank||undefined}>{result.providerRank?`#${result.providerRank.rank.toLocaleString()}`:'Unknown'}</strong><small>{result.providerRank?.scope??'No provider rank scope recorded'}</small></div>
       </div>
-      <div className="comparison-population"><div><h3>{clean(result.population.label)}</h3><p>{result.population.sampleSize} observations · {result.population.provider}</p></div><Badge tone={result.status==='supported'?'green':result.status==='partial'?'amber':'neutral'}>{result.status==='unsupported'?'Unavailable':result.status==='partial'?'Partial coverage':'Supported'}</Badge></div>
-      <div className="comparison-source-meta"><span>Season {result.context.seasonId??'unknown'}</span><span>Source observed {date(result.population.observedAt)}</span><span>Retrieved {date(result.population.retrievedAt)}</span><Source url={result.population.sourceUrl}>Open population source</Source></div>
+      <div className="comparison-population"><div><h3 className="performance-section-title"><Users size={17} aria-hidden="true" />{clean(result.population.label)}</h3><p>{result.population.sampleSize} observations · {result.population.provider}</p></div><Badge tone={result.status==='supported'?'green':result.status==='partial'?'amber':'neutral'}>{result.status==='unsupported'?'Unavailable':result.status==='partial'?'Partial coverage':'Supported'}</Badge></div>
+      <div className="comparison-source-meta"><dl><div><dt>Season</dt><dd>{result.context.seasonId??'Unknown'}</dd></div><div><dt>Source observed</dt><dd>{date(result.population.observedAt)}</dd></div><div><dt>Retrieved</dt><dd>{date(result.population.retrievedAt)}</dd></div></dl><Source url={result.population.sourceUrl}>Open population source</Source></div>
       {(result.reasons.length>0||result.population.unsupportedFilters.length>0)&&<div className="comparison-notice"><Info size={16}/><div>{[...new Set(result.reasons)].map(reason=><p key={reason}>{clean(reason)}</p>)}</div></div>}
       <SampleChart result={result}/>
       <div className="table-wrap"><table className="data-table comparison-table"><thead><tr><th>{population==='history'?'Observation':'Player'}</th><th className="number">{clean(result.player.metricName)}</th><th>Source and context</th><th>Observed</th></tr></thead><tbody>
         {result.records.map((entry,index)=><tr key={`${entry.id}:${index}`}><td><Source url={entry.sourceUrl}>{population==='history'?date(entry.observedAt):entry.name}</Source><small>{entry.realm} · {entry.region.toUpperCase()}</small></td><td className="number">{number(entry.value)}</td><td><span>{entry.source}</span><small>{entry.seasonId??'Season unknown'} · {clean(entry.metricName)}</small></td><td>{date(entry.observedAt)}{!entry.observedAt&&entry.retrievedAt&&<small>Retrieved {date(entry.retrievedAt)}</small>}</td></tr>)}
       </tbody></table>{!result.records.length&&<div className="inline-empty">No observations satisfy the requested comparison</div>}</div>
-      <details className="comparison-evidence"><summary>Applied filters and interpretation</summary><dl>{Object.entries(result.population.actualFilters).map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>{result.assumptions.map(assumption=><p key={assumption}>{clean(assumption)}</p>)}</details>
-      {result.gearDifferences.length>0&&<section className="comparison-sample-details"><h3>Observed gear choices</h3><p>Counts describe the provider’s gear sample · Matching acquisition does not establish the correct rank, gems, or enchant</p><div className="comparison-gear-list">{result.gearDifferences.slice(0,12).map(entry=><div key={`${entry.slot}:${entry.itemId}`}><span><small>{entry.slot}</small><Source url={`https://www.wowhead.com/item=${entry.itemId}`}>{entry.name}</Source></span><span>{entry.count}/{entry.sampleSize} players</span>{entry.equipped&&<Badge tone="blue">Item equipped</Badge>}</div>)}</div></section>}
-      {result.builds.length>0&&<section className="comparison-sample-details"><h3>Observed talent loadouts</h3><p>Use these as candidates for a compatible simulation</p>{result.builds.map((build,index)=><div className="comparison-build" key={build.loadout}><span>Loadout {index+1} · {build.count}/{build.sampleSize} players</span>{build.equipped&&<Badge tone="blue">Your recorded loadout</Badge>}<Button variant="quiet" onClick={()=>void navigator.clipboard.writeText(build.loadout).then(()=>notify('Talent loadout copied')).catch(()=>notify('Copy unavailable'))}><Copy size={13}/>Copy loadout</Button></div>)}</section>}
+      <details className="comparison-evidence"><summary><Info size={17} aria-hidden="true" /><span>Applied filters and interpretation</span><ChevronRight className="comparison-disclosure-chevron" size={16} aria-hidden="true" /></summary><dl>{Object.entries(result.population.actualFilters).map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>{result.assumptions.map(assumption=><p key={assumption}>{clean(assumption)}</p>)}</details>
+      {result.gearDifferences.length>0&&<section className="comparison-sample-details"><h3 className="performance-section-title"><Shield size={17} aria-hidden="true" />Observed gear choices</h3><p>Counts describe the provider’s gear sample · Matching acquisition does not establish the correct rank, gems, or enchant</p><div className="comparison-gear-list">{result.gearDifferences.slice(0,12).map(entry=><div key={`${entry.slot}:${entry.itemId}`}><span><small>{entry.slot}</small><Source url={`https://www.wowhead.com/item=${entry.itemId}`}>{entry.name}</Source></span><span>{entry.count}/{entry.sampleSize} players</span>{entry.equipped&&<Badge tone="blue">Item equipped</Badge>}</div>)}</div></section>}
+      {result.builds.length>0&&<section className="comparison-sample-details"><h3 className="performance-section-title"><Sparkles size={17} aria-hidden="true" />Observed talent loadouts</h3><p>Use these as candidates for a compatible simulation</p>{result.builds.map((build,index)=><div className="comparison-build" key={build.loadout}><span>Loadout {index+1} · {build.count}/{build.sampleSize} players</span>{build.equipped&&<Badge tone="blue">Your recorded loadout</Badge>}<Button variant="quiet" onClick={()=>void navigator.clipboard.writeText(build.loadout).then(()=>notify('Talent loadout copied')).catch(()=>notify('Copy unavailable'))}><Copy size={13}/>Copy loadout</Button></div>)}</section>}
     </>}
   </section>
 }

@@ -3,6 +3,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { DatabaseClient } from './database'
 import { checkWindowPlacement } from './window-placement-acceptance'
+import { appIconChoices, appIconFiles, resolveAppIcon } from '../shared/app-icons'
+import type { TopPlayers } from '../shared/top-players'
 
 type Step = { name: string; status: 'pass' | 'fail' | 'skip'; detail?: unknown }
 export type DesktopAcceptanceReport = { startedAt: string; finishedAt?: string; passed: boolean; steps: Step[]; screenshots: string[]; consoleErrors: string[]; debugger?: { attached: boolean; pauses: Array<{ reason: string; functionName?: string; url?: string }>; exceptions: string[]; probe?: unknown }; gpu?: unknown }
@@ -15,6 +17,19 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
   outputDir: string
 }): Promise<DesktopAcceptanceReport> {
   await mkdir(outputDir, { recursive: true })
+  // An isolated local cache exercises populated leader UI without contacting a provider
+  const leaderSample: TopPlayers = {
+    season: { slug: 'acceptance-season', name: 'Fictional acceptance season' },
+    specId: 62, specName: 'Arcane', className: 'Mage', region: 'us', observedAt: new Date().toISOString(),
+    runsScanned: 2, source: 'Fictional acceptance sample', population: 'Two fictional Arcane Mage players for desktop acceptance',
+    players: ['Acceptance leader one', 'Acceptance leader two'].map((name, index) => ({ name, realm: 'Acceptance Realm', region: 'us', score: 2500 + index * 100, keyLevel: 12, dungeon: 'Acceptance dungeon', url: `https://raider.io/characters/us/acceptance-realm/leader-${index}`, loadout: 'acceptance-fixture-loadout' })),
+    builds: [{ loadout: 'acceptance-fixture-loadout', count: 2, players: ['Acceptance leader one', 'Acceptance leader two'] }],
+    gearPlayers: 2, averageItemLevel: 290,
+    slots: { head: { items: [{ id: 1002, name: 'Fictional acceptance headpiece', count: 2, level: 290 }], enchants: [{ id: 1, name: 'Fictional acceptance enchant', count: 1 }], gems: [{ id: 2, name: 'Fictional acceptance gem', count: 1 }] } },
+  }
+  const leaderCache = path.join(path.dirname(outputDir), 'cache')
+  await mkdir(leaderCache, { recursive: true })
+  await writeFile(path.join(leaderCache, 'top-players-62-us.json'), JSON.stringify(leaderSample))
   const report: DesktopAcceptanceReport = { startedAt: new Date().toISOString(), passed: false, steps: [], screenshots: [], consoleErrors: [] }
   const contents = window.webContents
   let activeStep = 'startup'
@@ -42,9 +57,13 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     assert(result, `Clickable control missing: ${label}`)
   }
   const choose = async (label: string, option: string) => {
+    const trigger = literal(`[aria-label="${label}"]`)
+    const options = '[data-slot="select-content"]:not([data-closed]) [role="option"]'
+    await wait(`!!document.querySelector(${trigger})&&!document.querySelector(${trigger}).disabled`, `${label} ready`)
     await click(label)
-    await wait(`!!document.querySelector('[role="option"]')`, `${label} options`)
-    await click(option, '[role="option"]')
+    // Base UI keeps closed popups mounted during transitions; interact with the open popup only
+    await wait(`document.querySelector(${trigger})?.getAttribute('aria-expanded')==='true'&&!!document.querySelector(${literal(options)})`, `${label} options`)
+    await click(option, options)
     await wait(`document.querySelector(${literal(`[aria-label="${label}"]`)})?.getAttribute('aria-expanded')!=='true'`, `${label} selection`)
   }
   const field = async (label: string, value: string) => {
@@ -168,7 +187,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       assert(await evaluate(`!document.querySelector('select,input[type="checkbox"]')`), 'Native selection controls remain in the settings UI')
       await click('Reduce motion')
       await waitDb(async () => (await db.call('getSettings')).reducedMotion === false, 'motion toggle off')
-      await capture('settings-black')
+      await click('Appearance', '.settings-anchors button')
+      await wait(`document.activeElement?.id==='appearance-heading'&&document.querySelector('.settings-anchors [aria-current="location"]')?.textContent.trim()==='Appearance'`, 'settings section navigation and focus')
+      assert(await evaluate(`(()=>{const header=document.querySelector('.settings-dialog [data-slot="dialog-header"]').getBoundingClientRect();const nav=document.querySelector('.settings-anchors').getBoundingClientRect();return header.top>=0&&nav.top>=header.bottom-1&&nav.bottom<innerHeight})()`), 'Settings header or section navigation scrolled away')
+      await capture('settings-black', false)
       await click('Appearance')
       await wait(`document.querySelectorAll('[role="option"]').length===3`, 'custom theme popup')
       await capture('settings-dropdown-black')
@@ -178,7 +200,60 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`!document.querySelector('[role="dialog"]')`, 'Escape closes settings')
       await click('Characters', '.navigation a')
       await wait(`document.body.innerText.includes('Bring your characters together')`, 'return to empty roster')
+      assert(await evaluate(`JSON.stringify([...document.querySelectorAll('.sidebar-footer .footer-label')].map(n=>n.textContent))===JSON.stringify(['Sync','Updates','Settings'])`), 'Sidebar utilities must have visible labels')
+      await capture('sidebar-utilities-dark')
       return { savedTheme: (await db.call('getSettings')).theme, page: 'settings modal', background: 'rgb(0, 0, 0)' }
+    })
+    await step('App icons update the sidebar, favicon and native window and preserve the saved choice', async () => {
+      await click('Open settings')
+      await wait(`!!document.querySelector('[aria-label="App icon"]')`, 'icon picker')
+      await evaluate(`document.querySelector('[aria-label="App icon"]').scrollIntoView({block:'center'})`)
+      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+      await click('App icon')
+      await wait(`document.querySelector('.app-select-with-images:not([data-closed])')?.querySelectorAll('img').length===${appIconChoices.length}&&[...document.querySelectorAll('.app-select-with-images:not([data-closed]) img')].every(img=>img.complete&&img.naturalWidth>0)`, 'all icon option previews loaded')
+      assert(await evaluate(`(()=>{const list=document.querySelector('.app-select-with-images:not([data-closed])').getBoundingClientRect();return list.width>=240&&list.top>=0&&list.bottom<=innerHeight})()`), 'Icon preview list is outside the visible window')
+      await capture('app-icon-dropdown-previews', false)
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`document.querySelector('[aria-label="App icon"]')?.getAttribute('aria-expanded')==='false'`, 'close icon preview list')
+      const primaryColors = new Set<string>()
+      for (const choice of appIconChoices.filter(choice => choice.value !== 'auto')) {
+        await choose('App icon', choice.label)
+        await waitDb(async () => (await db.call('getSettings')).appIcon === choice.value, `saved ${choice.label}`)
+        const variant = resolveAppIcon(choice.value, app.getVersion())
+        await wait(`document.documentElement.dataset.appIcon===${literal(variant)}`, `${choice.label} primary color`)
+        primaryColors.add(await evaluate<string>(`getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()`))
+        assert(await evaluate(`getComputedStyle(document.documentElement).backgroundColor==='rgb(0, 0, 0)'`), 'Icon selection changed the dark canvas')
+        const logo = appIconFiles[variant].logo
+        await wait(`document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0&&document.querySelector('link[rel="icon"]')?.href.endsWith(${literal(logo)})`, `${choice.label} branding`)
+        assert(await evaluate(`window.companion.applyAppIcon()`) === variant, 'Native icon did not use the saved choice')
+        await window.loadURL(contents.getURL())
+        await wait(`document.documentElement.dataset.appIcon===${literal(variant)}&&document.querySelector('.brand-logo')?.src.endsWith(${literal(logo)})&&document.querySelector('.brand-logo')?.naturalWidth>0`, `${choice.label} after reload`)
+        await click('Open settings')
+        await wait(`document.querySelector('[aria-label="App icon"]')?.dataset.value===${literal(choice.value)}`, `${choice.label} restored picker`)
+      }
+      assert(primaryColors.size === appIconChoices.length - 1, 'Each icon must provide a distinct primary color')
+      await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
+      await capture('app-icon-selected-dark', false)
+      const size = window.getContentSize()
+      try {
+        window.setContentSize(820, 900)
+        await wait(`innerWidth===820`, 'icon settings minimum width')
+        await choose('Appearance', 'Light')
+        await wait(`document.documentElement.dataset.theme==='light'`, 'icon settings light theme')
+        await evaluate(`document.querySelector('#appearance-heading').scrollIntoView({block:'start'})`)
+        assert(await evaluate(`(()=>{const preview=document.querySelector('.app-icon-control').getBoundingClientRect();return preview.left>=0&&preview.right<=innerWidth})()`), 'Icon controls overflow minimum width')
+        await capture('app-icon-selected-light-minimum', false)
+      } finally { window.setContentSize(size[0], size[1]) }
+      await choose('Appearance', 'Dark')
+      await waitDb(async () => (await db.call('getSettings')).theme === 'dark', 'restore dark theme')
+      await choose('App icon', 'Build default')
+      await waitDb(async () => (await db.call('getSettings')).appIcon === 'auto', 'restore build icon')
+      assert(await evaluate(`window.companion.applyAppIcon()`) === resolveAppIcon('auto', app.getVersion()), 'Build default icon does not match the installed version')
+      contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await wait(`!document.querySelector('[role="dialog"]')`, 'close icon settings')
+      return { choices: appIconChoices.map(choice => choice.label), persisted: true, nativeApplied: true, minimumWidth: true }
     })
     await step('Update settings expose version and track with isolated acceptance updates disabled', async () => {
       await click('Open settings')
@@ -312,6 +387,31 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await waitDb(async () => (await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' }))?.items.some((item) => item.slot === 'head' && item.itemLevel === 275 && item.name === 'Acceptance local headpiece') ?? false, 'Serath gear draft')
         await capture('gear-planner')
         return await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' })
+      })
+      await step('Base UI toasts stack repeated notifications and support keyboard dismissal in both themes', async () => {
+        const titles = `[...document.querySelectorAll('[data-slot="toast"]:not([data-ending-style])')].filter(node=>node.querySelector('[data-slot="toast-title"]')?.textContent==='Gear plan saved locally')`
+        await click('Save plan')
+        await wait(`${titles}.length>=2`, 'repeated save notifications remain distinct')
+        assert(await evaluate(`!document.querySelector('.toast')&&!!document.querySelector('[data-slot="toast-viewport"]')`), 'Legacy toast remains or Base UI viewport is missing')
+        const originalSize = window.getContentSize()
+        try {
+          await wait(`(()=>{const node=document.querySelector('[data-slot="toast"]:not([data-ending-style]):not([data-limited])');const box=node?.getBoundingClientRect();return box&&box.bottom<=innerHeight})()`, 'toast entrance has settled')
+          await capture('toast-stack-dark')
+          await db.call('setSettings', { theme: 'light' }); await service.changed()
+          window.setContentSize(820, 900)
+          await wait(`innerWidth===820&&document.documentElement.dataset.theme==='light'`, 'light toast viewport')
+          await wait(`(()=>{const node=document.querySelector('[data-slot="toast"]:not([data-ending-style]):not([data-limited])');const box=node?.getBoundingClientRect();return box&&box.left>=0&&box.right<=innerWidth&&box.bottom<=innerHeight})()`, 'toast fits after minimum-width resize')
+          await capture('toast-stack-light-minimum')
+          const before = await evaluate<number>(`${titles}.length`)
+          contents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' }); contents.sendInputEvent({ type: 'keyUp', keyCode: 'Tab' })
+          await evaluate(`${titles}.find(node=>!node.querySelector('[data-slot="toast-content"]')?.hasAttribute('data-behind')).querySelector('[data-slot="toast-close"]').focus()`)
+          await wait(`document.activeElement?.getAttribute('data-slot')==='toast-close'`, 'frontmost toast close button receives keyboard focus')
+          await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
+          await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+          await wait(`${titles}.length===${before - 1}`, 'keyboard dismisses only the focused toast')
+          assert(await evaluate(`${titles}.length>=1`), 'Dismissing one toast removed another notification')
+        } finally { window.setContentSize(originalSize[0], originalSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
+        return { repeatedMessages: true, keyboardDismissal: true, themes: ['dark', 'light'], minimumWidth: 820 }
       })
       await step('Switching characters keeps gear drafts isolated', async () => {
         await switchCharacter('Vaelith')
@@ -547,6 +647,8 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       ] as const) {
         await click(label)
         await wait(`document.querySelector(${literal(`[aria-label="${label}"]`)})?.getAttribute('aria-pressed')===${literal(pressed)}`, `${label} rendered`)
+        // The toggle can update ARIA before its parent's draft commit; let React finish the frame
+        await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
       }
       // The save button enables after React renders the edited draft, which a slow runner can delay
       await wait(`[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='Save content preferences'&&!n.disabled)`, 'save content preferences enabled')
@@ -775,9 +877,16 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await waitDb(async () => (await db.call('listOutfits', workflowId)).some(outfit => outfit.name === 'Workflow outfit round trip' && outfit.hiddenSlots.includes('head') && outfit.slots.head?.modifiedAppearanceId === 300), 'outfit code round trip')
       await window.loadURL(contents.getURL())
       await wait(`document.querySelector('.wardrobe-editor input')?.value==='Workflow outfit round trip'`, 'saved outfit after reload')
-      await capture('wardrobe-outfit-dark')
       const originalSize = window.getContentSize()
-      try { window.setContentSize(820, 760); await wait(`innerWidth===820`, 'minimum wardrobe width'); assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Wardrobe overflows the minimum desktop width'); await capture('wardrobe-minimum-width') } finally { window.setContentSize(originalSize[0], originalSize[1]) }
+      try {
+        for (const variant of [{ theme: 'dark' as const, width: 1460 }, { theme: 'light' as const, width: 820 }]) {
+          await db.call('setSettings', { theme: variant.theme }); await service.changed()
+          window.setContentSize(variant.width, 900)
+          await wait(`innerWidth===${variant.width}&&document.documentElement.dataset.theme===${literal(variant.theme)}`, 'wardrobe layout ' + variant.theme)
+          assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Wardrobe overflows at ' + variant.width)
+          await capture(`wardrobe-outfit-${variant.theme}-${variant.width}`)
+        }
+      } finally { window.setContentSize(originalSize[0], originalSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
       await switchCharacter('Workflow alt')
       await wait(`location.hash.includes(${literal(`/${workflowAltId}/wardrobe`)})&&document.body.innerText.includes('Start an outfit')`, 'isolated alt wardrobe')
       assert((await db.call('listOutfits', workflowAltId)).length === 0, 'The outfit was copied to another character')
@@ -847,6 +956,11 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     await step('Every polished screen fits dark desktop and light minimum-width layouts',async()=>{
       const unknown=await db.call('addCharacter',{name:'Polish unknown spec',region:'us',realm:'Acceptance Realm',className:'Mage',specId:null})
       const screens=[['characters',`/characters?selected=${workflowId}`,'Characters'],['week','/week','This week'],['tonight','/tonight','Tonight'],['character',`/characters/${workflowId}/overview`,'Workflow fixture'],['progression',`/characters/${workflowId}/progression`,'Gear for Workflow fixture'],['gear',`/characters/${workflowId}/gear`,'Gear for Workflow fixture'],['inventory',`/characters/${workflowId}/inventory`,'Gear for Workflow fixture'],['simulations',`/characters/${workflowId}/simulations`,'Gear for Workflow fixture'],['wardrobe',`/characters/${workflowId}/wardrobe`,'Wardrobe for Workflow fixture'],['standings',`/characters/${workflowId}/standings`,'Performance for Workflow fixture'],['top',`/characters/${unknown.id}/top`,`Performance for ${unknown.name}`]]
+      screens.push(['performance-history', `/characters/${workflowId}/performance/history`, 'Performance for Workflow fixture'], ['performance-reports', `/characters/${workflowId}/performance/reports`, 'Performance for Workflow fixture'])
+      screens.push(['performance-leaders', `/characters/${workflowId}/performance/leaders`, 'Performance for Workflow fixture'])
+      screens.push(['character-empty', `/characters/${unknown.id}/overview`, unknown.name])
+      const demoPortrait = (await db.call('listCharacters')).find(character => character.demo && character.name === 'Vaelith')
+      if (demoPortrait) screens.push(['character-demo', `/characters/${demoPortrait.id}/overview`, demoPortrait.name])
       const size=window.getContentSize()
       try{for(const variant of [{theme:'dark' as const,width:1460},{theme:'light' as const,width:820}]){
         await db.call('setSettings',{theme:variant.theme});await service.changed();window.setContentSize(variant.width,900)
@@ -857,6 +971,13 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
           contents.sendInputEvent({type:'keyDown',keyCode:'Escape'});contents.sendInputEvent({type:'keyUp',keyCode:'Escape'})
           await wait(`!document.querySelector('.character-popover')`,'character switcher fully unmounted before screen capture')
           assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`),'Polished '+name+' overflows at '+variant.width)
+          if (name === 'performance-leaders') await wait(`document.querySelector('.top-gear')?.textContent.includes('Fictional acceptance headpiece')`, 'populated local leader sample')
+          if (name.startsWith('character') && name !== 'characters') {
+            assert(await evaluate(`(()=>{const frame=document.querySelector('.overview-layout .portrait-preview').getBoundingClientRect();return frame.width>0&&Math.abs(frame.width-frame.height)<=1})()`), 'Overview portrait must retain square bounds')
+            assert(await evaluate(`document.querySelectorAll('.overview-next-steps .button-primary').length===1&&!document.querySelector('.overview-gear-gap .button-primary')`), 'Overview should emphasize one next action')
+            if (variant.width === 820) assert(await evaluate(`document.querySelector('.character-surface').getBoundingClientRect().height<=210&&document.querySelector('.overview-next-steps').getBoundingClientRect().top<innerHeight`), 'Compact overview should keep next steps in the first viewport')
+            if (name === 'character-demo') await wait(`(()=>{const image=document.querySelector('.character-surface .portrait-preview img');return image?.complete&&image.naturalWidth>0&&image.getBoundingClientRect().height>0})()`, 'demo portrait has visible image bounds')
+          }
           await capture(`polish-${name}-${variant.theme}-${variant.width}`)
         }
       }}finally{window.setContentSize(size[0],size[1]);await db.call('setSettings',{theme:'dark'});await service.changed()}

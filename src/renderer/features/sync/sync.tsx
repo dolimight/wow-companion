@@ -41,7 +41,7 @@ export function ago(value: string | null | undefined) {
   return `${days} ${days === 1 ? "day" : "days"} ago`;
 }
 
-/** Sidebar footer control: icon only, spinning while it works, with the status in its tooltip */
+/** Sidebar utility with a persistent label and live status in its tooltip */
 export function SyncButton({ onClick }: { onClick: () => void }) {
   const sync = useSyncState();
   const state = sync.data;
@@ -53,6 +53,7 @@ export function SyncButton({ onClick }: { onClick: () => void }) {
     <Tooltip>
       <TooltipTrigger render={<button type="button" className={`footer-icon sync-button ${failed && !state?.running ? "has-issue" : ""}`} onClick={onClick} aria-label={`${label}. Open sync details`} />}>
         <RefreshCw className={state?.running ? "spin" : ""} />
+        <span className="footer-label" aria-hidden="true">Sync</span>
       </TooltipTrigger>
       <TooltipContent side="top">{label}</TooltipContent>
     </Tooltip>

@@ -1,0 +1,4 @@
+[data-slot="toast"] { border-color: var(--line); }
+[data-slot="toast-title"] { font-size: 14px; font-weight: 600; line-height: 1.5; letter-spacing: normal; }
+[data-slot="toast-close"] { background: transparent; color: var(--secondary); }
+[data-slot="toast-close"]:hover { background: var(--surface3); color: var(--ink); }

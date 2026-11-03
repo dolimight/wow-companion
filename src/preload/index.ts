@@ -21,6 +21,7 @@ const bridge:NativeBridge={
     return ()=>ipcRenderer.removeListener('companion:window-state-changed',receive)
   },
   setWindowTheme:(theme)=>ipcRenderer.invoke('companion:window-theme',theme),
+  applyAppIcon:()=>ipcRenderer.invoke('companion:apply-app-icon'),
   toggleMaximizeWindow:()=>ipcRenderer.invoke('companion:window-toggle-maximize'),
   connection:()=>ipcRenderer.invoke('companion:connection'),
   chooseImportFile:()=>ipcRenderer.invoke('companion:import-file'),

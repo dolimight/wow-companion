@@ -50,6 +50,7 @@ export function UpdateButton({ onOpenSettings }: { onOpenSettings: () => void })
   return <Popover onOpenChange={open => { if (open && bridge && (status === 'idle' || status === 'error') && !working) void check() }}>
     <PopoverTrigger render={<button type="button" className="footer-icon update-button" aria-label={label} title={label} />}>
       {working ? <RefreshCw className="spin" /> : status === 'error' ? <AlertCircle /> : <Download />}
+      <span className="footer-label" aria-hidden="true">Updates</span>
       {status && waiting.includes(status) && <span className="update-badge" aria-hidden="true" />}
     </PopoverTrigger>
     <PopoverContent side="top" align="start" sideOffset={10} className="update-popover">

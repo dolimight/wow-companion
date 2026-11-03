@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleHelp, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { Check, CircleHelp, Copy, Crown, ExternalLink, Plus, RefreshCw, Shield, Sparkles, Users } from "lucide-react";
+import { GearSlotIcon } from "../../components/GearSlotIcon";
 import { api } from "../../lib/client";
 import { errorMessage, notify } from "../../lib/notify";
 import { usePlanItemIds } from "../../lib/plan-item";
@@ -95,7 +96,7 @@ function ItemCell({
       })()}
       {onAdd && (
         <Button variant="quiet" onClick={onAdd} aria-label={`Add ${item?.name ?? entry.name} to your plan`}>
-          Add to plan
+          <Plus size={13} aria-hidden="true" />Add to plan
         </Button>
       )}
     </div>
@@ -157,14 +158,14 @@ export function TopPlayersPage({ character }: { character: Character }) {
         <>
           <div className="top-summary">
             <div><small>Players compared</small><strong>{data.players.length}</strong></div>
-            <div><small>Their average <Term term="item level">item level</Term></small><strong>{data.averageItemLevel?.toFixed(1) ?? "Unknown"}</strong></div>
-            <div><small>Your item level</small><strong>{character.itemLevel?.toFixed(1) ?? "Unknown"}</strong></div>
+            <div><small>Their average <Term term="item level">item level</Term></small><strong data-unknown={data.averageItemLevel == null || undefined}>{data.averageItemLevel?.toFixed(1) ?? "Unknown"}</strong></div>
+            <div><small>Your item level</small><strong data-unknown={character.itemLevel == null || undefined}>{character.itemLevel?.toFixed(1) ?? "Unknown"}</strong></div>
           </div>
           <BuildsSurface data={data} character={character} />
           <section className="surface top-gear">
             <div className="surface-heading">
               <div>
-                <h2>Gear top players wear</h2>
+                <h2 className="performance-section-title"><Shield size={18} aria-hidden="true" />Gear top players wear</h2>
                 <p>From {data.gearPlayers} of these players' equipped gear. Add a popular item to {character.name}'s {activityLabel(activity)} plan</p>
               </div>
             </div>
@@ -190,7 +191,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                     const topEnchant = slot.enchants[0];
                     return (
                       <tr key={group}>
-                        <td className="top-slot">{label}</td>
+                        <td className="top-slot"><span className="top-slot-label"><GearSlotIcon slot={slots[0]!} size={16} />{label}</span></td>
                         <td>
                           <div className="top-stack">
                             {popular.map((entry) => (
@@ -215,7 +216,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                               const match = matches.includes(item);
                               const row = (
                                 <div className="top-item">
-                                  <ItemIcon icon={known?.icon} quality={known?.quality ?? 1} size="small" />
+                                  <ItemIcon icon={known?.icon} quality={known?.quality ?? 1} size="small" fallback={<GearSlotIcon slot={item.slot} size={16} />} />
                                   <span>{known?.name ?? item.name}</span>
                                   {match && <Badge tone="green"><Check size={11} />Popular</Badge>}
                                 </div>
@@ -258,7 +259,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
           </section>
           <section className="surface">
             <div className="surface-heading">
-              <h2>Players compared</h2>
+              <h2 className="performance-section-title"><Users size={18} aria-hidden="true" />Players compared</h2>
             </div>
             <ol className="top-players">
               {data.players.map((player) => (
@@ -278,9 +279,9 @@ export function TopPlayersPage({ character }: { character: Character }) {
 
 function PageHeading({ character, data, region, onRegionChange, refreshing, onRefresh }: { character: Character; data?: TopPlayers; region?: TopRegion; onRegionChange?: (region: TopRegion) => void; refreshing?: boolean; onRefresh?: () => void }) {
   return (
-    <div className="page-heading">
+    <div className="page-heading performance-top-heading">
       <div>
-        <h2>Top players</h2>
+        <h2 className="performance-section-title"><Crown size={18} aria-hidden="true" />Top players</h2>
         <p>{data ? `${data.population} · ${data.source} · ${new Date(data.observedAt).toLocaleDateString()}` : `What the best ${character.specName} ${character.className} players use in Mythic+`}</p>
       </div>
       {onRefresh && <div className="top-heading-actions">
@@ -304,7 +305,7 @@ function BuildsSurface({ data, character }: { data: TopPlayers; character: Chara
     <section className="surface">
       <div className="surface-heading">
         <div>
-          <h2>Talent builds</h2>
+          <h2 className="performance-section-title"><Sparkles size={18} aria-hidden="true" />Talent builds</h2>
           <p>Copy a <Term term="talent string">talent string</Term>, then in game open Talents, choose Import, and paste it</p>
         </div>
         {mine && <Button onClick={() => void copy(mine, "Your talent string")}><Copy />Copy yours</Button>}

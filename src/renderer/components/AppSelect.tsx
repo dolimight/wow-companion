@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import "./app-select.css";
 
-export type AppSelectOption = { value: string; label: string; disabled?: boolean };
+export type AppSelectOption = { value: string; label: string; disabled?: boolean; image?: string };
 
 export function AppSelect({
   value,
@@ -35,7 +35,7 @@ export function AppSelect({
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="app-select-content" align="start" alignItemWithTrigger={false}>
+      <SelectContent className={`app-select-content ${options.some(option => option.image) ? 'app-select-with-images' : ''}`} align="start" alignItemWithTrigger={false}>
         {options.map((option) => (
           <SelectItem
             className="app-select-item"
@@ -43,7 +43,8 @@ export function AppSelect({
             value={option.value}
             disabled={option.disabled}
           >
-            {option.label}
+            {option.image && <img className="app-select-option-image" src={option.image} width={28} height={28} alt="" />}
+            <span>{option.label}</span>
           </SelectItem>
         ))}
       </SelectContent>

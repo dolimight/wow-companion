@@ -1400,29 +1400,6 @@ input[type="checkbox"] {
 .switcher-search {
   margin-bottom: 8px;
 }
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: calc(50% + var(--sidebar-chrome-width, 240px) / 2);
-  transform: translateX(-50%);
-  z-index: 50;
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  padding: 12px 18px;
-  background: var(--ink);
-  color: var(--surface);
-  border-radius: 10px;
-  box-shadow: 0 16px 48px rgba(27, 44, 68, 0.16);
-  font-size: 13px;
-  max-width: calc(100vw - 30px);
-  animation: overlay-in 0.16s ease-out;
-}
-.toast svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-}
 .import-report {
   padding: 14px;
   border-radius: 8px;
@@ -1582,9 +1559,6 @@ input[type="checkbox"] {
 @media (max-width: 1100px) {
   .roster-layout {
     grid-template-columns: minmax(0, 1fr) 260px;
-  }
-  .toast {
-    left: calc(50% + 32px);
   }
   .overview-layout {
     gap: 20px;

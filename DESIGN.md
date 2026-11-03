@@ -239,13 +239,19 @@ Use PRODUCT.md for durable product constraints and .impeccable/surfaces/src-rend
 
 ## Colors
 
-The palette combines cool paper and silver neutrals with a clear blue interaction accent, with each semantic variable replaced in the dark theme
+The palette combines cool paper and silver neutrals with an icon-selected interaction accent, with each semantic variable replaced in the dark theme
 
 ### Primary
 
-- **Companion blue** (`accent` / `dark-accent`): primary actions, active navigation, focus outlines, progression fills, and the player's standing
-- **Blue wash** (`accent-soft` / `dark-accent-soft`): quiet selected context and blue tags
-- **On accent** (`on-accent` / `dark-on-accent`): text and SVG strokes on filled blue controls, including the selected appearance check
+- **Interaction accent** (`accent` / `dark-accent`): primary actions, active navigation, focus outlines, progression fills, and the player's standing
+- **Selection wash** (`accent-soft` / `dark-accent-soft`): quiet selected context and accent tags
+- **On accent** (`on-accent` / `dark-on-accent`): text and SVG strokes on filled primary controls, including the selected appearance check
+
+The App icon preference also selects the primary color through `data-app-icon` on the document root and `src/renderer/app-accent.css`
+Classic uses the blue values above; Nightly uses violet `#7132c4` in Light and lavender `#c5a0ff` in Dark; Halloween uses burnt orange `#ac4b00` in Light and warm orange `#ffad66` in Dark
+Each variant provides matching `accent-soft`, `on-accent`, and `selected` overrides
+Additional holiday choices use champagne gold for New Year’s, rose for Valentine’s Day, emerald for St Patrick’s Day, mint for Easter, red for July 4, copper for Thanksgiving, and evergreen for Christmas
+Light, Dark, or System appearance remains independent, including the pure-black dark canvas; item-quality, success, warning, and error colors keep their semantic meanings
 
 ### Secondary
 
@@ -299,11 +305,13 @@ The spacing inventory in frontmatter is extracted from observed repeated padding
 - **Desktop shell:** a resizable sidebar (240px default, 220–360px, saved in settings; below 1100px it becomes a labeled overlay drawer opened from the title bar, never an icon rail) runs the full window height, including under the title bar. The workspace toolbar (the current page title, the drawer button when narrow, and item search) is the integrated title bar: one borderless 48px row over the workspace only, filled with `bg`, acting as the drag region while its controls stay clickable. Never add a separate title bar strip above it. Only the page below the title bar scrolls, so the scrollbar never runs under the title bar or the native window controls. Windows and Linux use Electron's native window controls overlay, tinted to match the theme; macOS uses native traffic lights inset into the sidebar, which adds 48px top padding. There is no setting to switch to a system frame
 - **Toolbar and page:** in Electron the toolbar is the 48px title bar, and its right padding clears the native window controls; in a plain browser it is a 56px sticky bar. Page padding is 30px 32px 40px
 - **Roster:** flexible character table and 310px selected-character pane separated by 24px; the pane combines identity, concept artwork or an initial, progression, observation age, and an Open character action
+- **Overview:** a 280px character column with a square portrait, separate build label, and aligned source ages sits beside Next steps, Gear gap, and activity details with 24px gaps; below 1000px the character panel becomes a compact row with a 128px square portrait so Next steps remains in the first viewport
 - **Character split:** minmax(0, 1.28fr) and minmax(290px, 1fr), separated by 28px; the paper doll is at least 500px tall with a 405px character stage
 - **Slot alignment:** two opposing gear columns, 16px from the stage edges; weak-slot rows align at 68px / flexible / 38px, with the range and delta right aligned
-- **Planner:** flexible table and 265px detail panel separated by 22px; the table scrolls horizontally and uses 55px minimum row height with 10px 12px cell padding
-- **Standings:** three comparison columns with quiet dividing rules
-- **Wardrobe:** model stage and outfit editor use minmax(300px, 1fr) and minmax(0, 1.05fr), separated by 24px; appearance cards form three columns with 10px gaps
+- **Gear Progress:** equipment-slot glyphs and locally decoded item artwork pair with text labels in the comparison table; missing artwork uses the slot glyph, and unknown levels use secondary ink. The table and content preferences have 24px separation, stacking below 1300px
+- **Planner:** grouped plan-name and personal-target controls sit above a flexible comparison table, beside a sticky slot editor with 24px separation. Rows use 16px vertical padding, slot glyphs, and genuine item-quality colors when available. The editor moves below the table below 1150px; the table can scroll horizontally
+- **Performance:** icon-led view links, grouped refresh actions, three comparison measures with quiet dividing rules, and labeled source metadata. Unknown measures use secondary ink. Filters and interpretation use consistent disclosure rows; report links and notes use a grouped form with a primary save action. Leader gear tables retain readable columns with horizontal scrolling at narrow widths, slot glyphs, and explicit sample counts
+- **Wardrobe:** a 190px saved-outfit list sits beside the editor with 24px separation, becoming a horizontal list below 1000px. Grouped name and save controls lead slot rows with local artwork or slot glyphs, followed by the collection checklist and icon-led preview/import disclosures. The observed-render panel is 220px wide on desktop and becomes a compact row below 1250px; missing or failed artwork uses a quiet placeholder without suggesting a live outfit preview. An empty wardrobe uses the full workspace width
 
 At 1350px and above, body minimum height becomes 850px, page padding becomes 30px 34px, the character gap is 34px, and the stage is 450px tall. At 1100px and below, navigation becomes a 62px icon rail, page padding is 24px, the planner panel narrows to 235px, and slot labels hide
 
@@ -397,7 +405,7 @@ The stage inspects a model the player attaches and keeps the outfit editor usabl
 
 ### Sheets and Feedback
 
-Sheets sit in a fixed layer on the right below the 40px title bar, at min(390px, 95%) width, with 26px padding, translucent surface, blur, and a leftward shadow. Close and Escape dismiss them. Toasts centre over the workspace (offset by the live sidebar width), use ink background and surface text, 10px corners, 12px 18px padding, and status semantics
+Sheets sit in a fixed layer on the right below the 40px title bar, at min(390px, 95%) width, with 26px padding, translucent surface, blur, and a leftward shadow. Close and Escape dismiss them. Notifications use the shadcn Base UI Toast manager and a single root Toaster, with stacked bottom-right messages, theme-matched popover surfaces, 12px corners, close controls, keyboard dismissal, swipe gestures, and a 4.5-second default timeout that pauses during interaction. Reduced motion is respected, and repeated messages remain distinct
 
 Progress is shown in place: a 5–7px track under the heading it belongs to, and a spinning refresh icon on the control that started it
 

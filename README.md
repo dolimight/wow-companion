@@ -17,6 +17,11 @@ Add a character or import an addon snapshot to begin
 Window size, position, and maximized or fullscreen mode are remembered between launches
 Reopening a minimized window restores its previous mode, and disconnected monitors fall back to the primary display
 
+Choose Classic blue, Nightly purple, or a holiday logo under Settings → Appearance → App icon
+Holiday choices include New Year’s, Valentine’s Day, St Patrick’s Day, Easter, July 4, Halloween, Thanksgiving, and Christmas
+Build default follows the installed release track, and your choice is remembered between launches
+The primary color follows the selected icon while Light, Dark, and System appearance remain separate
+
 An unpacked Windows build is available after running
 
 ```powershell

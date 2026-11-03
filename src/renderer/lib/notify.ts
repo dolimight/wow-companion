@@ -1,8 +1,7 @@
-let dispatch: ((value: string) => void) | undefined
+import { toast } from '../components/ui/toast'
 
-/** The shell registers the toast; features call notify without importing the shell */
-export function setToastDispatch(next: ((value: string) => void) | undefined) { dispatch = next }
-export function notify(message: string) { dispatch?.(message) }
+/** Feature notifications share the Base UI manager mounted at the application root */
+export function notify(message: string) { toast.add({ title: message, type: 'info' }) }
 
 export function errorMessage(error: unknown) {
   return error instanceof Error ? error.message.replace(/\.$/, '') : 'The action could not finish — try again'

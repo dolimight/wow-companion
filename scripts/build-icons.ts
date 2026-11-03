@@ -43,6 +43,19 @@ export function encodeIcns(frames: Array<{ type: string; png: Buffer }>) {
   return Buffer.concat([header, ...chunks])
 }
 
+export function iconBuildOptions(args: string[]) {
+  const variants = ['classic', 'nightly', 'newyear', 'valentine', 'stpatrick', 'easter', 'independence', 'halloween', 'thanksgiving', 'christmas']
+  let variant = 'classic', output: string | undefined
+  for (let index = 0; index < args.length; index += 2) {
+    const value = args[index + 1]
+    if (!value) throw new Error('Icon option requires a value')
+    if (args[index] === '--variant' && variants.includes(value)) variant = value
+    else if (args[index] === '--out-dir') output = value
+    else throw new Error(`Usage: node --import tsx scripts/build-icons.ts [--variant ${variants.join('|')}] [--out-dir directory]`)
+  }
+  return { prefix: variant === 'classic' ? 'wow-companion' : `wow-companion-${variant}`, output }
+}
+
 async function main(args: string[]) {
   if (!process.versions.electron) {
     const electron: unknown = createRequire(import.meta.url)('electron')
@@ -63,19 +76,19 @@ async function main(args: string[]) {
   }
   const { app, nativeImage } = await import('electron')
   try {
-    if (args.length && (args.length !== 2 || args[0] !== '--out-dir')) throw new Error('Usage: node --import tsx scripts/build-icons.ts [--out-dir directory]')
+    const options = iconBuildOptions(args)
     await app.whenReady(); app.dock?.hide()
-    const output = args.length ? resolve(args[1]) : resolve(root, 'public/assets')
-    const source = nativeImage.createFromPath(resolve(root, 'public/assets/wow-companion-logo.png'))
+    const output = options.output ? resolve(options.output) : resolve(root, 'public/assets')
+    const source = nativeImage.createFromPath(resolve(root, `public/assets/${options.prefix}-logo.png`))
     if (source.isEmpty()) throw new Error('Logo could not be read')
     const { width, height } = source.getSize()
     const cropped = source.crop(visibleBounds(source.toBitmap(), width, height))
     const png = (size: number) => cropped.resize({ width: size, height: size, quality: 'best' }).toPNG()
     await mkdir(output, { recursive: true })
-    await writeFile(resolve(output, 'wow-companion-icon.png'), png(1024))
-    await writeFile(resolve(output, 'wow-companion.ico'), encodeIco([16, 24, 32, 48, 64, 128, 256].map(size => ({ size, png: png(size) }))))
+    await writeFile(resolve(output, `${options.prefix}-icon.png`), png(1024))
+    await writeFile(resolve(output, `${options.prefix}.ico`), encodeIco([16, 24, 32, 48, 64, 128, 256].map(size => ({ size, png: png(size) }))))
     const sizes = [16, 32, 64, 128, 256, 512, 1024], types = ['icp4', 'icp5', 'icp6', 'ic07', 'ic08', 'ic09', 'ic10']
-    await writeFile(resolve(output, 'wow-companion.icns'), encodeIcns(sizes.map((size, index) => ({ type: types[index], png: png(size) }))))
+    await writeFile(resolve(output, `${options.prefix}.icns`), encodeIcns(sizes.map((size, index) => ({ type: types[index], png: png(size) }))))
     console.log(`Generated edge-filled PNG, ICO, and ICNS icons in ${output}`)
     app.exit(0)
   } catch (error) { console.error(error instanceof Error ? error.message : String(error)); app.exit(1) }

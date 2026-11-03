@@ -13,6 +13,22 @@ function record(overrides:Record<string,unknown>={}) {return {guid:'Player-1-ABC
 function envelope(records:Record<string,unknown>={'Player-1-ABC':record()}) {return {schemaVersion:1,addonVersion:'0.1.0',sourceProfileId:'profile-a',exportedAt:'2026-10-14T12:00:00.000Z',characters:records}}
 afterEach(()=>{for(const d of databases.splice(0)){try{d.close()}catch{}}for(const f of folders.splice(0))rmSync(f,{recursive:true,force:true})})
 describe('durable character boundaries',()=>{
+  it('preserves icon choices across a database reopen and defaults legacy profiles to the build icon', () => {
+    const folder=mkdtempSync(join(tmpdir(),'wow-icons-'));folders.push(folder)
+    const file=join(folder,'companion.db'), db=repo(file)
+    expect(db.getSettings().appIcon).toBe('auto')
+    db.setSettings({appIcon:'halloween',theme:'dark'})
+    expect(()=>db.setSettings({appIcon:'untrusted' as never})).toThrow()
+    db.close()
+    const restored=repo(file)
+    expect(restored.getSettings()).toMatchObject({appIcon:'halloween',theme:'dark'})
+    restored.close()
+    const raw=new Database(file)
+    const row=raw.prepare("SELECT value FROM metadata WHERE key='settings'").get() as {value:string}
+    const legacy=JSON.parse(row.value);delete legacy.appIcon
+    raw.prepare("UPDATE metadata SET value=? WHERE key='settings'").run(JSON.stringify(legacy));raw.close()
+    expect(repo(file).getSettings()).toMatchObject({appIcon:'auto',theme:'dark'})
+  })
   it('loads and updates a legacy zero-specialization draft without losing or duplicating it',()=>{
     const folder=mkdtempSync(join(tmpdir(),'wow-legacy-spec-'));folders.push(folder);const file=join(folder,'companion.db');const db=repo(file)
     const c=db.addCharacter({name:'Astra',region:'us',realm:'Realm One',specId:0})

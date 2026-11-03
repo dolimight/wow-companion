@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
+import { version as appVersion } from '../../package.json';
+import { appIconChoices, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createRootRoute,
@@ -25,6 +27,7 @@ import {
 } from "@tanstack/react-table";
 import {
   Archive,
+  Backpack,
   ArrowDownUp,
   ArrowLeft,
   ArrowRight,
@@ -35,27 +38,35 @@ import {
   Crown,
   Download,
   ExternalLink,
+  FlaskConical,
+  FileText,
+  History,
   Info,
   Menu,
+  NotebookPen,
   Plus,
   RefreshCw,
   Search,
+  Save,
   Settings,
   Shield,
   Sparkles,
   Star,
   Trash2,
   Trophy,
+  Target,
+  TrendingUp,
   Upload,
   Users,
   WandSparkles,
 } from "lucide-react";
 import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
-import { errorMessage, notify, setToastDispatch } from "./lib/notify";
+import { errorMessage, notify } from "./lib/notify";
 import { Term } from "./components/Term";
 import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
+import { GearSlotIcon } from "./components/GearSlotIcon";
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
@@ -118,6 +129,12 @@ import type {
 import "./style.css";
 import "./sidebar-settings.css";
 import "./navigation.css";
+import "./app-accent.css";
+import "./overview.css";
+import "./gear-polish.css";
+
+const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, simulations: FlaskConical };
+const performanceViewIcons: Record<string, typeof Shield> = { standing: Trophy, leaders: Crown, history: History, reports: FileText };
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -533,6 +550,13 @@ function Shell() {
   useUpdateSafety();
   const roster = useRoster();
   const settings = useSettings();
+  const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
+  useEffect(() => {
+    document.documentElement.dataset.appIcon = appIcon;
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (favicon) favicon.href = `${import.meta.env.BASE_URL}assets/${appIconFiles[appIcon].logo}`;
+    if (settings.data) void window.companion?.applyAppIcon().catch(error => notify(errorMessage(error)));
+  }, [appIcon, settings.data?.appIcon]);
   const navigate = useNavigate();
   const route = useRouterState({ select: (s) => s.location });
   const currentPath = route.pathname;
@@ -568,7 +592,6 @@ function Shell() {
   useItemSearchShortcut(openSearch);
   const { activity } = useActivity(character?.id);
   const [switchSearch, setSwitchSearch] = useState("");
-  const [toast, setToast] = useState("");
   const saveSidebar = useAction((sidebarWidth: number) => api.saveSettings({ sidebarWidth }));
   const sidebar = useSidebarLayout(settings.data?.sidebarWidth, (width) =>
     saveSidebar.mutate(width),
@@ -576,15 +599,6 @@ function Shell() {
   const { stage, dialog: stageDialog } = useStagePlan();
   const drawerMode = sidebar.compact;
   const drawer = useDrawerNavigation(currentPath, drawerMode);
-  useEffect(() => {
-    setToastDispatch(setToast);
-    return () => setToastDispatch(undefined);
-  }, []);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(""), 4500);
-    return () => clearTimeout(t);
-  }, [toast]);
   useEffect(
     () =>
       api.subscribe(() => {
@@ -640,7 +654,7 @@ function Shell() {
       <div className="brand">
         <img
           className="brand-logo"
-          src={`${import.meta.env.BASE_URL}assets/wow-companion-logo.png`}
+          src={`${import.meta.env.BASE_URL}assets/${appIconFiles[appIcon].logo}`}
           alt=""
         />
         <span className="brand-name">WOW Companion</span>
@@ -736,7 +750,7 @@ function Shell() {
           Add a character to unlock Overview, Gear, Performance, and Wardrobe
         </button>
       )}
-      <div className="sidebar-footer">
+      <div className="sidebar-footer" role="group" aria-label="Workspace utilities">
         <SyncButton onClick={() => setSheet("sync")} />
         <UpdateButton onOpenSettings={openSettings} />
         <Tooltip>
@@ -747,11 +761,13 @@ function Shell() {
                 className={`footer-icon ${settingsOpen ? "active" : ""}`}
                 aria-label="Open settings"
                 aria-haspopup="dialog"
+                aria-expanded={settingsOpen}
                 onClick={() => setSettingsOpen(true)}
               />
             }
           >
             <Settings />
+            <span className="footer-label" aria-hidden="true">Settings</span>
           </TooltipTrigger>
           <TooltipContent side="top">Settings</TooltipContent>
         </Tooltip>
@@ -861,12 +877,6 @@ function Shell() {
         }}
       />
       {stageDialog}
-      {toast && (
-        <div className="toast" role="status">
-          <Info />
-          {toast}
-        </div>
-      )}
     </div>
   );
 }
@@ -1198,7 +1208,7 @@ function CharacterFrame({
           {backLabel(back)}
         </Button>
       )}
-      <div className="page-heading character-heading">
+      <div className="page-heading character-heading" data-section={section}>
         {section === "overview" && <Avatar character={character} large />}
         <div className="character-heading-text">
           <div className="crumb">{destinationLabel(destination)}</div>
@@ -1212,18 +1222,22 @@ function CharacterFrame({
       </div>
       {views && "view" in destination && (
         <nav className="subnav" aria-label={`${sectionLabels[section]} views`}>
-          {views.map(({ id, label }) => (
-            <CharacterLink
-              key={id}
-              characterId={character.id}
-              destination={{ section, view: id } as CharacterDestination}
-              returnTo={back ?? undefined}
-              className="subnav-link"
-              aria-current={destination.view === id ? "page" : undefined}
-            >
-              {label}
-            </CharacterLink>
-          ))}
+          {views.map(({ id, label }) => {
+            const Icon = section === "gear" ? gearViewIcons[id] : section === "performance" ? performanceViewIcons[id] : null;
+            return (
+              <CharacterLink
+                key={id}
+                characterId={character.id}
+                destination={{ section, view: id } as CharacterDestination}
+                returnTo={back ?? undefined}
+                className="subnav-link"
+                aria-current={destination.view === id ? "page" : undefined}
+              >
+                {Icon && <Icon size={16} aria-hidden="true" />}
+                <span>{label}</span>
+              </CharacterLink>
+            );
+          })}
         </nav>
       )}
       {children}
@@ -1313,17 +1327,18 @@ function PerformanceView({ character, view }: { character: Character; view: Comp
   const { activity } = useActivity(character.id);
   const refresh = useAction(({ id }: { id: string }) => api.refreshCharacter({ id }), "Public activity data refreshed");
   return (
-    <>
-      {view === "standing" && (
-        <div className="view-actions">
-          <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
-            <RefreshCw />
-            {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
-          </Button>
-        </div>
+    <ComparisonPage
+      key={character.id + ":" + activity + ":" + view}
+      character={character}
+      activity={activity}
+      view={view}
+      actions={view === "standing" && (
+        <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
+          <RefreshCw />
+          {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
+        </Button>
       )}
-      <ComparisonPage key={character.id + ":" + activity + ":" + view} character={character} activity={activity} view={view} />
-    </>
+    />
   );
 }
 function LeadersView({ character }: { character: Character }) {
@@ -1354,20 +1369,20 @@ function OverviewPage({ character }: { character: Character }) {
         <section className="surface character-surface">
           <div className="surface-heading">
             <h2>Your character</h2>
-            <Badge>{character.gameBuild ? `Build ${character.gameBuild}` : "Build unknown"}</Badge>
+            <span className="character-build" title={character.gameBuild ? `Build ${character.gameBuild}` : 'Build unknown'}><Badge>{character.gameBuild ? `Build ${character.gameBuild}` : "Build unknown"}</Badge></span>
           </div>
           <Portrait character={character} />
-          <div className="source-bar">
-            <span>In-game observation · {age(character.observedAt)}</span>
-            <span>Imported · {age(character.importedAt)}</span>
-          </div>
+          <dl className="source-bar">
+            <div><dt>In-game observation</dt><dd>{age(character.observedAt)}</dd></div>
+            <div><dt>Imported</dt><dd>{age(character.importedAt)}</dd></div>
+          </dl>
           <Button disabled={refresh.isPending} onClick={() => refresh.mutate({ id: character.id })}>
             <RefreshCw />
             {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
           </Button>
         </section>
         <div className="progress-section">
-          <section className="surface">
+          <section className="surface overview-next-steps">
             <div className="surface-heading">
               <h2>Next steps</h2>
             </div>
@@ -1414,10 +1429,10 @@ function OverviewPage({ character }: { character: Character }) {
               </div>
             </div>
           </section>
-          <section className="surface">
+          <section className="surface overview-gear-gap">
             <div className="surface-heading">
               <h2>Gear gap</h2>
-              <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-primary">
+              <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-quiet">
                 Review gear <ArrowRight size={14} />
               </CharacterLink>
             </div>
@@ -1456,7 +1471,7 @@ function OverviewPage({ character }: { character: Character }) {
               </p>
             )}
           </section>
-          <section className="surface">
+          <section className="surface overview-standing">
             <div className="surface-heading">
               <h2>{activityNames[activity]} standing</h2>
               <CharacterLink characterId={character.id} destination={{ section: "performance", view: "standing" }} className="button button-secondary">
@@ -1651,9 +1666,9 @@ function GearEditor({
   }
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading gear-plan-heading">
         <div>
-          <h2>Plan</h2>
+          <h2 className="gear-section-title"><NotebookPen size={18} aria-hidden="true" />Plan</h2>
           <p>Your imported gear stays separate from this plan · Edits update the draft, and Save plan keeps them</p>
         </div>
         <div className="actions">
@@ -1665,7 +1680,7 @@ function GearEditor({
             disabled={save.isPending || query.isPending}
             onClick={() => savePlan()}
           >
-            <Download />
+            <Save />
             {save.isPending ? "Saving…" : "Save plan"}
           </Button>
         </div>
@@ -1686,46 +1701,48 @@ function GearEditor({
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
         <div className="planner-layout">
-          <section>
-            <Field label="Plan name">
-              <input
-                value={name}
-                maxLength={100}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setDirty(true);
-                }}
-              />
-            </Field>
-            <div className="goal-editor">
-              <Field
-                label="Your item-level target"
-                hint="A personal goal, separate from a verified legal maximum"
-              >
+          <section className="planner-workspace">
+            <div className="plan-controls">
+              <Field label="Plan name">
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={target}
-                  placeholder="No target set"
-                  onChange={(e) => setTarget(e.target.value)}
+                  value={name}
+                  maxLength={100}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setDirty(true);
+                  }}
                 />
               </Field>
-              <Button
-                onClick={() => {
-                  const value = target.trim() ? Number(target) : null;
-                  if (value != null && (!Number.isFinite(value) || value < 0)) {
-                    notify("Enter a valid target item level");
-                    return;
-                  }
-                  updateGoal.mutate({
-                    id: character.id,
-                    patch: { targetItemLevel: value },
-                  });
-                }}
-              >
-                Save target
-              </Button>
+              <div className="goal-editor">
+                <Field
+                  label="Your item-level target"
+                  hint="A personal goal, separate from a verified legal maximum"
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={target}
+                    placeholder="No target set"
+                    onChange={(e) => setTarget(e.target.value)}
+                  />
+                </Field>
+                <Button
+                  onClick={() => {
+                    const value = target.trim() ? Number(target) : null;
+                    if (value != null && (!Number.isFinite(value) || value < 0)) {
+                      notify("Enter a valid target item level");
+                      return;
+                    }
+                    updateGoal.mutate({
+                      id: character.id,
+                      patch: { targetItemLevel: value },
+                    });
+                  }}
+                >
+                  <Target size={14} aria-hidden="true" />Save target
+                </Button>
+              </div>
             </div>
             <div className="table-wrap planner-table-wrap">
               <table className="data-table planner-table">
@@ -1764,15 +1781,15 @@ function GearEditor({
                         }}
                       >
                         <td>
-                          <div className="planner-slot-name">{slotNames[slot]}</div>
+                          <div className="planner-slot-name"><GearSlotIcon slot={slot} size={16} /><span>{slotNames[slot]}</span></div>
                           {targetEquipped && <span className="planner-match"><Check size={12} aria-hidden="true" />Target equipped</span>}
                           {completion?.acquisition==='complete'&&!completion.complete&&<span className="item-subtitle">{completion.rank!=='complete'?'Upgrade goal outstanding':completion.enhancements!=='complete'?'Gems or enchant outstanding':'Variant details unverified'}</span>}
                         </td>
                         <td>
                           <ItemHoverCard itemId={observed?.itemId} item={observed?.itemId ? itemMap.get(observed.itemId) : undefined} gear={observed}><div className="gear-item planner-gear-item">
-                            <ItemIcon icon={observed?.itemId ? itemMap.get(observed.itemId)?.icon : null} quality={observed?.itemId ? itemMap.get(observed.itemId)?.quality : undefined} />
+                            <ItemIcon icon={observed?.itemId ? itemMap.get(observed.itemId)?.icon : null} quality={observed?.itemId ? itemMap.get(observed.itemId)?.quality : undefined} fallback={<GearSlotIcon slot={slot} />} />
                             <div>
-                              <div className={observed ? "item-name" : "secondary"}>
+                              <div className={observed ? `item-name quality-text-${observed.itemId ? itemMap.get(observed.itemId)?.quality ?? 1 : 1}` : "secondary"}>
                                 {observed?.name ?? "Not imported"}
                               </div>
                               <div className="item-subtitle">Item level <Known>{level(observed?.itemLevel)}</Known></div>
@@ -1781,9 +1798,9 @@ function GearEditor({
                         </td>
                         <td>
                           <ItemHoverCard itemId={item?.itemId} item={item?.itemId ? itemMap.get(item.itemId) : undefined} gear={item}><div className="gear-item planner-gear-item">
-                            <ItemIcon icon={item?.itemId ? itemMap.get(item.itemId)?.icon : null} quality={item?.itemId ? itemMap.get(item.itemId)?.quality : undefined} />
+                            <ItemIcon icon={item?.itemId ? itemMap.get(item.itemId)?.icon : null} quality={item?.itemId ? itemMap.get(item.itemId)?.quality : undefined} fallback={<GearSlotIcon slot={slot} />} />
                             <div>
-                              <div className={item ? "item-name" : "secondary"}>
+                              <div className={item ? `item-name quality-text-${item.itemId ? itemMap.get(item.itemId)?.quality ?? 1 : 1}` : "secondary"}>
                                 {item?.name ?? "No planned item"}
                               </div>
                               <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known></div>
@@ -1816,15 +1833,13 @@ function GearEditor({
             </div>
           </section>
           <aside className="surface gear-inspector">
-            {planned ? (
-              <ItemIcon icon={planned.icon} quality={planned.quality} size="large" />
-            ) : (
-              <span className="item-icon">
-                <Shield size={23} />
-              </span>
-            )}
-            <h3>{slotNames[selected]}</h3>
-            <p>Current gear · {equipped?.name ?? "Not imported"}</p>
+            <div className="gear-inspector-heading">
+              <ItemIcon icon={planned?.icon} quality={planned?.quality} size="large" fallback={<GearSlotIcon slot={selected} />} />
+              <div>
+                <h3>{slotNames[selected]}</h3>
+                <p>Current gear · {equipped?.name ?? "Not imported"}</p>
+              </div>
+            </div>
             <Button onClick={() => setSlotSearch(true)} aria-label="Search items for this slot">
               <Search />
               Search items for this slot
@@ -2057,8 +2072,35 @@ function SettingsRedirect() {
   }, [navigate]);
   return null;
 }
+const settingsSections = [
+  ['connections-heading', 'Connections'],
+  ['integrations-heading', 'Integrations'],
+  ['updates-heading', 'Updates'],
+  ['appearance-heading', 'Appearance'],
+  ['workspace-heading', 'Workspace'],
+  ['data-heading', 'Local data'],
+] as const;
 function SettingsPage() {
   const settings = useSettings();
+  const page = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<string>('connections-heading');
+  useEffect(() => {
+    const scroller = page.current?.closest<HTMLElement>('.settings-dialog-body');
+    if (!scroller || settings.isPending) return;
+    const updateSection = () => {
+      const boundary = scroller.getBoundingClientRect().top + (page.current?.querySelector('nav')?.offsetHeight ?? 0) + 32;
+      let current: string = settingsSections[0][0];
+      for (const [id] of settingsSections) {
+        const heading = document.getElementById(id);
+        if (heading && heading.getBoundingClientRect().top <= boundary) current = id;
+      }
+      if (scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = 'data-heading';
+      setActiveSection(current);
+    };
+    updateSection();
+    scroller.addEventListener('scroll', updateSection, { passive: true });
+    return () => scroller.removeEventListener('scroll', updateSection);
+  }, [settings.isPending]);
   const save = useAction(api.saveSettings, "Preferences saved");
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -2082,7 +2124,7 @@ function SettingsPage() {
     }
   }
   return (
-    <div className="settings-page">
+    <div className="settings-page" ref={page}>
       {settings.isPending ? (
         <div className="loading-surface" role="status">
           Loading preferences…
@@ -2092,19 +2134,16 @@ function SettingsPage() {
       ) : (
         <>
           <nav className="settings-anchors" aria-label="Settings sections">
-            {[
-              ["connections-heading", "Connections"],
-              ["appearance-heading", "Appearance"],
-              ["workspace-heading", "Workspace"],
-              ["data-heading", "Local data"],
-            ].map(([id, label]) => (
+            {settingsSections.map(([id, label]) => (
               <button
                 key={id}
                 type="button"
                 className="subnav-link"
+                aria-current={activeSection === id ? 'location' : undefined}
                 onClick={() => {
                   const heading = document.getElementById(id);
-                  heading?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  const reduced = settings.data?.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+                  heading?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: "start" });
                   heading?.setAttribute("tabindex", "-1");
                   heading?.focus({ preventScroll: true });
                 }}
@@ -2118,8 +2157,20 @@ function SettingsPage() {
           <UpdateSettings />
           <section className="settings-section" aria-labelledby="appearance-heading">
             <h2 id="appearance-heading">Appearance</h2>
-            <p>Choose your theme and motion preferences</p>
+            <p>Choose your icon, theme, and motion preferences</p>
             <div className="settings-section-body surface">
+              <div className="setting-row">
+                <div>
+                  <h3>App icon</h3>
+                  <p>Build default uses purple for Nightly and blue for Stable</p>
+                  <p>The primary color follows your icon</p>
+                  <p>Pinned shortcuts keep the icon from installation</p>
+                </div>
+                <div className="app-icon-control">
+                  <img className="app-icon-preview" src={`${import.meta.env.BASE_URL}assets/${appIconFiles[resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion)].logo}`} alt="" />
+                  <AppSelect aria-label="App icon" value={settings.data?.appIcon ?? 'auto'} options={appIconChoices.map(choice => ({ ...choice, image: `${import.meta.env.BASE_URL}assets/${appIconFiles[resolveAppIcon(choice.value, appVersion)].logo}` }))} disabled={save.isPending} onValueChange={value => save.mutate({ appIcon: value as AppIconPreference })} />
+                </div>
+              </div>
               <div className="setting-row">
                 <div>
                   <h3>Color theme</h3>
