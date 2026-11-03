@@ -405,7 +405,7 @@ The stage inspects a model the player attaches and keeps the outfit editor usabl
 
 ### Sheets and Feedback
 
-Sheets sit in a fixed layer on the right below the 40px title bar, at min(390px, 95%) width, with 26px padding, translucent surface, blur, and a leftward shadow. Close and Escape dismiss them. Toasts centre over the workspace (offset by the live sidebar width), use ink background and surface text, 10px corners, 12px 18px padding, and status semantics
+Sheets sit in a fixed layer on the right below the 40px title bar, at min(390px, 95%) width, with 26px padding, translucent surface, blur, and a leftward shadow. Close and Escape dismiss them. Notifications use the shadcn Base UI Toast manager and a single root Toaster, with stacked bottom-right messages, theme-matched popover surfaces, 12px corners, close controls, keyboard dismissal, swipe gestures, and a 4.5-second default timeout that pauses during interaction. Reduced motion is respected, and repeated messages remain distinct
 
 Progress is shown in place: a 5–7px track under the heading it belongs to, and a spinning refresh icon on the control that started it
 

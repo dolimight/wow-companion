@@ -388,6 +388,31 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await capture('gear-planner')
         return await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' })
       })
+      await step('Base UI toasts stack repeated notifications and support keyboard dismissal in both themes', async () => {
+        const titles = `[...document.querySelectorAll('[data-slot="toast"]:not([data-ending-style])')].filter(node=>node.querySelector('[data-slot="toast-title"]')?.textContent==='Gear plan saved locally')`
+        await click('Save plan')
+        await wait(`${titles}.length>=2`, 'repeated save notifications remain distinct')
+        assert(await evaluate(`!document.querySelector('.toast')&&!!document.querySelector('[data-slot="toast-viewport"]')`), 'Legacy toast remains or Base UI viewport is missing')
+        const originalSize = window.getContentSize()
+        try {
+          await wait(`(()=>{const node=document.querySelector('[data-slot="toast"]:not([data-ending-style]):not([data-limited])');const box=node?.getBoundingClientRect();return box&&box.bottom<=innerHeight})()`, 'toast entrance has settled')
+          await capture('toast-stack-dark')
+          await db.call('setSettings', { theme: 'light' }); await service.changed()
+          window.setContentSize(820, 900)
+          await wait(`innerWidth===820&&document.documentElement.dataset.theme==='light'`, 'light toast viewport')
+          await wait(`(()=>{const node=document.querySelector('[data-slot="toast"]:not([data-ending-style]):not([data-limited])');const box=node?.getBoundingClientRect();return box&&box.left>=0&&box.right<=innerWidth&&box.bottom<=innerHeight})()`, 'toast fits after minimum-width resize')
+          await capture('toast-stack-light-minimum')
+          const before = await evaluate<number>(`${titles}.length`)
+          contents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' }); contents.sendInputEvent({ type: 'keyUp', keyCode: 'Tab' })
+          await evaluate(`${titles}.find(node=>!node.querySelector('[data-slot="toast-content"]')?.hasAttribute('data-behind')).querySelector('[data-slot="toast-close"]').focus()`)
+          await wait(`document.activeElement?.getAttribute('data-slot')==='toast-close'`, 'frontmost toast close button receives keyboard focus')
+          await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
+          await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+          await wait(`${titles}.length===${before - 1}`, 'keyboard dismisses only the focused toast')
+          assert(await evaluate(`${titles}.length>=1`), 'Dismissing one toast removed another notification')
+        } finally { window.setContentSize(originalSize[0], originalSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
+        return { repeatedMessages: true, keyboardDismissal: true, themes: ['dark', 'light'], minimumWidth: 820 }
+      })
       await step('Switching characters keeps gear drafts isolated', async () => {
         await switchCharacter('Vaelith')
         await wait(`location.hash.includes('/demo-vaelith/gear')`, 'main gear route')

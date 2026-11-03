@@ -62,7 +62,7 @@ import {
 } from "lucide-react";
 import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
-import { errorMessage, notify, setToastDispatch } from "./lib/notify";
+import { errorMessage, notify } from "./lib/notify";
 import { Term } from "./components/Term";
 import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
@@ -592,7 +592,6 @@ function Shell() {
   useItemSearchShortcut(openSearch);
   const { activity } = useActivity(character?.id);
   const [switchSearch, setSwitchSearch] = useState("");
-  const [toast, setToast] = useState("");
   const saveSidebar = useAction((sidebarWidth: number) => api.saveSettings({ sidebarWidth }));
   const sidebar = useSidebarLayout(settings.data?.sidebarWidth, (width) =>
     saveSidebar.mutate(width),
@@ -600,15 +599,6 @@ function Shell() {
   const { stage, dialog: stageDialog } = useStagePlan();
   const drawerMode = sidebar.compact;
   const drawer = useDrawerNavigation(currentPath, drawerMode);
-  useEffect(() => {
-    setToastDispatch(setToast);
-    return () => setToastDispatch(undefined);
-  }, []);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(""), 4500);
-    return () => clearTimeout(t);
-  }, [toast]);
   useEffect(
     () =>
       api.subscribe(() => {
@@ -887,12 +877,6 @@ function Shell() {
         }}
       />
       {stageDialog}
-      {toast && (
-        <div className="toast" role="status">
-          <Info />
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

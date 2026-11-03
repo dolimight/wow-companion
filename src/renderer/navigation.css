@@ -70,7 +70,6 @@
   .roster-layout { display: flex; flex-direction: column; }
   .roster-layout > .selected-pane { order: -1; }
 }
-.app-shell[data-navigation="drawer"] .toast { left: 50%; }
 main h1[tabindex]:focus, main h1[tabindex]:focus-visible { outline: none; }
 .settings-anchors {
   position: sticky; top: 0; z-index: 3; display: flex; gap: 4px;
