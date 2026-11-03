@@ -1,5 +1,7 @@
 # WOW Companion
 
+[![Buy me a coffee](docs/marketing/buymeacoffee-button.png)](https://www.buymeacoffee.com/dolimight)
+
 ![WOW Companion — Your roster, your next upgrade](docs/marketing/wow-companion-banner.png)
 
 A Windows desktop companion for Retail World of Warcraft, built for the time between runs
@@ -129,10 +131,6 @@ The debugger acceptance command exercises the real Electron main process and san
 For packaged verification, set `WOW_COMPANION_DEBUG_EXECUTABLE` to the absolute path of `release/win-unpacked/WOW Companion.exe` before running `npm run test:debug`. Normal app launches don't enable debugger access
 
 The optional browser development preview uses a separate `.local/browser` database. Run `npm run build`, then `npm run dev:browser`; native dialogs remain desktop-only, and the preview must stay on loopback
-
-## Support the project
-
-<a href="https://www.buymeacoffee.com/dolimight"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=dolimight&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 
 ## Project notes
 
