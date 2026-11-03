@@ -651,6 +651,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Progression overflows the minimum desktop width')
         await capture('progression-minimum-width')
       } finally { window.setContentSize(originalSize[0], originalSize[1]) }
+      // Crossing the navigation breakpoint remounts the workspace; wait for the restored
+      // editor before the next step changes preferences, rather than editing the old tree
+      await wait(`innerWidth===${originalSize[0]}&&innerHeight===${originalSize[1]}&&document.querySelector('.app-shell')?.dataset.navigation===${literal(originalSize[0] < 1100 ? 'drawer' : 'sidebar')}`, 'progression layout restored before editing preferences')
+      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
       return { characterId: fixture.id, scopedViews: labels, unsupportedMaximumUnknown: true, recordedGearVisible: true, headExplanation: true, minimumWidth: true }
     })
     await step('Progression content preferences persist by character and activity while personal goals preserve observed gear', async () => {
