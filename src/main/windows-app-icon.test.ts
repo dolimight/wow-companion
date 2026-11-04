@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { ShortcutDetails } from 'electron'
-import { persistWindowsIcon, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
+import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
 
 const directories: string[] = []
 afterEach(async () => { for (const directory of directories.splice(0)) await rm(directory, { recursive: true, force: true }) })
@@ -66,4 +66,35 @@ it('persists selected icon bytes outside the installation and tolerates no taskb
 it('sets one stable identity with a correctly quoted relaunch command', () => {
   expect(taskbarDetails(executable, icon)).toEqual({ appId: windowsAppId, appIconPath: icon, appIconIndex: 0, relaunchCommand: `"${executable}"`, relaunchDisplayName: 'WOW Companion' })
   expect(taskbarDetails(executable, icon, 'C:\\Code\\My App').relaunchCommand).toBe(`"${executable}" "C:\\Code\\My App"`)
+})
+it('reports every pin of this app, rewritten or already current, so Explorer can reload stale buttons', async () => {
+  const { directory, shell } = await fixture({
+    'changed.lnk': { target: executable },
+    'current.lnk': { target: executable, icon, iconIndex: 0 },
+    'other.lnk': { target: executable, appUserModelId: 'another.app' },
+  })
+  const onMatched = vi.fn(async (_files: string[]) => undefined)
+  expect(await updatePinnedAppIcons(directory, executable, icon, shell, undefined, onMatched)).toBe(1)
+  expect(onMatched).toHaveBeenCalledOnce()
+  expect(onMatched.mock.calls[0]![0].map(file => path.basename(file))).toEqual(['changed.lnk', 'current.lnk'])
+  onMatched.mockClear()
+  await updatePinnedAppIcons(directory, executable, icon, shell, undefined, onMatched)
+  expect(onMatched.mock.calls[0]![0]).toHaveLength(2)
+  await updatePinnedAppIcons(path.join(directory, 'missing'), executable, icon, shell, undefined, onMatched)
+  expect(onMatched).toHaveBeenCalledOnce()
+})
+it('passes link paths to PowerShell through the environment, never the script text', async () => {
+  const run = vi.fn((_file: string, _args: string[], _options: { env: NodeJS.ProcessEnv }, callback: (error: Error | null) => void) => callback(null))
+  const directory = path.win32.join('C:', 'Users', 'Me', 'Pins', `it's "quoted"`)
+  const files = [path.win32.join(directory, 'WOW Companion.lnk')]
+  expect(await refreshPinnedShellItems(directory, files, run as never)).toBe(true)
+  const [file, args, options] = run.mock.calls[0]!
+  expect(file).toBe('powershell.exe')
+  expect(args.slice(0, 3)).toEqual(['-NoProfile', '-NonInteractive', '-Command'])
+  expect(args.join(' ')).not.toContain('Pins')
+  expect(JSON.parse(options.env.WOW_SHELL_REFRESH!)).toEqual({ directory, files })
+  expect(await refreshPinnedShellItems(directory, [], run as never)).toBe(false)
+  expect(run).toHaveBeenCalledOnce()
+  run.mockImplementationOnce((_file, _args, _options, callback) => callback(new Error('blocked')))
+  expect(await refreshPinnedShellItems(directory, files, run as never)).toBe(false)
 })

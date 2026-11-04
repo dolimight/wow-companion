@@ -15,7 +15,7 @@ import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
 import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
-import { persistWindowsIcon, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
+import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
 
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
@@ -127,7 +127,7 @@ async function main(){
         const ico=await persistWindowsIcon(resolve(iconRoot,appIconFiles[variant].ico),resolve(userDir,'app-icons'))
         window?.setAppDetails(taskbarDetails(process.execPath,ico,app.isPackaged?undefined:app.getAppPath()))
         // Acceptance profiles exercise native shortcuts in scratch space, never the real taskbar
-        if(!process.env.WOW_COMPANION_DATA_DIR)await updatePinnedAppIcons(pinnedIcons,process.execPath,ico,shell,app.isPackaged?undefined:app.getAppPath())
+        if(!process.env.WOW_COMPANION_DATA_DIR)await updatePinnedAppIcons(pinnedIcons,process.execPath,ico,shell,app.isPackaged?undefined:app.getAppPath(),files=>refreshPinnedShellItems(pinnedIcons,files))
       }
       return variant
     })
