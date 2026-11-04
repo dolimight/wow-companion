@@ -1,6 +1,6 @@
 # WOW Companion addon
 
-Copy this folder's `WoWCompanion.toc`, `WoWCompanion.lua`, `MountPreview.lua`, and `OutfitPreview.lua` into `_retail_/Interface/AddOns/WoWCompanion`
+Copy this folder's `WoWCompanion.toc`, `WoWCompanion.lua`, `MountPreview.lua`, `OutfitPreview.lua`, and `AutoPet.lua` into `_retail_/Interface/AddOns/WoWCompanion`
 
 Enable the addon, log into each character you want to track, and use `/wowcompanion` to copy a JSON export for the desktop app
 The popup can be copied without a reload
@@ -15,6 +15,23 @@ Appearance collection, exact transmog/customization coverage, ratings, and legal
 The interface marker targets Retail 12.1.5 and the implementation uses guarded contemporary equipment APIs
 Real client installation and gear-change verification are still required; this repository's automated tests validate desktop import behavior rather than execution inside WoW
 If the client reports the addon as out of date, verify its APIs against the current client before updating the interface marker
+
+## Automatic favorite companion
+
+Version 0.4.3 automatically summons a favorite Pet Journal companion when none is out, enabled by default
+Mark your preferred pet as a favorite in the Pet Journal; if several pets are favorites, WoW chooses one at random
+An existing companion is left alone, and no pet is summoned if you have no favorites
+This does not control hunter or warlock combat pets
+
+Checks run after login, world entry, and relevant game events, with a ten-second fallback check
+Summoning waits through combat, death, mounting, flight, taxis, vehicles, stealth, casting, channeling, pet battles, and loading screens
+Attempts are rate limited and respect the pet-summoning cooldown
+Use `/wowcompanion pet off` to disable it or `/wowcompanion pet on` to enable it again; `/wowcompanion pet` reports the current setting
+The setting is saved account-wide with the other addon preferences
+After updating the addon from the desktop app, use `/reload` in WoW to load the new module
+
+`lua addon/tests/auto-pet.lua` checks the behavior with mocked game APIs; actual summoning still needs an in-game Retail check
+Favorite availability uses Blizzard’s [Pet Journal API](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/PetJournalInfoDocumentation.lua)
 
 ## 3D previews
 

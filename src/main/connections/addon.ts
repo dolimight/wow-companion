@@ -8,7 +8,7 @@ export type AddonStatus = {
   savedVariables: Array<{ account: string; modifiedAt: string }>
 }
 
-const FILES = ['WoWCompanion.toc', 'WoWCompanion.lua', 'MountPreview.lua', 'OutfitPreview.lua']
+const FILES = ['WoWCompanion.toc', 'WoWCompanion.lua', 'MountPreview.lua', 'OutfitPreview.lua', 'AutoPet.lua']
 
 async function tocVersion(dir: string) {
   try { return (await readFile(path.join(dir, 'WoWCompanion.toc'), 'utf8')).match(/^##\s*Version:\s*(.+)$/m)?.[1]?.trim() ?? null } catch { return null }
