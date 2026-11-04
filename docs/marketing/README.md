@@ -8,6 +8,7 @@ Original promotional artwork and real app captures for the project README and sh
 | [wow-companion-social.png](wow-companion-social.png) | Standalone social card | Generated promotional artwork |
 | [character-overview.png](character-overview.png) | Dark character overview | Unaltered Electron acceptance capture |
 | [item-search.png](item-search.png) | Light item-search dialog | Unaltered Electron acceptance capture |
+| [buymeacoffee-button.png](buymeacoffee-button.png) | README support link | Official Buy Me a Coffee button |
 
 The banner and social card were created on 2026-11-03 with the built-in image-generation tool, using the existing [compass logo](../../public/assets/wow-companion-logo.png) as a supporting brand reference. Their atlas scenes are original promotional illustrations, not game maps or app screenshots
 
@@ -21,3 +22,5 @@ The app captures come from the isolated desktop acceptance run `debug-acceptance
 Characters, item names, ratings, and other values in these captures are fictional test data. The mage is the app's labeled generated concept illustration, not a captured player model. These images don't establish live-provider behavior, a current season ceiling, or a dynamic 3D character builder
 
 Keep these documentation assets outside the app's shipping `public/assets` directory so release packages don't include marketing-only imagery
+
+The support button is an unaltered copy of the [official yellow PNG](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png), downloaded on 2026-11-03. The README uses the local image so rendering doesn't depend on the dynamic button API or an external image proxy
