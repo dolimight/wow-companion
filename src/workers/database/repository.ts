@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { eq } from 'drizzle-orm'
 import { createHash, randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { addonEnvelopeSchema, addonRecordSchema, addCharacterSchema, appSettingsSchema, characterPatchSchema, characterSchema, gearDraftSchema, outfitSchema, ratingSchema, type AddCharacterInput, type AppSettings, type Character, type CharacterPatch, type GearDraft, type ImportReport, type Outfit, type ProviderRef, type Activity } from '../../shared/domain'
+import { addonEnvelopeSchema, addonRecordSchema, addCharacterSchema, appSettingsSchema, characterPatchSchema, characterSchema, gearDraftSchema, outfitSchema, ratingSchema, type ActivityRating, type AddCharacterInput, type AppSettings, type Character, type CharacterPatch, type GearDraft, type ImportReport, type Outfit, type ProviderRef, type Activity } from '../../shared/domain'
 import * as schema from './schema'
 import { statsSchema, specializationIdSchema, type AddonCharacterRecord, type InventoryObservation } from '../../shared/domain'
 import { contentPreferencesSchema, defaultContentPreferences, type ContentPreferences } from '../../shared/season-rules'
@@ -52,6 +52,12 @@ function retainUpgradeQuotes<T extends Character['gear'][number]>(incoming:T[],p
   })
 }
 export type Backup = z.infer<typeof backupSchema>
+/** The client's score is current as soon as WoW saves it; a matching provider score keeps its rank and link */
+function addonMythicPlus(record: AddonCharacterRecord, current: ActivityRating | null): ActivityRating | null {
+  const raw = record.mythicPlus
+  if (!raw || current?.value === raw.score) return null
+  return { value: raw.score, label: 'Mythic+ score', rank: null, population: null, seasonId: raw.season != null ? `game-season-${raw.season}` : null, observedAt: raw.observedAt, source: 'In-game score', sourceUrl: null, rankScope: null }
+}
 /** The week is anchored to the region's reset schedule, falling back to the game's own reset countdown */
 function addonWeekly(record: AddonCharacterRecord): WeeklySnapshot | null {
   const raw = record.weekly
@@ -151,8 +157,9 @@ export class DatabaseRepository {
   }
   archiveCharacter(id: string) { return this.updateCharacter(id,{archived:true}) }
   restoreCharacter(id: string) { return this.updateCharacter(id,{archived:false}) }
-  private mergeProviderRatings(character:Character,input:Partial<Character['ratings']>):Character['ratings'] {
-    const ratings={...character.ratings}
+  private mergeProviderRatings(character:Character,input:Partial<Character['ratings']>):Character['ratings'] {return this.mergeRatings(character.ratings,input)}
+  private mergeRatings(existing:Character['ratings'],input:Partial<Character['ratings']>):Character['ratings'] {
+    const ratings={...existing}
     for(const activity of ['mythicPlus','raiding','pvp'] as const){const raw=input[activity];if(raw==null)continue;const incoming=ratingSchema.parse(raw);const current=ratings[activity];if(current?.observedAt&&(!incoming.observedAt||Date.parse(incoming.observedAt)<Date.parse(current.observedAt)))continue;ratings[activity]=incoming}
     return ratings
   }
@@ -351,7 +358,7 @@ export class DatabaseRepository {
             sourceRefs:[...twin.sourceRefs,...previous.sourceRefs],
           }
         } else if (twin) previous = twin
-        const { weekly: _rawWeekly, talentLoadout, ...fields } = record
+        const { weekly: _rawWeekly, mythicPlus: _rawMythicPlus, talentLoadout, ...fields } = record
         // Fields the addon cannot observe yet keep the values another source already provided
         const unobserved = previous ? { progressionResources: record.progressionResources ?? previous.progressionResources, sex: previous.sex, renders: previous.renders, observedTransmog: previous.observedTransmog, observedTransmogAt: previous.observedTransmogAt, stats: previous.stats, ...(record.specId === null && previous.specId !== null && (record.specName === 'Unknown' || record.specName === previous.specName) ? {specId:previous.specId,specName:previous.specName} : {}), ...(fields.customizationCoverage === 'unknown' ? { customization: previous.customization, customizationCoverage: previous.customizationCoverage } : {}), ...(fields.collectionCoverage === 'unknown' ? { collectionObservedAt:previous.collectionObservedAt,collectedAppearanceIds: previous.collectedAppearanceIds, collectionCoverage: previous.collectionCoverage, collectionScopeId: previous.collectionScopeId } : {}) } : {}
         const weekly = { ...(previous?.weekly ?? { addon: null, raiderio: null, blizzard: null }), addon: addonWeekly(record) ?? previous?.weekly.addon ?? null }
@@ -361,7 +368,7 @@ export class DatabaseRepository {
         const preserveGear = !record.gear.length && previous && (previous.gear.length > 0 || (!record.itemLevel && (previous.itemLevel ?? 0) > 0))
         const gear = preserveGear && previous ? {gear:previous.gear,itemLevel:previous.itemLevel,gearCoverage:previous.gearCoverage,gearSource:previous.gearSource,gearSourceUrl:previous.gearSourceUrl,gearObservedAt:previous.gearObservedAt} : !record.gear.length ? {gearCoverage:'unknown',itemLevel:record.itemLevel||null,gearSource:record.itemLevel?'addon':null,gearSourceUrl:null,gearObservedAt:record.itemLevel?record.observedAt:null} : {gearSource:'addon',gearSourceUrl:null,gearObservedAt:record.observedAt}
         const inventoryObservations=mergeInventoryObservations(previous?.inventoryObservations,record.inventoryObservations)
-        const character = characterSchema.parse({...fields,...unobserved,...gear,weekly,talents,inventoryObservations,id:previous?.id ?? randomUUID(),edition:'retail',importedAt:new Date().toISOString(),sourceRefs:[...(previous?.sourceRefs ?? []).filter(r => r.provider !== 'addon'),ref],archived:previous?.archived ?? false,favorite:previous?.favorite ?? false,isMain:previous?.isMain ?? false,targetItemLevel:previous?.targetItemLevel ?? null,maxItemLevel:null,ratings:previous?.ratings ?? {mythicPlus:null,raiding:null,pvp:null},demo:false})
+        const character = characterSchema.parse({...fields,...unobserved,...gear,weekly,talents,inventoryObservations,id:previous?.id ?? randomUUID(),edition:'retail',importedAt:new Date().toISOString(),sourceRefs:[...(previous?.sourceRefs ?? []).filter(r => r.provider !== 'addon'),ref],archived:previous?.archived ?? false,favorite:previous?.favorite ?? false,isMain:previous?.isMain ?? false,targetItemLevel:previous?.targetItemLevel ?? null,maxItemLevel:null,ratings:this.mergeRatings(previous?.ratings ?? {mythicPlus:null,raiding:null,pvp:null},{mythicPlus:addonMythicPlus(record,previous?.ratings.mythicPlus ?? null)}),demo:false})
         character.gear=retainUpgradeQuotes(character.gear,[...(previous?.gear??[]),...(previous?.inventoryObservations?.flatMap(value=>value.items)??[])])
         this.putCharacter(character)
         this.db.insert(schema.observationsTable).values({key,characterId:character.id,sessionId:record.sessionId,sequence:record.sequence,observedAt:record.observedAt,digest}).onConflictDoUpdate({target:schema.observationsTable.key,set:{characterId:character.id,sessionId:record.sessionId,sequence:record.sequence,observedAt:record.observedAt,digest}}).run()

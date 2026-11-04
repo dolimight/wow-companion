@@ -17,6 +17,8 @@ GetBuildInfo=function()return '12.1.5','70575' end
 C_Item={GetItemNameByID=function()return 'Fixture weapon' end,GetDetailedItemLevelInfo=function()return 100 end,GetItemInfoInstant=function()return 42,'Weapon','Sword','INVTYPE_2HWEAPON',1,2,8 end}
 C_CurrencyInfo={GetCurrencyListSize=function()return 2 end,GetCurrencyListLink=function(index)return index==1 and '|Hcurrency:999:0|h[Fixture crest]|h' or nil end,GetCurrencyInfo=function()return {quantity=20} end}
 C_Timer={After=function(_,fn)fn()end}
+C_ChallengeMode={GetOverallDungeonScore=function()return 2475.5 end}
+C_MythicPlus={GetCurrentSeason=function()return 17 end}
 SlashCmdList={}
 assert(loadfile('addon/WoWCompanion.lua'))()
 event(nil,'ADDON_LOADED','WoWCompanion')
@@ -31,4 +33,5 @@ assert(item.variantCoverage=='partial','capture overstated variant certainty')
 assert(character.progressionResources.currencies['999']==20,'currency quantity missing')
 assert(character.progressionResources.discountCoverage=='unknown','discounts must remain unknown')
 assert(character.progressionResources.observedAt==character.observedAt,'resource observation time mismatch')
+assert(character.mythicPlus.score==2475.5 and character.mythicPlus.season==17 and character.mythicPlus.observedAt==character.observedAt,'in-game Mythic+ score missing')
 print('PASS progression capture preserves variant identifiers, weapon metadata, currency observation, and full build')

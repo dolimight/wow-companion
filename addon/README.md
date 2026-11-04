@@ -10,7 +10,8 @@ The desktop's file watcher and 60-second check read only the last saved file; ne
 The account-wide table retains characters by player GUID, including observations from previously visited alts
 An installation profile ID identifies this export source without claiming Battle.net ownership or a shared appearance collection
 This version reports equipped items, available gems, raw enchant IDs, specialization, level, and observation times
-Appearance collection, exact transmog/customization coverage, ratings, and legal item-level ceilings remain unknown
+It also saves the in-game Mythic+ score for the current season, so the app updates after `/reload` or logout instead of waiting for Raider.IO to crawl the character
+Appearance collection, exact transmog/customization coverage, raid and PvP ratings, and legal item-level ceilings remain unknown
 
 The interface marker targets Retail 12.1.5 and the implementation uses guarded contemporary equipment APIs
 Real client installation and gear-change verification are still required; this repository's automated tests validate desktop import behavior rather than execution inside WoW
