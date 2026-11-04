@@ -1,7 +1,5 @@
 # WOW Companion
 
-[![Buy me a coffee](docs/marketing/buymeacoffee-button.png)](https://www.buymeacoffee.com/dolimight)
-
 ![WOW Companion — Your roster, your next upgrade](docs/marketing/wow-companion-banner.png)
 
 A Windows desktop companion for Retail World of Warcraft, built for the time between runs
@@ -143,6 +141,12 @@ Changes go through feature branches and pull requests with required GitHub check
 [Marketing images and their sources](docs/marketing/README.md) · [Download the social card](docs/marketing/wow-companion-social.png) · [App asset provenance](public/assets/README.md)
 
 WOW Companion is an independent project and isn't affiliated with or endorsed by Blizzard Entertainment
+
+## Support the project
+
+WOW Companion is free to use. If it saves you time, you can help cover its upkeep
+
+<a href="https://www.buymeacoffee.com/dolimight" target="_blank" rel="noopener noreferrer"><img src="docs/marketing/buymeacoffee-button.png" alt="Buy me a coffee" width="150"></a>
 
 ## License
 
