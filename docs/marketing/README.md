@@ -23,4 +23,4 @@ Characters, item names, ratings, and other values in these captures are fictiona
 
 Keep these documentation assets outside the app's shipping `public/assets` directory so release packages don't include marketing-only imagery
 
-The support button is an unaltered copy of the [official yellow PNG](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png), downloaded on 2026-11-03. The README uses the local image so rendering doesn't depend on the dynamic button API or an external image proxy
+The support button is an unaltered copy of the [official blue PNG](https://cdn.buymeacoffee.com/buttons/v2/default-blue.png), downloaded on 2026-11-04. The README uses the local image so rendering doesn't depend on the dynamic button API or an external image proxy
