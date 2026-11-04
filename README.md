@@ -143,3 +143,7 @@ Changes go through feature branches and pull requests with required GitHub check
 [Marketing images and their sources](docs/marketing/README.md) · [Download the social card](docs/marketing/wow-companion-social.png) · [App asset provenance](public/assets/README.md)
 
 WOW Companion is an independent project and isn't affiliated with or endorsed by Blizzard Entertainment
+
+## License
+
+WOW Companion is released under the [MIT License with the Commons Clause](LICENSE): you may use, modify, and share it, but you may not sell it or sell services whose value comes mainly from it
