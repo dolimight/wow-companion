@@ -241,6 +241,16 @@ export class GameDataEngine {
   }
 
   search(input: ItemSearch): ItemSummary[] {
+    return this.searchRows(input)
+  }
+
+  searchPage(input: ItemSearch) {
+    const query = itemSearchSchema.parse(input)
+    const rows = this.searchRows(query, 1)
+    return { items: rows.slice(0, query.limit), nextOffset: rows.length > query.limit ? query.offset + query.limit : null }
+  }
+
+  private searchRows(input: ItemSearch, extra = 0): ItemSummary[] {
     const query = itemSearchSchema.parse(input)
     const db = this.ready()
     const where = [JUNK]
@@ -258,15 +268,19 @@ export class GameDataEngine {
     const statement = db.prepare(`SELECT i.* FROM items i ${join} WHERE ${where.join(' AND ')} ${order} LIMIT ? OFFSET ?`)
     const seen = new Set<string>()
     const unique: ItemRow[] = []
+    let skipped = 0
+    const target = query.limit + extra
     const pageSize = Math.max(100,query.limit*3)
-    for (let offset=0; unique.length<query.limit; offset+=pageSize) {
+    for (let offset=0; unique.length<target; offset+=pageSize) {
       const rows = statement.all(...params,pageSize,offset) as ItemRow[]
       for (const row of rows) {
         if (!getItemCompatibility(this.summary(row,new Map()),query.character,{slot:query.slot}).compatible) continue
         const key = `${row.name}|${row.inventory_type}`
         if (seen.has(key)) continue
-        seen.add(key);unique.push(row)
-        if (unique.length === query.limit) break
+        seen.add(key)
+        if (skipped++ < query.offset) continue
+        unique.push(row)
+        if (unique.length === target) break
       }
       if (rows.length<pageSize) break
     }

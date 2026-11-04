@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { ExternalLink, Search, Sparkles, X } from "lucide-react";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AppSelect } from "../../components/AppSelect";
@@ -48,16 +48,22 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
   const [source, setSource] = useState<"any" | "dungeon" | "raid">("any");
   const [current, setCurrent] = useState(true);
   const [highlighted, setHighlighted] = useState("");
+  const list = useRef<HTMLDivElement>(null);
   useEffect(() => { if (open) { setSlot(fixedSlot ?? "any"); setText(""); setHighlighted(""); } }, [open, fixedSlot, character?.id, character?.className, character?.specId, character?.level]);
   const debouncedText = useDebounced(text);
   const query = {text:debouncedText,slot:fixedSlot??slot,source,current};
   const context = character ? {className:character.className,specId:character.specId,level:character.level} : null;
   const ready = status.data?.state === "ready";
-  const results = useQuery({
-    queryKey: ["item-search", character?.id, context, query],
-    queryFn: () => api.searchItems({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, limit: 40 }),
+  const results = useInfiniteQuery({
+    queryKey: ["item-search-pages", character?.id, context, query],
+    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, limit: 40, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: page => page.nextOffset ?? undefined,
     enabled: open && ready,
   });
+  const items = results.data?.pages.flatMap(page => page.items) ?? [];
+  useEffect(() => { list.current?.scrollTo(0, 0); setHighlighted(""); }, [debouncedText, fixedSlot, slot, source, current, character?.id, character?.className, character?.specId, character?.level]);
+  const loadMore = () => { if (results.hasNextPage && !results.isFetching && !results.isFetchNextPageError) void results.fetchNextPage(); };
   const pickItem = (item: ItemSummary) => {
     const compatibility = getItemCompatibility(item, context, {slot:fixedSlot ?? (slot === "any" ? null : slot)});
     if (!compatibility.compatible) { notify(compatibility.reason ?? "This item doesn't match this character or slot"); return; }
@@ -68,7 +74,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="item-search-dialog" showCloseButton={false}>
-          <DialogTitle className="sr-only">{title}</DialogTitle>
+          <div className="item-search-heading"><DialogTitle><Search size={18} aria-hidden="true" />{title}</DialogTitle><Button variant="icon" aria-label="Close item search" onClick={() => onOpenChange(false)}><X size={18} aria-hidden="true" /></Button></div>
           <DialogDescription className="sr-only">{character ? `Search items for ${character.name}'s class and specialization` : "Search every item in your installed game data"}</DialogDescription>
           <Command shouldFilter={false} className="item-search" value={highlighted} onValueChange={setHighlighted}>
             <CommandInput value={text} onValueChange={setText} placeholder={fixedSlot ? "Search items for this slot" : "Search items by name"} aria-label="Search items" />
@@ -82,16 +88,19 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
             <div className="item-search-context" role="status">
               {character ? <><strong>For {character.name}</strong><span>{[character.specName !== "Unknown" ? character.specName : null, character.className !== "Unknown" ? character.className : "Class unknown", character.level != null ? `Level ${character.level}` : null].filter(Boolean).join(" · ")}</span>{!character.specId && <span>Specialization unknown — refresh this character for spec filtering</span>}</> : <span>Select a character to filter by class and specialization</span>}
             </div>
-            <div className="item-search-body">
-            <CommandList className="item-search-list">
+            <div className="item-search-body" data-has-preview={ready && !!items.length || undefined}>
+            <CommandList ref={list} className="item-search-list" aria-busy={results.isFetching} onScroll={event => {
+              const node = event.currentTarget;
+              if (node.scrollHeight - node.scrollTop - node.clientHeight < 180) loadMore();
+            }}>
               {!ready ? (
                 <GameDataPending state={status.data?.state} progress={status.data?.progress?.step} />
-              ) : results.isError ? (
-                <div className="item-search-empty" role="alert">{errorMessage(results.error)}</div>
+              ) : results.isError && !items.length ? (
+                <div className="item-search-empty" role="alert"><p>{errorMessage(results.error)}</p><Button onClick={() => void results.refetch()}>Try again</Button></div>
               ) : (
                 <>
                   <CommandEmpty className="item-search-empty">{results.isFetching ? "Searching…" : character ? "No compatible items match — try another name, source, or season filter" : "No items match — try another name or turn off a filter"}</CommandEmpty>
-                  {results.data?.map((item) => (
+                  {items.map((item) => (
                     <ItemHoverCard key={item.id} item={item}><CommandItem value={String(item.id)} onFocus={() => setHighlighted(String(item.id))} onSelect={() => previewItem(item)} className="item-result">
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
@@ -102,16 +111,21 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                       </span>
                     </CommandItem></ItemHoverCard>
                   ))}
+                  {items.length > 0 && <div className="item-search-pagination">
+                    {results.isFetchNextPageError ? <><p role="alert">Could not load more items</p><Button onClick={() => void results.fetchNextPage()}>Try again</Button></>
+                      : results.hasNextPage ? <Button disabled={results.isFetchingNextPage} onClick={() => void results.fetchNextPage()}>{results.isFetchingNextPage ? "Loading more items…" : "Load more items"}</Button>
+                        : <p role="status">All matching items shown</p>}
+                  </div>}
                 </>
               )}
             </CommandList>
             <aside className="item-search-detail" aria-live="polite">
-              {ready && results.data?.some(item=>item.id===Number(highlighted)) ? <ItemDetail id={Number(highlighted)} onPick={onPick ? pickItem : undefined} addLabel={addLabel} character={context} slot={fixedSlot ?? (slot === "any" ? null : slot)} compact /> : <p className="muted small">Use the arrow keys or hover to see details</p>}
+              {ready && items.some(item=>item.id===Number(highlighted)) ? <ItemDetail id={Number(highlighted)} onPick={onPick ? pickItem : undefined} addLabel={addLabel} character={context} slot={fixedSlot ?? (slot === "any" ? null : slot)} compact /> : <div className="item-search-preview-empty"><Search size={24} aria-hidden="true" /><p>Use the arrow keys or hover to see details</p></div>}
             </aside>
             </div>
             <div className="item-search-footer">
               <span>{onPick && !addLabel ? "Press Enter to add the highlighted item to your plan" : "Use the arrow keys to compare items"}</span>
-              <span>Item data from your installed game, version {status.data?.indexedVersion ?? "unknown"}</span>
+              <span role="status">{ready ? `${results.isFetching && !results.isFetchingNextPage ? 'Searching…' : `${items.length} shown${results.isFetchingNextPage ? ' · Loading more…' : ''}`} · Local game data ${status.data?.indexedVersion ?? 'version unknown'}` : 'Local game data is not ready'}</span>
             </div>
           </Command>
         </DialogContent>

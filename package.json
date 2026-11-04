@@ -4,7 +4,7 @@
   "private": true,
   "description": "A local Retail WoW character and gear companion",
   "author": "WOW Companion",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {

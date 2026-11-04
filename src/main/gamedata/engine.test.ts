@@ -33,6 +33,31 @@ function fixture(version=INDEX_VERSION) {
 }
 
 describe('local character-compatible item search',()=>{
+  it('paginates compatible unique results across rejected candidates and duplicate variants',async()=>{
+    const {db,add,engine}=fixture()
+    for(let id=1;id<=180;id++)add(id,`Rejected plate ${id}`,{level:1000-id})
+    for(let index=0;index<190;index++)add(200+index,`Mage helm ${Math.floor(index/2)}`,{level:400-Math.floor(index/2),subclass:1,stats:['intellect']})
+    db.close();await engine.useInstall(install)
+    const query={slot:'head' as const,character:{className:'Mage',specId:62,level:90},limit:40}
+    const first=engine.searchPage(query)
+    const second=engine.searchPage({...query,offset:first.nextOffset!})
+    const third=engine.searchPage({...query,offset:second.nextOffset!})
+    expect([first.items.length,second.items.length,third.items.length]).toEqual([40,40,15])
+    expect([first.nextOffset,second.nextOffset,third.nextOffset]).toEqual([40,80,null])
+    expect([...first.items,...second.items,...third.items].map(item=>item.id)).toEqual(Array.from({length:95},(_,index)=>200+index*2))
+    expect(engine.searchPage({...query,offset:95})).toEqual({items:[],nextOffset:null})
+  })
+  it('ends an exact-sized page and applies offsets within a fresh text and source filter',async()=>{
+    const {db,add,engine}=fixture()
+    for(let id=1;id<=8;id++){
+      add(id,`${id<=4?'Arcane':'Frost'} helm ${id}`)
+      db.prepare('INSERT INTO sources VALUES (?, ?, ?, ?, ?)').run(id,'Boss','Raid',id%2?'raid':'dungeon',1)
+    }
+    db.close();await engine.useInstall(install)
+    expect(engine.searchPage({text:'Arcane',source:'dungeon',limit:2})).toMatchObject({items:[{id:2},{id:4}],nextOffset:null})
+    expect(engine.searchPage({text:'Frost',source:'raid',limit:1,offset:1})).toMatchObject({items:[{id:7}],nextOffset:null})
+    expect(()=>engine.searchPage({offset:-1})).toThrow()
+  })
   it('finds compatible items after a full rejected candidate page and filters before deduplication',async()=>{
     const {db,add,engine}=fixture()
     for(let id=1;id<=180;id++)add(id,id===1?'Shared name':`Rejected helm ${id}`,{level:1000-id,subclass:4,stats:['strength']})
