@@ -216,6 +216,14 @@ local function inventoryObservations(gear,gearCoverage,observedAt,resetAt)
   for index,entry in ipairs(result) do if entry.coverage=="unknown" and previous and previous.inventoryObservations then for _,old in ipairs(previous.inventoryObservations) do if old.location==entry.location then result[index]=old;break end end end end
   return result
 end
+-- The client's own season score; it changes as soon as a key finishes, well before Raider.IO crawls the character
+-- API contract: Blizzard_APIDocumentationGenerated/{ChallengeMode,MythicPlus}InfoDocumentation.lua
+local function mythicPlusScore(observedAt)
+  local score=C_ChallengeMode and read(C_ChallengeMode.GetOverallDungeonScore)
+  if type(score)~="number" or score<0 then return nil end
+  local season=C_MythicPlus and read(C_MythicPlus.GetCurrentSeason)
+  return { score=score, season=type(season)=="number" and season>0 and season or nil, observedAt=observedAt }
+end
 local function snapshot()
   if not WoWCompanionDB or not UnitGUID("player") then return end
   prepareQuotes()
@@ -266,7 +274,7 @@ local function snapshot()
   local previous=WoWCompanionDB.characters[guid]
   if collection.collectionCoverage=="unknown" and previous and previous.collectionCoverage~="unknown" then collection={collectionCoverage=previous.collectionCoverage,collectedAppearanceIds=previous.collectedAppearanceIds,collectionScopeId=previous.collectionScopeId,collectionObservedAt=previous.collectionObservedAt} end
   WoWCompanionDB.exportedAt = observedAt
-  WoWCompanionDB.characters[guid] = { guid=guid, region=regionNames[GetCurrentRegion()] or "unknown", realm=GetRealmName(), name=UnitName("player"), className=className or "Unknown", raceName=raceName or "Unknown", raceId=raceId, level=UnitLevel("player"), specId=specId, specName=specName or "Unknown", observedAt=observedAt, sessionId=session, sequence=sequence, itemLevel=equipped, gear=gear, gearCoverage=gearCoverage, inventoryObservations=observedInventory, progressionResources={currencies=observedCurrencies(),discountCoverage="unknown",observedAt=observedAt}, customizationCoverage="unknown", gameBuild=clientBuild, customization={}, collectionCoverage="unknown", collectedAppearanceIds={}, weekly=weeklyData, talentLoadout=talentLoadout() }
+  WoWCompanionDB.characters[guid] = { guid=guid, region=regionNames[GetCurrentRegion()] or "unknown", realm=GetRealmName(), name=UnitName("player"), className=className or "Unknown", raceName=raceName or "Unknown", raceId=raceId, level=UnitLevel("player"), specId=specId, specName=specName or "Unknown", observedAt=observedAt, sessionId=session, sequence=sequence, itemLevel=equipped, gear=gear, gearCoverage=gearCoverage, inventoryObservations=observedInventory, progressionResources={currencies=observedCurrencies(),discountCoverage="unknown",observedAt=observedAt}, customizationCoverage="unknown", gameBuild=clientBuild, customization={}, collectionCoverage="unknown", collectedAppearanceIds={}, weekly=weeklyData, mythicPlus=mythicPlusScore(observedAt), talentLoadout=talentLoadout() }
   local saved=WoWCompanionDB.characters[guid]
   saved.collectionCoverage=collection.collectionCoverage;saved.collectedAppearanceIds=collection.collectedAppearanceIds;saved.collectionScopeId=collection.collectionScopeId;saved.collectionObservedAt=collection.collectionObservedAt
 end
@@ -297,7 +305,7 @@ local function showExport()
   end
   exportFrame:Show();exportFrame.edit:SetText(json(WoWCompanionDB));exportFrame.edit:HighlightText();exportFrame.edit:SetFocus()
 end
-frame:RegisterEvent("ADDON_LOADED");frame:RegisterEvent("PLAYER_LOGIN");frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED");frame:RegisterEvent("PLAYER_LOGOUT");frame:RegisterEvent("ITEM_DATA_LOAD_RESULT");frame:RegisterEvent("WEEKLY_REWARDS_UPDATE");frame:RegisterEvent("UPDATE_INSTANCE_INFO");frame:RegisterEvent("CHALLENGE_MODE_COMPLETED");frame:RegisterEvent("TRAIT_CONFIG_UPDATED")
+frame:RegisterEvent("ADDON_LOADED");frame:RegisterEvent("PLAYER_LOGIN");frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED");frame:RegisterEvent("PLAYER_LOGOUT");frame:RegisterEvent("ITEM_DATA_LOAD_RESULT");frame:RegisterEvent("WEEKLY_REWARDS_UPDATE");frame:RegisterEvent("UPDATE_INSTANCE_INFO");frame:RegisterEvent("CHALLENGE_MODE_COMPLETED");frame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE");frame:RegisterEvent("TRAIT_CONFIG_UPDATED")
 frame:RegisterEvent("BAG_UPDATE_DELAYED");frame:RegisterEvent("BANKFRAME_OPENED");frame:RegisterEvent("BANKFRAME_CLOSED");frame:RegisterEvent("WEEKLY_REWARDS_ITEM_CHANGED")
 frame:RegisterEvent("ITEM_UPGRADE_MASTER_SET_ITEM");frame:RegisterEvent("ITEM_UPGRADE_MASTER_UPDATE")
 local pending=false
@@ -306,8 +314,8 @@ frame:SetScript("OnEvent",function(_,event,name)
   if event=="ITEM_UPGRADE_MASTER_SET_ITEM" or event=="ITEM_UPGRADE_MASTER_UPDATE" then captureUpgradeQuote() end
   if event=="ADDON_LOADED" then
     if name~="WoWCompanion" then return end
-    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.3",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
-    WoWCompanionDB.addonVersion="0.4.3"
+    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.4",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
+    WoWCompanionDB.addonVersion="0.4.4"
   elseif event=="PLAYER_LOGIN" then
     -- Ask the server for lockouts, vault, and keystone history so the next snapshot can include them
     if RequestRaidInfo then RequestRaidInfo() end

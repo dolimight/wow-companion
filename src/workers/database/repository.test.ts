@@ -178,6 +178,25 @@ describe('durable character boundaries',()=>{
     expect(c.weekly.addon?.vault).toEqual([{kind:'dungeon',index:1,threshold:1,progress:2,reward:'Mythic +12'},{kind:'raid',index:1,threshold:2,progress:1,reward:null}])
     expect(c.talents).toMatchObject({loadout:'ABC',source:'In-game talents'})
   })
+  it('takes the in-game Mythic+ score as soon as WoW saves it, without letting an older crawl replace it',()=>{
+    const db=repo()
+    const rio={value:2400,label:'Mythic+ score',rank:900,population:null,seasonId:'season-mn-1',observedAt:'2026-10-14T08:00:00.000Z',source:'Raider.IO',sourceUrl:'https://raider.io/characters/us/realm-one/Astra',rankScope:'World · overall'}
+    const id=db.importSnapshot(envelope()).imported[0]!
+    expect(db.getCharacter(id)?.ratings.mythicPlus).toBeNull()
+    db.applyProviderRatings(id,{mythicPlus:rio})
+    // A matching score keeps the provider's rank and link
+    db.importSnapshot(envelope({'Player-1-ABC':record({sequence:2,observedAt:'2026-10-14T11:00:00.000Z',mythicPlus:{score:2400,season:17,observedAt:'2026-10-14T11:00:00.000Z'}})}))
+    expect(db.getCharacter(id)?.ratings.mythicPlus).toMatchObject({value:2400,rank:900,source:'Raider.IO'})
+    db.importSnapshot(envelope({'Player-1-ABC':record({sequence:3,observedAt:'2026-10-14T12:00:00.000Z',mythicPlus:{score:2475.5,season:17,observedAt:'2026-10-14T12:00:00.000Z'}})}))
+    expect(db.getCharacter(id)?.ratings.mythicPlus).toMatchObject({value:2475.5,rank:null,source:'In-game score',sourceUrl:null,seasonId:'game-season-17',observedAt:'2026-10-14T12:00:00.000Z'})
+    db.applyProviderRatings(id,{mythicPlus:{...rio,observedAt:'2026-10-14T09:00:00.000Z'}})
+    expect(db.getCharacter(id)?.ratings.mythicPlus?.value).toBe(2475.5)
+    db.applyProviderRatings(id,{mythicPlus:{...rio,value:2475.5,observedAt:'2026-10-14T13:00:00.000Z'}})
+    expect(db.getCharacter(id)?.ratings.mythicPlus).toMatchObject({value:2475.5,rank:900,source:'Raider.IO'})
+    // Older addon exports without the field leave the known score alone
+    db.importSnapshot(envelope({'Player-1-ABC':record({sequence:4,observedAt:'2026-10-14T14:00:00.000Z'})}))
+    expect(db.getCharacter(id)?.ratings.mythicPlus?.source).toBe('Raider.IO')
+  })
   it('persists bounded sidebar preferences across a SQLite reopen',()=>{const folder=mkdtempSync(join(tmpdir(),'wow-settings-'));folders.push(folder);const path=join(folder,'companion.db');const db=repo(path);expect(db.getSettings().sidebarWidth).toBe(240);db.setSettings({theme:'dark',sidebarWidth:320});expect(()=>db.setSettings({sidebarWidth:361})).toThrow();expect(db.getSettings().sidebarWidth).toBe(320);db.close();const restored=repo(path);expect(restored.getSettings()).toMatchObject({theme:'dark',sidebarWidth:320});restored.setSettings({sidebarWidth:240});expect(restored.getSettings().theme).toBe('dark')})
   it('keeps equal names on separate realms distinct and never invents a cap',()=>{const db=repo();const a=db.addCharacter({name:'Astra',region:'us',realm:'One'});const b=db.addCharacter({name:'Astra',region:'us',realm:'Two'});expect(a.id).not.toBe(b.id);expect(db.addCharacter({name:'Astra',region:'us',realm:'One'}).id).toBe(a.id);expect(a.maxItemLevel).toBeNull();expect(a.ratings.mythicPlus).toBeNull()})
   it('retains immutable identity after an observed rename with the same GUID',()=>{const db=repo();const id=db.importSnapshot(envelope()).imported[0]!;db.importSnapshot(envelope({'Player-1-ABC':record({name:'Renamed',realm:'Transferred',sequence:2,observedAt:'2026-10-14T11:00:00.000Z'})}));expect(db.listCharacters()).toHaveLength(1);expect(db.getCharacter(id)?.name).toBe('Renamed')})
