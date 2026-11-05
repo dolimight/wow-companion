@@ -197,6 +197,20 @@ describe('durable character boundaries',()=>{
     db.importSnapshot(envelope({'Player-1-ABC':record({sequence:4,observedAt:'2026-10-14T14:00:00.000Z'})}))
     expect(db.getCharacter(id)?.ratings.mythicPlus?.source).toBe('Raider.IO')
   })
+  it('keeps season bests per source and lets an older crawl never replace a newer one',()=>{
+    const db=repo()
+    const id=db.importSnapshot(envelope({'Player-1-ABC':record({seasonRuns:[{dungeon:'Fixture Halls',timeLimitSec:1800,timed:{level:12,durationSec:1500},overtime:{level:13}},{dungeon:'Fixture Vault',overtime:{level:9}}]})})).imported[0]!
+    expect(db.getCharacter(id)?.seasonRuns.addon).toMatchObject({source:'In-game season bests',observedAt:'2026-10-14T10:00:00.000Z',dungeons:[{dungeon:'Fixture Halls',timeLimitMs:1800000,timed:{level:12,durationMs:1500000},overtime:{level:13}},{dungeon:'Fixture Vault',timed:null,overtime:{level:9}}]})
+    // A later export without season bests keeps the last ones the game reported
+    db.importSnapshot(envelope({'Player-1-ABC':record({sequence:2,observedAt:'2026-10-14T11:00:00.000Z'})}))
+    expect(db.getCharacter(id)?.seasonRuns.addon?.dungeons).toHaveLength(2)
+    const crawl=(at:string,level:number)=>parseRaiderIoProfile({name:'Astra',realm:'Realm One',region:'us',class:'Mage',race:'Human',profile_url:'https://raider.io/characters/us/realm-one/astra',last_crawled_at:at,mythic_plus_best_runs:[{dungeon:'Fixture Halls',mythic_level:level,clear_time_ms:1400000,par_time_ms:1800000,num_keystone_upgrades:2,completed_at:at}],mythic_plus_alternate_runs:[{dungeon:'Fixture Halls',mythic_level:level+2,clear_time_ms:1900000,par_time_ms:1800000,num_keystone_upgrades:0}]})
+    db.applyProviderProfile(id,crawl('2026-10-14T12:00:00Z',13))
+    expect(db.getCharacter(id)?.seasonRuns.raiderio).toMatchObject({source:'Raider.IO',dungeons:[{dungeon:'Fixture Halls',timeLimitMs:1800000,timed:{level:13,durationMs:1400000,upgrades:2},overtime:{level:15}}]})
+    db.applyProviderProfile(id,crawl('2026-10-14T09:00:00Z',10))
+    expect(db.getCharacter(id)?.seasonRuns.raiderio?.dungeons[0]?.timed?.level).toBe(13)
+    expect(db.getCharacter(id)?.seasonRuns.addon?.dungeons[0]?.timed?.level).toBe(12)
+  })
   it('persists bounded sidebar preferences across a SQLite reopen',()=>{const folder=mkdtempSync(join(tmpdir(),'wow-settings-'));folders.push(folder);const path=join(folder,'companion.db');const db=repo(path);expect(db.getSettings().sidebarWidth).toBe(240);db.setSettings({theme:'dark',sidebarWidth:320});expect(()=>db.setSettings({sidebarWidth:361})).toThrow();expect(db.getSettings().sidebarWidth).toBe(320);db.close();const restored=repo(path);expect(restored.getSettings()).toMatchObject({theme:'dark',sidebarWidth:320});restored.setSettings({sidebarWidth:240});expect(restored.getSettings().theme).toBe('dark')})
   it('keeps equal names on separate realms distinct and never invents a cap',()=>{const db=repo();const a=db.addCharacter({name:'Astra',region:'us',realm:'One'});const b=db.addCharacter({name:'Astra',region:'us',realm:'Two'});expect(a.id).not.toBe(b.id);expect(db.addCharacter({name:'Astra',region:'us',realm:'One'}).id).toBe(a.id);expect(a.maxItemLevel).toBeNull();expect(a.ratings.mythicPlus).toBeNull()})
   it('retains immutable identity after an observed rename with the same GUID',()=>{const db=repo();const id=db.importSnapshot(envelope()).imported[0]!;db.importSnapshot(envelope({'Player-1-ABC':record({name:'Renamed',realm:'Transferred',sequence:2,observedAt:'2026-10-14T11:00:00.000Z'})}));expect(db.listCharacters()).toHaveLength(1);expect(db.getCharacter(id)?.name).toBe('Renamed')})

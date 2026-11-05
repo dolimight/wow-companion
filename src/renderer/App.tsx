@@ -36,6 +36,7 @@ import {
   ChevronsUpDown,
   CircleHelp,
   Crown,
+  KeyRound,
   Download,
   ExternalLink,
   FlaskConical,
@@ -74,6 +75,7 @@ import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
 import { clearRenamedPlanIdentity, isPlannedItemEquipped } from "./lib/gear-plan-match";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
+import { KeyRangePage } from "./features/key-range/KeyRangePage";
 import { TopPlayersPage } from "./features/top/top-players";
 import { useStagePlan } from "./features/plan/StagePlan";
 import { vaultTracks } from "../shared/weekly";
@@ -135,7 +137,7 @@ import "./overview.css";
 import "./gear-polish.css";
 
 const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, simulations: FlaskConical };
-const performanceViewIcons: Record<string, typeof Shield> = { standing: Trophy, leaders: Crown, history: History, reports: FileText };
+const performanceViewIcons: Record<string, typeof Shield> = { standing: Trophy, keys: KeyRound, leaders: Crown, history: History, reports: FileText };
 
 const activityNames: Record<Activity, string> = {
   mythicPlus: "Mythic+",
@@ -1310,6 +1312,8 @@ function CharacterRoute() {
         <SimulationsRoute character={character} />
       ) : view === "leaders" ? (
         <LeadersView character={character} />
+      ) : view === "keys" ? (
+        <KeyRangeView character={character} />
       ) : (
         <PerformanceView character={character} view={view as ComparisonView} />
       )}
@@ -1339,6 +1343,19 @@ function PerformanceView({ character, view }: { character: Character; view: Comp
           {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
         </Button>
       )}
+    />
+  );
+}
+function KeyRangeView({ character }: { character: Character }) {
+  const refresh = useAction(({ id }: { id: string }) => api.refreshCharacter({ id }), "Public activity data refreshed");
+  return (
+    <KeyRangePage
+      key={character.id}
+      character={character}
+      refreshing={refresh.isPending}
+      onRefresh={() => refresh.mutate({ id: character.id })}
+      gearPlanLink={(children) => <CharacterLink characterId={character.id} destination={{ section: "gear", view: "plan" }} className="button button-secondary">{children}</CharacterLink>}
+      tonightLink={(children) => <Link className="button button-secondary" to="/tonight">{children}</Link>}
     />
   );
 }

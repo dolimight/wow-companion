@@ -218,6 +218,28 @@ local function inventoryObservations(gear,gearCoverage,observedAt,resetAt)
 end
 -- The client's own season score; it changes as soon as a key finishes, well before Raider.IO crawls the character
 -- API contract: Blizzard_APIDocumentationGenerated/{ChallengeMode,MythicPlus}InfoDocumentation.lua
+-- Season bests per dungeon: the best timed and best overtime key, and the dungeon timer to judge time to spare
+-- API contract: Blizzard_APIDocumentationGenerated/{ChallengeMode,MythicPlus}InfoDocumentation.lua
+local function seasonBest(info)
+  if type(info)~="table" or type(info.level)~="number" or not readable(info.level) or info.level<2 then return nil end
+  local duration=info.durationSec
+  return { level=info.level, durationSec=type(duration)=="number" and readable(duration) and duration>0 and duration or nil }
+end
+local function seasonRuns()
+  if not (C_ChallengeMode and C_ChallengeMode.GetMapTable and C_ChallengeMode.GetMapUIInfo and C_MythicPlus and C_MythicPlus.GetSeasonBestForMap) then return nil end
+  local maps=read(C_ChallengeMode.GetMapTable)
+  if type(maps)~="table" then return nil end
+  local result={}
+  for _,mapId in ipairs(maps) do
+    local named,name,_,timeLimit=pcall(C_ChallengeMode.GetMapUIInfo,mapId)
+    local found,intime,overtime=pcall(C_MythicPlus.GetSeasonBestForMap,mapId)
+    if named and found and type(name)=="string" and readable(name) and name~="" then
+      table.insert(result,{ dungeon=name, timeLimitSec=type(timeLimit)=="number" and readable(timeLimit) and timeLimit>0 and timeLimit or nil, timed=seasonBest(intime), overtime=seasonBest(overtime) })
+    end
+  end
+  -- An empty map table early in a session means the server has not answered yet, not that no keys exist
+  return #result>0 and result or nil
+end
 local function mythicPlusScore(observedAt)
   local score=C_ChallengeMode and read(C_ChallengeMode.GetOverallDungeonScore)
   if type(score)~="number" or score<0 then return nil end
@@ -274,12 +296,12 @@ local function snapshot()
   local previous=WoWCompanionDB.characters[guid]
   if collection.collectionCoverage=="unknown" and previous and previous.collectionCoverage~="unknown" then collection={collectionCoverage=previous.collectionCoverage,collectedAppearanceIds=previous.collectedAppearanceIds,collectionScopeId=previous.collectionScopeId,collectionObservedAt=previous.collectionObservedAt} end
   WoWCompanionDB.exportedAt = observedAt
-  WoWCompanionDB.characters[guid] = { guid=guid, region=regionNames[GetCurrentRegion()] or "unknown", realm=GetRealmName(), name=UnitName("player"), className=className or "Unknown", raceName=raceName or "Unknown", raceId=raceId, level=UnitLevel("player"), specId=specId, specName=specName or "Unknown", observedAt=observedAt, sessionId=session, sequence=sequence, itemLevel=equipped, gear=gear, gearCoverage=gearCoverage, inventoryObservations=observedInventory, progressionResources={currencies=observedCurrencies(),discountCoverage="unknown",observedAt=observedAt}, customizationCoverage="unknown", gameBuild=clientBuild, customization={}, collectionCoverage="unknown", collectedAppearanceIds={}, weekly=weeklyData, mythicPlus=mythicPlusScore(observedAt), talentLoadout=talentLoadout() }
+  WoWCompanionDB.characters[guid] = { guid=guid, region=regionNames[GetCurrentRegion()] or "unknown", realm=GetRealmName(), name=UnitName("player"), className=className or "Unknown", raceName=raceName or "Unknown", raceId=raceId, level=UnitLevel("player"), specId=specId, specName=specName or "Unknown", observedAt=observedAt, sessionId=session, sequence=sequence, itemLevel=equipped, gear=gear, gearCoverage=gearCoverage, inventoryObservations=observedInventory, progressionResources={currencies=observedCurrencies(),discountCoverage="unknown",observedAt=observedAt}, customizationCoverage="unknown", gameBuild=clientBuild, customization={}, collectionCoverage="unknown", collectedAppearanceIds={}, weekly=weeklyData, mythicPlus=mythicPlusScore(observedAt), seasonRuns=seasonRuns(), talentLoadout=talentLoadout() }
   local saved=WoWCompanionDB.characters[guid]
   saved.collectionCoverage=collection.collectionCoverage;saved.collectedAppearanceIds=collection.collectedAppearanceIds;saved.collectionScopeId=collection.collectionScopeId;saved.collectionObservedAt=collection.collectionObservedAt
 end
 local function escape(value) return '"' .. value:gsub('[%z\1-\31\\"]', function(c) local map={['"']='\\"',['\\']='\\\\',['\n']='\\n',['\r']='\\r',['\t']='\\t'} return map[c] or string.format('\\u%04x', string.byte(c)) end) .. '"' end
-local arrayKeys = {gear=true,inventoryObservations=true,items=true,levels=true,gems=true,bonusIds=true,gemIds=true,specIds=true,primaryStats=true,uniqueGroups=true,restrictionGroups=true,customization=true,collectedAppearanceIds=true,vault=true,lockouts=true,runs=true}
+local arrayKeys = {gear=true,inventoryObservations=true,items=true,levels=true,gems=true,bonusIds=true,gemIds=true,specIds=true,primaryStats=true,uniqueGroups=true,restrictionGroups=true,customization=true,collectedAppearanceIds=true,vault=true,lockouts=true,runs=true,seasonRuns=true}
 local function json(value, key, ownerKey)
   local kind=type(value)
   if kind=="nil" then return "null" end
@@ -314,8 +336,8 @@ frame:SetScript("OnEvent",function(_,event,name)
   if event=="ITEM_UPGRADE_MASTER_SET_ITEM" or event=="ITEM_UPGRADE_MASTER_UPDATE" then captureUpgradeQuote() end
   if event=="ADDON_LOADED" then
     if name~="WoWCompanion" then return end
-    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.4",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
-    WoWCompanionDB.addonVersion="0.4.4"
+    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.5",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
+    WoWCompanionDB.addonVersion="0.4.5"
   elseif event=="PLAYER_LOGIN" then
     -- Ask the server for lockouts, vault, and keystone history so the next snapshot can include them
     if RequestRaidInfo then RequestRaidInfo() end

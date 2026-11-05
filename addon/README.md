@@ -11,6 +11,7 @@ The account-wide table retains characters by player GUID, including observations
 An installation profile ID identifies this export source without claiming Battle.net ownership or a shared appearance collection
 This version reports equipped items, available gems, raw enchant IDs, specialization, level, and observation times
 It also saves the in-game Mythic+ score for the current season, so the app updates after `/reload` or logout instead of waiting for Raider.IO to crawl the character
+Season bests per dungeon (the best timed and best overtime key, with the dungeon timer) feed the app's Key range view
 Appearance collection, exact transmog/customization coverage, raid and PvP ratings, and legal item-level ceilings remain unknown
 
 The interface marker targets Retail 12.1.5 and the implementation uses guarded contemporary equipment APIs
