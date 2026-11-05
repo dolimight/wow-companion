@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { weekStart } from '../../shared/weekly'
 import type { ProviderExtras } from '../../workers/database/repository'
-import { gearItemSchema, specializationIdSchema, type ActivityRating, type AddCharacterInput, type Character, type GearItem } from '../../shared/domain'
+import { gearItemSchema, specializationIdSchema, type ActivityRating, type AddCharacterInput, type Character, type GearItem, type SeasonDungeon } from '../../shared/domain'
 
 const positiveRank = z.number().int().nonnegative().nullable().optional()
 const rankGroup = z.object({ world: positiveRank, region: positiveRank, realm: positiveRank })
@@ -11,6 +11,8 @@ const profileSchema = z.object({
   gear:z.object({item_level_equipped:z.number().nonnegative().optional(),items:z.record(z.string(),z.unknown()).optional()}).nullable().optional(),
   mythic_plus_scores_by_season:z.array(z.object({season:z.string(),scores:z.object({all:z.number().nonnegative()})})).nullable().optional(),
   mythic_plus_ranks:z.object({overall:rankGroup.optional(),class:rankGroup.optional()}).nullable().optional(),
+  mythic_plus_best_runs:z.array(z.object({dungeon:z.string().min(1).max(120),mythic_level:z.number().int(),clear_time_ms:z.number().int().positive().optional(),par_time_ms:z.number().int().positive().optional(),num_keystone_upgrades:z.number().int().optional(),completed_at:z.string().optional()})).nullable().optional(),
+  mythic_plus_alternate_runs:z.array(z.object({dungeon:z.string().min(1).max(120),mythic_level:z.number().int(),clear_time_ms:z.number().int().positive().optional(),par_time_ms:z.number().int().positive().optional(),num_keystone_upgrades:z.number().int().optional(),completed_at:z.string().optional()})).nullable().optional(),
   mythic_plus_weekly_highest_level_runs:z.array(z.object({dungeon:z.string(),mythic_level:z.number().int().nonnegative(),completed_at:z.string().optional(),num_keystone_upgrades:z.number().int().optional()})).nullable().optional(),
   talentLoadout:z.object({loadout_text:z.string().min(1).max(400),loadout_spec_id:z.number().int().optional()}).nullable().optional(),
   raid_progression:z.record(z.string(),z.object({summary:z.string(),total_bosses:z.number().int().nonnegative().optional(),normal_bosses_killed:z.number().int().nonnegative().optional(),heroic_bosses_killed:z.number().int().nonnegative().optional(),mythic_bosses_killed:z.number().int().nonnegative().optional()})).nullable().optional(),
@@ -36,14 +38,28 @@ export function parseRaiderIoProfile(input:unknown):RaiderIoProfile {
   const weekly=week!=null&&data.mythic_plus_weekly_highest_level_runs?{source:'Raider.IO' as const,observedAt:observedAt!,weekStart:new Date(week).toISOString(),runs:data.mythic_plus_weekly_highest_level_runs.filter(run=>!run.completed_at||Date.parse(run.completed_at)>=week).map(run=>({dungeon:run.dungeon,level:run.mythic_level,timed:run.num_keystone_upgrades!=null?run.num_keystone_upgrades>0:null,completedAt:parseTime(run.completed_at)}))}:null
   const specId=specializationIdSchema.parse(data.active_spec_id??null)
   const talents=data.talentLoadout?{loadout:data.talentLoadout.loadout_text,specId:specializationIdSchema.parse(data.talentLoadout.loadout_spec_id??null)??specId,source:'Raider.IO',observedAt}:null
-  return {extras:{weekly,talents},sourceUrl:url.href,observedAt,ratings:{mythicPlus,raiding},character:{edition:'retail',region:data.region,realm:data.realm,name:data.name,className:data.class,specName:data.active_spec_name??'Unknown',specId,raceName:data.race,observedAt,itemLevel:data.gear?.item_level_equipped??null,gear,gearCoverage:'partial',gearSource:'Raider.IO',gearSourceUrl:url.href,gearObservedAt:observedAt,customizationCoverage:'unknown',maxItemLevel:null,targetItemLevel:null,sourceRefs:[{provider:'manual',edition:'retail',region:data.region,realmId:data.realm,characterKey:data.name}],ratings:{mythicPlus,raiding,pvp:null}}}
+  return {extras:{weekly,talents,seasonRuns:observedAt?seasonRuns(data,observedAt):null},sourceUrl:url.href,observedAt,ratings:{mythicPlus,raiding},character:{edition:'retail',region:data.region,realm:data.realm,name:data.name,className:data.class,specName:data.active_spec_name??'Unknown',specId,raceName:data.race,observedAt,itemLevel:data.gear?.item_level_equipped??null,gear,gearCoverage:'partial',gearSource:'Raider.IO',gearSourceUrl:url.href,gearObservedAt:observedAt,customizationCoverage:'unknown',maxItemLevel:null,targetItemLevel:null,sourceRefs:[{provider:'manual',edition:'retail',region:data.region,realmId:data.realm,characterKey:data.name}],ratings:{mythicPlus,raiding,pvp:null}}}
+}
+/** Best and alternate runs together hold each dungeon's best timed and best overtime key this season */
+function seasonRuns(data:z.infer<typeof profileSchema>,observedAt:string){
+  const byDungeon=new Map<string,SeasonDungeon>()
+  for(const run of [...(data.mythic_plus_best_runs??[]),...(data.mythic_plus_alternate_runs??[])]){
+    if(run.mythic_level<2||run.mythic_level>40)continue
+    const current=byDungeon.get(run.dungeon)??{dungeon:run.dungeon,timeLimitMs:run.par_time_ms??null,timed:null,overtime:null}
+    const upgrades=run.num_keystone_upgrades??null
+    if(upgrades!=null&&upgrades>0){if(!current.timed||run.mythic_level>current.timed.level)current.timed={level:run.mythic_level,durationMs:run.clear_time_ms??null,upgrades:Math.min(3,upgrades),completedAt:parseTime(run.completed_at)}}
+    else if(upgrades===0&&(!current.overtime||run.mythic_level>current.overtime.level))current.overtime={level:run.mythic_level,durationMs:run.clear_time_ms??null}
+    current.timeLimitMs??=run.par_time_ms??null
+    byDungeon.set(run.dungeon,current)
+  }
+  return byDungeon.size?{source:'Raider.IO',observedAt,dungeons:[...byDungeon.values()]}:null
 }
 export class RaiderIoError extends Error {constructor(message:string,public readonly retryAfterMs:number|null=null){super(message);this.name='RaiderIoError'}}
 /** Fixed HTTPS origin, no provider cookies/tokens, redirects disallowed */
 export async function fetchRaiderIoProfile(input:RaiderIoLookup,signal?:AbortSignal):Promise<RaiderIoProfile> {
   const lookup=z.object({region:z.enum(['us','eu','kr','tw','cn']),realm:z.string().min(1).max(100),name:z.string().min(1).max(100)}).parse(input)
   const url=new URL('https://raider.io/api/v1/characters/profile')
-  url.search=new URLSearchParams({...lookup,fields:'gear,talents,mythic_plus_scores_by_season:current,mythic_plus_ranks,raid_progression,mythic_plus_weekly_highest_level_runs'}).toString()
+  url.search=new URLSearchParams({...lookup,fields:'gear,talents,mythic_plus_scores_by_season:current,mythic_plus_ranks,raid_progression,mythic_plus_weekly_highest_level_runs,mythic_plus_best_runs:all,mythic_plus_alternate_runs:all'}).toString()
   const requestSignal=signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)
   const response=await fetch(url,{headers:{Accept:'application/json'},signal:requestSignal,redirect:'error'})
   if(!response.ok){const retry=Number(response.headers.get('retry-after'));throw new RaiderIoError(response.status===429?'Raider.IO rate limit reached':response.status===400||response.status===404?'Character is unavailable or private on Raider.IO':`Raider.IO request failed (${response.status})`,response.status===429&&Number.isFinite(retry)&&retry>0?retry*1000:null)}

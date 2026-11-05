@@ -38,7 +38,7 @@ function normalizeTables(input: unknown, parentKey=''): unknown {
   if(!input||typeof input!=='object')return input
   const output:Record<string,unknown>=Object.create(null)
   for(const [key,value] of Object.entries(input)) {
-    const array=['gear','gems','customization','collectedAppearanceIds','vault','lockouts','runs','inventoryObservations','items','levels','bonusIds','gemIds','specIds','primaryStats','uniqueGroups','restrictionGroups','stats','effects'].includes(key)||(key==='currencies'&&parentKey==='levels')
+    const array=['gear','gems','customization','collectedAppearanceIds','vault','lockouts','runs','seasonRuns','inventoryObservations','items','levels','bonusIds','gemIds','specIds','primaryStats','uniqueGroups','restrictionGroups','stats','effects'].includes(key)||(key==='currencies'&&parentKey==='levels')
     if(array&&value&&typeof value==='object'&&!Array.isArray(value)) output[key]=Object.values(value).map(item=>normalizeTables(item,key))
     else output[key]=normalizeTables(value,key)
   }

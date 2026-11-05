@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { eq } from 'drizzle-orm'
 import { createHash, randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { addonEnvelopeSchema, addonRecordSchema, addCharacterSchema, appSettingsSchema, characterPatchSchema, characterSchema, gearDraftSchema, outfitSchema, ratingSchema, type ActivityRating, type AddCharacterInput, type AppSettings, type Character, type CharacterPatch, type GearDraft, type ImportReport, type Outfit, type ProviderRef, type Activity } from '../../shared/domain'
+import { addonEnvelopeSchema, addonRecordSchema, addCharacterSchema, appSettingsSchema, characterPatchSchema, characterSchema, gearDraftSchema, outfitSchema, ratingSchema, seasonRunsSnapshotSchema, type SeasonRunsSnapshot, type ActivityRating, type AddCharacterInput, type AppSettings, type Character, type CharacterPatch, type GearDraft, type ImportReport, type Outfit, type ProviderRef, type Activity } from '../../shared/domain'
 import * as schema from './schema'
 import { statsSchema, specializationIdSchema, type AddonCharacterRecord, type InventoryObservation } from '../../shared/domain'
 import { contentPreferencesSchema, defaultContentPreferences, type ContentPreferences } from '../../shared/season-rules'
@@ -58,6 +58,12 @@ function addonMythicPlus(record: AddonCharacterRecord, current: ActivityRating |
   if (!raw || current?.value === raw.score) return null
   return { value: raw.score, label: 'Mythic+ score', rank: null, population: null, seasonId: raw.season != null ? `game-season-${raw.season}` : null, observedAt: raw.observedAt, source: 'In-game score', sourceUrl: null, rankScope: null }
 }
+/** The client's own season bests per dungeon; the timer lets the app work out keystone upgrades */
+function addonSeasonRuns(record: AddonCharacterRecord): SeasonRunsSnapshot | null {
+  if (!record.seasonRuns?.length) return null
+  const ms = (seconds: number | null) => seconds == null ? null : Math.round(seconds * 1000)
+  return seasonRunsSnapshotSchema.parse({ source: 'In-game season bests', observedAt: record.observedAt, dungeons: record.seasonRuns.map(run => ({ dungeon: run.dungeon, timeLimitMs: ms(run.timeLimitSec), timed: run.timed ? { level: run.timed.level, durationMs: ms(run.timed.durationSec) } : null, overtime: run.overtime ? { level: run.overtime.level, durationMs: ms(run.overtime.durationSec) } : null })) })
+}
 /** The week is anchored to the region's reset schedule, falling back to the game's own reset countdown */
 function addonWeekly(record: AddonCharacterRecord): WeeklySnapshot | null {
   const raw = record.weekly
@@ -73,7 +79,7 @@ function addonWeekly(record: AddonCharacterRecord): WeeklySnapshot | null {
     lockouts: raw.lockouts, runs: raw.runs,
   })
 }
-export const providerExtrasSchema = z.object({ weekly: weeklySnapshotSchema.nullable().default(null), stats: statsSchema.nullable().default(null), talents: z.object({ loadout: z.string().min(1).max(400), specId: specializationIdSchema.default(null), source: z.string().max(60), observedAt: z.string().datetime().nullable().default(null) }).nullable().default(null) })
+export const providerExtrasSchema = z.object({ weekly: weeklySnapshotSchema.nullable().default(null), seasonRuns: seasonRunsSnapshotSchema.nullable().default(null), stats: statsSchema.nullable().default(null), talents: z.object({ loadout: z.string().min(1).max(400), specId: specializationIdSchema.default(null), source: z.string().max(60), observedAt: z.string().datetime().nullable().default(null) }).nullable().default(null) })
 export type ProviderExtras = z.input<typeof providerExtrasSchema>
 export const blizzardSnapshotSchema = z.object({
   characterId:z.number().int().positive(),name:z.string().min(1).max(100),realm:z.string().min(1).max(100),realmSlug:z.string().min(1).max(100),region:z.string().min(1).max(20),
@@ -229,6 +235,7 @@ export class DatabaseRepository {
     if(extras.weekly){const current=character.weekly[source];if(!current||Date.parse(extras.weekly.observedAt)>=Date.parse(current.observedAt))updated.weekly={...character.weekly,[source]:extras.weekly}}
     const newer=(next:{observedAt:string|null},current:{observedAt:string|null}|null)=>!current||!current.observedAt||!next.observedAt||Date.parse(next.observedAt)>=Date.parse(current.observedAt)
     if(extras.stats&&newer(extras.stats,character.stats))updated.stats=extras.stats
+    if(extras.seasonRuns&&newer(extras.seasonRuns,character.seasonRuns[source]))updated.seasonRuns={...character.seasonRuns,[source]:extras.seasonRuns}
     if(extras.talents&&newer(extras.talents,character.talents))updated.talents=extras.talents
     return updated
   }
@@ -354,21 +361,23 @@ export class DatabaseRepository {
             customization:appearance.customization, customizationCoverage:appearance.customizationCoverage,
             collectionObservedAt:collection.collectionObservedAt,collectedAppearanceIds:collection.collectedAppearanceIds, collectionCoverage:collection.collectionCoverage, collectionScopeId:collection.collectionScopeId,
             ratings:this.mergeProviderRatings(twin,previous.ratings),
+            seasonRuns:{addon:latestObservation(twin.seasonRuns.addon,previous.seasonRuns.addon),raiderio:latestObservation(twin.seasonRuns.raiderio,previous.seasonRuns.raiderio),blizzard:latestObservation(twin.seasonRuns.blizzard,previous.seasonRuns.blizzard)},
             weekly:{addon:latestObservation(twin.weekly.addon,previous.weekly.addon),raiderio:latestObservation(twin.weekly.raiderio,previous.weekly.raiderio),blizzard:latestObservation(twin.weekly.blizzard,previous.weekly.blizzard)},
             sourceRefs:[...twin.sourceRefs,...previous.sourceRefs],
           }
         } else if (twin) previous = twin
-        const { weekly: _rawWeekly, mythicPlus: _rawMythicPlus, talentLoadout, ...fields } = record
+        const { weekly: _rawWeekly, mythicPlus: _rawMythicPlus, seasonRuns: _rawSeasonRuns, talentLoadout, ...fields } = record
         // Fields the addon cannot observe yet keep the values another source already provided
         const unobserved = previous ? { progressionResources: record.progressionResources ?? previous.progressionResources, sex: previous.sex, renders: previous.renders, observedTransmog: previous.observedTransmog, observedTransmogAt: previous.observedTransmogAt, stats: previous.stats, ...(record.specId === null && previous.specId !== null && (record.specName === 'Unknown' || record.specName === previous.specName) ? {specId:previous.specId,specName:previous.specName} : {}), ...(fields.customizationCoverage === 'unknown' ? { customization: previous.customization, customizationCoverage: previous.customizationCoverage } : {}), ...(fields.collectionCoverage === 'unknown' ? { collectionObservedAt:previous.collectionObservedAt,collectedAppearanceIds: previous.collectedAppearanceIds, collectionCoverage: previous.collectionCoverage, collectionScopeId: previous.collectionScopeId } : {}) } : {}
         const weekly = { ...(previous?.weekly ?? { addon: null, raiderio: null, blizzard: null }), addon: addonWeekly(record) ?? previous?.weekly.addon ?? null }
+        const seasonRuns = { ...(previous?.seasonRuns ?? { addon: null, raiderio: null, blizzard: null }), addon: addonSeasonRuns(record) ?? previous?.seasonRuns.addon ?? null }
         const talents = talentLoadout ? { loadout: talentLoadout, specId: record.specId, source: 'In-game talents', observedAt: record.observedAt } : previous?.talents ?? null
         // Empty item lists are also produced while the client is shutting down or loading
         // Keep the last known gear and its real observation time while accepting weekly/talent updates
         const preserveGear = !record.gear.length && previous && (previous.gear.length > 0 || (!record.itemLevel && (previous.itemLevel ?? 0) > 0))
         const gear = preserveGear && previous ? {gear:previous.gear,itemLevel:previous.itemLevel,gearCoverage:previous.gearCoverage,gearSource:previous.gearSource,gearSourceUrl:previous.gearSourceUrl,gearObservedAt:previous.gearObservedAt} : !record.gear.length ? {gearCoverage:'unknown',itemLevel:record.itemLevel||null,gearSource:record.itemLevel?'addon':null,gearSourceUrl:null,gearObservedAt:record.itemLevel?record.observedAt:null} : {gearSource:'addon',gearSourceUrl:null,gearObservedAt:record.observedAt}
         const inventoryObservations=mergeInventoryObservations(previous?.inventoryObservations,record.inventoryObservations)
-        const character = characterSchema.parse({...fields,...unobserved,...gear,weekly,talents,inventoryObservations,id:previous?.id ?? randomUUID(),edition:'retail',importedAt:new Date().toISOString(),sourceRefs:[...(previous?.sourceRefs ?? []).filter(r => r.provider !== 'addon'),ref],archived:previous?.archived ?? false,favorite:previous?.favorite ?? false,isMain:previous?.isMain ?? false,targetItemLevel:previous?.targetItemLevel ?? null,maxItemLevel:null,ratings:this.mergeRatings(previous?.ratings ?? {mythicPlus:null,raiding:null,pvp:null},{mythicPlus:addonMythicPlus(record,previous?.ratings.mythicPlus ?? null)}),demo:false})
+        const character = characterSchema.parse({...fields,...unobserved,...gear,weekly,seasonRuns,talents,inventoryObservations,id:previous?.id ?? randomUUID(),edition:'retail',importedAt:new Date().toISOString(),sourceRefs:[...(previous?.sourceRefs ?? []).filter(r => r.provider !== 'addon'),ref],archived:previous?.archived ?? false,favorite:previous?.favorite ?? false,isMain:previous?.isMain ?? false,targetItemLevel:previous?.targetItemLevel ?? null,maxItemLevel:null,ratings:this.mergeRatings(previous?.ratings ?? {mythicPlus:null,raiding:null,pvp:null},{mythicPlus:addonMythicPlus(record,previous?.ratings.mythicPlus ?? null)}),demo:false})
         character.gear=retainUpgradeQuotes(character.gear,[...(previous?.gear??[]),...(previous?.inventoryObservations?.flatMap(value=>value.items)??[])])
         this.putCharacter(character)
         this.db.insert(schema.observationsTable).values({key,characterId:character.id,sessionId:record.sessionId,sequence:record.sequence,observedAt:record.observedAt,digest}).onConflictDoUpdate({target:schema.observationsTable.key,set:{characterId:character.id,sessionId:record.sessionId,sequence:record.sequence,observedAt:record.observedAt,digest}}).run()

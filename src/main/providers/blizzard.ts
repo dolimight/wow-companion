@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { gearItemSchema, specializationIdSchema, type ActivityRating, type AppearanceSlot, type CharacterStats, type GearItem } from '../../shared/domain'
+import { gearItemSchema, specializationIdSchema, type ActivityRating, type AppearanceSlot, type CharacterStats, type GearItem, type SeasonDungeon, type SeasonRunsSnapshot } from '../../shared/domain'
 import { weekStart, type WeeklySnapshot } from '../../shared/weekly'
 import { itemLinkVariant } from '../../shared/item-link'
 
@@ -123,7 +123,9 @@ const equipmentSchema = z.object({ equipped_items: z.array(z.object({
 }).passthrough()).default([]) })
 const appearanceSchema = z.object({ customizations: z.array(z.object({ option: z.object({ id: z.number() }), choice: z.object({ id: z.number() }) })).default([]) }).passthrough()
 const mediaSchema = z.object({ assets: z.array(z.object({ key: z.string(), value: z.string().url() })).default([]) })
-const keystoneSchema = z.object({ current_mythic_rating: z.object({ rating: z.number() }).optional(), current_period: z.object({ period: z.object({ id: z.number() }).optional() }).optional() }).passthrough()
+const keystoneSchema = z.object({ current_mythic_rating: z.object({ rating: z.number() }).optional(), current_period: z.object({ period: z.object({ id: z.number() }).optional() }).optional(), seasons: z.array(z.object({ id: z.number().int().positive() })).optional() }).passthrough()
+const keystoneSeasonSchema = z.object({ best_runs: z.array(z.object({ completed_timestamp: z.number().optional(), duration: z.number().int().positive().optional(), keystone_level: z.number().int(), dungeon: z.object({ id: z.number().int().positive(), name: z.string().min(1).max(120) }), is_completed_within_time: z.boolean().optional() }).passthrough()).default([]) }).passthrough()
+const keystoneDungeonSchema = z.object({ keystone_upgrades: z.array(z.object({ upgrade_level: z.number().int(), qualifying_duration: z.number().int().positive() })).default([]) }).passthrough()
 const pvpSummarySchema = z.object({ brackets: z.array(z.object({ href: z.string() })).default([]) }).passthrough()
 const pvpBracketSchema = z.object({ rating: z.number().optional(), bracket: z.object({ type: z.string().optional() }).optional() }).passthrough()
 
@@ -136,6 +138,7 @@ export type BlizzardProfile = {
   gear: GearItem[]; observedTransmog: Partial<Record<AppearanceSlot, { itemId: number; modifiedAppearanceId: number | null; name: string }>>
   customization: Array<{ optionId: number; choiceId: number }>; renders: Partial<Record<'main' | 'inset' | 'avatar', string>>
   ratings: { mythicPlus: ActivityRating | null; pvp: ActivityRating | null }
+  seasonRuns: SeasonRunsSnapshot | null
   weekly: WeeklySnapshot | null; stats: CharacterStats | null; talents: { loadout: string; specId: number | null; source: string; observedAt: string | null } | null
 }
 
@@ -207,7 +210,30 @@ export function parseBlizzardExtras(input: { statistics: unknown; specialization
   return { stats, talents, weekly }
 }
 
-export function parseBlizzardProfile(input: { summary: unknown; equipment: unknown; appearance: unknown; media: unknown; keystone: unknown; pvp: Array<unknown>; statistics?: unknown; specializations?: unknown; raids?: unknown; currentExpansionId?: number | null }, region: BlizzardRegion, now = Date.now()): BlizzardProfile {
+/** Season best runs per dungeon; each dungeon's upgrade thresholds give the timer and the upgrades a run earned */
+export function parseKeystoneSeason(season: unknown, timers: Record<number, unknown>, observedAt: string): SeasonRunsSnapshot | null {
+  const parsed = keystoneSeasonSchema.safeParse(season ?? {})
+  if (!parsed.success || !parsed.data.best_runs.length) return null
+  const dungeons = new Map<number, SeasonDungeon>()
+  for (const run of parsed.data.best_runs) {
+    if (run.keystone_level < 2 || run.keystone_level > 40) continue
+    const thresholds = keystoneDungeonSchema.safeParse(timers[run.dungeon.id] ?? {}).data?.keystone_upgrades ?? []
+    const limit = thresholds.find(entry => entry.upgrade_level === 1)?.qualifying_duration ?? null
+    const current = dungeons.get(run.dungeon.id) ?? { dungeon: run.dungeon.name, timeLimitMs: limit, timed: null, overtime: null }
+    const timed = run.is_completed_within_time ?? (limit != null && run.duration != null ? run.duration <= limit : null)
+    if (timed === true && (!current.timed || run.keystone_level > current.timed.level)) {
+      const upgrades = run.duration != null && thresholds.length ? Math.max(1, Math.min(3, thresholds.filter(entry => run.duration! <= entry.qualifying_duration).length)) : null
+      current.timed = { level: run.keystone_level, durationMs: run.duration ?? null, upgrades, completedAt: run.completed_timestamp ? new Date(run.completed_timestamp).toISOString() : null }
+    } else if (timed === false && (!current.overtime || run.keystone_level > current.overtime.level)) current.overtime = { level: run.keystone_level, durationMs: run.duration ?? null }
+    dungeons.set(run.dungeon.id, current)
+  }
+  return dungeons.size ? { source: 'Blizzard', observedAt, dungeons: [...dungeons.values()] } : null
+}
+export function latestKeystoneSeason(keystone: unknown) {
+  const seasons = keystoneSchema.safeParse(keystone ?? {}).data?.seasons ?? []
+  return seasons.reduce<number | null>((latest, season) => latest == null || season.id > latest ? season.id : latest, null)
+}
+export function parseBlizzardProfile(input: { summary: unknown; equipment: unknown; appearance: unknown; media: unknown; keystone: unknown; keystoneSeason?: unknown; keystoneTimers?: Record<number, unknown>; pvp: Array<unknown>; statistics?: unknown; specializations?: unknown; raids?: unknown; currentExpansionId?: number | null }, region: BlizzardRegion, now = Date.now()): BlizzardProfile {
   const summary = summarySchema.parse(input.summary)
   const equipment = equipmentSchema.parse(input.equipment ?? {})
   const appearance = appearanceSchema.safeParse(input.appearance ?? {})
@@ -239,6 +265,8 @@ export function parseBlizzardProfile(input: { summary: unknown; equipment: unkno
     characterId: summary.id, name: summary.name, realm: summary.realm.name, realmSlug: summary.realm.slug, region, level: summary.level ?? null, itemLevel: summary.equipped_item_level ?? null,
     className: summary.character_class?.name ?? null, specName: summarySpecId ? summary.active_spec?.name ?? activeSpec?.name ?? null : activeSpec?.name ?? summary.active_spec?.name ?? null, specId, raceName: summary.race?.name ?? null, raceId: summary.race?.id ?? null,
     sex: summary.gender?.type === 'FEMALE' ? 'female' : summary.gender?.type === 'MALE' ? 'male' : null, observedAt, gear, observedTransmog,
+    // Season bests are current when fetched, unlike the login time that dates the rest of the profile
+    seasonRuns: parseKeystoneSeason(input.keystoneSeason, input.keystoneTimers ?? {}, new Date(now).toISOString()),
     ...parseBlizzardExtras({ statistics: input.statistics, specializations: input.specializations, raids: input.raids, currentExpansionId: input.currentExpansionId }, region, now),
     customization: appearance.success ? appearance.data.customizations.map(entry => ({ optionId: entry.option.id, choiceId: entry.choice.id })) : [], renders,
     ratings: {
@@ -258,7 +286,11 @@ export async function fetchBlizzardProfile(api: BlizzardApi, lookup: { region: B
   const pvpPaths = pvpSummarySchema.safeParse(pvpSummary ?? {}).data?.brackets.map(entry => { try { return new URL(entry.href).pathname } catch { return null } }).filter((path): path is string => !!path && path.startsWith(base + '/pvp-bracket/')).slice(0, 6) ?? []
   const pvp = await Promise.all(pvpPaths.map(path => api.get(path, 'profile', options).catch(() => null)))
   const currentExpansionId = await api.currentExpansionId(lookup.region, signal)
-  return parseBlizzardProfile({ summary, equipment, appearance, media, keystone, pvp, statistics, specializations, raids, currentExpansionId }, lookup.region)
+  const seasonId = latestKeystoneSeason(keystone)
+  const keystoneSeason = seasonId != null ? await optional(`/mythic-keystone-profile/season/${seasonId}`) : null
+  const dungeonIds = [...new Set(keystoneSeasonSchema.safeParse(keystoneSeason ?? {}).data?.best_runs.map(run => run.dungeon.id) ?? [])].slice(0, 20)
+  const keystoneTimers = Object.fromEntries(await Promise.all(dungeonIds.map(async id => [id, await api.get(`/data/wow/mythic-keystone/dungeon/${id}`, 'dynamic', options).catch(() => null)] as const)))
+  return parseBlizzardProfile({ summary, equipment, appearance, media, keystone, keystoneSeason, keystoneTimers, pvp, statistics, specializations, raids, currentExpansionId }, lookup.region)
 }
 
 const accountSchema = z.object({ wow_accounts: z.array(z.object({ characters: z.array(z.object({ id: z.number(), name: z.string(), level: z.number().optional(), realm: z.object({ name: z.string(), slug: z.string() }), playable_class: named.optional(), playable_race: named.optional() })).default([]) })).default([]) })

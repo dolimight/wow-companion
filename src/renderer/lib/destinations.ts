@@ -1,6 +1,6 @@
 /** One typed model for every character destination, so Shell and pages never split paths by hand */
 export const gearViews = ['progress', 'plan', 'owned', 'simulations'] as const
-export const performanceViews = ['standing', 'leaders', 'history', 'reports'] as const
+export const performanceViews = ['standing', 'keys', 'leaders', 'history', 'reports'] as const
 export type GearView = (typeof gearViews)[number]
 export type PerformanceView = (typeof performanceViews)[number]
 export type CharacterSection = 'overview' | 'gear' | 'performance' | 'wardrobe'
@@ -10,7 +10,7 @@ export type CharacterDestination =
   | { section: 'performance'; view: PerformanceView }
 
 export const gearViewLabels: Record<GearView, string> = { progress: 'Progress', plan: 'Plan', owned: 'Owned', simulations: 'Simulations' }
-export const performanceViewLabels: Record<PerformanceView, string> = { standing: 'Your standing', leaders: 'Leaders', history: 'History', reports: 'Reports' }
+export const performanceViewLabels: Record<PerformanceView, string> = { standing: 'Your standing', keys: 'Key range', leaders: 'Leaders', history: 'History', reports: 'Reports' }
 export const sectionLabels: Record<CharacterSection, string> = { overview: 'Overview', gear: 'Gear', performance: 'Performance', wardrobe: 'Wardrobe' }
 
 export type Resolution =
