@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, safeStorage, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, net, Notification, protocol, safeStorage, screen, shell, Tray } from 'electron'
 import { mkdirSync } from 'node:fs'
 import { readFile, writeFile, mkdir, realpath, stat, rename } from 'node:fs/promises'
 import { dirname, extname, resolve, sep } from 'node:path'
@@ -30,6 +30,8 @@ let cleanup:(()=>Promise<void>)|undefined
 let closing=false
 let installingUpdate=false
 let saveWindowPlacement:(()=>void)|undefined
+let tray:Tray|null=null
+let quitting=false
 const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: wow-asset:; connect-src 'self' blob: data: ws://127.0.0.1:* wow-asset:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'"
 async function main(){
   const userDir=process.env.WOW_COMPANION_DATA_DIR?resolve(process.env.WOW_COMPANION_DATA_DIR):app.getPath('userData')
@@ -42,7 +44,19 @@ async function main(){
   const origins=['app://companion',...(devUrl?[new URL(devUrl).origin]:[])]
   const secrets=new EncryptedFileStore(resolve(userDir,'secrets.json'),{available:()=>safeStorage.isEncryptionAvailable(),encrypt:value=>safeStorage.encryptString(value),decrypt:value=>safeStorage.decryptString(value)})
   const addonDir=app.isPackaged?resolve(process.resourcesPath,'addon'):resolve(app.getAppPath(),'addon')
-  const service=await startLocalService({db,origins,refreshCharacter:id=>refreshPublicCharacter(db,id),gameDataDir:resolve(userDir,'gamedata'),secrets,addonDir,assetsDir:userDir,autoSync:!process.env.WOW_COMPANION_DATA_DIR})
+  let keepInTray=settings.keepInTray
+  const isolated=!!process.env.WOW_COMPANION_DATA_DIR||process.env.WOW_COMPANION_HEADLESS==='1'
+  const showWindow=()=>{if(!window)return;if(window.isMinimized())window.restore();window.show();window.focus()}
+  // Alerts stay quiet in isolated test profiles and when the player turned them off
+  const onAlert=async(alert:import('../shared/alerts').Alert)=>{
+    if(isolated||!Notification.isSupported())return
+    const current=await db.call('getSettings').catch(()=>null)
+    if(!current?.desktopAlerts)return
+    const notice=new Notification({title:alert.title,body:alert.body,icon:windowIcon,silent:false})
+    notice.on('click',showWindow)
+    notice.show()
+  }
+  const service=await startLocalService({db,origins,refreshCharacter:id=>refreshPublicCharacter(db,id),gameDataDir:resolve(userDir,'gamedata'),secrets,addonDir,assetsDir:userDir,autoSync:!process.env.WOW_COMPANION_DATA_DIR,onAlert:alert=>void onAlert(alert),onSettings:next=>{keepInTray=next.keepInTray}})
   let nativeOperations=0
   let updateBlockerAcknowledgedAt=0
   const updatePreferences=resolve(userDir,'updates.json')
@@ -123,6 +137,7 @@ async function main(){
       const variant=resolveAppIcon(saved.appIcon,app.getVersion())
       if(process.platform==='darwin')app.dock?.setIcon(iconPath(variant))
       else window?.setIcon(iconPath(variant))
+      tray?.setImage(iconPath(variant))
       if(process.platform==='win32'){
         const ico=await persistWindowsIcon(resolve(iconRoot,appIconFiles[variant].ico),resolve(userDir,'app-icons'))
         window?.setAppDetails(taskbarDetails(process.execPath,ico,app.isPackaged?undefined:app.getAppPath()))
@@ -157,11 +172,24 @@ async function main(){
   window.webContents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false))
   window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show()})
   window.on('closed',()=>{window=null})
+  // With the tray option on, closing hides the window so syncs and alerts continue; Quit lives in the tray menu
+  window.on('close',event=>{if(keepInTray&&tray&&!quitting&&!installingUpdate){event.preventDefault();window?.hide()}})
+  if(!isolated){
+    tray=new Tray(windowIcon)
+    tray.setToolTip('WOW Companion')
+    tray.setContextMenu(Menu.buildFromTemplate([
+      {label:'Open WOW Companion',click:showWindow},
+      {label:'Sync characters now',click:()=>void service.sync.run('manual')},
+      {type:'separator'},
+      {label:'Quit',click:()=>{quitting=true;app.quit()}},
+    ]))
+    tray.on('click',showWindow)
+  }
   if(devUrl)await window.loadURL(devUrl);else await window.loadURL('app://companion/index.html')
   updates.startPolling()
   if(process.argv.includes('--acceptance')){const report=await runDesktopAcceptance({window,db,service,outputDir:resolve(userDir,'acceptance')});console.log('DESKTOP_ACCEPTANCE',JSON.stringify({passed:report.passed,steps:report.steps.map(s=>({name:s.name,status:s.status,detail:s.status==='fail'?s.detail:undefined})),evidence:resolve(userDir,'acceptance/report.json')}));process.exitCode=report.passed?0:1;app.quit()}
   if(process.argv.includes('--smoke')){const result=await window.webContents.executeJavaScript(`new Promise(resolve=>{let n=0;const t=setInterval(()=>{if(document.querySelector('h1')||++n>100){clearInterval(t);resolve({title:document.title,heading:document.querySelector('h1')?.textContent,body:document.body.innerText.slice(0,500)})}},100)})`);console.log('COMPANION_SMOKE',JSON.stringify(result));app.quit()}
 }
 app.on('window-all-closed',()=>app.quit())
-app.on('before-quit',event=>{saveWindowPlacement?.();if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
+app.on('before-quit',event=>{quitting=true;saveWindowPlacement?.();if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
 app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})

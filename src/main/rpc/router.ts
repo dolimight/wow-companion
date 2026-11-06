@@ -19,6 +19,7 @@ import { sessionPreferencesSchema, dispositionSchema } from '../../shared/sessio
 import type { SimulationService } from '../simulation/service'
 import type { ComparisonService } from '../comparisons/service'
 import {comparisonInputSchema,reportInputSchema} from '../../shared/comparisons'
+import { TIMELINE_NAMESPACE, timelineSchema } from '../../shared/timeline'
 
 export type SyncStatus = { lastCheckAt:string|null;path:string|null;error:string|null }
 export type ChangeEvent = { revision:number;characterId?:string }
@@ -38,6 +39,7 @@ export type RouterServices = {
   simulations:SimulationService
   comparisons:ComparisonService
   models:ReturnType<typeof import('../models/cache').createModelCache>
+  settingsChanged?(settings:import('../../shared/domain').AppSettings):void
 }
 const t=initTRPC.context<ServiceContext>().create()
 const p=t.procedure.use(({ctx,next})=>{if(!ctx.authorized)throw new TRPCError({code:'UNAUTHORIZED',message:'The local connection was not authorized'});return next()})
@@ -57,7 +59,7 @@ export function createRouter(s:RouterServices){return t.router({
   saveOutfit:p.input(outfitSchema).mutation(async({input})=>{const outfit=await run(()=>s.db.call('saveOutfit',input));await s.changed(input.characterId);return outfit}),
   deleteOutfit:p.input(idSchema).mutation(async({input})=>{await run(()=>s.db.call('deleteOutfit',input.id));await s.changed()}),
   getSettings:p.query(()=>run(()=>s.db.call('getSettings'))),
-  saveSettings:p.input(appSettingsPatchSchema).mutation(({input})=>run(()=>s.db.call('setSettings',input))),
+  saveSettings:p.input(appSettingsPatchSchema).mutation(async({input})=>{const settings=await run(()=>s.db.call('setSettings',input));s.settingsChanged?.(settings);return settings}),
   getProgression:p.input(characterIdSchema.extend({activity:activitySchema})).query(({input})=>run(()=>s.progression.evaluate(input.characterId,input.activity))),
   sessionWorkspace:p.input(characterIdSchema).query(({input})=>run(()=>s.session.workspace(input.characterId))),
   saveSessionPreferences:p.input(characterIdSchema.extend({preferences:sessionPreferencesSchema})).mutation(async({input})=>{const result=await run(()=>s.session.preferences(input.characterId,input.preferences));await s.changed(input.characterId);return result}),
@@ -100,6 +102,8 @@ export function createRouter(s:RouterServices){return t.router({
   // Public insights: top players for a spec and the WoW Token price
   topPlayers:p.input(z.object({specId:z.number().int().positive(),specName:z.string().min(1).max(60),className:z.string().min(1).max(60),region:z.enum(['us','eu','world']).default('us'),force:z.boolean().optional()})).query(({input})=>run(()=>s.insights.topPlayers(input))),
   itemTooltip:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.insights.itemTooltip(input.id))),
+  weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
+  characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),
   wowToken:p.input(z.object({region:z.enum(blizzardRegions)})).query(({input})=>run(()=>s.insights.wowToken(input.region))),
   // Connections: install, addon, Blizzard key, Battle.net
   connectionsStatus:p.query(()=>run(()=>s.connections.status())),

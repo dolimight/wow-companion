@@ -4,11 +4,15 @@ import type { Character, SeasonDungeon } from '../../../shared/domain'
 import { dungeonVerdict, earnedLevel, highestTimed, keyLevels, lowestDungeon, overallVerdict, seasonDungeons, suggestedLevel, timeToSpareMs, upgradesFor, verdictLabels, type KeyVerdict } from '../../../shared/key-range'
 import { AppSelect } from '../../components/AppSelect'
 import { Button, EmptyState } from '../../components/ui/primitives'
+import { TonightKeys } from '../season/season'
+import { compareWithTop } from '../../../shared/top-compare'
+import type { TopPlayers } from '../../../shared/top-players'
 import './key-range.css'
 
 const levels = Array.from({ length: keyLevels.max - keyLevels.min + 1 }, (_, index) => keyLevels.min + index)
 const chips: Record<KeyVerdict, string> = { timed: 'In your range', reach: 'The game would hand you this key', stretch: 'One past what you earned', notyet: 'More than one past what you earned', nodata: 'No timed key to judge from' }
 const marks: Record<KeyVerdict, string> = { timed: '✓', reach: '✓', stretch: '!', notyet: '✕', nodata: '?' }
+const levelText = (value: number) => (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, '')
 const anyDungeon = '__any'
 
 const clock = (ms: number | null) => {
@@ -30,10 +34,12 @@ function runSummary(dungeon: SeasonDungeon) {
 
 /**
  * Answers "is this character ready for +N" from its own season bests
- * Item level and score are shown as facts; there is no source yet for how other players at a level compare
+ * Item level and enchants are set against the spec's sampled top players when that tally is available, always naming
+ * the population; nothing here compares you with players who time a particular level
  */
-export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, tonightLink }: {
+export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, tonightLink, top = null }: {
   character: Character
+  top?: TopPlayers | null
   refreshing: boolean
   onRefresh: () => void
   gearPlanLink: (children: ReactNode) => ReactNode
@@ -48,6 +54,8 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
   const best = highestTimed(scope)
   const low = lowestDungeon(dungeons)
   const missingEnchants = character.gear.filter(item => ['mainHand', 'finger1', 'finger2'].includes(item.slot) && item.enchantCoverage === 'complete' && !item.enchant)
+  const versus = useMemo(() => top ? compareWithTop(character.gear, character.itemLevel, top) : null, [top, character.gear, character.itemLevel])
+  const ilvlGap = versus?.itemLevel && versus.itemLevel.yours != null ? versus.itemLevel.yours - versus.itemLevel.average : null
 
   if (!dungeons.length) return (
     <EmptyState icon={KeyRound} title="No Mythic+ season bests yet" description="Time a key, then /reload in game so the addon saves your season bests, or refresh the public profile to read them from Raider.IO">
@@ -99,18 +107,27 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
         <div className="key-legend">{(['timed', 'reach', 'stretch', 'notyet', 'nodata'] as const).map(verdict => <span key={verdict} className={`kv-${verdict}`}><i />{verdictLabels[verdict]}</span>)}</div>
       </section>
 
+      <TonightKeys character={character} action={tonightLink(<>Plan tonight</>)} />
+
       <section className="surface" aria-labelledby="key-checks-title">
         <div className="surface-heading"><h2 id="key-checks-title">Checks for +{level}{focus ? ` ${focus.dungeon}` : ''}</h2></div>
         <div className="key-checks">
           <KeyCheck verdict={result.verdict} title="Your runs" value={best != null ? `best timed +${best}` : 'no timed key'}
             text={focus ? runSummary(focus) : result.counts ? `At +${level}: ${result.counts.timed} timed, ${result.counts.reach} within reach, ${result.counts.stretch} stretch, ${result.counts.notyet} not yet${result.counts.nodata ? `, ${result.counts.nodata} with no timed key` : ''}` : ''}
             note="Your own season bests, judged by the keystone upgrade the game gave each run" />
-          <KeyCheck verdict="nodata" title="Item level" value={character.itemLevel != null ? `${Math.round(character.itemLevel)} equipped` : 'Unknown'}
-            text="Not compared: the app has no source yet for the item level of players who timed this level" note={character.gearObservedAt ? `Gear from ${character.gearSource ?? 'an unknown source'}, ${ago(character.gearObservedAt)}` : 'Gear observation time unknown'} />
+          <KeyCheck verdict={ilvlGap == null ? 'nodata' : ilvlGap >= -3 ? 'timed' : ilvlGap >= -10 ? 'stretch' : 'notyet'} mark={ilvlGap == null ? undefined : 'i'} title="Item level" value={character.itemLevel != null ? `${Math.round(character.itemLevel)} equipped` : 'Unknown'}
+            text={versus?.itemLevel ? `The ${versus.population} average ${levelText(versus.itemLevel.average)}${ilvlGap != null ? `, ${ilvlGap >= 0 ? `${levelText(ilvlGap)} below you` : `${levelText(-ilvlGap)} above you`}` : ''}. They push far higher keys, so treat this as a ceiling, not a requirement` : 'Not compared yet: open Leaders once so the app can sample the top players of your specialization'}
+            note={character.gearObservedAt ? `Gear from ${character.gearSource ?? 'an unknown source'}, ${ago(character.gearObservedAt)}` : 'Gear observation time unknown'} />
           <KeyCheck verdict="nodata" title="Mythic+ score" value={character.ratings.mythicPlus?.value != null ? Math.round(character.ratings.mythicPlus.value).toLocaleString('en-US') : 'Unknown'}
             text="Not compared: group leaders often look at it, but there is no source yet for typical scores at this level" note={character.ratings.mythicPlus?.observedAt ? `${character.ratings.mythicPlus.source ?? 'Unknown source'}, ${ago(character.ratings.mythicPlus.observedAt)}` : 'Score observation time unknown'} />
-          <KeyCheck verdict={missingEnchants.length ? 'stretch' : 'timed'} title="Weapon and ring enchants" value={missingEnchants.length ? `${missingEnchants.length} missing` : 'all present'}
-            text={missingEnchants.length ? 'Your imported gear shows an empty enchant; check its current eligibility in game' : 'Only slots whose enchant was observed are counted'} note="From your gear; not compared with other players" />
+          {versus && versus.enchantSlotsChecked > 0 ? (
+            <KeyCheck verdict={versus.enchantGaps.length ? 'stretch' : 'timed'} title="Enchants" value={versus.enchantGaps.length ? `${versus.enchantGaps.length} missing` : 'all present'}
+              text={versus.enchantGaps.length ? `Most of the ${versus.population} enchant ${versus.enchantGaps.map(gap => `${gap.label} (${gap.enchant})`).join(', ')}` : `Every slot most top players enchant has an enchant on your gear, across ${versus.enchantSlotsChecked} observed slots`}
+              note="Only slots whose enchant was observed are counted" />
+          ) : (
+            <KeyCheck verdict={missingEnchants.length ? 'stretch' : 'timed'} title="Weapon and ring enchants" value={missingEnchants.length ? `${missingEnchants.length} missing` : 'all present'}
+              text={missingEnchants.length ? 'Your imported gear shows an empty enchant; check its current eligibility in game' : 'Only slots whose enchant was observed are counted'} note="From your gear; top players not sampled yet" />
+          )}
         </div>
         <details className="key-how">
           <summary>How this is decided</summary>
@@ -164,10 +181,10 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
   )
 }
 
-function KeyCheck({ verdict, title, value, text, note }: { verdict: KeyVerdict; title: string; value: string; text: string; note: string }) {
+function KeyCheck({ verdict, title, value, text, note, mark }: { verdict: KeyVerdict; title: string; value: string; text: string; note: string; mark?: string }) {
   return (
     <div className={`key-check kv-${verdict}`}>
-      <span className="key-check-mark" aria-hidden="true">{marks[verdict]}</span>
+      <span className="key-check-mark" aria-hidden="true">{mark ?? marks[verdict]}</span>
       <div><h3>{title} <span>{value}</span></h3><p>{text}</p><small>{note}</small></div>
     </div>
   )
