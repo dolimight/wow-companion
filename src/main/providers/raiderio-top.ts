@@ -153,3 +153,12 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
     slots: Object.fromEntries([...slotItems.entries()].map(([group, bucket]) => [group, { items: top(bucket.items, 4), enchants: top(bucket.enchants, 3), gems: top(bucket.gems, 4) }])),
   }
 }
+
+const affixSchema = z.object({ title: z.string().max(200).optional(), leaderboard_url: z.string().optional(), affix_details: z.array(z.object({ id: z.number().int(), name: z.string().min(1).max(80), description: z.string().max(600).nullable().optional() })).max(10).default([]) })
+export type WeeklyAffixes = { region: string; affixes: Array<{ id: number; name: string; description: string | null }>; observedAt: string; source: string }
+/** This week's Mythic+ affixes for a region, as published by Raider.IO */
+export async function fetchAffixes(region: 'us' | 'eu' | 'kr' | 'tw', signal?: AbortSignal): Promise<WeeklyAffixes> {
+  const parsed = affixSchema.safeParse(await getJson('/api/v1/mythic-plus/affixes', { region, locale: 'en' }, signal))
+  if (!parsed.success || !parsed.data.affix_details.length) throw new RaiderIoTopError("This week's affixes are not available from Raider.IO")
+  return { region, affixes: parsed.data.affix_details.map(affix => ({ id: affix.id, name: affix.name, description: affix.description?.trim() || null })), observedAt: new Date().toISOString(), source: 'Raider.IO' }
+}

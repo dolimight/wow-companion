@@ -76,6 +76,7 @@ import { clearRenamedPlanIdentity, isPlannedItemEquipped } from "./lib/gear-plan
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { KeyRangePage } from "./features/key-range/KeyRangePage";
+import { SeasonTimeline } from "./features/season/season";
 import { TopPlayersPage } from "./features/top/top-players";
 import { useStagePlan } from "./features/plan/StagePlan";
 import { vaultTracks } from "../shared/weekly";
@@ -1332,6 +1333,8 @@ function PerformanceView({ character, view }: { character: Character; view: Comp
   const { activity } = useActivity(character.id);
   const refresh = useAction(({ id }: { id: string }) => api.refreshCharacter({ id }), "Public activity data refreshed");
   return (
+    <>
+    {view === "history" && <SeasonTimeline character={character} />}
     <ComparisonPage
       key={character.id + ":" + activity + ":" + view}
       character={character}
@@ -1344,14 +1347,25 @@ function PerformanceView({ character, view }: { character: Character; view: Comp
         </Button>
       )}
     />
+    </>
   );
 }
 function KeyRangeView({ character }: { character: Character }) {
   const refresh = useAction(({ id }: { id: string }) => api.refreshCharacter({ id }), "Public activity data refreshed");
+  const ready = character.specId != null && character.specId > 0 && character.specName !== "Unknown" && character.className !== "Unknown" && !character.demo;
+  // Shares the Leaders page cache, so the comparison costs no extra request once either page has loaded it
+  const top = useQuery({
+    queryKey: ["top-players", character.specId, "us"],
+    queryFn: () => api.topPlayers({ specId: character.specId!, specName: character.specName, className: character.className, region: "us" }),
+    enabled: ready,
+    staleTime: 30 * 60_000,
+    retry: false,
+  });
   return (
     <KeyRangePage
       key={character.id}
       character={character}
+      top={top.data ?? null}
       refreshing={refresh.isPending}
       onRefresh={() => refresh.mutate({ id: character.id })}
       gearPlanLink={(children) => <CharacterLink characterId={character.id} destination={{ section: "gear", view: "plan" }} className="button button-secondary">{children}</CharacterLink>}
@@ -2213,6 +2227,44 @@ function SettingsPage() {
                   onPressedChange={(pressed) => save.mutate({ reducedMotion: pressed })}
                 >
                   {settings.data?.reducedMotion ? "On" : "Off"}
+                </Toggle>
+              </div>
+            </div>
+          </section>
+          <section className="settings-section" aria-labelledby="alerts-heading">
+            <h2 id="alerts-heading">Alerts</h2>
+            <p>Desktop notifications about your characters</p>
+            <div className="settings-section-body surface">
+              <div className="setting-row">
+                <div>
+                  <h3>Desktop alerts</h3>
+                  <p>A new season best, or a Great Vault waiting after the weekly reset</p>
+                </div>
+                <Toggle
+                  type="button"
+                  variant="outline"
+                  className="workspace-toggle"
+                  aria-label="Desktop alerts"
+                  pressed={settings.data?.desktopAlerts ?? true}
+                  onPressedChange={(pressed) => save.mutate({ desktopAlerts: pressed })}
+                >
+                  {settings.data?.desktopAlerts ?? true ? "On" : "Off"}
+                </Toggle>
+              </div>
+              <div className="setting-row">
+                <div>
+                  <h3>Keep running in the tray</h3>
+                  <p>Closing the window keeps the app in the system tray, so alerts still arrive</p>
+                </div>
+                <Toggle
+                  type="button"
+                  variant="outline"
+                  className="workspace-toggle"
+                  aria-label="Keep running in the tray"
+                  pressed={settings.data?.keepInTray ?? false}
+                  onPressedChange={(pressed) => save.mutate({ keepInTray: pressed })}
+                >
+                  {settings.data?.keepInTray ?? false ? "On" : "Off"}
                 </Toggle>
               </div>
             </div>

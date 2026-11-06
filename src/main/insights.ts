@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { fetchItemPreview, fetchTokenPrice, type BlizzardApi, type BlizzardRegion, type ItemPreview } from './providers/blizzard'
 import type { GameDataClient } from './gamedata/client'
 import type { ItemDetail } from '../shared/gamedata'
-import { fetchTopPlayers } from './providers/raiderio-top'
+import { fetchAffixes, fetchTopPlayers, type WeeklyAffixes } from './providers/raiderio-top'
+import { weekStart } from '../shared/weekly'
 import type { TopPlayers, TopRegion } from '../shared/top-players'
 
 const TOP_TTL = 6 * 3_600_000
@@ -115,6 +116,17 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     return { item, preview }
   }
 
-  return { topPlayers, wowToken, itemTooltip }
+  const affixCache = new Map<string, { value: WeeklyAffixes; week: number | null; at: number }>()
+  /** Affixes change at the weekly reset, so a cached list is reused until the region's week turns over */
+  async function affixes(region: 'us' | 'eu' | 'kr' | 'tw'): Promise<WeeklyAffixes> {
+    const week = weekStart(region)
+    const cached = affixCache.get(region)
+    if (cached && cached.week === week && Date.now() - cached.at < TOP_TTL) return cached.value
+    const value = await fetchAffixes(region)
+    affixCache.set(region, { value, week, at: Date.now() })
+    return value
+  }
+
+  return { topPlayers, wowToken, itemTooltip, affixes }
 }
 export type Insights = ReturnType<typeof createInsights>

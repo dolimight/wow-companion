@@ -20,12 +20,17 @@ import { createSimulationService } from './simulation/service'
 import { createComparisonService } from './comparisons/service'
 import {createModelCache} from './models/cache'
 import type { SecretStore } from './secrets'
+import { createSeasonWatch } from './season-watch'
+import type { Alert } from '../shared/alerts'
 
 export function matchesToken(actual:unknown,expected:string){if(typeof actual!=='string')return false;const a=Buffer.from(actual),b=Buffer.from(expected);return a.length===b.length&&timingSafeEqual(a,b)}
-export async function startLocalService(options:{db:DatabaseClient;origins:string[];refreshCharacter:(id:string)=>Promise<import('../shared/domain').Character>;gameDataDir:string;gameDataWorker?:URL;progressionWorker?:URL;secrets:SecretStore;addonDir:string;assetsDir:string;autoSync?:boolean}){
+export async function startLocalService(options:{db:DatabaseClient;origins:string[];refreshCharacter:(id:string)=>Promise<import('../shared/domain').Character>;gameDataDir:string;gameDataWorker?:URL;progressionWorker?:URL;secrets:SecretStore;addonDir:string;assetsDir:string;autoSync?:boolean;onAlert?:(alert:Alert)=>void;onSettings?:(settings:import('../shared/domain').AppSettings)=>void}){
   const {db}=options;const events=new EventEmitter();const token=randomBytes(32).toString('hex')
   let status:SyncStatus={lastCheckAt:null,path:null,error:null},watcher:SnapshotWatch|undefined
-  async function changed(characterId?:string){const revision=await db.call('getRevision');events.emit('changed',{revision,characterId})}
+  const watch=createSeasonWatch({db,seenFile:path.join(options.assetsDir,'alerts-seen.json'),deliver:alert=>options.onAlert?.(alert),timelineChanged:characterId=>events.emit('changed',{revision:0,characterId})})
+  async function changed(characterId?:string){const revision=await db.call('getRevision');events.emit('changed',{revision,characterId});void watch.observe()}
+  // The weekly reset needs no new data, so the vault check also runs on a timer
+  const watchTimer=setInterval(()=>void watch.observe(),15*60_000);watchTimer.unref?.()
   async function commit(snapshot:unknown){const report=await db.call('importSnapshot',snapshot);if(report.imported.length)await changed();return report}
   async function importText(text:string){return Effect.runPromise(Effect.tryPromise({try:()=>commit(parseSnapshot(text)),catch:e=>e instanceof Error?e:new Error('Import failed')}))}
   async function setWatchPath(path:string|null){watcher?.close();watcher=undefined;status={...status,path,error:null};await db.call('setSettings',{addonPath:path});if(path){watcher=watchRoster(path,commit,info=>{status={...status,lastCheckAt:info.checkedAt,error:info.error};events.emit('changed',{revision:0})})}}
@@ -47,7 +52,7 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   const models=createModelCache({db,rootDir:path.join(options.assetsDir,'models')})
   const comparisons=createComparisonService({db,insights,blizzardApi:()=>connections.blizzardApi(),secrets:options.secrets})
   const sync=createSync({db,refreshCharacter,discover:()=>connections.discover(!!options.autoSync),checkAddonFile:async()=>{await watcher?.check()},addonFile:()=>status,changed:()=>changed()})
-  const router=createRouter({db,events,changed,importText,syncStatus:()=>status,refreshCharacter,gameData,connections,insights,sync,progression,session,simulations,comparisons,models})
+  const router=createRouter({db,events,changed,importText,syncStatus:()=>status,refreshCharacter,gameData,connections,insights,sync,progression,session,simulations,comparisons,models,settingsChanged:settings=>options.onSettings?.(settings)})
   const server=createServer((_req,res)=>{res.writeHead(404,{'X-Content-Type-Options':'nosniff'});res.end()})
   const wss=new WebSocketServer({server,maxPayload:17*1024*1024,verifyClient:({origin},done)=>done(options.origins.includes(origin),403,'Untrusted origin')})
   const handler=applyWSSHandler({wss,router,createContext:async({info})=>({authorized:matchesToken(info.connectionParams?.token,token)}),keepAlive:{enabled:true,pingMs:30000,pongWaitMs:5000}})
@@ -55,7 +60,8 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   const address=server.address();if(!address||typeof address==='string')throw new Error('Could not start the local service')
   const settings=await db.call('getSettings');if(settings.addonPath)await setWatchPath(settings.addonPath)
   // Every launch brings the roster up to date without anyone choosing a file
+  void watch.observe()
   void connections.initialize().then(()=>{if(options.autoSync)void sync.run('startup')})
   let closed=false
-  return {connection:{url:'ws://127.0.0.1:'+address.port,token},router,changed,importText,setWatchPath,getSyncStatus:()=>status,gameData,connections,sync,simulations,session,models,async close(){if(closed)return;closed=true;watcher?.close();connections.cancelSignIn();await simulations.close();await evaluator.close();await gameData.close();handler.broadcastReconnectNotification();for(const ws of wss.clients)ws.terminate();await new Promise<void>(r=>wss.close(()=>r()));await new Promise<void>(r=>server.close(()=>r()));events.removeAllListeners()}}
+  return {connection:{url:'ws://127.0.0.1:'+address.port,token},router,changed,importText,setWatchPath,getSyncStatus:()=>status,gameData,connections,sync,simulations,session,models,async close(){if(closed)return;closed=true;clearInterval(watchTimer);watcher?.close();connections.cancelSignIn();await simulations.close();await evaluator.close();await gameData.close();handler.broadcastReconnectNotification();for(const ws of wss.clients)ws.terminate();await new Promise<void>(r=>wss.close(()=>r()));await new Promise<void>(r=>server.close(()=>r()));events.removeAllListeners()}}
 }

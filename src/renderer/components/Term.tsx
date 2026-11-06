@@ -27,6 +27,8 @@ export const glossary = {
   "diminishing returns": "Past certain percentages, each extra point of a secondary stat is worth less. The brackets show how much of the next point you keep",
   "secondary stats": "Critical strike, haste, mastery, and versatility. Each boosts damage or healing in a different way",
   "mythic+ score": "Raider.IO's score from your best timed Mythic+ runs, used to rank players",
+  affix: "A weekly modifier that changes how every Mythic+ dungeon plays. They rotate at the weekly reset",
+  crest: "A currency earned from dungeons, raids, and delves. Spend crests with gold to upgrade gear to a higher item level",
 } as const;
 export type GlossaryTerm = keyof typeof glossary;
 

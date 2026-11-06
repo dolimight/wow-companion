@@ -89,3 +89,29 @@ export function suggestedLevel(dungeons: SeasonDungeon[]) {
   for (let level = keyLevels.max; level >= keyLevels.min; level--) if (overallVerdict(dungeons, level).verdict === 'timed') return Math.min(keyLevels.max, level + 1)
   return Math.max(keyLevels.min, (highestTimed(dungeons) ?? keyLevels.min - 1) + 1)
 }
+
+/** The highest level you have timed or would be handed in at least half of your dungeons */
+export function comfortableLevel(dungeons: SeasonDungeon[]) {
+  for (let level: number = keyLevels.max; level >= keyLevels.min; level--) {
+    const { verdict } = overallVerdict(dungeons, level)
+    if (verdict === 'timed' || verdict === 'reach') return level
+  }
+  return null
+}
+
+export type TonightKey = { dungeon: string; level: number; verdict: KeyVerdict; reason: string }
+/**
+ * A short list of keys worth running: the lowest dungeons first, each one level above its best timed key while that
+ * stays within reach, so every run can raise your score. Dungeons without a timed key start at your comfortable level
+ */
+export function tonightKeys(dungeons: SeasonDungeon[], count = 4): TonightKey[] {
+  const comfort = comfortableLevel(dungeons)
+  const picks = dungeons.map(dungeon => {
+    if (!dungeon.timed) return comfort == null ? null : { dungeon: dungeon.dungeon, level: comfort, verdict: 'nodata' as KeyVerdict, reason: 'No timed key here yet, so any timed run adds score', sort: -1 }
+    const earned = earnedLevel(dungeon) ?? dungeon.timed.level + 1
+    const level = Math.min(keyLevels.max, Math.max(dungeon.timed.level + 1, Math.min(earned, comfort ?? earned)))
+    const verdict = dungeonVerdict(dungeon, level)
+    return { dungeon: dungeon.dungeon, level, verdict, reason: `Best timed +${dungeon.timed.level}; +${level} ${verdict === 'reach' ? 'is a key your best run earned' : 'is one step up'}`, sort: dungeon.timed.level }
+  }).filter((pick): pick is NonNullable<typeof pick> => pick != null && pick.verdict !== 'notyet')
+  return picks.sort((a, b) => a.sort - b.sort || a.dungeon.localeCompare(b.dungeon)).slice(0, count).map(({ sort: _sort, ...pick }) => pick)
+}

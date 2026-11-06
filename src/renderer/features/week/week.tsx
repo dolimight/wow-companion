@@ -10,6 +10,7 @@ import { useConnections } from "../connections/connections";
 import type { Character } from "../../../shared/domain";
 import { diminishing, drBrackets } from "../../../shared/diminishing";
 import { hasResetSchedule, nextDailyReset, nextWeeklyReset, vaultTracks, weeklyLockouts, weeklyRuns, type VaultTrack } from "../../../shared/weekly";
+import { AffixesSurface, AltReadiness, VaultPlan } from "../season/season";
 import "./week.css";
 
 export function useNow(intervalMs = 30_000) {
@@ -133,6 +134,7 @@ export function CharacterWeek({ character, action }: { character: Character; act
       <div className="vault-tracks">
         {tracks.map((track) => <VaultTrackRow key={track.kind} track={track} />)}
       </div>
+      <VaultPlan character={character} now={now} />
       {(lockouts.lockouts.length > 0 || runs.runs.length > 0) && (
         <div className="week-details">
           {lockouts.lockouts.length > 0 && (
@@ -349,6 +351,7 @@ export function WeekPage({ characters, identity, onOpen, onReview, expandedId, o
       </div>
       <div className="week-top">
         <ResetTimes regions={live.map((character) => character.region)} />
+        <AffixesSurface region={live[0]?.region ?? "us"} />
         <TokenSurface />
       </div>
       <div className="surface-heading week-table-heading">
@@ -401,6 +404,7 @@ export function WeekPage({ characters, identity, onOpen, onReview, expandedId, o
         </table>
         {!live.length && <div className="inline-empty">Add a character to track their week</div>}
       </div>
+      <AltReadiness characters={live.filter((character) => !character.demo)} identity={identity} now={now} />
       <div className="roster-footnote">
         <CircleHelp />
         <p>
