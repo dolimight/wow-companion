@@ -28,6 +28,7 @@ export const glossary = {
   "secondary stats": "Critical strike, haste, mastery, and versatility. Each boosts damage or healing in a different way",
   "mythic+ score": "Raider.IO's score from your best timed Mythic+ runs, used to rank players",
   affix: "A weekly modifier that changes how every Mythic+ dungeon plays. They rotate at the weekly reset",
+  "upgrade track": "The ladder an item can be upgraded along. Each track (Adventurer, Veteran, Champion, Hero, Myth) has six ranks, and higher tracks reach higher item levels",
   crest: "A currency earned from dungeons, raids, and delves. Spend crests with gold to upgrade gear to a higher item level",
 } as const;
 export type GlossaryTerm = keyof typeof glossary;

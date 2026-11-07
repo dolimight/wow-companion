@@ -14,7 +14,16 @@ export type ItemSource = { encounter: string; instance: string; kind: 'dungeon' 
 export type ItemPrimaryStat = 'strength' | 'agility' | 'intellect'
 export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null }
 export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId: number; modifier: number; icon: number | null }
-export type ItemDetail = ItemSummary & { classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
+export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
+export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[] }
+/** Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track */
+export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean } }
+export type ItemPowerStat = { type: number; name: string; value: number; secondary: boolean }
+export type ItemPowerEffect = { label: string; text: string; complete: boolean; cooldown: string | null }
+/** Stats and effects worked out from the game's scaling tables for one item level; null parts are unknown */
+export type ItemPower = { itemLevel: number; armor: number | null; stats: ItemPowerStat[] | null; effects: ItemPowerEffect[]; setPiece: boolean }
+/** How many items each boss that drops this one has in its loot, in total and for the selected character */
+export type ItemLootShare = { encounter: string; instance: string; kind: ItemSource['kind']; total: number; forCharacter: number | null }
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
 export type ItemSearchPage = { items: ItemSummary[]; nextOffset: number | null }
 export type AppearanceOption = { appearanceId: number; modifiedAppearanceId: number; itemId: number; itemName: string; quality: number; icon: number | null }

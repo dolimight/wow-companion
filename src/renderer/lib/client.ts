@@ -2,7 +2,7 @@ import { createTRPCClient, createWSClient, wsLink } from '@trpc/client'
 import type { AppRouter } from '../../main/rpc/router'
 import type { Activity, AddCharacterInput, AppSettings, CharacterPatch, GearDraft, Outfit } from '../../shared/domain'
 import type { ConnectionInfo, NativeBridge } from '../../shared/bridge'
-import type { ItemSearch } from '../../shared/gamedata'
+import type { ItemSearch, ItemSearchCharacter } from '../../shared/gamedata'
 import type { AppearanceSlot } from '../../shared/domain'
 import type { ArmorType } from '../../shared/gamedata'
 import type { ContentPreferences } from '../../shared/season-rules'
@@ -65,6 +65,7 @@ export const api={
  searchItemsPage:async(input:ItemSearch)=>(await client()).searchItemsPage.query(input),
  getItem:async(id:number)=>(await client()).getItem.query({id}),
  getItems:async(ids:number[])=>(await client()).getItems.query({ids}),
+ itemPower:async(input:{id:number;itemLevel?:number|null;character?:ItemSearchCharacter|null})=>(await client()).itemPower.query(input),
  enhancements:async(input:{kind:'enchant'|'gem';slot:AppearanceSlot|null})=>(await client()).enhancements.query(input),
  appearanceOptions:async(input:{slot:AppearanceSlot;text:string;armor:ArmorType|null})=>(await client()).appearanceOptions.query(input),
  enchantNames:async(ids:number[])=>(await client()).enchantNames.query({ids}),

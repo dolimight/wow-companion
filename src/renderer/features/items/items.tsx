@@ -10,10 +10,11 @@ import { Term } from "../../components/Term";
 import { api } from "../../lib/client";
 import { ItemIcon } from "./ItemIcon";
 import { ItemHoverCard } from "./ItemHoverCard";
+import { ItemPowerSection, wowheadItemUrl } from "./ItemPower";
 import { errorMessage, notify } from "../../lib/notify";
-import { qualityNames, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
+import { gearSlotsForInventoryType, qualityNames, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
 import { getItemCompatibility } from "../../../shared/item-compatibility";
-import type { AppearanceSlot, Character } from "../../../shared/domain";
+import type { AppearanceSlot, Character, GearItem } from "../../../shared/domain";
 import "./items.css";
 
 export { ItemIcon } from "./ItemIcon";
@@ -120,7 +121,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
               )}
             </CommandList>
             <aside className="item-search-detail" aria-live="polite">
-              {ready && items.some(item=>item.id===Number(highlighted)) ? <ItemDetail id={Number(highlighted)} onPick={onPick ? pickItem : undefined} addLabel={addLabel} character={context} slot={fixedSlot ?? (slot === "any" ? null : slot)} compact /> : <div className="item-search-preview-empty"><Search size={24} aria-hidden="true" /><p>Use the arrow keys or hover to see details</p></div>}
+              {ready && items.some(item=>item.id===Number(highlighted)) ? <ItemDetail id={Number(highlighted)} onPick={onPick ? pickItem : undefined} addLabel={addLabel} character={context} equipped={character?.gear} slot={fixedSlot ?? (slot === "any" ? null : slot)} compact /> : <div className="item-search-preview-empty"><Search size={24} aria-hidden="true" /><p>Use the arrow keys or hover to see details</p></div>}
             </aside>
             </div>
             <div className="item-search-footer">
@@ -156,8 +157,13 @@ export function ItemSheet({ id, onOpenChange, onPick }: { id: number | null; onO
   );
 }
 
-export function ItemDetail({ id, onPick, addLabel, compact = false, character = null, slot = null }: { id: number; onPick?: (item: ItemSummary) => void; addLabel?: string; compact?: boolean; character?: ItemSearchCharacter | null; slot?: AppearanceSlot | null }) {
+export function ItemDetail({ id, onPick, addLabel, compact = false, character = null, slot = null, equipped }: { id: number; onPick?: (item: ItemSummary) => void; addLabel?: string; compact?: boolean; character?: ItemSearchCharacter | null; slot?: AppearanceSlot | null; equipped?: GearItem[] }) {
   const item = useQuery({ queryKey: ["item", id], queryFn: () => api.getItem(id) });
+  const [shownLevel, setShownLevel] = useState<number | null>(null);
+  useEffect(() => setShownLevel(null), [id]);
+  const open = (url: string) => void api.openExternal(url).catch((error) => notify(errorMessage(error)));
+  const slots = item.data ? new Set<string>(gearSlotsForInventoryType(item.data.inventoryType)) : new Set<string>();
+  const inSlot = (equipped ?? []).filter((gear) => slots.has(gear.slot) && gear.itemId);
   const data = item.data;
   const compatibility = data ? getItemCompatibility(data,character,{slot}) : null;
   return item.isPending ? <p className="muted small">Loading item…</p> : !data ? <p className="muted small">This item is not in your installed game data</p> : (
@@ -181,11 +187,26 @@ export function ItemDetail({ id, onPick, addLabel, compact = false, character = 
               </ul>
             ) : <p className="muted small">The in-game Adventure Guide doesn't list a boss for this item. It may be crafted, sold, or a quest reward</p>}
           </section>
-          <p className="muted small">The item level you receive depends on the difficulty and any upgrades. Stats aren't shown because they scale with item level</p>
+          <ItemPowerSection key={data.id} item={data} character={character} onLevel={setShownLevel} />
+          {inSlot.length > 0 && (
+            <section>
+              <h3>Equipped now</h3>
+              <ul className="item-equipped">
+                {inSlot.map((gear) => (
+                  <li key={gear.slot}>
+                    <button type="button" className="item-equipped-link" onClick={() => open(wowheadItemUrl(gear.itemId!, { itemLevel: gear.itemLevel, bonusIds: gear.bonusIds }))} aria-label={`Open ${gear.name} on Wowhead`}>
+                      <span>{gear.name}</span><ExternalLink size={13} aria-hidden="true" />
+                    </button>
+                    <small>{gear.itemLevel != null ? `Item level ${Math.round(gear.itemLevel)}` : "Item level unknown"}{gear.itemLevel != null && shownLevel != null ? ` · ${shownLevel - Math.round(gear.itemLevel) >= 0 ? "+" : "−"}${Math.abs(shownLevel - Math.round(gear.itemLevel))} with this item` : ""}</small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {character && compatibility?.reason && <p className="secondary small" role={compatibility.compatible ? undefined : "alert"}>{compatibility.reason}</p>}
           <div className="actions">
             {onPick && <Button variant="primary" disabled={!compatibility?.compatible} onClick={() => onPick(data)}>{addLabel ?? "Add to plan"}</Button>}
-            <Button onClick={() => void api.openExternal(`https://www.wowhead.com/item=${data.id}`).catch((error) => notify(errorMessage(error)))}><ExternalLink />Open on Wowhead</Button>
+            <Button onClick={() => open(wowheadItemUrl(data.id, { itemLevel: shownLevel }))}><ExternalLink />Open on Wowhead</Button>
           </div>
         </div>
   );

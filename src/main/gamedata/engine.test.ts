@@ -16,7 +16,7 @@ function fixture(version=INDEX_VERSION) {
   const folder=mkdtempSync(path.join(tmpdir(),'wow-search-'));folders.push(folder)
   const db=new Database(path.join(folder,`items-${install.build.version}.sqlite`))
   db.exec(`CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT);
-    CREATE TABLE items(id INTEGER PRIMARY KEY,name TEXT,quality INTEGER,item_level INTEGER,required_level INTEGER,inventory_type INTEGER,class_id INTEGER,subclass_id INTEGER,icon INTEGER,expansion INTEGER,bonding INTEGER,sockets INTEGER,description TEXT${version===2?',allowable_class_mask INTEGER,spec_ids TEXT,primary_stats TEXT':''});
+    CREATE TABLE items(id INTEGER PRIMARY KEY,name TEXT,quality INTEGER,item_level INTEGER,required_level INTEGER,inventory_type INTEGER,class_id INTEGER,subclass_id INTEGER,icon INTEGER,expansion INTEGER,bonding INTEGER,sockets INTEGER,description TEXT${version>=2?',allowable_class_mask INTEGER,spec_ids TEXT,primary_stats TEXT':''}${version>=3?',stats TEXT,item_set INTEGER,track_groups TEXT':''});
     CREATE TABLE sources(item_id INTEGER,encounter TEXT,instance TEXT,kind TEXT,season INTEGER);
     CREATE TABLE appearances(modified_id INTEGER,item_id INTEGER,appearance_id INTEGER,modifier INTEGER,icon INTEGER);
     CREATE TABLE enchants(id INTEGER,name TEXT,icon INTEGER);
@@ -24,7 +24,8 @@ function fixture(version=INDEX_VERSION) {
   db.prepare('INSERT INTO meta VALUES (?,?)').run('index_version',String(version))
   const add=(id:number,name:string,patch:{level?:number;inventory?:number;classId?:number;subclass?:number;stats?:string[];mask?:number;specIds?:number[]}={})=>{
     const values=[id,name,4,patch.level??300,90,patch.inventory??1,patch.classId??4,patch.subclass??4,null,12,1,0,'']
-    if(version===2)values.push(patch.mask??-1,JSON.stringify(patch.specIds??[]),JSON.stringify(patch.stats??['strength']))
+    if(version>=2)values.push(patch.mask??-1,JSON.stringify(patch.specIds??[]),JSON.stringify(patch.stats??['strength']))
+    if(version>=3)values.push(null,null,null)
     db.prepare(`INSERT INTO items VALUES (${values.map(()=>'?').join(',')})`).run(...values)
     db.prepare('INSERT INTO items_fts(rowid,name) VALUES (?,?)').run(id,name)
   }

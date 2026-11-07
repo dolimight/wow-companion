@@ -111,3 +111,8 @@ export function getItemCompatibility(item: ItemSummary, character: ItemSearchCha
 
   return { compatible: true, verified: unknown.length === 0, reason: unknown.length ? `Partial check: ${unknown.join('; ')}` : null }
 }
+
+/** The primary stat a specialization uses, or null when the spec is unknown */
+export function specPrimaryStat(specId: number | null | undefined): ItemPrimaryStat | null {
+  return specId != null ? specs[specId]?.stat ?? null : null
+}

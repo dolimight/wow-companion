@@ -12,7 +12,8 @@ import type { Sync } from '../sync'
 import type { ProgressionService } from '../progression/service'
 import { contentPreferencesSchema } from '../../shared/season-rules'
 import { appearanceSlotSchema } from '../../shared/domain'
-import { armorTypes, itemSearchSchema } from '../../shared/gamedata'
+import { armorTypes, itemSearchCharacterSchema, itemSearchSchema } from '../../shared/gamedata'
+import { itemTracks } from '../item-tracks'
 import { blizzardRegions } from '../providers/blizzard'
 import type { SessionService } from '../session/service'
 import { sessionPreferencesSchema, dispositionSchema } from '../../shared/session-plan'
@@ -95,6 +96,14 @@ export function createRouter(s:RouterServices){return t.router({
   searchItems:p.input(itemSearchSchema).query(({input})=>run(()=>s.gameData.call('search',input))),
   searchItemsPage:p.input(itemSearchSchema).query(({input})=>run(()=>s.gameData.call('searchPage',input))),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
+  // Stats, effects, and track of one item, shown at its highest level unless a level is picked
+  itemPower:p.input(z.object({id:z.number().int().positive(),itemLevel:z.number().int().min(1).max(2000).nullable().default(null),character:itemSearchCharacterSchema.nullable().default(null)})).query(({input})=>run(async()=>{
+    const base=await s.gameData.call('item',input.id)
+    const tracks=itemTracks(input.id,base?.trackGroups??null)
+    const level=input.itemLevel??tracks?.max.itemLevel??(base?.itemLevel||null)
+    const [power,loot]=await Promise.all([level?s.gameData.call('itemPower',input.id,level):Promise.resolve(null),s.gameData.call('lootShare',input.id,input.character)])
+    return {tracks,power,loot,level,basis:input.itemLevel?'picked' as const:tracks?(tracks.max.assumed?'season' as const:'track' as const):'base' as const}
+  })),
   getItems:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('items',input.ids))),
   enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable()})).query(({input})=>run(()=>s.gameData.call('enhancements',input.kind,input.slot))),
   appearanceOptions:p.input(z.object({slot:appearanceSlotSchema,text:z.string().max(100),armor:z.enum(armorTypes).nullable()})).query(({input})=>run(()=>s.gameData.call('appearanceOptions',input.slot,input.text,input.armor))),
