@@ -82,7 +82,7 @@ export function ItemPowerSection({ item, character, onLevel }: { item: ItemDetai
             <thead><tr><th>Track</th><th>Ranks</th><th>Item level</th></tr></thead>
             <tbody>{tracks.tracks.map((track) => <tr key={track.name} data-max={track.name === tracks.max.track || undefined}><td>{track.name}</td><td>1–{track.ranks}</td><td>{track.minLevel}–{track.maxLevel}</td></tr>)}</tbody>
           </table>
-          <p className="muted small">{tracks.max.assumed ? `${tracks.season}: Mythic+ gear lands on one of these tracks depending on the keystone level` : `${tracks.season}, from your installed game files. Harder difficulties drop on higher tracks; crests and gold upgrade an item through its ranks`}</p>
+          <p className="muted small">{tracks.max.assumed ? `${tracks.season}: Mythic+ gear lands on one of these tracks depending on the keystone level` : `${tracks.season}, from your installed game files. Harder difficulties drop on higher tracks; crests and gold upgrade an item through its ranks${tracks.season === 'An earlier season' ? '. Gear from earlier seasons can drop at higher levels when its dungeon or raid returns' : ''}`}</p>
         </section>
       )}
       {data.loot.length > 0 && (

@@ -99,7 +99,7 @@ export function createRouter(s:RouterServices){return t.router({
   // Stats, effects, and track of one item, shown at its highest level unless a level is picked
   itemPower:p.input(z.object({id:z.number().int().positive(),itemLevel:z.number().int().min(1).max(2000).nullable().default(null),character:itemSearchCharacterSchema.nullable().default(null)})).query(({input})=>run(async()=>{
     const base=await s.gameData.call('item',input.id)
-    const tracks=itemTracks(input.id,base?.trackGroups??null)
+    const tracks=itemTracks(input.id,base?.trackGroups??null,base?.trackInfo??null)
     const level=input.itemLevel??tracks?.max.itemLevel??(base?.itemLevel||null)
     const [power,loot]=await Promise.all([level?s.gameData.call('itemPower',input.id,level):Promise.resolve(null),s.gameData.call('lootShare',input.id,input.character)])
     return {tracks,power,loot,level,basis:input.itemLevel?'picked' as const:tracks?(tracks.max.assumed?'season' as const:'track' as const):'base' as const}

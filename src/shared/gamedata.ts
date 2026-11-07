@@ -14,7 +14,9 @@ export type ItemSource = { encounter: string; instance: string; kind: 'dungeon' 
 export type ItemPrimaryStat = 'strength' | 'agility' | 'intellect'
 export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null }
 export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId: number; modifier: number; icon: number | null }
-export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
+/** An upgrade-track group from the game files: its season scaling set, cross-season track key, and item level per rank */
+export type ItemTrackGroup = { group: number; set: number; key: number; levels: number[]; latest: boolean }
+export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; trackInfo?: ItemTrackGroup[] | null; classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
 export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[] }
 /** Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track */
 export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean } }

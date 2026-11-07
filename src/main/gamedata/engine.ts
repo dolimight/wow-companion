@@ -12,7 +12,7 @@ import type { AppearanceSlot } from '../../shared/domain'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
 
-export const INDEX_VERSION = 3
+export const INDEX_VERSION = 4
 /** Game tables that are plain text rather than client databases, by file ID in the community listfile */
 const GAME_TABLES = { combatRatings: 1391670, stamina: 1980632, socketCost: 1391643 }
 
@@ -49,7 +49,7 @@ const enchantSubclasses: Partial<Record<AppearanceSlot, number[]>> = { head: [0]
 const JUNK = `i.name != '' AND i.name NOT LIKE 'Monster -%' AND i.name NOT LIKE '%[PH]%' AND i.name NOT LIKE 'OLD%' AND i.name NOT LIKE 'Test %' AND i.name NOT LIKE '%Deprecated%' AND i.name NOT LIKE 'zz%' AND i.name NOT LIKE '%(old)%'`
 const EQUIPPABLE = Object.keys(inventoryTypeNames).join(',')
 
-type ItemRow = { id: number; name: string; quality: number; item_level: number; required_level: number; inventory_type: number; class_id: number; subclass_id: number; icon: number | null; expansion: number; bonding: number; sockets: number; description: string; allowable_class_mask?: number | null; spec_ids?: string | null; primary_stats?: string | null; stats?: string | null; item_set?: number | null; track_groups?: string | null }
+type ItemRow = { id: number; name: string; quality: number; item_level: number; required_level: number; inventory_type: number; class_id: number; subclass_id: number; icon: number | null; expansion: number; bonding: number; sockets: number; description: string; allowable_class_mask?: number | null; spec_ids?: string | null; primary_stats?: string | null; stats?: string | null; item_set?: number | null; track_groups?: string | null; latest_track?: number | null }
 
 export type EngineEvents = { status(status: GameDataStatus): void }
 
@@ -87,7 +87,7 @@ export class GameDataEngine {
     try {
       const db = opened = new Database(file, { readonly: true, fileMustExist: true })
       const version = (db.prepare("SELECT value FROM meta WHERE key = 'index_version'").get() as { value: string } | undefined)?.value
-      if (![1, 2, INDEX_VERSION].includes(Number(version))) throw new Error('Index format changed')
+      if (![1, 2, 3, INDEX_VERSION].includes(Number(version))) throw new Error('Index format changed')
       this.db = db
       this.indexVersion = Number(version)
       const count = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
@@ -177,7 +177,8 @@ export class GameDataEngine {
       db.pragma('journal_mode = OFF')
       db.pragma('synchronous = OFF')
       db.exec(`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-        CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, item_level INTEGER NOT NULL, required_level INTEGER NOT NULL, inventory_type INTEGER NOT NULL, class_id INTEGER NOT NULL, subclass_id INTEGER NOT NULL, icon INTEGER, expansion INTEGER NOT NULL, bonding INTEGER NOT NULL, sockets INTEGER NOT NULL, description TEXT NOT NULL, allowable_class_mask INTEGER, spec_ids TEXT, primary_stats TEXT, stats TEXT, item_set INTEGER, track_groups TEXT);
+        CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, item_level INTEGER NOT NULL, required_level INTEGER NOT NULL, inventory_type INTEGER NOT NULL, class_id INTEGER NOT NULL, subclass_id INTEGER NOT NULL, icon INTEGER, expansion INTEGER NOT NULL, bonding INTEGER NOT NULL, sockets INTEGER NOT NULL, description TEXT NOT NULL, allowable_class_mask INTEGER, spec_ids TEXT, primary_stats TEXT, stats TEXT, item_set INTEGER, track_groups TEXT, latest_track INTEGER);
+        CREATE TABLE track_groups (group_id INTEGER PRIMARY KEY, scaling_set INTEGER NOT NULL, track_key INTEGER NOT NULL, levels TEXT NOT NULL);
         CREATE TABLE scaling (item_level INTEGER PRIMARY KEY, data TEXT NOT NULL);
         CREATE TABLE armor_locations (inventory_type INTEGER PRIMARY KEY, data TEXT NOT NULL);
         CREATE TABLE item_effects (item_id INTEGER NOT NULL, spell_id INTEGER NOT NULL, trigger_type INTEGER NOT NULL, cooldown_ms INTEGER NOT NULL, charges INTEGER NOT NULL, position INTEGER NOT NULL);
@@ -185,7 +186,7 @@ export class GameDataEngine {
         CREATE TABLE appearances (modified_id INTEGER PRIMARY KEY, item_id INTEGER NOT NULL, appearance_id INTEGER NOT NULL, modifier INTEGER NOT NULL, icon INTEGER);
         CREATE TABLE sources (item_id INTEGER NOT NULL, encounter TEXT NOT NULL, instance TEXT NOT NULL, kind TEXT NOT NULL, season INTEGER NOT NULL);
         CREATE TABLE enchants (id INTEGER PRIMARY KEY, name TEXT NOT NULL, icon INTEGER);`)
-      const insertItem = db.prepare('INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      const insertItem = db.prepare('INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
       const insertAppearance = db.prepare('INSERT OR IGNORE INTO appearances VALUES (?,?,?,?,?)')
       const insertSource = db.prepare('INSERT INTO sources VALUES (?,?,?,?,?)')
       const insertEnchant = db.prepare('INSERT INTO enchants VALUES (?,?,?)')
@@ -202,12 +203,16 @@ export class GameDataEngine {
           const sockets = (row.SocketType as number[] | undefined)?.filter(Boolean).length ?? 0
           const icon = (base?.IconFileDataID as number) || appearanceIcons.get(id) || null
           const compatibility = compatibilityMetadata(row, specsByItem?.get(id) ?? (specsByItem ? [] : null))
-          insertItem.run(id, cleanGameText(String(row.Display_lang ?? '')), row.OverallQualityID ?? 1, row.ItemLevel ?? 0, Math.max(0, Number(row.RequiredLevel ?? 0)), base?.InventoryType ?? 0, base?.ClassID ?? 0, base?.SubclassID ?? 0, icon, row.ExpansionID ?? 0, row.Bonding ?? 0, sockets, cleanGameText(String(row.Description_lang ?? '')), compatibility.allowableClassMask, compatibility.specIds===null?null:JSON.stringify(compatibility.specIds), compatibility.primaryStats===null?null:JSON.stringify(compatibility.primaryStats), statBlock(row), Number(row.ItemSet ?? 0) || null, trackGroups?.get(id) ? JSON.stringify(trackGroups.get(id)) : null)
+          insertItem.run(id, cleanGameText(String(row.Display_lang ?? '')), row.OverallQualityID ?? 1, row.ItemLevel ?? 0, Math.max(0, Number(row.RequiredLevel ?? 0)), base?.InventoryType ?? 0, base?.ClassID ?? 0, base?.SubclassID ?? 0, icon, row.ExpansionID ?? 0, row.Bonding ?? 0, sockets, cleanGameText(String(row.Description_lang ?? '')), compatibility.allowableClassMask, compatibility.specIds===null?null:JSON.stringify(compatibility.specIds), compatibility.primaryStats===null?null:JSON.stringify(compatibility.primaryStats), statBlock(row), Number(row.ItemSet ?? 0) || null, trackGroups?.items.get(id) ? JSON.stringify(trackGroups.items.get(id)) : null, trackGroups?.items.get(id)?.some(group => trackGroups.groups.get(group)?.set === trackGroups.latestSet) ? 1 : 0)
         }
         if (scaling) {
           const insertScaling = db.prepare('INSERT INTO scaling VALUES (?,?)'), insertLocation = db.prepare('INSERT INTO armor_locations VALUES (?,?)')
           for (const level of scaling.levels) insertScaling.run(level.itemLevel, JSON.stringify(level))
           for (const [type, location] of scaling.locations) insertLocation.run(type, JSON.stringify(location))
+        }
+        if (trackGroups) {
+          const insertGroup = db.prepare('INSERT INTO track_groups VALUES (?,?,?,?)')
+          for (const [group, info] of trackGroups.groups) insertGroup.run(group, info.set, info.key, JSON.stringify(info.levels))
         }
         if (effects) {
           const insertEffect = db.prepare('INSERT INTO item_effects VALUES (?,?,?,?,?,?)'), insertSpell = db.prepare('INSERT INTO spells VALUES (?,?)')
@@ -281,14 +286,41 @@ export class GameDataEngine {
     return { levels, locations }
   }
 
-  /** Upgrade-track bonus groups each item's bonus tree can reach; which season a group belongs to is decided by the season rules */
+  /**
+   * Upgrade-track groups each item's bonus tree can reach, with every group's item levels per rank.
+   * Groups of one season share a scaling set, and each carries a track key that stays the same across
+   * seasons (Adventurer, Veteran, Myth, and so on), so earlier seasons' gear can be named too
+   */
   private async trackGroups(casc: LocalCasc) {
+    const groupRows = await this.table(casc, 'ItemBonusListGroup', ['ItemGroupIlvlScalingID'])
+    const entries = await this.table(casc, 'ItemBonusListGroupEntry', ['ItemBonusListGroupID', 'ItemBonusListID', 'SequenceValue'])
+    const bonuses = await this.table(casc, 'ItemBonus', ['ParentItemBonusListID', 'Type', 'Value'])
+    const configs = await this.table(casc, 'ItemScalingConfig', ['ItemLevel'])
+    const levelOf = new Map<number, number>(), keyOf = new Map<number, number>()
+    for (const bonus of bonuses.values()) {
+      const list = Number(bonus.ParentItemBonusListID), value = bonus.Value as number[]
+      if (Number(bonus.Type) === 49) { const config = configs.get(Number(value[0])); if (config) levelOf.set(list, Number(config.ItemLevel)) }
+      if (Number(bonus.Type) === 34 && Number(value[1]) > 0) keyOf.set(Number(value[0]), Number(value[1]))
+    }
+    const ranks = new Map<number, Array<[number, number]>>()
+    for (const entry of entries.values()) {
+      const group = Number(entry.ItemBonusListGroupID), level = levelOf.get(Number(entry.ItemBonusListID))
+      if (level) ranks.set(group, [...(ranks.get(group) ?? []), [Number(entry.SequenceValue), level]])
+    }
+    const groups = new Map<number, { set: number; key: number; levels: number[] }>()
+    for (const [group, list] of ranks) {
+      const set = Number(groupRows.get(group)?.ItemGroupIlvlScalingID ?? 0), key = keyOf.get(group)
+      // Ranks past six are later extensions; the in-game track reads x/6
+      if (set && key) groups.set(group, { set, key, levels: list.sort((a, b) => a[0] - b[0]).slice(0, 6).map(([, level]) => level) })
+    }
+    const latestSet = Math.max(0, ...[...groups.values()].map(group => group.set))
     const links = await this.table(casc, 'ItemXBonusTree')
     const nodes = new Map<number, Row[]>()
     for (const row of (await this.table(casc, 'ItemBonusTreeNode', ['ParentItemBonusTreeID', 'ChildItemBonusTreeID', 'ChildItemBonusListGroupID'])).values()) {
       const parent = Number(row.ParentItemBonusTreeID)
       nodes.set(parent, [...(nodes.get(parent) ?? []), row])
     }
+    const groupsInfo = groups
     const memo = new Map<number, number[]>()
     const groupsOf = (tree: number, trail: Set<number>): number[] => {
       const known = memo.get(tree)
@@ -308,9 +340,10 @@ export class GameDataEngine {
     const byItem = new Map<number, number[]>()
     for (const link of links.values()) {
       const itemId = Number(link.ItemID), groups = groupsOf(Number(link.ItemBonusTreeID), new Set())
-      if (groups.length) byItem.set(itemId, [...new Set([...(byItem.get(itemId) ?? []), ...groups])])
+      const tracked = groups.filter(group => groups.length && groupsInfo.has(group))
+      if (tracked.length) byItem.set(itemId, [...new Set([...(byItem.get(itemId) ?? []), ...tracked])])
     }
-    return byItem
+    return { items: byItem, groups: groupsInfo, latestSet }
   }
 
   /** Equip and use effects of wearable items, with the spells their descriptions draw values from */
@@ -391,7 +424,10 @@ export class GameDataEngine {
     where.push(`i.inventory_type IN (${types ? types.join(',') : EQUIPPABLE})`)
     if (query.armor && (!query.slot || armorSlots.has(query.slot))) { where.push(`(i.inventory_type NOT IN (1,3,5,6,7,8,9,10,20) OR (i.class_id = 4 AND i.subclass_id = ?))`); params.push(armorTypes.indexOf(query.armor) + 1) }
     if (query.source !== 'any') { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.kind = ?)'); params.push(query.source) }
-    if (query.currentOnly) where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND (s.season = (SELECT MAX(season) FROM sources) OR i.expansion = (SELECT MAX(expansion) FROM items WHERE quality = 4 AND id IN (SELECT item_id FROM sources))))')
+    // This season: on the newest upgrade tracks, or in the newest season's Adventure Guide loot
+    if (query.currentOnly) where.push(this.indexVersion === INDEX_VERSION
+      ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)))"
+      : 'EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND (s.season = (SELECT MAX(season) FROM sources) OR i.expansion = (SELECT MAX(expansion) FROM items WHERE quality = 4 AND id IN (SELECT item_id FROM sources))))')
     const order = tokens.length ? 'ORDER BY bm25(items_fts), i.expansion DESC, i.item_level DESC, i.id' : 'ORDER BY i.expansion DESC, i.item_level DESC, i.quality DESC, i.id'
     const statement = db.prepare(`SELECT i.* FROM items i ${join} WHERE ${where.join(' AND ')} ${order} LIMIT ? OFFSET ?`)
     const seen = new Set<string>()
@@ -422,7 +458,15 @@ export class GameDataEngine {
     if (!row) return null
     const sources = this.sourcesFor([id])
     const appearances = db.prepare('SELECT modified_id, appearance_id, modifier, icon FROM appearances WHERE item_id = ? ORDER BY modifier').all(id) as Array<{ modified_id: number; appearance_id: number; modifier: number; icon: number | null }>
-    return { ...this.summary(row, sources), trackGroups: row.track_groups ? JSON.parse(row.track_groups) as number[] : null, classId: row.class_id, subclassId: row.subclass_id, bonding: bondingNames[row.bonding] ?? null, sockets: row.sockets, description: row.description, appearances: appearances.map(a => ({ modifiedAppearanceId: a.modified_id, appearanceId: a.appearance_id, modifier: a.modifier, icon: a.icon })) }
+    return { ...this.summary(row, sources), trackGroups: row.track_groups ? JSON.parse(row.track_groups) as number[] : null, trackInfo: this.trackInfo(row.track_groups), classId: row.class_id, subclassId: row.subclass_id, bonding: bondingNames[row.bonding] ?? null, sockets: row.sockets, description: row.description, appearances: appearances.map(a => ({ modifiedAppearanceId: a.modified_id, appearanceId: a.appearance_id, modifier: a.modifier, icon: a.icon })) }
+  }
+
+  private trackInfo(json: string | null | undefined) {
+    if (!json || this.indexVersion !== INDEX_VERSION) return null
+    const db = this.ready(), groups = JSON.parse(json) as number[]
+    const rows = db.prepare(`SELECT group_id, scaling_set, track_key, levels FROM track_groups WHERE group_id IN (${groups.map(() => '?').join(',')})`).all(...groups) as Array<{ group_id: number; scaling_set: number; track_key: number; levels: string }>
+    const latest = (db.prepare('SELECT MAX(scaling_set) AS s FROM track_groups').get() as { s: number | null }).s
+    return rows.map(row => ({ group: row.group_id, set: row.scaling_set, key: row.track_key, levels: JSON.parse(row.levels) as number[], latest: row.scaling_set === latest }))
   }
 
   /** Stats, armour, and effects of an item at one item level, from the game's own scaling tables */
