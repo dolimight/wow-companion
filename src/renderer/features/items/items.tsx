@@ -9,7 +9,6 @@ import { Badge, Button, Sheet } from "../../components/ui/primitives";
 import { Term } from "../../components/Term";
 import { api } from "../../lib/client";
 import { ItemIcon } from "./ItemIcon";
-import { ItemHoverCard } from "./ItemHoverCard";
 import { ItemPowerSection, wowheadItemUrl } from "./ItemPower";
 import { errorMessage, notify } from "../../lib/notify";
 import { gearSlotsForInventoryType, qualityNames, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
@@ -102,7 +101,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                 <>
                   <CommandEmpty className="item-search-empty">{results.isFetching ? "Searching…" : character ? "No compatible items match — try another name, source, or season filter" : "No items match — try another name or turn off a filter"}</CommandEmpty>
                   {items.map((item) => (
-                    <ItemHoverCard key={item.id} item={item}><CommandItem value={String(item.id)} onFocus={() => setHighlighted(String(item.id))} onSelect={() => previewItem(item)} className="item-result">
+                    <CommandItem key={item.id} value={String(item.id)} onFocus={() => setHighlighted(String(item.id))} onSelect={() => previewItem(item)} className="item-result">
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
@@ -110,7 +109,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                         {sourceLine(item) && <small className="item-result-source">{sourceLine(item)}</small>}
                         {context && !getItemCompatibility(item,context).verified && <small>{getItemCompatibility(item,context).reason ?? "Some equipment restrictions are unknown"}</small>}
                       </span>
-                    </CommandItem></ItemHoverCard>
+                    </CommandItem>
                   ))}
                   {items.length > 0 && <div className="item-search-pagination">
                     {results.isFetchNextPageError ? <><p role="alert">Could not load more items</p><Button onClick={() => void results.fetchNextPage()}>Try again</Button></>
