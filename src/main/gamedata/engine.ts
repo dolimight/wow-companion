@@ -461,6 +461,14 @@ export class GameDataEngine {
     return { ...this.summary(row, sources), trackGroups: row.track_groups ? JSON.parse(row.track_groups) as number[] : null, trackInfo: this.trackInfo(row.track_groups), classId: row.class_id, subclassId: row.subclass_id, bonding: bondingNames[row.bonding] ?? null, sockets: row.sockets, description: row.description, appearances: appearances.map(a => ({ modifiedAppearanceId: a.modified_id, appearanceId: a.appearance_id, modifier: a.modifier, icon: a.icon })) }
   }
 
+  /** Track groups and their levels for a page of items, so search rows can show how high each item goes */
+  trackInfoFor(ids: number[]): Record<number, { groups: number[]; info: ReturnType<GameDataEngine['trackInfo']> }> {
+    const unique = [...new Set(ids)].filter(id => Number.isInteger(id) && id > 0).slice(0, 200)
+    if (!unique.length || this.indexVersion !== INDEX_VERSION) return {}
+    const rows = this.ready().prepare(`SELECT id, track_groups FROM items WHERE id IN (${unique.map(() => '?').join(',')}) AND track_groups IS NOT NULL`).all(...unique) as Array<{ id: number; track_groups: string }>
+    return Object.fromEntries(rows.map(row => [row.id, { groups: JSON.parse(row.track_groups) as number[], info: this.trackInfo(row.track_groups) }]))
+  }
+
   private trackInfo(json: string | null | undefined) {
     if (!json || this.indexVersion !== INDEX_VERSION) return null
     const db = this.ready(), groups = JSON.parse(json) as number[]

@@ -27,7 +27,7 @@ export type ItemPower = { itemLevel: number; armor: number | null; stats: ItemPo
 /** How many items each boss that drops this one has in its loot, in total and for the selected character */
 export type ItemLootShare = { encounter: string; instance: string; kind: ItemSource['kind']; total: number; forCharacter: number | null }
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
-export type ItemSearchPage = { items: ItemSummary[]; nextOffset: number | null }
+export type ItemSearchPage = { items: Array<ItemSummary & { maxLevel?: ItemTracks['max'] | null }>; nextOffset: number | null }
 export type AppearanceOption = { appearanceId: number; modifiedAppearanceId: number; itemId: number; itemName: string; quality: number; icon: number | null }
 
 export const armorTypes = ['cloth', 'leather', 'mail', 'plate'] as const

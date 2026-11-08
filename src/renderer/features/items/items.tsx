@@ -106,7 +106,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
-                        <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base item level ${item.itemLevel}` : null].filter(Boolean).join(" · ")}</small>
+                        <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${item.maxLevel.track} ${item.maxLevel.rank}/${item.maxLevel.ranks}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
                         {sourceLine(item) && <small className="item-result-source">{sourceLine(item)}</small>}
                         {context && !getItemCompatibility(item,context).verified && <small>{getItemCompatibility(item,context).reason ?? "Some equipment restrictions are unknown"}</small>}
                       </span>

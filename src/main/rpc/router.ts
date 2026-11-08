@@ -94,7 +94,12 @@ export function createRouter(s:RouterServices){return t.router({
   // Item data from the local game install
   gameDataStatus:p.query(()=>s.gameData.currentStatus),
   searchItems:p.input(itemSearchSchema).query(({input})=>run(()=>s.gameData.call('search',input))),
-  searchItemsPage:p.input(itemSearchSchema).query(({input})=>run(()=>s.gameData.call('searchPage',input))),
+  // Each row carries the item's highest level, worked out the same way as the item details
+  searchItemsPage:p.input(itemSearchSchema).query(({input})=>run(async()=>{
+    const page=await s.gameData.call('searchPage',input)
+    const tracks=await s.gameData.call('trackInfoFor',page.items.map(item=>item.id))
+    return {...page,items:page.items.map(item=>({...item,maxLevel:itemTracks(item.id,tracks[item.id]?.groups??null,tracks[item.id]?.info??null)?.max??null}))}
+  })),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
   // Stats, effects, and track of one item, shown at its highest level unless a level is picked
   itemPower:p.input(z.object({id:z.number().int().positive(),itemLevel:z.number().int().min(1).max(2000).nullable().default(null),character:itemSearchCharacterSchema.nullable().default(null)})).query(({input})=>run(async()=>{
