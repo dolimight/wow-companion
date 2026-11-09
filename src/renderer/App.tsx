@@ -71,6 +71,10 @@ import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
 import { outdatedRenderSlots } from "../shared/shown-look";
+import TargetCursor from "./components/TargetCursor";
+
+/** The targeting cursor locks only onto things you can click, choose, or type into, and skips disabled ones */
+const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
@@ -821,6 +825,7 @@ function Shell() {
   );
   return (
     <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
+      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor="#ffffff" cursorColorOnTarget="#7cc4ff" spinDuration={3} showLabel={false} />}
       {drawerMode ? (
         <>
           <div className="workspace-flat">{workspaceNode}</div>

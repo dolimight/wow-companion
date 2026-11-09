@@ -10,7 +10,6 @@ import { addSimulatedItemsToPlan, gearMemory, planHolds, planKey, subscribeGearP
 import { Badge, Button } from '../../components/ui/primitives'
 import { AppSelect } from '../../components/AppSelect'
 import { ItemIcon } from '../items/ItemIcon'
-import TargetCursor from '../../components/TargetCursor'
 import StarBorder from '../../components/StarBorder'
 import { ItemHoverCard } from '../items/ItemHoverCard'
 import { BenchmarkSummary } from './BenchmarkSummary'
@@ -21,14 +20,6 @@ type Result = NonNullable<SimulationJob['result']>
 type Value = Result['values'][number]
 type Verdict = ReturnType<typeof compareSimulationValues>['verdict']
 const PAGE = 12
-/**
- * What the targeting cursor snaps to: every control, every row worth reading, and the menus and item cards that open
- * above the page. It covers the whole window while this page is open, so popups opened from here keep it
- */
-const cursorTargets = [
-  '.cursor-target', 'button', 'a[href]', 'summary', 'input', 'textarea', '[role="combobox"]', '[role="option"]', '[role="menuitem"]', '[role="tab"]',
-  '.sim-hero-chips > span', '.sim-card-delta', '.sim-piece', '.simulation-benchmark-rows > div', '.simulation-benchmark-headline > strong', '.simulation-benchmark-meter', '.simulation-details li', '[data-slot="hover-card-content"]',
-].join(', ')
 const signed = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(Math.round(value)).toLocaleString()}`
 const percent = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value * 100).toFixed(1)}%`
 const activityName = (activity: Activity) => activity === 'raiding' ? 'Raiding' : activity === 'pvp' ? 'PvP' : 'Mythic+'
@@ -60,7 +51,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const [all, setAll] = useState(false)
   const [, refresh] = useReducer((count: number) => count + 1, 0)
 
-  // The targeting cursor is a flourish for this page only, and stays off when the app is set to reduce motion
+  // The star border stays off when the app is set to reduce motion
   const motion = document.documentElement.dataset.reducedMotion !== 'true'
   useEffect(() => subscribeGearPlan(refresh), [])
   const queryClient = useQueryClient()
@@ -109,12 +100,11 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         </div>
       </div>
       <div className="sim-hero-stats">
-        <div className="cursor-target" data-cursor-label="Your baseline"><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>
-        {best && baseline && <div className="sim-hero-best cursor-target" data-cursor-label="Biggest gain"><span>Best result</span><strong>{signed(best.comparison.difference)}</strong><small>{percent(best.comparison.difference / baseline.mean)} · {best.label}</small></div>}
+        <div><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>
+        {best && baseline && <div className="sim-hero-best"><span>Best result</span><strong>{signed(best.comparison.difference)}</strong><small>{percent(best.comparison.difference / baseline.mean)} · {best.label}</small></div>}
       </div>
     </header>
   return <div className="sim-detail">
-    {motion && <TargetCursor targetSelector={cursorTargets} cursorColor="#ffffff" cursorColorOnTarget="#7cc4ff" spinDuration={3} />}
     <Button variant="quiet" className="sim-detail-back" onClick={onBack}><ArrowLeft size={15} />All simulations</Button>
     {motion ? <StarBorder as="div" className="sim-hero-frame" radius={16} thickness={1.5} stars={2} sparkle glow={0.8} duration={7} theme={light ? 'light' : 'dark'} color={light ? '#0065c7' : '#77b9ff'} trailColor={light ? '#8455b9' : '#ceb0f3'} backgroundColor="transparent" textColor="inherit" borderColor="var(--line)">{header}</StarBorder> : header}
 
@@ -134,7 +124,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
             const width = Math.abs(entry.comparison.difference) / scale * 50
             const spread = (entry.comparison.uncertainty ?? 0) / scale * 50
             const center = 50 + (entry.comparison.difference >= 0 ? width : -width)
-            return <li key={entry.value.name} className="cursor-target" data-verdict={entry.comparison.verdict}>
+            return <li key={entry.value.name} data-verdict={entry.comparison.verdict}>
               <span className="sim-chart-label" title={entry.label}>{entry.label}</span>
               <span className="sim-chart-track" aria-hidden="true">
                 <span className="sim-chart-zero" />
@@ -156,7 +146,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
           {shown.map((entry, rank) => {
             const inPlan = planHolds(current, entry.items)
             const taken = takenText(baseline, entry.value)
-            return <article className="sim-card cursor-target" data-cursor-label={`#${rank + 1}`} key={entry.value.name} data-verdict={entry.comparison.verdict}>
+            return <article className="sim-card" key={entry.value.name} data-verdict={entry.comparison.verdict}>
               <header>
                 <span className="sim-card-rank">{rank + 1}</span>
                 <strong className="sim-card-title">{entry.label}</strong>
@@ -167,7 +157,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
                 {entry.items.map(item => {
                   const was = before.get(item.slot)
                   const gain = item.itemLevel != null && was?.itemLevel != null ? item.itemLevel - was.itemLevel : null
-                  return <li key={item.slot} className="cursor-target" data-cursor-label={gearSlotLabels[item.slot]}>
+                  return <li key={item.slot}>
                     <span className="sim-swap-slot">{gearSlotLabels[item.slot]}</span>
                     <Piece item={was ?? null} icon={was?.itemId ? icons.get(was.itemId) : undefined} muted />
                     <ArrowRight className="sim-swap-arrow" size={15} aria-hidden="true" />
