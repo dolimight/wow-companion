@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
 import { version as appVersion } from '../../package.json';
-import { appIconChoices, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
+import { appIconChoices, appIconCursor, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createRootRoute,
@@ -825,7 +825,7 @@ function Shell() {
   );
   return (
     <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
-      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor="#ffffff" cursorColorOnTarget="#7cc4ff" spinDuration={3} showLabel={false} />}
+      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor={appIconCursor[appIcon].color} cursorColorOnTarget={appIconCursor[appIcon].target} blendMode="normal" spinDuration={3} showLabel={false} />}
       {drawerMode ? (
         <>
           <div className="workspace-flat">{workspaceNode}</div>
