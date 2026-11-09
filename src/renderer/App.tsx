@@ -13,6 +13,7 @@ import {
   Link,
   useBlocker,
   useNavigate,
+  useSearch,
   useParams,
   useRouter,
   useRouterState,
@@ -1323,7 +1324,11 @@ function CharacterRoute() {
 }
 function SimulationsRoute({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);
-  return <SimulationsPage character={character} activity={activity} />;
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { return?: string; job?: string };
+  // Opening a job pushes history, so Back returns to the list
+  const openJob = (job: string | null) => void navigate({ to: ".", search: ((previous: Record<string, unknown>) => ({ ...previous, job: job ?? undefined })) as never });
+  return <SimulationsPage character={character} activity={activity} jobId={search.job} onOpenJob={openJob} />;
 }
 function CharacterProgression({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);
@@ -2484,7 +2489,11 @@ const characterRoute = createRoute({
 const characterViewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/characters/$characterId/$section/$view",
-  validateSearch: returnSearch,
+  // A simulation's details page is the simulations view with that job named
+  validateSearch: (search: Record<string, unknown>): { return?: string; job?: string } => ({
+    ...returnSearch(search),
+    job: typeof search.job === "string" && /^[\w-]{1,100}$/.test(search.job) ? search.job : undefined,
+  }),
   component: CharacterRoute,
 });
 const settingsRoute = createRoute({
