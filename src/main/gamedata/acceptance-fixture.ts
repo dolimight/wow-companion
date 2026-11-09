@@ -38,6 +38,16 @@ export async function createEnhancementFixture(directory: string) {
       db.prepare('INSERT INTO items_fts(rowid,name) VALUES (?,?)').run(id, itemName)
       db.prepare('INSERT INTO sources VALUES (?, ?, ?, ?, ?)').run(id, 'Acceptance boss', 'Fictional acceptance dungeon', index % 2 ? 'dungeon' : 'raid', 1)
     }
+    // The current index format adds stats, upgrade tracks, and effects; the fictional items leave them empty
+    db.exec(`ALTER TABLE items ADD COLUMN stats TEXT;
+      ALTER TABLE items ADD COLUMN item_set INTEGER;
+      ALTER TABLE items ADD COLUMN track_groups TEXT;
+      ALTER TABLE items ADD COLUMN latest_track INTEGER NOT NULL DEFAULT 0;
+      CREATE TABLE track_groups(group_id INTEGER PRIMARY KEY,scaling_set INTEGER NOT NULL,track_key INTEGER NOT NULL,levels TEXT NOT NULL);
+      CREATE TABLE scaling(item_level INTEGER PRIMARY KEY,data TEXT NOT NULL);
+      CREATE TABLE armor_locations(inventory_type INTEGER PRIMARY KEY,data TEXT NOT NULL);
+      CREATE TABLE item_effects(item_id INTEGER NOT NULL,spell_id INTEGER NOT NULL,trigger_type INTEGER NOT NULL,cooldown_ms INTEGER NOT NULL,charges INTEGER NOT NULL,position INTEGER NOT NULL);
+      CREATE TABLE spells(id INTEGER PRIMARY KEY,data TEXT NOT NULL);`)
   } finally { db.close() }
   return install
 }

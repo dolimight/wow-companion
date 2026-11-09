@@ -14,9 +14,20 @@ export type ItemSource = { encounter: string; instance: string; kind: 'dungeon' 
 export type ItemPrimaryStat = 'strength' | 'agility' | 'intellect'
 export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null }
 export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId: number; modifier: number; icon: number | null }
-export type ItemDetail = ItemSummary & { classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
+/** An upgrade-track group from the game files: its season scaling set, cross-season track key, and item level per rank */
+export type ItemTrackGroup = { group: number; set: number; key: number; levels: number[]; latest: boolean }
+export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; trackInfo?: ItemTrackGroup[] | null; classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
+export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[] }
+/** Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track */
+export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean } }
+export type ItemPowerStat = { type: number; name: string; value: number; secondary: boolean }
+export type ItemPowerEffect = { label: string; text: string; complete: boolean; cooldown: string | null }
+/** Stats and effects worked out from the game's scaling tables for one item level; null parts are unknown */
+export type ItemPower = { itemLevel: number; armor: number | null; stats: ItemPowerStat[] | null; effects: ItemPowerEffect[]; setPiece: boolean }
+/** How many items each boss that drops this one has in its loot, in total and for the selected character */
+export type ItemLootShare = { encounter: string; instance: string; kind: ItemSource['kind']; total: number; forCharacter: number | null }
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
-export type ItemSearchPage = { items: ItemSummary[]; nextOffset: number | null }
+export type ItemSearchPage = { items: Array<ItemSummary & { maxLevel?: ItemTracks['max'] | null }>; nextOffset: number | null }
 export type AppearanceOption = { appearanceId: number; modifiedAppearanceId: number; itemId: number; itemName: string; quality: number; icon: number | null }
 
 export const armorTypes = ['cloth', 'leather', 'mail', 'plate'] as const
@@ -36,10 +47,23 @@ export const itemSearchSchema = z.object({
   character: itemSearchCharacterSchema.nullable().default(null),
   source: z.enum(['any', 'dungeon', 'raid']).default('any'),
   currentOnly: z.boolean().default(false),
+  /** Only items carrying this secondary stat */
+  stat: z.enum(['any', 'crit', 'haste', 'mastery', 'versatility']).default('any'),
+  /** Only items of this quality, by its index in qualityNames */
+  quality: z.number().int().min(0).max(7).nullable().default(null),
+  /** Only items dropping in this dungeon or raid */
+  instance: z.string().max(120).nullable().default(null),
+  /** Only items with an on-use, equip, or proc effect */
+  withEffect: z.boolean().default(false),
+  /** Only items with at least one gem socket */
+  withSocket: z.boolean().default(false),
   limit: z.number().int().min(1).max(100).default(40),
   offset: z.number().int().nonnegative().default(0),
 })
 export type ItemSearch = z.input<typeof itemSearchSchema>
+/** Secondary stat filter values and the game's stat type for each */
+export const secondaryStatTypes = { crit: 32, haste: 36, mastery: 49, versatility: 40 } as const
+export type ItemInstance = { name: string; kind: string }
 
 /** Inventory types the game uses for each paper-doll slot */
 export const slotInventoryTypes: Record<z.infer<typeof appearanceSlotSchema>, number[]> = {
