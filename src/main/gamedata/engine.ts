@@ -6,7 +6,7 @@ import { LocalCasc } from './casc'
 import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
-import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, slotInventoryTypes, type AppearanceOption, type EnhancementOption, type GameDataStatus, type ItemDetail, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
+import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EnhancementOption, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot } from '../../shared/domain'
 import { getItemCompatibility } from '../../shared/item-compatibility'
@@ -424,6 +424,13 @@ export class GameDataEngine {
     where.push(`i.inventory_type IN (${types ? types.join(',') : EQUIPPABLE})`)
     if (query.armor && (!query.slot || armorSlots.has(query.slot))) { where.push(`(i.inventory_type NOT IN (1,3,5,6,7,8,9,10,20) OR (i.class_id = 4 AND i.subclass_id = ?))`); params.push(armorTypes.indexOf(query.armor) + 1) }
     if (query.source !== 'any') { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.kind = ?)'); params.push(query.source) }
+    if (query.instance) { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.instance = ?)'); params.push(query.instance) }
+    if (query.quality != null) { where.push('i.quality = ?'); params.push(query.quality) }
+    if (query.withSocket) where.push('i.sockets > 0')
+    const v3 = (this.indexVersion ?? 0) >= 3
+    // A stat counts only when the item gives it a budget share, since unused slots can still name a stat
+    if (query.stat !== 'any') where.push(v3 ? `EXISTS (SELECT 1 FROM json_each(i.stats, '$.t') t WHERE t.value = ${secondaryStatTypes[query.stat]} AND COALESCE(json_extract(i.stats, '$.a[' || t.key || ']'), 0) != 0)` : '0')
+    if (query.withEffect) where.push(this.indexVersion === INDEX_VERSION ? 'EXISTS (SELECT 1 FROM item_effects e WHERE e.item_id = i.id)' : '0')
     // This season: on the newest upgrade tracks, or in the newest season's Adventure Guide loot
     if (query.currentOnly) where.push(this.indexVersion === INDEX_VERSION
       ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)))"
@@ -523,6 +530,16 @@ export class GameDataEngine {
     const rows = this.ready().prepare(`SELECT * FROM items WHERE id IN (${unique.map(() => '?').join(',')})`).all(...unique) as ItemRow[]
     const sources = this.sourcesFor(rows.map(row => row.id))
     return rows.map(row => this.summary(row, sources))
+  }
+
+  /** Dungeons and raids that drop gear, newest season first when only this season is wanted */
+  instances(currentOnly: boolean): ItemInstance[] {
+    // Same rule as the season filter on results: on this season's tracks, or in this season's Adventure Guide loot
+    const season = !currentOnly ? '' : this.indexVersion === INDEX_VERSION
+      ? 'JOIN items i ON i.id = s.item_id WHERE i.latest_track = 1 OR (s.season > 0 AND s.season = (SELECT MAX(season) FROM sources))'
+      : 'WHERE s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)'
+    const rows = this.ready().prepare(`SELECT s.instance AS name, MIN(s.kind) AS kind FROM sources s ${season} GROUP BY s.instance ORDER BY MIN(s.kind) DESC, s.instance`).all() as ItemInstance[]
+    return rows.filter(row => row.name)
   }
 
   /** Current-expansion enchant scrolls for a slot, or gems; rank variants collapse to the best quality */

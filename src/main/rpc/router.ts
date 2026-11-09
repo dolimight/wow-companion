@@ -101,6 +101,7 @@ export function createRouter(s:RouterServices){return t.router({
     return {...page,items:page.items.map(item=>({...item,maxLevel:itemTracks(item.id,tracks[item.id]?.groups??null,tracks[item.id]?.info??null)?.max??null}))}
   })),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
+  itemInstances:p.input(z.object({currentOnly:z.boolean()})).query(({input})=>run(()=>s.gameData.call('instances',input.currentOnly))),
   // Stats, effects, and track of one item, shown at its highest level unless a level is picked
   itemPower:p.input(z.object({id:z.number().int().positive(),itemLevel:z.number().int().min(1).max(2000).nullable().default(null),character:itemSearchCharacterSchema.nullable().default(null)})).query(({input})=>run(async()=>{
     const base=await s.gameData.call('item',input.id)

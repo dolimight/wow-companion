@@ -64,6 +64,7 @@ export const api={
  searchItems:async(input:ItemSearch)=>(await client()).searchItems.query(input),
  searchItemsPage:async(input:ItemSearch)=>(await client()).searchItemsPage.query(input),
  getItem:async(id:number)=>(await client()).getItem.query({id}),
+ itemInstances:async(currentOnly:boolean)=>(await client()).itemInstances.query({currentOnly}),
  getItems:async(ids:number[])=>(await client()).getItems.query({ids}),
  itemPower:async(input:{id:number;itemLevel?:number|null;character?:ItemSearchCharacter|null})=>(await client()).itemPower.query(input),
  enhancements:async(input:{kind:'enchant'|'gem';slot:AppearanceSlot|null})=>(await client()).enhancements.query(input),

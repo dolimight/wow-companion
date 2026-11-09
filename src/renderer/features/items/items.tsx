@@ -11,7 +11,7 @@ import { api } from "../../lib/client";
 import { ItemIcon } from "./ItemIcon";
 import { ItemPowerSection, wowheadItemUrl } from "./ItemPower";
 import { errorMessage, notify } from "../../lib/notify";
-import { gearSlotsForInventoryType, qualityNames, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
+import { armorSlots, armorTypes, gearSlotsForInventoryType, qualityNames, type ArmorType, type ItemSearch, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
 import { getItemCompatibility } from "../../../shared/item-compatibility";
 import type { AppearanceSlot, Character, GearItem } from "../../../shared/domain";
 import "./items.css";
@@ -40,29 +40,44 @@ const slotOptions: Array<{ value: AppearanceSlot | "any"; label: string }> = [
   { value: "finger1", label: "Rings" }, { value: "trinket1", label: "Trinkets" }, { value: "mainHand", label: "Main hand" }, { value: "offHand", label: "Off hand" },
 ];
 
+type Filters = { source: "any" | "dungeon" | "raid"; instance: string; stat: NonNullable<ItemSearch["stat"]>; quality: string; armor: ArmorType | "any"; withEffect: boolean; withSocket: boolean };
+const noFilters: Filters = { source: "any", instance: "any", stat: "any", quality: "any", armor: "any", withEffect: false, withSocket: false };
+const statOptions = [{ value: "any", label: "Any stat" }, { value: "crit", label: "Critical Strike" }, { value: "haste", label: "Haste" }, { value: "mastery", label: "Mastery" }, { value: "versatility", label: "Versatility" }];
+const qualityOptions = [{ value: "any", label: "Any quality" }, ...[2, 3, 4, 5].map(quality => ({ value: String(quality), label: qualityNames[quality]! }))];
+const armorOptions = [{ value: "any", label: "Any armor" }, ...armorTypes.map(armor => ({ value: armor, label: armor[0]!.toUpperCase() + armor.slice(1) }))];
+
 /** Item search that runs entirely against the local index built from the user's WoW install */
 export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string }) {
   const status = useGameData();
   const [text, setText] = useState("");
   const [slot, setSlot] = useState<AppearanceSlot | "any">(fixedSlot ?? "any");
-  const [source, setSource] = useState<"any" | "dungeon" | "raid">("any");
+  const [filters, setFilters] = useState<Filters>(noFilters);
+  const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => setFilters(previous => ({ ...previous, [key]: value }));
+  const { source } = filters;
   const [current, setCurrent] = useState(true);
   const [highlighted, setHighlighted] = useState("");
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => { if (open) { setSlot(fixedSlot ?? "any"); setText(""); setHighlighted(""); } }, [open, fixedSlot, character?.id, character?.className, character?.specId, character?.level]);
   const debouncedText = useDebounced(text);
-  const query = {text:debouncedText,slot:fixedSlot??slot,source,current};
+  const query = {text:debouncedText,slot:fixedSlot??slot,current,...filters};
+  const shownSlot = fixedSlot ?? (slot === "any" ? null : slot);
+  // Armor type only narrows armor slots, and a character already limits results to what they can wear
+  const armorFilter = !character && (!shownSlot || armorSlots.has(shownSlot));
+  const instances = useQuery({ queryKey: ["item-instances", current], queryFn: () => api.itemInstances(current), enabled: open && status.data?.state === "ready", staleTime: Infinity });
+  const instanceOptions = [{ value: "any", label: "Any dungeon or raid" }, ...(instances.data ?? []).filter(entry => source === "any" || entry.kind === source).map(entry => ({ value: entry.name, label: entry.name }))];
+  useEffect(() => { if (filters.instance !== "any" && instances.data && !instanceOptions.some(option => option.value === filters.instance)) setFilter("instance", "any"); }, [instances.data, source]);
+  const activeFilters = (Object.keys(noFilters) as Array<keyof Filters>).filter(key => filters[key] !== noFilters[key] && (key !== "armor" || armorFilter)).length;
   const context = character ? {className:character.className,specId:character.specId,level:character.level} : null;
   const ready = status.data?.state === "ready";
   const results = useInfiniteQuery({
     queryKey: ["item-search-pages", character?.id, context, query],
-    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, limit: 40, offset: pageParam }),
+    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, instance: query.instance === "any" ? null : query.instance, stat: query.stat, quality: query.quality === "any" ? null : Number(query.quality), armor: armorFilter && query.armor !== "any" ? query.armor : null, withEffect: query.withEffect, withSocket: query.withSocket, limit: 40, offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: page => page.nextOffset ?? undefined,
     enabled: open && ready,
   });
   const items = results.data?.pages.flatMap(page => page.items) ?? [];
-  useEffect(() => { list.current?.scrollTo(0, 0); setHighlighted(""); }, [debouncedText, fixedSlot, slot, source, current, character?.id, character?.className, character?.specId, character?.level]);
+  useEffect(() => { list.current?.scrollTo(0, 0); setHighlighted(""); }, [debouncedText, fixedSlot, slot, filters, current, character?.id, character?.className, character?.specId, character?.level]);
   const loadMore = () => { if (results.hasNextPage && !results.isFetching && !results.isFetchNextPageError) void results.fetchNextPage(); };
   const pickItem = (item: ItemSummary) => {
     const compatibility = getItemCompatibility(item, context, {slot:fixedSlot ?? (slot === "any" ? null : slot)});
@@ -80,10 +95,21 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
             <CommandInput value={text} onValueChange={setText} placeholder={fixedSlot ? "Search items for this slot" : "Search items by name"} aria-label="Search items" />
             <div className="item-search-filters">
               {!fixedSlot && <AppSelect aria-label="Slot" value={slot} onValueChange={(value) => setSlot(value as AppearanceSlot | "any")} options={slotOptions} />}
-              <AppSelect aria-label="Where it comes from" value={source} onValueChange={(value) => setSource(value as typeof source)} options={[{ value: "any", label: "Any source" }, { value: "dungeon", label: "Dungeons" }, { value: "raid", label: "Raids" }]} />
+              <AppSelect aria-label="Where it comes from" value={source} onValueChange={(value) => setFilter("source", value as Filters["source"])} options={[{ value: "any", label: "Any source" }, { value: "dungeon", label: "Dungeons" }, { value: "raid", label: "Raids" }]} />
+              <AppSelect aria-label="Dungeon or raid" value={filters.instance} onValueChange={(value) => setFilter("instance", value)} options={instanceOptions} />
+              <AppSelect aria-label="Secondary stat" value={filters.stat} onValueChange={(value) => setFilter("stat", value as Filters["stat"])} options={statOptions} />
+              <AppSelect aria-label="Quality" value={filters.quality} onValueChange={(value) => setFilter("quality", value)} options={qualityOptions} />
+              {armorFilter && <AppSelect aria-label="Armor type" value={filters.armor} onValueChange={(value) => setFilter("armor", value as Filters["armor"])} options={armorOptions} />}
               <Toggle type="button" variant="outline" className="workspace-toggle" pressed={current} onPressedChange={setCurrent} aria-label="This season only">
                 <span>This season only</span><span className="toggle-state">{current ? "On" : "Off"}</span>
               </Toggle>
+              <Toggle type="button" variant="outline" className="workspace-toggle" pressed={filters.withEffect} onPressedChange={(pressed) => setFilter("withEffect", pressed)} aria-label="Has a special effect">
+                <span>Has an effect</span><span className="toggle-state">{filters.withEffect ? "On" : "Off"}</span>
+              </Toggle>
+              <Toggle type="button" variant="outline" className="workspace-toggle" pressed={filters.withSocket} onPressedChange={(pressed) => setFilter("withSocket", pressed)} aria-label="Has a gem socket">
+                <span>Has a socket</span><span className="toggle-state">{filters.withSocket ? "On" : "Off"}</span>
+              </Toggle>
+              {activeFilters > 0 && <Button variant="quiet" onClick={() => setFilters(noFilters)}>Clear {activeFilters === 1 ? "filter" : `${activeFilters} filters`}</Button>}
             </div>
             <div className="item-search-context" role="status">
               {character ? <><strong>For {character.name}</strong><span>{[character.specName !== "Unknown" ? character.specName : null, character.className !== "Unknown" ? character.className : "Class unknown", character.level != null ? `Level ${character.level}` : null].filter(Boolean).join(" · ")}</span>{!character.specId && <span>Specialization unknown — refresh this character for spec filtering</span>}</> : <span>Select a character to filter by class and specialization</span>}

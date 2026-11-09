@@ -47,10 +47,23 @@ export const itemSearchSchema = z.object({
   character: itemSearchCharacterSchema.nullable().default(null),
   source: z.enum(['any', 'dungeon', 'raid']).default('any'),
   currentOnly: z.boolean().default(false),
+  /** Only items carrying this secondary stat */
+  stat: z.enum(['any', 'crit', 'haste', 'mastery', 'versatility']).default('any'),
+  /** Only items of this quality, by its index in qualityNames */
+  quality: z.number().int().min(0).max(7).nullable().default(null),
+  /** Only items dropping in this dungeon or raid */
+  instance: z.string().max(120).nullable().default(null),
+  /** Only items with an on-use, equip, or proc effect */
+  withEffect: z.boolean().default(false),
+  /** Only items with at least one gem socket */
+  withSocket: z.boolean().default(false),
   limit: z.number().int().min(1).max(100).default(40),
   offset: z.number().int().nonnegative().default(0),
 })
 export type ItemSearch = z.input<typeof itemSearchSchema>
+/** Secondary stat filter values and the game's stat type for each */
+export const secondaryStatTypes = { crit: 32, haste: 36, mastery: 49, versatility: 40 } as const
+export type ItemInstance = { name: string; kind: string }
 
 /** Inventory types the game uses for each paper-doll slot */
 export const slotInventoryTypes: Record<z.infer<typeof appearanceSlotSchema>, number[]> = {
