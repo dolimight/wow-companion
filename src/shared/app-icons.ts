@@ -32,3 +32,16 @@ export const appIconFiles: Record<AppIconVariant, { logo: string; png: string; i
   thanksgiving: { logo: 'wow-companion-thanksgiving-logo.png', png: 'wow-companion-thanksgiving-icon.png', ico: 'wow-companion-thanksgiving.ico' },
   christmas: { logo: 'wow-companion-christmas-logo.png', png: 'wow-companion-christmas-icon.png', ico: 'wow-companion-christmas.ico' },
 }
+/** Targeting cursor colors taken from each icon's artwork: its color while moving, and the one it shifts to on a control */
+export const appIconCursor: Record<AppIconVariant, { color: string; target: string }> = {
+  classic: { color: '#30adf9', target: '#74d3fc' },
+  nightly: { color: '#9b4dff', target: '#c79bff' },
+  newyear: { color: '#f2b632', target: '#f8cf71' },
+  valentine: { color: '#e0336a', target: '#ff7aa0' },
+  stpatrick: { color: '#1fae4b', target: '#f8d46f' },
+  easter: { color: '#3dbb85', target: '#9be6c3' },
+  independence: { color: '#2f6bff', target: '#e8333b' },
+  halloween: { color: '#f87101', target: '#fb8f04' },
+  thanksgiving: { color: '#d4581c', target: '#e8a33d' },
+  christmas: { color: '#d12b2b', target: '#2ea44f' },
+}

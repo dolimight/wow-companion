@@ -1,0 +1,93 @@
+{
+  "_note": "Trimmed from a real SimulationCraft 1210-01 (73a372b) json2 report: MID2 Blood Death Knight sample profile, 5 targets, 60 s, 1000 iterations, with two candidate profilesets and an unchanged reference",
+  "version": "1210-01",
+  "report_version": "2.0.0",
+  "ptr_enabled": 1,
+  "beta_enabled": 0,
+  "git_revision": "73a372b",
+  "sim": {
+    "options": {
+      "dbc": {
+        "Live": {
+          "build_level": 70529,
+          "wow_version": "12.1.5.70529",
+          "hotfix_date": "2026-10-22",
+          "hotfix_build": 70529,
+          "hotfix_hash": "9a6321a532c6718f554c0236fa8c35caefa375da04be3ee0a5a650226d26177c"
+        },
+        "PTR": {
+          "build_level": 70424,
+          "wow_version": "12.1.7.70424",
+          "hotfix_date": "2026-10-21",
+          "hotfix_build": 70424,
+          "hotfix_hash": "cb653b07ebb4944fd3ff9c654e2a24265dcb7854a173eb754a55e59f7208b97b"
+        },
+        "version_used": "Live"
+      }
+    },
+    "players": [
+      {
+        "name": "companion_baseline",
+        "collected_data": {
+          "fight_length": {
+            "mean": 59.98608908908911,
+            "count": 999
+          },
+          "dps": {
+            "mean": 427661.5947373135,
+            "mean_std_dev": 1375.5396898170131,
+            "count": 999
+          },
+          "dtps": {
+            "mean": 1307346.3111571206,
+            "count": 999
+          }
+        }
+      }
+    ],
+    "profilesets": {
+      "metric": "Damage per Second",
+      "results": [
+        {
+          "name": "companion_reference",
+          "mean": 426004.14117957617,
+          "mean_stddev": 1323.9025618054434,
+          "iterations": 1000,
+          "additional_metrics": [
+            {
+              "metric": "Damage Taken per Second",
+              "mean": 21979.44905701691,
+              "mean_stddev": 237.12799136872331
+            }
+          ]
+        },
+        {
+          "name": "companion_candidate_1",
+          "mean": 424558.16458032234,
+          "mean_stddev": 1429.9871325852007,
+          "iterations": 1000,
+          "additional_metrics": [
+            {
+              "metric": "Damage Taken per Second",
+              "mean": 21909.054230941445,
+              "mean_stddev": 231.43659645976453
+            }
+          ]
+        },
+        {
+          "name": "companion_candidate_2",
+          "mean": 423619.89846779767,
+          "mean_stddev": 1400.0932524599114,
+          "iterations": 1000,
+          "additional_metrics": [
+            {
+              "metric": "Damage Taken per Second",
+              "mean": 22534.062909728407,
+              "mean_stddev": 252.2897525950037
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

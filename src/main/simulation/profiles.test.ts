@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { exportCharacterProfile, importCharacterProfile, parseSimulationProfile, characterBaselineHash, hash } from './profiles'
+import { engineRace, exportCharacterProfile, importCharacterProfile, parseSimulationProfile, characterBaselineHash, hash } from './profiles'
 import { simulationCharacter } from './fixtures'
 
 describe('bounded SimulationCraft profiles', () => {
+  it('writes the class and race keywords SimulationCraft accepts', () => {
+    expect(engineRace("Mag'har Orc")).toBe('maghar_orc')
+    expect(engineRace('Dracthyr')).toBe('dracthyr_horde')
+    expect(engineRace('Kul Tiran')).toBe('kul_tiran')
+    expect(engineRace('Blood Elf')).toBe('blood_elf')
+    expect(engineRace('Made-up Race')).toBeNull()
+  })
   it('exports exact item identifiers, talents and attribution with an immutable baseline hash', () => {
     const character = simulationCharacter()
     character.gear[0]!.bonusIds = [123, 456]
@@ -42,7 +49,8 @@ describe('bounded SimulationCraft profiles', () => {
   it('accepts the Retail addon class alias and safe header fields without allowing executable directives', () => {
     const profile = parseSimulationProfile('deathknight="Synthetic"\nlevel=90\nrace=blood_elf\nregion=us\nserver=fixture\nrole=tank\nprofessions=alchemy=100/blacksmithing=100\nspec=blood\ntalents=ABC123==\nhead=,id=123,content_tuning=456,crafted_stats=32/40')
     expect(profile.className).toBe('death_knight')
-    expect(profile.text).toContain('death_knight=companion_baseline')
+    expect(profile.text).toContain('deathknight=companion_baseline')
+    expect(profile.text).not.toContain('death_knight=')
     expect(profile.fields.professions).toBe('alchemy=100/blacksmithing=100')
   })
   it('retains a different manual profile without pretending it matches the character', () => {

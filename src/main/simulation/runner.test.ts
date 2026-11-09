@@ -3,8 +3,10 @@ import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { parseSimulationReport, runSimulationProcess } from './runner'
-import { simulationJson, simulationRequest } from './fixtures'
+import { parseSimulationReport, runSimulationProcess, simulationArguments } from './runner'
+import { profilesetJson, simulationJson, simulationRequest } from './fixtures'
+import type { SimulationRequest } from '../../shared/simulation'
+import recorded from '../../../fixtures/simulation/simc-1210-01-profileset.json'
 
 const directories: string[] = []
 afterEach(async () => { for (const directory of directories.splice(0)) { if (!path.resolve(directory).startsWith(path.join(tmpdir(), 'wow-simulation-test-'))) throw new Error('Unexpected test directory'); await rm(directory, { recursive: true, force: true }) } })
@@ -54,10 +56,60 @@ describe('managed local simulation process', () => {
     report.sim.players[0]!.name = 'unrelated_actor'
     expect(() => parseSimulationReport(report, request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
   })
+  it('builds fixed engine arguments from the scenario preset and any custom settings', () => {
+    const request = simulationRequest()
+    expect(simulationArguments(request)).toEqual(expect.arrayContaining(['fight_style=Patchwerk', 'max_time=300', 'desired_targets=1', 'single_actor_batch=1']))
+    const pulls: SimulationRequest = { ...request, scenarioId: 'big-pulls', scenario: { style: 'Patchwerk', targets: 6, fightSeconds: 45 }, mode: 'profileset', damageTaken: true }
+    const args = simulationArguments(pulls)
+    expect(args).toEqual(expect.arrayContaining(['desired_targets=6', 'max_time=45', 'profileset_metric=dps,dtps']))
+    expect(args).not.toContain('single_actor_batch=1')
+    expect(simulationArguments({ ...request, scenarioId: 'dungeon-slice' }).some(arg => arg.startsWith('desired_targets'))).toBe(false)
+  })
+  it('reads profileset candidates and tank damage taken from a version 3 report', () => {
+    const request: SimulationRequest = { ...simulationRequest(), mode: 'profileset', damageTaken: true, candidates: [[], []], candidateLabels: ['Ring A', 'Ring B'] }
+    const parsed = parseSimulationReport(profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [101_000, 99_000]), request, 'hash', 'artifact', request.context.now, true)
+    // The baseline comes from the unchanged reference profileset, measured the same way as each candidate
+    expect(parsed.values.map(value => [value.name, value.mean, value.standardError])).toEqual([['companion_baseline', 100_200, 110], ['companion_candidate_1', 101_000, 110], ['companion_candidate_2', 99_000, 110]])
+    expect(parsed.values[0]!.damageTaken).toEqual({ mean: 40_000, standardError: 80 })
+    expect(parsed.values[1]!.damageTaken).toEqual({ mean: 39_000, standardError: 80 })
+    expect(parsed.applicability).toBe('current')
+  })
+  it('reads a recorded report from a real SimulationCraft 1210-01 run', () => {
+    const request: SimulationRequest = { ...simulationRequest(), mode: 'profileset', damageTaken: true, candidates: [[], []], context: { ...simulationRequest().context, gameBuild: '12.1.5.70529' } }
+    const parsed = parseSimulationReport(recorded, request, 'hash', 'artifact', request.context.now, true)
+    expect(parsed.engine).toMatchObject({ version: '1210-01', reportVersion: '2.0.0', gameBuild: '12.1.5.70529', revision: '73a372b' })
+    expect(parsed.applicability).toBe('current')
+    expect(parsed.values.map(value => Math.round(value.mean))).toEqual([426004, 424558, 423620])
+    expect(parsed.values.map(value => Math.round(value.damageTaken!.mean))).toEqual([21979, 21909, 22534])
+    expect(parsed.values.every(value => value.standardError !== null && value.damageTaken?.standardError !== null)).toBe(true)
+  })
+  it('turns the total damage taken of a copied actor into damage taken per second', () => {
+    const request: SimulationRequest = { ...simulationRequest(), damageTaken: true }
+    expect(parseSimulationReport(simulationJson(), request, 'hash', 'artifact', request.context.now, true).values[0]!.damageTaken).toEqual({ mean: 40_000, standardError: null })
+  })
+  it('flags a run that used PTR data even though the build supports both', () => {
+    const request = simulationRequest()
+    const report = simulationJson()
+    report.sim.options.dbc.version_used = 'PTR'
+    const parsed = parseSimulationReport(report, request, 'hash', 'artifact', request.context.now, true)
+    expect(parsed.reasons).toContain('The selected engine uses PTR or beta data')
+    expect(parsed.engine.gameBuild).toBe('12.1.7.70424')
+  })
+  it('rejects a profileset report whose candidates do not match the request', () => {
+    const request: SimulationRequest = { ...simulationRequest(), mode: 'profileset', candidates: [[], []] }
+    expect(() => parseSimulationReport(profilesetJson(['companion_candidate_1'], [1]), request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
+    const noReference = profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [1, 2])
+    ;(noReference.sim.profilesets as { results: unknown[] }).results.shift()
+    expect(() => parseSimulationReport(noReference, request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
+    expect(() => parseSimulationReport(profilesetJson(['companion_candidate_1', 'other'], [1, 2]), request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
+    const noDps = profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [1, 2])
+    for (const set of (noDps.sim.profilesets as { results: Array<{ mean?: number }> }).results) delete set.mean
+    expect(() => parseSimulationReport(noDps, request, 'hash', 'artifact', request.context.now, true)).toThrow('damage per second')
+  })
   it('retains engine build mismatch and unknown uncertainty as explicit unsupported facts', () => {
     const request = simulationRequest()
     const report = simulationJson()
-    report.sim.options.dbc.live.build_level = 99999
+    ;(report.sim.options.dbc as { Live: { wow_version: string } }).Live.wow_version = '12.1.5.99999'
     delete (report.sim.players[0]!.collected_data.dps as { mean_std_dev?: number }).mean_std_dev
     const parsed = parseSimulationReport(report, request, 'hash', 'artifact', request.context.now, true)
     expect(parsed.applicability).toBe('unsupported')

@@ -1,8 +1,8 @@
 import { availableParallelism } from 'node:os'
 import path from 'node:path'
-import { mkdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import type { Character } from '../../shared/domain'
+import type { Character, GearItem } from '../../shared/domain'
 import type { DatabaseClient } from '../database'
 import { baselineFromCharacter, toItemVariant } from '../../shared/gear-variants'
 import { getItemCompatibility } from '../../shared/item-compatibility'
@@ -10,12 +10,34 @@ import { asCompatibilityItem } from '../../shared/gear-set-validation'
 import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
-import { classifySimulationResult, simulationStartSchema, simulationStoredWorkspaceSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart } from '../../shared/simulation'
-import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile } from './profiles'
-import { parseSimulationReport, runSimulationProcess, type SimulationProcess } from './runner'
+import { benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
+import type { TopPlayers } from '../../shared/top-players'
+import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
+import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
+import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
 
 type SimulationDatabase = Pick<DatabaseClient, 'call'>
 type Executable = { path: string; name: string; hash: string }
+const engineName = process.platform === 'win32' ? 'simc.exe' : 'simc'
+/** The SimulationCraft desktop app ships beside the command-line engine, so a pick of the app resolves to the engine next to it */
+async function commandLineEngine(selected: string) {
+  if (!/^simulationcraft(\.exe)?$/i.test(path.basename(selected))) return selected
+  const sibling = path.join(path.dirname(selected), engineName)
+  try { if ((await stat(sibling)).isFile()) return sibling } catch { /* reported below */ }
+  throw new Error(`Choose ${engineName}, the command-line engine that comes with SimulationCraft`)
+}
+/** Where the file picker opens: the configured engine, else the newest SimulationCraft folder in a usual install place */
+export async function engineFolder(configured: string | null, roots: string[]) {
+  if (configured) return path.dirname(configured)
+  for (const root of roots) {
+    try {
+      const folders = (await readdir(root, { withFileTypes: true })).filter(entry => entry.isDirectory() && /^simc/i.test(entry.name)).map(entry => entry.name).sort().reverse()
+      for (const folder of folders) { const candidate = path.join(root, folder); try { if ((await stat(path.join(candidate, engineName))).isFile()) return candidate } catch { /* keep looking */ } }
+      if ((await stat(path.join(root, engineName)).catch(() => null))?.isFile()) return root
+    } catch { /* missing root */ }
+  }
+  return undefined
+}
 export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
@@ -38,7 +60,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
   }
   async function inspectExecutable(selected: string): Promise<Executable> {
     if (!path.isAbsolute(selected)) throw new Error('Choose an absolute SimulationCraft executable path')
-    const canonical = await realpath(selected)
+    const canonical = await realpath(await commandLineEngine(selected))
     const info = await stat(canonical)
     if (!info.isFile() || info.size > 256 * 1024 * 1024) throw new Error('Choose a SimulationCraft executable smaller than 256 MiB')
     if (process.platform === 'win32' && path.extname(canonical).toLowerCase() !== '.exe') throw new Error('Choose the SimulationCraft .exe file')
@@ -83,6 +105,67 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       }
     } finally { pumping = false }
   }
+  /** Current gear with the candidate's items swapped in, checked for this character and unique-equipped limits */
+  function swapIn(current: Character, items: GearItem[]) {
+    if (new Set(items.map(item => item.slot)).size !== items.length) throw new Error('A candidate can hold only one item per slot')
+    const merged = current.gear.map(item => items.find(candidate => candidate.slot === item.slot) ?? item)
+    for (const item of items) if (!merged.some(value => value.slot === item.slot)) merged.push(item)
+    if (merged.length > 16) throw new Error('A gear set holds at most 16 items')
+    for (const item of merged) {
+      const variant = toItemVariant(item)
+      const compatibility = getItemCompatibility(asCompatibilityItem(variant), current, { slot: item.slot })
+      if (!compatibility.compatible) throw new Error(`${item.name}: ${compatibility.reason}`)
+      if (variant.uniqueGroups.some(group => merged.filter(other => toItemVariant(other).uniqueGroups.includes(group)).length > 1)) throw new Error(`${item.name} conflicts with another unique-equipped item`)
+    }
+    return merged
+  }
+  /**
+   * The top players' most worn items on your character, for reading a plan against them, plus the slots where the plan
+   * falls short of what they wear. Null when no usable sample exists or their set cannot be described to the engine
+   */
+  function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null) {
+    if (!top || top.specId !== current.specId || !top.gearPlayers) return null
+    const { gear } = benchmarkPlan(current, top)
+    if (!gear.length) return null
+    try { swapIn(current, gear) } catch { return null }
+    const entries = gear.map(item => ({ item, text: itemLine(item) }))
+    if (entries.some(entry => !entry.text.text || entry.text.reasons.length)) return null
+    const planned = swapIn(current, swaps)
+    const differences = benchmarkPlan({ ...current, gear: planned }, top).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
+    return { entries: entries.map(entry => ({ item: entry.item, text: entry.text.text! })), differences }
+  }
+  /** Checks shared by every job: engine, activity, role, and a complete matching baseline profile */
+  async function prepare(start: { characterId: string; activity: SimulationStart['activity'] }) {
+    await loadExecutable()
+    if (!executable) throw new Error('Choose a local SimulationCraft executable first')
+    if (jobs.length >= 10) throw new Error('Wait for queued simulations to finish before adding more')
+    const current = await character(start.characterId)
+    if (start.activity === 'pvp') throw new Error('PvP combat simulation is not supported by this workflow')
+    if (!current.specId || healerSpecs.has(current.specId)) throw new Error('This workflow supports damage modeling for known damage and tank specializations')
+    const generated = exportCharacterProfile(current, now())
+    if (!generated.text.startsWith('#') || !classToken(current)) throw new Error('The character baseline is unsupported')
+    const workspace = await read(current.id)
+    const profile = workspace.profile ?? generated
+    if (!profile.matchesCurrent || profile.baselineHash !== characterBaselineHash(current)) throw new Error('The imported profile no longer matches this character — import a fresh profile')
+    if (profile.coverage !== 'complete') throw new Error(`Complete the character baseline before running a local simulation — ${profile.reasons[0] ?? 'some fields are unknown'}`)
+    return { current, profile, engine: executable, text: parseSimulationProfile(profile.text).text, baseline: baselineFromCharacter(current) }
+  }
+  async function enqueue(prepared: Awaited<ReturnType<typeof prepare>>, request: SimulationRequest, text: string, label: string) {
+    const job: SimulationJob = { schemaVersion: 1, id: randomUUID(), characterId: prepared.current.id, state: 'queued', createdAt: now(), startedAt: null, finishedAt: null, request, result: null, failure: null, label }
+    jobs.push({ characterId: prepared.current.id, id: job.id, profile: text, complete: prepared.profile.coverage === 'complete', executable: { ...prepared.engine } })
+    knownJobs.add(job.id)
+    try { await mutate(prepared.current.id, state => { state.jobs = [job, ...state.jobs].slice(0, 20) }) }
+    catch (error) { const index = jobs.findIndex(value => value.id === job.id); if (index >= 0) jobs.splice(index, 1); knownJobs.delete(job.id); throw error }
+    draining = pump()
+    return job
+  }
+  function request(prepared: Awaited<ReturnType<typeof prepare>>, start: ReturnType<typeof simulationStartSchema.parse> | ReturnType<typeof simulationSwapsStartSchema.parse> | ReturnType<typeof simulationBenchmarkStartSchema.parse> | ReturnType<typeof simulationPlanStartSchema.parse>, candidates: SimulationRequest['candidates'], extra: Pick<SimulationRequest, 'mode' | 'candidateLabels'> & Partial<Pick<SimulationRequest, 'benchmark' | 'plan'>>, hashExtra: unknown = null): SimulationRequest {
+    const { current, profile, engine, baseline } = prepared
+    const settings = { iterations: start.iterations, threads: Math.min(start.threads, Math.max(1, availableParallelism() - 2)), timeoutMinutes: start.timeoutMinutes }
+    const scenario = resolveScenario(start.scenarioId, { targets: start.targets, fightSeconds: start.fightSeconds })
+    const damageTaken = tankSpecs.has(current.specId ?? 0)
+    return { schemaVersion: 1, characterId: current.id, activity: start.activity, baseline, baselineHash: characterBaselineHash(current), candidates, benchmark: null, plan: null, ...extra, damageTaken, scenarioId: start.scenarioId, scenario, scenarioHash: hash({ scenarioId: start.scenarioId, scenario, settings, candidates, mode: extra.mode, damageTaken, engine: engine.hash, ...(hashExtra === null ? {} : { extra: hashExtra }) }), profileHash: profile.profileHash, options: settings, context: { now: now(), gameBuild: current.gameBuild, seasonId: null, rulesetId: null, region: current.region }, evidenceRefs: baseline.evidenceRefs }
+  }
   const service = {
     get busy() { return pumping || !!active || jobs.length > 0 || mutations.size > 0 },
     async exportProfile(characterId: string) { return exportCharacterProfile(await character(characterId), now()) },
@@ -114,6 +197,8 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       }
       return { ...workspace, configured: !!executable, executableName: executable?.name ?? null, baselineHash, limitations: ['Results model damage in the selected scenario, not player skill, healing effectiveness, or tank survival', 'External report links are bookmarks and do not establish a verified combat gain', 'Only matching engine game data and complete baseline coverage can produce a current result'] }
     },
+    /** The folder the engine picker should open in */
+    async engineFolder(roots: string[]) { await loadExecutable(); return engineFolder(executable?.path ?? null, roots) },
     async configureExecutable(selected: string) {
       if (closed) throw new Error('The simulation service is closing')
       const value = await inspectExecutable(selected)
@@ -127,33 +212,15 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     async startJob(input: SimulationStart): Promise<SimulationJob> {
       if (closed) throw new Error('The simulation service is closing')
       const start = simulationStartSchema.parse(input)
-      await loadExecutable()
-      if (!executable) throw new Error('Choose a local SimulationCraft executable first')
-      if (jobs.length >= 10) throw new Error('Wait for queued simulations to finish before adding more')
-      const current = await character(start.characterId)
-      if (start.activity === 'pvp') throw new Error('PvP combat simulation is not supported by this workflow')
-      if (!current.specId || healerSpecs.has(current.specId)) throw new Error('This workflow supports damage modeling for known damage and tank specializations')
-      const generated = exportCharacterProfile(current, now())
-      if (!generated.text.startsWith('#') || !classToken(current)) throw new Error('The character baseline is unsupported')
-      const workspace = await read(current.id)
-      const profile = workspace.profile ?? generated
-      if (!profile.matchesCurrent || profile.baselineHash !== characterBaselineHash(current)) throw new Error('The imported profile no longer matches this character — import a fresh profile')
-      if (profile.coverage !== 'complete') throw new Error(`Complete the character baseline before running a local simulation — ${profile.reasons[0] ?? 'some fields are unknown'}`)
-      let text = parseSimulationProfile(profile.text).text
-      const baseline = baselineFromCharacter(current)
+      const prepared = await prepare(start)
+      const { current, baseline } = prepared
+      let text = prepared.text
       const candidates: SimulationRequest['candidates'] = []
       if (start.comparePlan) {
         const draft = await options.db.call('getGearDraft', { characterId: current.id, activity: start.activity, specId: current.specId })
         if (!draft?.items.length) throw new Error('Save a gear plan before comparing it')
-        const merged = current.gear.map(item => draft.items.find(candidate => candidate.slot === item.slot) ?? item)
-        for (const item of draft.items) if (!merged.some(value => value.slot === item.slot)) merged.push(item)
-        if (merged.length > 16 || new Set(merged.map(item => item.slot)).size !== merged.length) throw new Error('The gear plan must contain one item per slot')
-        for (const item of merged) {
-          const variant = toItemVariant(item)
-          const compatibility = getItemCompatibility(asCompatibilityItem(variant), current, { slot: item.slot })
-          if (!compatibility.compatible) throw new Error(`${item.name}: ${compatibility.reason}`)
-          if (variant.uniqueGroups.some(group => merged.filter(other => toItemVariant(other).uniqueGroups.includes(group)).length > 1)) throw new Error('The gear plan contains conflicting unique-equipped items')
-        }
+        if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
+        const merged = swapIn(current, draft.items)
         const candidate = exportCharacterProfile(current, now(), merged)
         if (candidate.coverage !== 'complete') throw new Error(`The planned gear is incomplete — ${candidate.reasons[0]}`)
         const variants = merged.map(item => toItemVariant(item, { owned: true, observedAt: current.gearObservedAt }))
@@ -166,15 +233,90 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         candidates.push(variants)
         text += `\ncopy=companion_candidate_1,companion_baseline\n${merged.map(item => itemLine(item).text).filter(Boolean).join('\n')}\n`
       }
-      const settings = { iterations: start.iterations, threads: Math.min(start.threads, Math.max(1, availableParallelism() - 2)), timeoutMinutes: start.timeoutMinutes }
-      const request: SimulationRequest = { schemaVersion: 1, characterId: current.id, activity: start.activity, baseline, baselineHash: characterBaselineHash(current), candidates, scenarioId: start.scenarioId, scenarioHash: hash({ scenarioId: start.scenarioId, settings, candidates, engine: executable.hash }), profileHash: profile.profileHash, options: settings, context: { now: now(), gameBuild: current.gameBuild, seasonId: null, rulesetId: null, region: current.region }, evidenceRefs: baseline.evidenceRefs }
-      const job: SimulationJob = { schemaVersion: 1, id: randomUUID(), characterId: current.id, state: 'queued', createdAt: now(), startedAt: null, finishedAt: null, request, result: null, failure: null, label: start.comparePlan ? 'Current gear and planned gear' : 'Current gear baseline' }
-      jobs.push({ characterId: current.id, id: job.id, profile: text, complete: profile.coverage === 'complete', executable: { ...executable } })
-      knownJobs.add(job.id)
-      try { await mutate(current.id, state => { state.jobs = [job, ...state.jobs].slice(0, 20) }) }
-      catch (error) { const index = jobs.findIndex(value => value.id === job.id); if (index >= 0) jobs.splice(index, 1); knownJobs.delete(job.id); throw error }
-      draining = pump()
-      return job
+      const job = request(prepared, start, candidates, { mode: 'copy', candidateLabels: start.comparePlan ? ['Planned gear'] : [] })
+      return enqueue(prepared, job, text, start.comparePlan ? 'Current gear and planned gear' : 'Current gear baseline')
+    },
+    /** Many swaps against current gear in one engine run, each its own SimulationCraft profileset */
+    async startSwaps(input: SimulationSwapsStart): Promise<SimulationJob> {
+      if (closed) throw new Error('The simulation service is closing')
+      const start = simulationSwapsStartSchema.parse(input)
+      const prepared = await prepare(start)
+      const candidates: SimulationRequest['candidates'] = []
+      const lines: string[] = []
+      start.candidates.forEach((candidate, index) => {
+        try { swapIn(prepared.current, candidate.items) } catch (error) { throw new Error(`${candidate.label}: ${error instanceof Error ? error.message : 'this swap is not allowed'}`) }
+        for (const item of candidate.items) {
+          const line = itemLine(item)
+          if (!line.text || line.reasons.length) throw new Error(`${candidate.label}: ${line.reasons[0] ?? 'the item could not be described to the engine'}`)
+          lines.push(`profileset."companion_candidate_${index + 1}"+=${line.text}`)
+        }
+        candidates.push(candidate.items.map(item => toItemVariant(item)))
+      })
+      // Restating one equipped item changes nothing, which gives SimulationCraft a profileset for current gear
+      const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
+      if (!reference) throw new Error('No equipped item could be described to the engine')
+      lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
+      const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: start.candidates.map(candidate => candidate.label) })
+      return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label)
+    },
+    /** Runs a saved gear plan as a whole and each planned upgrade on its own, so the biggest gains stand out */
+    async startPlan(input: SimulationPlanStart, top: TopPlayers | null = null): Promise<SimulationJob> {
+      if (closed) throw new Error('The simulation service is closing')
+      const start = simulationPlanStartSchema.parse(input)
+      const prepared = await prepare(start)
+      const activity = start.planActivity ?? start.activity
+      const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId })
+      if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
+      if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
+      const { swaps, skipped } = planSwaps(prepared.current, draft.items)
+      if (!swaps.length) throw new Error(skipped[0] ?? 'Your plan matches the gear you already wear')
+      try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
+      const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
+      // The whole plan first, then each upgrade alone, all measured against the same unchanged reference
+      const sets = [...(described.length > 1 ? [{ label: 'Whole plan', entries: described }] : []), ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry] }))]
+      const comparison = planTopComparison(prepared.current, swaps, top)
+      if (comparison) sets.push({ label: benchmarkLabels.gear, entries: comparison.entries })
+      const lines = sets.flatMap((set, index) => set.entries.map(entry => `profileset."companion_candidate_${index + 1}"+=${entry.text}`))
+      const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
+      if (!reference) throw new Error('No equipped item could be described to the engine')
+      lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
+      const plan = {
+        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
+        top: comparison && top ? { index: sets.length - 1, population: top.population, players: top.gearPlayers, differences: comparison.differences } : null,
+        swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
+      }
+      const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })
+      return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, `Plan · ${draft.name}`)
+    },
+    /** Runs your character with the top players' most worn items and most popular talents, next to your current setup */
+    async startBenchmark(input: SimulationBenchmarkStart, top: TopPlayers): Promise<SimulationJob> {
+      if (closed) throw new Error('The simulation service is closing')
+      const start = simulationBenchmarkStartSchema.parse(input)
+      const prepared = await prepare(start)
+      if (top.specId !== prepared.current.specId) throw new Error('The top players sampled are for another specialization')
+      if (!top.gearPlayers) throw new Error('No top player gear was found for this specialization')
+      const plan = benchmarkPlan(prepared.current, top)
+      if (!plan.kinds.length) throw new Error('You already wear the items and talents most top players use')
+      try { swapIn(prepared.current, plan.gear) } catch (error) { throw new Error(`${benchmarkLabels.gear}: ${error instanceof Error ? error.message : 'this swap is not allowed'}`) }
+      const gearLines = plan.gear.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${benchmarkLabels.gear}: ${line.reasons[0] ?? 'an item could not be described to the engine'}`); return line.text })
+      const lines: string[] = []
+      plan.kinds.forEach((kind, index) => {
+        const name = `companion_candidate_${index + 1}`
+        if (kind !== 'talents') for (const line of gearLines) lines.push(`profileset."${name}"+=${line}`)
+        if (kind !== 'gear') lines.push(`profileset."${name}"+=talents=${plan.talents}`)
+      })
+      const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
+      if (!reference) throw new Error('No equipped item could be described to the engine')
+      lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
+      const candidates = plan.kinds.map(kind => kind === 'talents' ? [] : plan.gear.map(item => toItemVariant(item)))
+      const benchmark = {
+        kinds: plan.kinds, population: top.population, players: top.gearPlayers,
+        itemLevel: { yours: prepared.current.itemLevel, average: top.averageItemLevel },
+        swapped: plan.gear.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
+        talentPlayers: plan.talents ? top.builds[0]?.count ?? null : null, skipped: plan.skipped,
+      }
+      const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: plan.kinds.map(kind => benchmarkLabels[kind]), benchmark }, { talents: plan.talents })
+      return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, 'Compared with top players')
     },
     async cancelJob(characterId: string, jobId: string) {
       const job = await updateJob(characterId, jobId, value => { if (value.state !== 'queued' && value.state !== 'running') throw new Error('Only queued or running jobs can be cancelled'); value.state = 'cancelled'; value.finishedAt = now(); value.result = null; value.failure = 'Simulation cancelled' })

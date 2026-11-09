@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
 import { version as appVersion } from '../../package.json';
-import { appIconChoices, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
+import { appIconChoices, appIconCursor, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createRootRoute,
@@ -13,6 +13,7 @@ import {
   Link,
   useBlocker,
   useNavigate,
+  useSearch,
   useParams,
   useRouter,
   useRouterState,
@@ -69,6 +70,11 @@ import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
+import { outdatedRenderSlots } from "../shared/shown-look";
+import TargetCursor from "./components/TargetCursor";
+
+/** The targeting cursor locks only onto things you can click, choose, or type into, including focusable rows and tooltip terms, and skips disabled ones */
+const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
@@ -355,11 +361,21 @@ function useActivity(characterId?: string) {
 }
 function Portrait({ character }: { character: Character }) {
   const render = assetUrl(character.renders?.main);
+  // Blizzard draws the look its profile last recorded, which can lag behind an outfit switched in game
+  const outdated = outdatedRenderSlots(character);
+  const worn = outdated?.map((slot) => character.shownLook?.slots[slot]?.name).filter(Boolean).join(", ");
   if (render)
     return (
       <figure className="portrait-preview">
         <img src={render} alt={`${character.name} as rendered by Blizzard`} className="character-render" />
-        <figcaption>Blizzard character render · {age(character.renders?.observedAt).toLowerCase()}</figcaption>
+        <figcaption>
+          Blizzard character render · {age(character.renders?.observedAt).toLowerCase()}
+          {outdated?.length ? (
+            <span className="portrait-outdated" title={worn ? `In game you show ${worn}` : undefined}>
+              Out of date · In game you show a different look on {outdated.length === 1 ? "one slot" : `${outdated.length} slots`} · Blizzard updates its picture after you log out, then Sync picks it up
+            </span>
+          ) : null}
+        </figcaption>
       </figure>
     );
   return character.demo && character.name === "Vaelith" ? (
@@ -809,6 +825,7 @@ function Shell() {
   );
   return (
     <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
+      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor={appIconCursor[appIcon].color} cursorColorOnTarget={appIconCursor[appIcon].target} blendMode="normal" spinDuration={3} showLabel={false} />}
       {drawerMode ? (
         <>
           <div className="workspace-flat">{workspaceNode}</div>
@@ -1323,7 +1340,11 @@ function CharacterRoute() {
 }
 function SimulationsRoute({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);
-  return <SimulationsPage character={character} activity={activity} />;
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { return?: string; job?: string };
+  // Opening a job pushes history, so Back returns to the list
+  const openJob = (job: string | null) => void navigate({ to: ".", search: ((previous: Record<string, unknown>) => ({ ...previous, job: job ?? undefined })) as never });
+  return <SimulationsPage character={character} activity={activity} jobId={search.job} onOpenJob={openJob} />;
 }
 function CharacterProgression({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);
@@ -2484,7 +2505,11 @@ const characterRoute = createRoute({
 const characterViewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/characters/$characterId/$section/$view",
-  validateSearch: returnSearch,
+  // A simulation's details page is the simulations view with that job named
+  validateSearch: (search: Record<string, unknown>): { return?: string; job?: string } => ({
+    ...returnSearch(search),
+    job: typeof search.job === "string" && /^[\w-]{1,100}$/.test(search.job) ? search.job : undefined,
+  }),
   component: CharacterRoute,
 });
 const settingsRoute = createRoute({

@@ -17,3 +17,19 @@
 .simulation-report small { display: block; line-height: 1.6; }
 .simulation-section { align-content: start; }
 .simulation-section .simulation-profile { min-height: 220px; font-size: 12px; }
+
+/* Top-player comparison: one plain reading first, then where the gap comes from */
+.simulation-benchmark { display: grid; gap: 12px; padding: 16px; border-radius: 10px; background: var(--surface2); min-width: 0; }
+.simulation-benchmark-headline { display: grid; gap: 4px; }
+.simulation-benchmark-headline > span { font-size: 12px; }
+.simulation-benchmark-headline strong { font-size: 26px; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.simulation-benchmark-headline p { line-height: 1.55; }
+.simulation-benchmark-meter { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.simulation-benchmark-meter span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.simulation-benchmark-rows { display: grid; gap: 8px; margin: 0; }
+.simulation-benchmark-rows > div { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.simulation-benchmark-rows dt { color: var(--muted); }
+.simulation-benchmark-rows dd { margin: 0; display: grid; justify-items: end; font-variant-numeric: tabular-nums; font-weight: 600; }
+.simulation-benchmark-rows small { font-weight: 400; }
+
+.simulation-subheading { margin: 4px 0 0; font-size: 13px; font-weight: 600; }

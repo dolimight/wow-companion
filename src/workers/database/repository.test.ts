@@ -9,6 +9,7 @@ import { parseRaiderIoProfile } from '../../main/providers/raiderio'
 const folders: string[]=[]
 const databases: DatabaseRepository[]=[]
 function repo(path=':memory:') {const database=new DatabaseRepository(path);databases.push(database);return database}
+const blizzard=(patch:Record<string,unknown>={})=>({characterId:7,name:'Astra',realm:'Realm One',realmSlug:'realm-one',region:'us',level:90,itemLevel:250,className:'Mage',specName:'Frost',specId:64,raceName:'Human',raceId:1,sex:'female',observedAt:'2026-10-14T09:00:00.000Z',gear:[],observedTransmog:{},customization:[],renders:null,ratings:{mythicPlus:null,pvp:null},...patch}) as Parameters<DatabaseRepository['applyBlizzardProfile']>[1]
 function record(overrides:Record<string,unknown>={}) {return {guid:'Player-1-ABC',region:'us',realm:'Realm One',name:'Astra',className:'Mage',raceName:'Human',observedAt:'2026-10-14T10:00:00.000Z',sessionId:'session-1',sequence:1,itemLevel:250,gear:[],...overrides}}
 function envelope(records:Record<string,unknown>={'Player-1-ABC':record()}) {return {schemaVersion:1,addonVersion:'0.1.0',sourceProfileId:'profile-a',exportedAt:'2026-10-14T12:00:00.000Z',characters:records}}
 afterEach(()=>{for(const d of databases.splice(0)){try{d.close()}catch{}}for(const f of folders.splice(0))rmSync(f,{recursive:true,force:true})})
@@ -85,6 +86,22 @@ describe('durable character boundaries',()=>{
     const fixed=db.applyBlizzardProfile(broken.id,{characterId:7,name:'Astra',realm:'Realm One',realmSlug:'realm-one',region:'us',level:90,itemLevel:296,className:'Mage',specName:'Frost',specId:64,raceName:'Human',raceId:1,sex:'female',observedAt:'2026-10-14T09:00:00.000Z',gear:[{slot:'head',itemId:7,name:'Recovered gear'}],observedTransmog:{},customization:[],renders:null,ratings:{mythicPlus:null,pvp:null}})
     expect(fixed).toMatchObject({itemLevel:296,gearSource:'Blizzard',gearObservedAt:'2026-10-14T09:00:00.000Z'})
     expect(fixed.gear).toHaveLength(1)
+  })
+  it('keeps the addon gear over a newer Blizzard profile and borrows its stat lines',()=>{
+    const db=repo();const link='|Hitem:7::240890::::::90:250::55:1:6652::::::|h[Addon head]|h'
+    const id=db.importSnapshot(envelope({'Player-1-ABC':record({gear:[{slot:'head',itemId:7,name:'Addon head',itemLevel:250,itemLink:link}]})})).imported[0]!
+    const kept=db.applyBlizzardProfile(id,blizzard({observedAt:'2030-01-01T00:00:00.000Z',gear:[{slot:'head',itemId:7,name:'Addon head',itemLevel:250,stats:[{text:'+100 Haste',secondary:true}]},{slot:'neck',itemId:8,name:'Blizzard neck',itemLevel:250}]}))
+    expect(kept.gearSource).toBe('addon')
+    expect(kept.gear).toHaveLength(1)
+    expect(kept.gear[0]).toMatchObject({itemLink:link,stats:[{text:'+100 Haste'}]})
+  })
+  it('restores the equipped addon capture after Blizzard gear replaced it, and uses Blizzard gear without the addon',()=>{
+    const db=repo();const link='|Hitem:7::::::::90:250::55:1:6652::::::|h[Addon head]|h'
+    const seen=db.addCharacter({name:'Astra',region:'us',realm:'Realm One',gear:[{slot:'head',itemId:7,name:'Blizzard head'}],gearSource:'Blizzard',gearObservedAt:'2026-10-14T09:00:00.000Z',sourceRefs:[{provider:'addon',edition:'retail',region:'us',realmId:'Realm One',characterKey:'Player-1-ABC'}],inventoryObservations:[{location:'equipped',observedAt:'2026-10-14T08:59:57.000Z',coverage:'complete',items:[{slot:'head',itemId:7,name:'Addon head',itemLevel:250,itemLink:link}]}]})
+    const restored=db.applyBlizzardProfile(seen.id,blizzard({gear:[{slot:'head',itemId:7,name:'Blizzard head',itemLevel:250}]}))
+    expect(restored).toMatchObject({gearSource:'addon',gearObservedAt:'2026-10-14T08:59:57.000Z',gearCoverage:'complete',gear:[{itemLink:link}]})
+    const other=repo();const plain=other.addCharacter({name:'Astra',region:'us',realm:'Realm One'})
+    expect(other.applyBlizzardProfile(plain.id,blizzard({gear:[{slot:'head',itemId:7,name:'Blizzard head',itemLevel:250}]}))).toMatchObject({gearSource:'Blizzard',gear:[{name:'Blizzard head'}]})
   })
   it('moves a duplicate character\'s drafts, outfits and selection without losing public gear',()=>{
     const db=repo();const original=db.addCharacter({name:'Astra',region:'us',realm:'Realm One',gear:[{slot:'head',name:'Public headpiece'}],itemLevel:296,gearSource:'Blizzard',gearObservedAt:'2026-10-14T09:00:00.000Z'})
@@ -177,6 +194,14 @@ describe('durable character boundaries',()=>{
     expect(c.weekly.addon?.weekStart).toBe('2026-10-13T15:00:00.000Z')
     expect(c.weekly.addon?.vault).toEqual([{kind:'dungeon',index:1,threshold:1,progress:2,reward:'Mythic +12'},{kind:'raid',index:1,threshold:2,progress:1,reward:null}])
     expect(c.talents).toMatchObject({loadout:'ABC',source:'In-game talents'})
+  })
+  it('keeps the look seen in game until the addon sees a new one',()=>{
+    const db=repo()
+    const shownLook={observedAt:'2026-10-15T10:00:00.000Z',slots:{head:{modifiedAppearanceId:200,itemId:20,name:'New hood'}}}
+    const id=db.importSnapshot(envelope({'Player-1-ABC':record({shownLook})})).imported[0]!
+    expect(db.getCharacter(id)!.shownLook).toEqual(shownLook)
+    db.importSnapshot(envelope({'Player-1-ABC':record({sequence:2,observedAt:'2026-10-15T11:00:00.000Z'})}))
+    expect(db.getCharacter(id)!.shownLook).toEqual(shownLook)
   })
   it('takes the in-game Mythic+ score as soon as WoW saves it, without letting an older crawl replace it',()=>{
     const db=repo()
