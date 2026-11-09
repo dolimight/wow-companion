@@ -1,9 +1,33 @@
 import { z } from 'zod'
-import { activitySchema } from './domain'
+import { activitySchema, gearItemSchema } from './domain'
 import { gearBaselineSchema, itemVariantSchema } from './gear-variants'
 import { evaluationContextSchema, evidenceRefSchema } from './evidence'
 
-export const simulationScenarioSchema = z.enum(['patchwerk', 'dungeon-slice'])
+export const simulationScenarioSchema = z.enum(['patchwerk', 'cleave', 'big-pulls', 'dungeon-slice'])
+export type SimulationScenarioId = z.infer<typeof simulationScenarioSchema>
+/** SimulationCraft fight styles the app passes through; anything else is rejected */
+export const fightStyles = ['Patchwerk', 'DungeonSlice', 'HecticAddCleave'] as const
+export const scenarioSettingsSchema = z.object({
+  style: z.enum(fightStyles),
+  /** Enemy count for styles that use one; DungeonSlice sets its own pulls */
+  targets: z.number().int().min(1).max(10).nullable(),
+  fightSeconds: z.number().int().min(30).max(900),
+})
+export type ScenarioSettings = z.infer<typeof scenarioSettingsSchema>
+/** Presets in plain words, each a fixed SimulationCraft fight setup */
+export const simulationScenarios: Record<SimulationScenarioId, ScenarioSettings & { label: string; description: string }> = {
+  patchwerk: { label: 'Raid boss', description: 'One target for five minutes', style: 'Patchwerk', targets: 1, fightSeconds: 300 },
+  cleave: { label: 'Two-target boss', description: 'Two targets for five minutes', style: 'Patchwerk', targets: 2, fightSeconds: 300 },
+  'big-pulls': { label: 'Mythic+ big pulls', description: 'Five targets that die within a minute', style: 'Patchwerk', targets: 5, fightSeconds: 60 },
+  'dungeon-slice': { label: 'Mythic+ mixed pulls', description: "SimulationCraft's dungeon mix of packs and bosses", style: 'DungeonSlice', targets: null, fightSeconds: 300 },
+}
+/** A preset with any custom target count or fight length applied */
+export function resolveScenario(id: SimulationScenarioId, custom?: Partial<Pick<ScenarioSettings, 'targets' | 'fightSeconds'>> | null): ScenarioSettings {
+  const preset = simulationScenarios[id]
+  return scenarioSettingsSchema.parse({ style: preset.style, targets: preset.style === 'DungeonSlice' ? null : custom?.targets ?? preset.targets, fightSeconds: custom?.fightSeconds ?? preset.fightSeconds })
+}
+/** Profileset jobs test this many candidates against one baseline in a single engine run */
+export const PROFILESET_LIMIT = 400
 export const simulationOptionsSchema = z.object({
   iterations: z.number().int().min(100).max(100_000).default(10_000),
   threads: z.number().int().min(1).max(32).default(4),
@@ -12,12 +36,20 @@ export const simulationOptionsSchema = z.object({
 export const simulationStartSchema = z.object({
   characterId: z.string().min(1).max(100), activity: activitySchema.default('mythicPlus'),
   scenarioId: simulationScenarioSchema.default('patchwerk'),
+  targets: z.number().int().min(1).max(10).optional(),
+  fightSeconds: z.number().int().min(30).max(900).optional(),
   iterations: simulationOptionsSchema.shape.iterations,
   threads: simulationOptionsSchema.shape.threads,
   timeoutMinutes: simulationOptionsSchema.shape.timeoutMinutes,
   comparePlan: z.boolean().default(false),
 })
 export type SimulationStart = z.input<typeof simulationStartSchema>
+/** Single swaps or small sets to test against current gear in one profileset run */
+export const simulationSwapsStartSchema = simulationStartSchema.omit({ comparePlan: true }).extend({
+  candidates: z.array(z.object({ label: z.string().min(1).max(200), items: z.array(gearItemSchema).min(1).max(16) })).min(1).max(PROFILESET_LIMIT),
+  label: z.string().min(1).max(200).default('Gear swaps'),
+})
+export type SimulationSwapsStart = z.input<typeof simulationSwapsStartSchema>
 export const simulationProfileSchema = z.object({
   schemaVersion: z.literal(1), text: z.string().max(1_048_576),
   source: z.enum(['companion', 'manual']), createdAt: z.string().datetime(),
@@ -27,8 +59,13 @@ export const simulationProfileSchema = z.object({
 export type SimulationProfile = z.infer<typeof simulationProfileSchema>
 export const simulationRequestSchema = z.object({
   schemaVersion: z.literal(1), characterId: z.string(), activity: activitySchema,
-  baseline: gearBaselineSchema, baselineHash: z.string(), candidates: z.array(z.array(itemVariantSchema)).max(8),
-  scenarioId: simulationScenarioSchema, scenarioHash: z.string(), profileHash: z.string(),
+  baseline: gearBaselineSchema, baselineHash: z.string(), candidates: z.array(z.array(itemVariantSchema)).max(PROFILESET_LIMIT),
+  /** copy runs every candidate as its own actor (up to 8); profileset runs many against one baseline */
+  mode: z.enum(['copy', 'profileset']).default('copy'),
+  candidateLabels: z.array(z.string().max(200)).max(PROFILESET_LIMIT).default([]),
+  /** Tanks also record damage taken per second as a modeled survivability measure */
+  damageTaken: z.boolean().default(false),
+  scenarioId: simulationScenarioSchema, scenario: scenarioSettingsSchema.nullable().default(null), scenarioHash: z.string(), profileHash: z.string(),
   options: simulationOptionsSchema, context: evaluationContextSchema,
   evidenceRefs: z.array(evidenceRefSchema),
 })
@@ -38,7 +75,8 @@ export const simulationResultSchema = z.object({
   gameBuild: z.string().nullable(), rulesetId: z.string().nullable(),
   engine: z.object({ name: z.literal('SimulationCraft'), version: z.string(), revision: z.string().nullable(), executableHash: z.string(), reportVersion: z.string(), gameBuild: z.string().nullable() }),
   metric: z.literal('dps'), unit: z.literal('damage per second'),
-  values: z.array(z.object({ name: z.string(), mean: z.number().finite().nonnegative(), standardError: z.number().finite().nonnegative().nullable(), samples: z.number().int().positive().nullable() })).min(1).max(9),
+  values: z.array(z.object({ name: z.string(), mean: z.number().finite().nonnegative(), standardError: z.number().finite().nonnegative().nullable(), samples: z.number().int().positive().nullable(),
+    damageTaken: z.object({ mean: z.number().finite().nonnegative(), standardError: z.number().finite().nonnegative().nullable() }).nullable().default(null) })).min(1).max(PROFILESET_LIMIT + 1),
   createdAt: z.string().datetime(), applicability: z.enum(['current', 'stale', 'unsupported']), reasons: z.array(z.string()),
   coverage: z.enum(['complete', 'partial']), artifactId: z.string(),
 })
@@ -67,8 +105,13 @@ export function classifySimulationResult(result: SimulationResult, current: Simu
   return { applicable: reasons.length === 0, reasons: [...new Set(reasons)] }
 }
 
+export function requestScenario(request: Pick<SimulationRequest, 'scenarioId' | 'scenario'>): ScenarioSettings {
+  return request.scenario ?? resolveScenario(request.scenarioId)
+}
+
 /** Compare two modeled damage results using each engine-reported standard error */
-export function compareSimulationValues(baseline: SimulationResult['values'][number], candidate: SimulationResult['values'][number]): { verdict: 'higher' | 'lower' | 'sidegrade' | 'unknown'; difference: number; uncertainty: number | null } {
+type Measured = Pick<SimulationResult['values'][number], 'mean' | 'standardError'>
+export function compareSimulationValues(baseline: Measured, candidate: Measured): { verdict: 'higher' | 'lower' | 'sidegrade' | 'unknown'; difference: number; uncertainty: number | null } {
   const difference = candidate.mean - baseline.mean
   if (baseline.standardError === null || candidate.standardError === null) return { verdict: 'unknown', difference, uncertainty: null }
   const uncertainty = 1.96 * Math.hypot(baseline.standardError, candidate.standardError)

@@ -5,6 +5,7 @@ import type { ConnectionInfo, NativeBridge } from '../../shared/bridge'
 import type { ItemSearch } from '../../shared/gamedata'
 import type { AppearanceSlot } from '../../shared/domain'
 import type { ArmorType } from '../../shared/gamedata'
+import type { SimulationScenarioId } from '../../shared/simulation'
 import type { ContentPreferences } from '../../shared/season-rules'
 import type { SessionPreferences } from '../../shared/session-plan'
 import type {ComparisonInput} from '../../shared/comparisons'
@@ -47,7 +48,7 @@ export const api={
  importSimulationProfile:async(input:{characterId:string;text:string})=>(await client()).importSimulationProfile.mutate(input),
  clearSimulationProfile:async(input:{characterId:string})=>(await client()).clearSimulationProfile.mutate(input),
  saveSimulationReport:async(input:{characterId:string;url:string;notes:string})=>(await client()).saveSimulationReport.mutate(input),
- startSimulation:async(input:{characterId:string;activity:Activity;scenarioId:'patchwerk'|'dungeon-slice';iterations?:number;threads?:number;timeoutMinutes?:number;comparePlan?:boolean})=>(await client()).startSimulation.mutate(input),
+ startSimulation:async(input:{characterId:string;activity:Activity;scenarioId:SimulationScenarioId;targets?:number;fightSeconds?:number;iterations?:number;threads?:number;timeoutMinutes?:number;comparePlan?:boolean})=>(await client()).startSimulation.mutate(input),
  cancelSimulation:async(input:{characterId:string;jobId:string})=>(await client()).cancelSimulation.mutate(input),
  chooseSimulationExecutable:()=>native('chooseSimulationExecutable'),
  getModel:async(input:{characterId:string})=>(await client()).getModel.query(input),

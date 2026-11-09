@@ -2,7 +2,7 @@ import { availableParallelism } from 'node:os'
 import path from 'node:path'
 import { mkdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import type { Character } from '../../shared/domain'
+import type { Character, GearItem } from '../../shared/domain'
 import type { DatabaseClient } from '../database'
 import { baselineFromCharacter, toItemVariant } from '../../shared/gear-variants'
 import { getItemCompatibility } from '../../shared/item-compatibility'
@@ -10,8 +10,8 @@ import { asCompatibilityItem } from '../../shared/gear-set-validation'
 import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
-import { classifySimulationResult, simulationStartSchema, simulationStoredWorkspaceSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart } from '../../shared/simulation'
-import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile } from './profiles'
+import { classifySimulationResult, resolveScenario, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart } from '../../shared/simulation'
+import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
 import { parseSimulationReport, runSimulationProcess, type SimulationProcess } from './runner'
 
 type SimulationDatabase = Pick<DatabaseClient, 'call'>
@@ -83,6 +83,52 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       }
     } finally { pumping = false }
   }
+  /** Current gear with the candidate's items swapped in, checked for this character and unique-equipped limits */
+  function swapIn(current: Character, items: GearItem[]) {
+    if (new Set(items.map(item => item.slot)).size !== items.length) throw new Error('A candidate can hold only one item per slot')
+    const merged = current.gear.map(item => items.find(candidate => candidate.slot === item.slot) ?? item)
+    for (const item of items) if (!merged.some(value => value.slot === item.slot)) merged.push(item)
+    if (merged.length > 16) throw new Error('A gear set holds at most 16 items')
+    for (const item of merged) {
+      const variant = toItemVariant(item)
+      const compatibility = getItemCompatibility(asCompatibilityItem(variant), current, { slot: item.slot })
+      if (!compatibility.compatible) throw new Error(`${item.name}: ${compatibility.reason}`)
+      if (variant.uniqueGroups.some(group => merged.filter(other => toItemVariant(other).uniqueGroups.includes(group)).length > 1)) throw new Error(`${item.name} conflicts with another unique-equipped item`)
+    }
+    return merged
+  }
+  /** Checks shared by every job: engine, activity, role, and a complete matching baseline profile */
+  async function prepare(start: { characterId: string; activity: SimulationStart['activity'] }) {
+    await loadExecutable()
+    if (!executable) throw new Error('Choose a local SimulationCraft executable first')
+    if (jobs.length >= 10) throw new Error('Wait for queued simulations to finish before adding more')
+    const current = await character(start.characterId)
+    if (start.activity === 'pvp') throw new Error('PvP combat simulation is not supported by this workflow')
+    if (!current.specId || healerSpecs.has(current.specId)) throw new Error('This workflow supports damage modeling for known damage and tank specializations')
+    const generated = exportCharacterProfile(current, now())
+    if (!generated.text.startsWith('#') || !classToken(current)) throw new Error('The character baseline is unsupported')
+    const workspace = await read(current.id)
+    const profile = workspace.profile ?? generated
+    if (!profile.matchesCurrent || profile.baselineHash !== characterBaselineHash(current)) throw new Error('The imported profile no longer matches this character — import a fresh profile')
+    if (profile.coverage !== 'complete') throw new Error(`Complete the character baseline before running a local simulation — ${profile.reasons[0] ?? 'some fields are unknown'}`)
+    return { current, profile, engine: executable, text: parseSimulationProfile(profile.text).text, baseline: baselineFromCharacter(current) }
+  }
+  async function enqueue(prepared: Awaited<ReturnType<typeof prepare>>, request: SimulationRequest, text: string, label: string) {
+    const job: SimulationJob = { schemaVersion: 1, id: randomUUID(), characterId: prepared.current.id, state: 'queued', createdAt: now(), startedAt: null, finishedAt: null, request, result: null, failure: null, label }
+    jobs.push({ characterId: prepared.current.id, id: job.id, profile: text, complete: prepared.profile.coverage === 'complete', executable: { ...prepared.engine } })
+    knownJobs.add(job.id)
+    try { await mutate(prepared.current.id, state => { state.jobs = [job, ...state.jobs].slice(0, 20) }) }
+    catch (error) { const index = jobs.findIndex(value => value.id === job.id); if (index >= 0) jobs.splice(index, 1); knownJobs.delete(job.id); throw error }
+    draining = pump()
+    return job
+  }
+  function request(prepared: Awaited<ReturnType<typeof prepare>>, start: ReturnType<typeof simulationStartSchema.parse> | ReturnType<typeof simulationSwapsStartSchema.parse>, candidates: SimulationRequest['candidates'], extra: Pick<SimulationRequest, 'mode' | 'candidateLabels'>): SimulationRequest {
+    const { current, profile, engine, baseline } = prepared
+    const settings = { iterations: start.iterations, threads: Math.min(start.threads, Math.max(1, availableParallelism() - 2)), timeoutMinutes: start.timeoutMinutes }
+    const scenario = resolveScenario(start.scenarioId, { targets: start.targets, fightSeconds: start.fightSeconds })
+    const damageTaken = tankSpecs.has(current.specId ?? 0)
+    return { schemaVersion: 1, characterId: current.id, activity: start.activity, baseline, baselineHash: characterBaselineHash(current), candidates, ...extra, damageTaken, scenarioId: start.scenarioId, scenario, scenarioHash: hash({ scenarioId: start.scenarioId, scenario, settings, candidates, mode: extra.mode, damageTaken, engine: engine.hash }), profileHash: profile.profileHash, options: settings, context: { now: now(), gameBuild: current.gameBuild, seasonId: null, rulesetId: null, region: current.region }, evidenceRefs: baseline.evidenceRefs }
+  }
   const service = {
     get busy() { return pumping || !!active || jobs.length > 0 || mutations.size > 0 },
     async exportProfile(characterId: string) { return exportCharacterProfile(await character(characterId), now()) },
@@ -127,33 +173,15 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     async startJob(input: SimulationStart): Promise<SimulationJob> {
       if (closed) throw new Error('The simulation service is closing')
       const start = simulationStartSchema.parse(input)
-      await loadExecutable()
-      if (!executable) throw new Error('Choose a local SimulationCraft executable first')
-      if (jobs.length >= 10) throw new Error('Wait for queued simulations to finish before adding more')
-      const current = await character(start.characterId)
-      if (start.activity === 'pvp') throw new Error('PvP combat simulation is not supported by this workflow')
-      if (!current.specId || healerSpecs.has(current.specId)) throw new Error('This workflow supports damage modeling for known damage and tank specializations')
-      const generated = exportCharacterProfile(current, now())
-      if (!generated.text.startsWith('#') || !classToken(current)) throw new Error('The character baseline is unsupported')
-      const workspace = await read(current.id)
-      const profile = workspace.profile ?? generated
-      if (!profile.matchesCurrent || profile.baselineHash !== characterBaselineHash(current)) throw new Error('The imported profile no longer matches this character — import a fresh profile')
-      if (profile.coverage !== 'complete') throw new Error(`Complete the character baseline before running a local simulation — ${profile.reasons[0] ?? 'some fields are unknown'}`)
-      let text = parseSimulationProfile(profile.text).text
-      const baseline = baselineFromCharacter(current)
+      const prepared = await prepare(start)
+      const { current, baseline } = prepared
+      let text = prepared.text
       const candidates: SimulationRequest['candidates'] = []
       if (start.comparePlan) {
         const draft = await options.db.call('getGearDraft', { characterId: current.id, activity: start.activity, specId: current.specId })
         if (!draft?.items.length) throw new Error('Save a gear plan before comparing it')
-        const merged = current.gear.map(item => draft.items.find(candidate => candidate.slot === item.slot) ?? item)
-        for (const item of draft.items) if (!merged.some(value => value.slot === item.slot)) merged.push(item)
-        if (merged.length > 16 || new Set(merged.map(item => item.slot)).size !== merged.length) throw new Error('The gear plan must contain one item per slot')
-        for (const item of merged) {
-          const variant = toItemVariant(item)
-          const compatibility = getItemCompatibility(asCompatibilityItem(variant), current, { slot: item.slot })
-          if (!compatibility.compatible) throw new Error(`${item.name}: ${compatibility.reason}`)
-          if (variant.uniqueGroups.some(group => merged.filter(other => toItemVariant(other).uniqueGroups.includes(group)).length > 1)) throw new Error('The gear plan contains conflicting unique-equipped items')
-        }
+        if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
+        const merged = swapIn(current, draft.items)
         const candidate = exportCharacterProfile(current, now(), merged)
         if (candidate.coverage !== 'complete') throw new Error(`The planned gear is incomplete — ${candidate.reasons[0]}`)
         const variants = merged.map(item => toItemVariant(item, { owned: true, observedAt: current.gearObservedAt }))
@@ -166,15 +194,27 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         candidates.push(variants)
         text += `\ncopy=companion_candidate_1,companion_baseline\n${merged.map(item => itemLine(item).text).filter(Boolean).join('\n')}\n`
       }
-      const settings = { iterations: start.iterations, threads: Math.min(start.threads, Math.max(1, availableParallelism() - 2)), timeoutMinutes: start.timeoutMinutes }
-      const request: SimulationRequest = { schemaVersion: 1, characterId: current.id, activity: start.activity, baseline, baselineHash: characterBaselineHash(current), candidates, scenarioId: start.scenarioId, scenarioHash: hash({ scenarioId: start.scenarioId, settings, candidates, engine: executable.hash }), profileHash: profile.profileHash, options: settings, context: { now: now(), gameBuild: current.gameBuild, seasonId: null, rulesetId: null, region: current.region }, evidenceRefs: baseline.evidenceRefs }
-      const job: SimulationJob = { schemaVersion: 1, id: randomUUID(), characterId: current.id, state: 'queued', createdAt: now(), startedAt: null, finishedAt: null, request, result: null, failure: null, label: start.comparePlan ? 'Current gear and planned gear' : 'Current gear baseline' }
-      jobs.push({ characterId: current.id, id: job.id, profile: text, complete: profile.coverage === 'complete', executable: { ...executable } })
-      knownJobs.add(job.id)
-      try { await mutate(current.id, state => { state.jobs = [job, ...state.jobs].slice(0, 20) }) }
-      catch (error) { const index = jobs.findIndex(value => value.id === job.id); if (index >= 0) jobs.splice(index, 1); knownJobs.delete(job.id); throw error }
-      draining = pump()
-      return job
+      const job = request(prepared, start, candidates, { mode: 'copy', candidateLabels: start.comparePlan ? ['Planned gear'] : [] })
+      return enqueue(prepared, job, text, start.comparePlan ? 'Current gear and planned gear' : 'Current gear baseline')
+    },
+    /** Many swaps against current gear in one engine run, each its own SimulationCraft profileset */
+    async startSwaps(input: SimulationSwapsStart): Promise<SimulationJob> {
+      if (closed) throw new Error('The simulation service is closing')
+      const start = simulationSwapsStartSchema.parse(input)
+      const prepared = await prepare(start)
+      const candidates: SimulationRequest['candidates'] = []
+      const lines: string[] = []
+      start.candidates.forEach((candidate, index) => {
+        try { swapIn(prepared.current, candidate.items) } catch (error) { throw new Error(`${candidate.label}: ${error instanceof Error ? error.message : 'this swap is not allowed'}`) }
+        for (const item of candidate.items) {
+          const line = itemLine(item)
+          if (!line.text || line.reasons.length) throw new Error(`${candidate.label}: ${line.reasons[0] ?? 'the item could not be described to the engine'}`)
+          lines.push(`profileset."companion_candidate_${index + 1}"+=${line.text}`)
+        }
+        candidates.push(candidate.items.map(item => toItemVariant(item)))
+      })
+      const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: start.candidates.map(candidate => candidate.label) })
+      return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label)
     },
     async cancelJob(characterId: string, jobId: string) {
       const job = await updateJob(characterId, jobId, value => { if (value.state !== 'queued' && value.state !== 'running') throw new Error('Only queued or running jobs can be cancelled'); value.state = 'cancelled'; value.finishedAt = now(); value.result = null; value.failure = 'Simulation cancelled' })

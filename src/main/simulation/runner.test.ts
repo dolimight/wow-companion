@@ -3,8 +3,9 @@ import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { parseSimulationReport, runSimulationProcess } from './runner'
-import { simulationJson, simulationRequest } from './fixtures'
+import { parseSimulationReport, runSimulationProcess, simulationArguments } from './runner'
+import { profilesetJson, simulationJson, simulationRequest } from './fixtures'
+import type { SimulationRequest } from '../../shared/simulation'
 
 const directories: string[] = []
 afterEach(async () => { for (const directory of directories.splice(0)) { if (!path.resolve(directory).startsWith(path.join(tmpdir(), 'wow-simulation-test-'))) throw new Error('Unexpected test directory'); await rm(directory, { recursive: true, force: true }) } })
@@ -53,6 +54,30 @@ describe('managed local simulation process', () => {
     expect(() => parseSimulationReport({ ...report, report_version: '99.0.0' }, request, 'hash', 'artifact', request.context.now, true)).toThrow()
     report.sim.players[0]!.name = 'unrelated_actor'
     expect(() => parseSimulationReport(report, request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
+  })
+  it('builds fixed engine arguments from the scenario preset and any custom settings', () => {
+    const request = simulationRequest()
+    expect(simulationArguments(request)).toEqual(expect.arrayContaining(['fight_style=Patchwerk', 'max_time=300', 'desired_targets=1', 'single_actor_batch=1']))
+    const pulls: SimulationRequest = { ...request, scenarioId: 'big-pulls', scenario: { style: 'Patchwerk', targets: 6, fightSeconds: 45 }, mode: 'profileset', damageTaken: true }
+    const args = simulationArguments(pulls)
+    expect(args).toEqual(expect.arrayContaining(['desired_targets=6', 'max_time=45', 'profileset_metric=dps,dtps']))
+    expect(args).not.toContain('single_actor_batch=1')
+    expect(simulationArguments({ ...request, scenarioId: 'dungeon-slice' }).some(arg => arg.startsWith('desired_targets'))).toBe(false)
+  })
+  it('reads profileset candidates and tank damage taken from a version 3 report', () => {
+    const request: SimulationRequest = { ...simulationRequest(), mode: 'profileset', damageTaken: true, candidates: [[], []], candidateLabels: ['Ring A', 'Ring B'] }
+    const parsed = parseSimulationReport(profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [101_000, 99_000]), request, 'hash', 'artifact', request.context.now, true)
+    expect(parsed.values.map(value => [value.name, value.mean, value.standardError])).toEqual([['companion_baseline', 100_000, 120], ['companion_candidate_1', 101_000, 110], ['companion_candidate_2', 99_000, 110]])
+    expect(parsed.values[0]!.damageTaken).toEqual({ mean: 40_000, standardError: 90 })
+    expect(parsed.values[1]!.damageTaken).toEqual({ mean: 39_000, standardError: 80 })
+  })
+  it('rejects a profileset report whose candidates do not match the request', () => {
+    const request: SimulationRequest = { ...simulationRequest(), mode: 'profileset', candidates: [[], []] }
+    expect(() => parseSimulationReport(profilesetJson(['companion_candidate_1'], [1]), request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
+    expect(() => parseSimulationReport(profilesetJson(['companion_candidate_1', 'other'], [1, 2]), request, 'hash', 'artifact', request.context.now, true)).toThrow('requested character')
+    const noDps = profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [1, 2])
+    for (const set of (noDps.sim.profilesets as { results: Array<{ metrics: Array<{ metric: string }> }> }).results) set.metrics = set.metrics.filter(metric => metric.metric !== 'Damage per Second')
+    expect(() => parseSimulationReport(noDps, request, 'hash', 'artifact', request.context.now, true)).toThrow('damage per second')
   })
   it('retains engine build mismatch and unknown uncertainty as explicit unsupported facts', () => {
     const request = simulationRequest()

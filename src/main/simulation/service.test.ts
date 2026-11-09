@@ -7,7 +7,7 @@ import { DatabaseRepository } from '../../workers/database/repository'
 import type { DatabaseClient } from '../database'
 import { createSimulationService } from './service'
 import { exportCharacterProfile } from './profiles'
-import { simulationCharacter, simulationJson } from './fixtures'
+import { profilesetJson, simulationCharacter, simulationJson } from './fixtures'
 
 const databases: DatabaseRepository[] = []
 const directories: string[] = []
@@ -72,6 +72,24 @@ describe('simulation workspace and job lifecycle', () => {
     await expect(service.startJob({ characterId: partial.id })).rejects.toThrow('Complete the character baseline')
     const healer = database.addCharacter({ name: 'Healer', region: 'us', realm: 'Fixture', className: 'Priest', specId: 257 })
     await expect(service.startJob({ characterId: healer.id })).rejects.toThrow('damage modeling')
+  })
+  it('runs many swaps as profilesets and keeps each candidate label with its result', async () => {
+    const { character, service } = await fixture(`await fs.writeFile('args.json',JSON.stringify(process.argv.slice(2)));await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [103_000, 99_500]))}));`)
+    await service.configureExecutable(process.execPath)
+    const [first, second] = character.gear
+    const candidates = [{ label: `${first!.name} at ${first!.itemLevel! + 13}`, items: [{ ...first!, itemLevel: first!.itemLevel! + 13 }] }, { label: `${second!.name} at ${second!.itemLevel! + 6}`, items: [{ ...second!, itemLevel: second!.itemLevel! + 6 }] }]
+    await service.startSwaps({ characterId: character.id, scenarioId: 'big-pulls', candidates, iterations: 100 })
+    const done = await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
+    expect(done.jobs[0]).toMatchObject({ state: 'completed', label: 'Gear swaps', request: { mode: 'profileset', damageTaken: true, candidateLabels: candidates.map(candidate => candidate.label), scenario: { style: 'Patchwerk', targets: 5, fightSeconds: 60 } } })
+    expect(done.jobs[0]!.result!.values.map(value => value.mean)).toEqual([100_000, 103_000, 99_500])
+  })
+  it('refuses a swap the character cannot wear or that breaks unique-equipped limits', async () => {
+    const { character, service } = await fixture()
+    await service.configureExecutable(process.execPath)
+    const head = character.gear.find(item => item.slot === 'head')!
+    await expect(service.startSwaps({ characterId: character.id, candidates: [{ label: 'Cloth hat', items: [{ ...head, classId: 4, subclassId: 1 }] }] })).rejects.toThrow('Cloth hat')
+    await expect(service.startSwaps({ characterId: character.id, candidates: [{ label: 'Two heads', items: [head, head] }] })).rejects.toThrow('one item per slot')
+    await expect(service.startSwaps({ characterId: character.id, candidates: [{ label: 'Unknown bonuses', items: [{ ...head, bonusIds: null, itemLink: null }] }] })).rejects.toThrow('Unknown bonuses')
   })
   it('never recreates a deleted character after a queued or active result arrives', async () => {
     const { database, character, service } = await fixture(`await new Promise(resolve=>setTimeout(resolve,100));await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(simulationJson())}));`)

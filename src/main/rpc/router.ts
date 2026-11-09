@@ -20,6 +20,7 @@ import type { SimulationService } from '../simulation/service'
 import type { ComparisonService } from '../comparisons/service'
 import {comparisonInputSchema,reportInputSchema} from '../../shared/comparisons'
 import { TIMELINE_NAMESPACE, timelineSchema } from '../../shared/timeline'
+import { simulationScenarioSchema } from '../../shared/simulation'
 
 export type SyncStatus = { lastCheckAt:string|null;path:string|null;error:string|null }
 export type ChangeEvent = { revision:number;characterId?:string }
@@ -81,7 +82,7 @@ export function createRouter(s:RouterServices){return t.router({
   importSimulationProfile:p.input(characterIdSchema.extend({text:z.string().min(1).max(1024*1024)})).mutation(async({input})=>{const value=await run(()=>s.simulations.importProfile(input.characterId,input.text));await s.changed(input.characterId);return value}),
   clearSimulationProfile:p.input(characterIdSchema).mutation(async({input})=>{const value=await run(()=>s.simulations.clearProfile(input.characterId));await s.changed(input.characterId);return value}),
   saveSimulationReport:p.input(characterIdSchema.extend({url:z.string().url().max(2000),notes:z.string().max(4000)})).mutation(async({input})=>{const value=await run(()=>s.simulations.saveReport(input.characterId,input.url,input.notes));await s.changed(input.characterId);return value}),
-  startSimulation:p.input(characterIdSchema.extend({activity:activitySchema,scenarioId:z.enum(['patchwerk','dungeon-slice']),iterations:z.number().int().min(100).max(1000000).optional(),threads:z.number().int().min(1).max(32).optional(),timeoutMinutes:z.number().int().min(1).max(120).optional(),comparePlan:z.boolean().optional()})).mutation(({input})=>run(()=>s.simulations.startJob(input))),
+  startSimulation:p.input(characterIdSchema.extend({activity:activitySchema,scenarioId:simulationScenarioSchema,targets:z.number().int().min(1).max(10).optional(),fightSeconds:z.number().int().min(30).max(900).optional(),iterations:z.number().int().min(100).max(1000000).optional(),threads:z.number().int().min(1).max(32).optional(),timeoutMinutes:z.number().int().min(1).max(120).optional(),comparePlan:z.boolean().optional()})).mutation(({input})=>run(()=>s.simulations.startJob(input))),
   cancelSimulation:p.input(characterIdSchema.extend({jobId:z.string().min(1).max(100)})).mutation(({input})=>run(()=>s.simulations.cancelJob(input.characterId,input.jobId))),
   getContentPreferences:p.input(characterIdSchema.extend({activity:activitySchema})).query(({input})=>run(()=>s.progression.getContentPreferences(input.characterId,input.activity))),
   saveContentPreferences:p.input(characterIdSchema.extend({activity:activitySchema,preferences:contentPreferencesSchema})).mutation(async({input})=>{const result=await run(()=>s.progression.saveContentPreferences(input.characterId,input.activity,input.preferences));await s.changed(input.characterId);return result}),
