@@ -218,8 +218,17 @@ export class DatabaseRepository {
       for(const key of ['specId','raceId','level'] as const){const value=profile[key];if(value!=null&&current[key]==null)updated[key]=value}
     }
     if(profile.sex)updated.sex=profile.sex
-    const addonGearIsNewer=current.gear.length>0&&current.gearSource==='addon'&&!newer(current.gearObservedAt)
-    if(!addonGearIsNewer&&profile.gear.length){updated.gear=profile.gear;updated.itemLevel=profile.itemLevel??current.itemLevel;updated.gearCoverage='complete';updated.gearSource='Blizzard';updated.gearSourceUrl=null;updated.gearObservedAt=profile.observedAt;updated.importedAt=new Date().toISOString();if(!current.sourceRefs.some(ref=>ref.provider==='addon'))updated.observedAt=profile.observedAt}
+    // The addon reads exact item links, enchants and gems in the game, so its gear wins whenever it has seen the character
+    // Blizzard gear only fills characters the addon has not captured, and lends its stat lines to the addon's matching items
+    const seenByAddon=current.sourceRefs.some(ref=>ref.provider==='addon')
+    const equipped=seenByAddon?[...(current.inventoryObservations??[])].filter(value=>value.location==='equipped'&&value.items.length>0).sort((a,b)=>(Date.parse(b.observedAt??'')||0)-(Date.parse(a.observedAt??'')||0))[0]:undefined
+    const addonGear=current.gear.length>0&&current.gearSource==='addon'?current.gear:equipped?.items??null
+    if(addonGear){
+      const lent=addonGear.map(item=>{const match=profile.gear.find(value=>value.slot===item.slot&&value.itemId===item.itemId&&value.itemLevel===item.itemLevel);if(!match)return item;return {...item,stats:item.stats.length?item.stats:match.stats,effects:item.effects.length?item.effects:match.effects,enchant:item.enchantId&&match.enchant?match.enchant:item.enchant}})
+      updated.gear=lent
+      if(current.gearSource!=='addon'&&equipped){updated.gearSource='addon';updated.gearSourceUrl=null;updated.gearObservedAt=equipped.observedAt;updated.gearCoverage=equipped.coverage==='complete'?'complete':'partial'}
+    }
+    else if(profile.gear.length){updated.gear=profile.gear;updated.itemLevel=profile.itemLevel??current.itemLevel;updated.gearCoverage='complete';updated.gearSource='Blizzard';updated.gearSourceUrl=null;updated.gearObservedAt=profile.observedAt;updated.importedAt=new Date().toISOString();if(!current.sourceRefs.some(ref=>ref.provider==='addon'))updated.observedAt=profile.observedAt}
     if(profile.customization.length){updated.customization=profile.customization;updated.customizationCoverage='complete'}
     if(Object.keys(profile.observedTransmog).length){updated.observedTransmog=profile.observedTransmog;updated.observedTransmogAt=profile.observedAt}
     if(profile.renders)updated.renders=profile.renders

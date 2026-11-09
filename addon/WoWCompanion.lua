@@ -146,7 +146,9 @@ local function inventoryItem(link,key,location)
   local name=read(C_Item and C_Item.GetItemNameByID,itemId)
   local level=read(C_Item and C_Item.GetDetailedItemLevelInfo,link)
   local bonusIds,gemIds=variantFields(link)
-  local enchantId=tonumber(link:match("item:%d+:(%d+):"))
+  -- An empty enchant field in the link means the item has no enchant
+  local enchantField=link:match("item:%d+:(%d*):")
+  local enchantId=enchantField and tonumber(enchantField=="" and "0" or enchantField) or nil
   local instanceId=location and read(C_Item and C_Item.GetItemGUID,location) or nil
   local gems={}
   if C_Item and C_Item.GetItemGem then for socket=1,4 do local gem=read(C_Item.GetItemGem,link,socket);if type(gem)=="string" then table.insert(gems,gem) end end end
@@ -271,7 +273,8 @@ local function snapshot()
         end
       end
       -- Raw enchant IDs are retained without claiming a localized enchant name
-      local enchantId = link and link:match("item:%d+:(%d+):")
+      local enchantField = link and link:match("item:%d+:(%d*):")
+      local enchantId = enchantField and (enchantField == "" and "0" or enchantField) or nil
       local bonusIds,gemIds=variantFields(link)
       local inventoryType,classId,subclassId
       local instant=C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
