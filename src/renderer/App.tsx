@@ -70,6 +70,7 @@ import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
+import { outdatedRenderSlots } from "../shared/shown-look";
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
@@ -356,11 +357,21 @@ function useActivity(characterId?: string) {
 }
 function Portrait({ character }: { character: Character }) {
   const render = assetUrl(character.renders?.main);
+  // Blizzard draws the look its profile last recorded, which can lag behind an outfit switched in game
+  const outdated = outdatedRenderSlots(character);
+  const worn = outdated?.map((slot) => character.shownLook?.slots[slot]?.name).filter(Boolean).join(", ");
   if (render)
     return (
       <figure className="portrait-preview">
         <img src={render} alt={`${character.name} as rendered by Blizzard`} className="character-render" />
-        <figcaption>Blizzard character render · {age(character.renders?.observedAt).toLowerCase()}</figcaption>
+        <figcaption>
+          Blizzard character render · {age(character.renders?.observedAt).toLowerCase()}
+          {outdated?.length ? (
+            <span className="portrait-outdated" title={worn ? `In game you show ${worn}` : undefined}>
+              Out of date · In game you show a different look on {outdated.length === 1 ? "one slot" : `${outdated.length} slots`} · Blizzard updates its picture after you log out, then Sync picks it up
+            </span>
+          ) : null}
+        </figcaption>
       </figure>
     );
   return character.demo && character.name === "Vaelith" ? (

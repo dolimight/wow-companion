@@ -248,6 +248,49 @@ local function mythicPlusScore(observedAt)
   local season=C_MythicPlus and read(C_MythicPlus.GetCurrentSeason)
   return { score=score, season=type(season)=="number" and season>0 and season or nil, observedAt=observedAt }
 end
+-- The look the player shows in game, so the app can tell when Blizzard's picture shows an older outfit
+local lookSlots={[1]="head",[3]="shoulder",[4]="shirt",[5]="chest",[6]="waist",[7]="legs",[8]="feet",[9]="wrist",[10]="hands",[15]="back",[16]="mainHand",[17]="offHand",[19]="tabard"}
+local lookModel
+local function shownSource(slotId)
+  if C_Transmog and C_Transmog.GetSlotVisualInfo and TransmogUtil and TransmogUtil.GetTransmogLocation and Enum and Enum.TransmogType and Enum.TransmogModification then
+    local okLocation,location=pcall(TransmogUtil.GetTransmogLocation,slotId,Enum.TransmogType.Appearance,Enum.TransmogModification.Main)
+    if okLocation and location then
+      local ok,base,_,applied=pcall(C_Transmog.GetSlotVisualInfo,location)
+      if ok and readable(base) and readable(applied) then
+        local source=(applied and applied>0) and applied or base
+        if source and source>0 then return source end
+      end
+    end
+  end
+  -- Fall back to a hidden model of the player, which shows whatever outfit is active
+  if not lookModel and CreateFrame then local ok,model=pcall(CreateFrame,"DressUpModel",nil,UIParent);if ok and model then model:Hide();lookModel=model end end
+  if not lookModel or not lookModel.GetItemTransmogInfoList then return nil end
+  if not lookModel.companionList then
+    pcall(lookModel.SetUnit,lookModel,"player",false)
+    local ok,list=pcall(lookModel.GetItemTransmogInfoList,lookModel)
+    lookModel.companionList=ok and type(list)=="table" and list or {}
+  end
+  local info=lookModel.companionList[slotId]
+  if info and readable(info.appearanceID) and info.appearanceID and info.appearanceID>0 then return info.appearanceID end
+  return nil
+end
+local function shownLook(observedAt)
+  if lookModel then lookModel.companionList=nil end
+  local result,count={},0
+  for slotId,slot in pairs(lookSlots) do
+    local source=shownSource(slotId)
+    if source then
+      local itemId,name=nil,nil
+      if C_TransmogCollection and C_TransmogCollection.GetSourceInfo then
+        local ok,info=pcall(C_TransmogCollection.GetSourceInfo,source)
+        if ok and type(info)=="table" and readable(info.itemID) then itemId=info.itemID;name=info.name end
+      end
+      result[slot]={modifiedAppearanceId=source,itemId=itemId,name=name};count=count+1
+    end
+  end
+  if count==0 then return nil end
+  return {observedAt=observedAt,slots=result}
+end
 local function snapshot()
   if not WoWCompanionDB or not UnitGUID("player") then return end
   prepareQuotes()
@@ -299,7 +342,7 @@ local function snapshot()
   local previous=WoWCompanionDB.characters[guid]
   if collection.collectionCoverage=="unknown" and previous and previous.collectionCoverage~="unknown" then collection={collectionCoverage=previous.collectionCoverage,collectedAppearanceIds=previous.collectedAppearanceIds,collectionScopeId=previous.collectionScopeId,collectionObservedAt=previous.collectionObservedAt} end
   WoWCompanionDB.exportedAt = observedAt
-  WoWCompanionDB.characters[guid] = { guid=guid, region=regionNames[GetCurrentRegion()] or "unknown", realm=GetRealmName(), name=UnitName("player"), className=className or "Unknown", raceName=raceName or "Unknown", raceId=raceId, level=UnitLevel("player"), specId=specId, specName=specName or "Unknown", observedAt=observedAt, sessionId=session, sequence=sequence, itemLevel=equipped, gear=gear, gearCoverage=gearCoverage, inventoryObservations=observedInventory, progressionResources={currencies=observedCurrencies(),discountCoverage="unknown",observedAt=observedAt}, customizationCoverage="unknown", gameBuild=clientBuild, customization={}, collectionCoverage="unknown", collectedAppearanceIds={}, weekly=weeklyData, mythicPlus=mythicPlusScore(observedAt), seasonRuns=seasonRuns(), talentLoadout=talentLoadout() }
+  WoWCompanionDB.characters[guid] = { guid=guid, region=regionNames[GetCurrentRegion()] or "unknown", realm=GetRealmName(), name=UnitName("player"), className=className or "Unknown", raceName=raceName or "Unknown", raceId=raceId, level=UnitLevel("player"), specId=specId, specName=specName or "Unknown", observedAt=observedAt, sessionId=session, sequence=sequence, itemLevel=equipped, gear=gear, gearCoverage=gearCoverage, inventoryObservations=observedInventory, progressionResources={currencies=observedCurrencies(),discountCoverage="unknown",observedAt=observedAt}, customizationCoverage="unknown", gameBuild=clientBuild, customization={}, collectionCoverage="unknown", collectedAppearanceIds={}, weekly=weeklyData, mythicPlus=mythicPlusScore(observedAt), seasonRuns=seasonRuns(), talentLoadout=talentLoadout(), shownLook=shownLook(observedAt) }
   local saved=WoWCompanionDB.characters[guid]
   saved.collectionCoverage=collection.collectionCoverage;saved.collectedAppearanceIds=collection.collectedAppearanceIds;saved.collectionScopeId=collection.collectionScopeId;saved.collectionObservedAt=collection.collectionObservedAt
 end
@@ -333,14 +376,16 @@ end
 frame:RegisterEvent("ADDON_LOADED");frame:RegisterEvent("PLAYER_LOGIN");frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED");frame:RegisterEvent("PLAYER_LOGOUT");frame:RegisterEvent("ITEM_DATA_LOAD_RESULT");frame:RegisterEvent("WEEKLY_REWARDS_UPDATE");frame:RegisterEvent("UPDATE_INSTANCE_INFO");frame:RegisterEvent("CHALLENGE_MODE_COMPLETED");frame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE");frame:RegisterEvent("TRAIT_CONFIG_UPDATED")
 frame:RegisterEvent("BAG_UPDATE_DELAYED");frame:RegisterEvent("BANKFRAME_OPENED");frame:RegisterEvent("BANKFRAME_CLOSED");frame:RegisterEvent("WEEKLY_REWARDS_ITEM_CHANGED")
 frame:RegisterEvent("ITEM_UPGRADE_MASTER_SET_ITEM");frame:RegisterEvent("ITEM_UPGRADE_MASTER_UPDATE")
+-- Switching outfits or transmogrifying changes the shown look; these events are absent on some clients
+for _,event in ipairs({"TRANSMOGRIFY_SUCCESS","TRANSMOGRIFY_UPDATE","TRANSMOG_OUTFITS_CHANGED","VIEWED_TRANSMOG_OUTFIT_CHANGED"}) do pcall(frame.RegisterEvent,frame,event) end
 local pending=false
 frame:SetScript("OnEvent",function(_,event,name)
   if event=="BANKFRAME_OPENED" then bankOpen=true elseif event=="BANKFRAME_CLOSED" then bankOpen=false end
   if event=="ITEM_UPGRADE_MASTER_SET_ITEM" or event=="ITEM_UPGRADE_MASTER_UPDATE" then captureUpgradeQuote() end
   if event=="ADDON_LOADED" then
     if name~="WoWCompanion" then return end
-    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.5",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
-    WoWCompanionDB.addonVersion="0.4.5"
+    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.6",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
+    WoWCompanionDB.addonVersion="0.4.6"
   elseif event=="PLAYER_LOGIN" then
     -- Ask the server for lockouts, vault, and keystone history so the next snapshot can include them
     if RequestRaidInfo then RequestRaidInfo() end

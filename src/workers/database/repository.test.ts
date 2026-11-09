@@ -195,6 +195,14 @@ describe('durable character boundaries',()=>{
     expect(c.weekly.addon?.vault).toEqual([{kind:'dungeon',index:1,threshold:1,progress:2,reward:'Mythic +12'},{kind:'raid',index:1,threshold:2,progress:1,reward:null}])
     expect(c.talents).toMatchObject({loadout:'ABC',source:'In-game talents'})
   })
+  it('keeps the look seen in game until the addon sees a new one',()=>{
+    const db=repo()
+    const shownLook={observedAt:'2026-10-15T10:00:00.000Z',slots:{head:{modifiedAppearanceId:200,itemId:20,name:'New hood'}}}
+    const id=db.importSnapshot(envelope({'Player-1-ABC':record({shownLook})})).imported[0]!
+    expect(db.getCharacter(id)!.shownLook).toEqual(shownLook)
+    db.importSnapshot(envelope({'Player-1-ABC':record({sequence:2,observedAt:'2026-10-15T11:00:00.000Z'})}))
+    expect(db.getCharacter(id)!.shownLook).toEqual(shownLook)
+  })
   it('takes the in-game Mythic+ score as soon as WoW saves it, without letting an older crawl replace it',()=>{
     const db=repo()
     const rio={value:2400,label:'Mythic+ score',rank:900,population:null,seasonId:'season-mn-1',observedAt:'2026-10-14T08:00:00.000Z',source:'Raider.IO',sourceUrl:'https://raider.io/characters/us/realm-one/Astra',rankScope:'World · overall'}

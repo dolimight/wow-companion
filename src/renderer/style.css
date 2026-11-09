@@ -1885,3 +1885,6 @@ input[type="checkbox"] {
   padding-block: 3px;
   min-height: 28px;
 }
+
+/* Blizzard draws an older look than the one shown in game */
+.portrait-outdated { display: block; margin-top: 4px; color: var(--amber); font-size: 12px; line-height: 1.45; }
