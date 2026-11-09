@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useEffect, useMemo, useReducer, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, Check, ClipboardList, FlaskConical, Plus, Shield, Sparkles, Trophy } from 'lucide-react'
 import { gearItemSchema, type Activity, type Character, type GearItem } from '../../../shared/domain'
@@ -21,6 +21,14 @@ type Result = NonNullable<SimulationJob['result']>
 type Value = Result['values'][number]
 type Verdict = ReturnType<typeof compareSimulationValues>['verdict']
 const PAGE = 12
+/**
+ * What the targeting cursor snaps to: every control, every row worth reading, and the menus and item cards that open
+ * above the page. It covers the whole window while this page is open, so popups opened from here keep it
+ */
+const cursorTargets = [
+  '.cursor-target', 'button', 'a[href]', 'summary', 'input', 'textarea', '[role="combobox"]', '[role="option"]', '[role="menuitem"]', '[role="tab"]',
+  '.sim-hero-chips > span', '.sim-card-delta', '.sim-piece', '.simulation-benchmark-rows > div', '.simulation-benchmark-headline > strong', '.simulation-benchmark-meter', '.simulation-details li', '[data-slot="hover-card-content"]',
+].join(', ')
 const signed = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(Math.round(value)).toLocaleString()}`
 const percent = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value * 100).toFixed(1)}%`
 const activityName = (activity: Activity) => activity === 'raiding' ? 'Raiding' : activity === 'pvp' ? 'PvP' : 'Mythic+'
@@ -51,7 +59,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const [planActivity, setPlanActivity] = useState<Activity>(job.request.plan?.activity ?? (activity === 'raiding' ? 'raiding' : 'mythicPlus'))
   const [all, setAll] = useState(false)
   const [, refresh] = useReducer((count: number) => count + 1, 0)
-  const root = useRef<HTMLDivElement>(null)
+
   // The targeting cursor is a flourish for this page only, and stays off when the app is set to reduce motion
   const motion = document.documentElement.dataset.reducedMotion !== 'true'
   useEffect(() => subscribeGearPlan(refresh), [])
@@ -105,8 +113,8 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         {best && baseline && <div className="sim-hero-best cursor-target" data-cursor-label="Biggest gain"><span>Best result</span><strong>{signed(best.comparison.difference)}</strong><small>{percent(best.comparison.difference / baseline.mean)} · {best.label}</small></div>}
       </div>
     </header>
-  return <div className="sim-detail" ref={root}>
-    {motion && <TargetCursor container={root} targetSelector=".cursor-target, .sim-detail button, .sim-detail [role='combobox']" cursorColor="#ffffff" cursorColorOnTarget="#7cc4ff" spinDuration={3} />}
+  return <div className="sim-detail">
+    {motion && <TargetCursor targetSelector={cursorTargets} cursorColor="#ffffff" cursorColorOnTarget="#7cc4ff" spinDuration={3} />}
     <Button variant="quiet" className="sim-detail-back" onClick={onBack}><ArrowLeft size={15} />All simulations</Button>
     {motion ? <StarBorder as="div" className="sim-hero-frame" radius={16} thickness={1.5} stars={2} sparkle glow={0.8} duration={7} theme={light ? 'light' : 'dark'} color={light ? '#0065c7' : '#77b9ff'} trailColor={light ? '#8455b9' : '#ceb0f3'} backgroundColor="transparent" textColor="inherit" borderColor="var(--line)">{header}</StarBorder> : header}
 
