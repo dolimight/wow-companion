@@ -62,6 +62,17 @@ export const simulationBenchmarkSchema = z.object({
   skipped: z.array(z.string().max(200)).max(20),
 })
 export type SimulationBenchmark = z.infer<typeof simulationBenchmarkSchema>
+/** A saved gear plan run as a whole and one planned upgrade at a time */
+export const simulationPlanStartSchema = simulationStartSchema.omit({ comparePlan: true }).extend({ planActivity: activitySchema.optional() })
+export type SimulationPlanStart = z.input<typeof simulationPlanStartSchema>
+export const simulationPlanSchema = z.object({
+  name: z.string().max(100), activity: activitySchema,
+  /** Index into the request candidates of the whole plan, or null when the plan changes a single slot */
+  whole: z.number().int().nonnegative().nullable(),
+  swaps: z.array(z.object({ slot: z.string().max(20), from: z.string().max(200), to: z.string().max(200), itemLevel: z.number() })).max(16),
+  skipped: z.array(z.string().max(200)).max(40),
+})
+export type SimulationPlan = z.infer<typeof simulationPlanSchema>
 export const simulationProfileSchema = z.object({
   schemaVersion: z.literal(1), text: z.string().max(1_048_576),
   source: z.enum(['companion', 'manual']), createdAt: z.string().datetime(),
@@ -78,6 +89,7 @@ export const simulationRequestSchema = z.object({
   /** Tanks also record damage taken per second as a modeled survivability measure */
   damageTaken: z.boolean().default(false),
   benchmark: simulationBenchmarkSchema.nullable().default(null),
+  plan: simulationPlanSchema.nullable().default(null),
   scenarioId: simulationScenarioSchema, scenario: scenarioSettingsSchema.nullable().default(null), scenarioHash: z.string(), profileHash: z.string(),
   options: simulationOptionsSchema, context: evaluationContextSchema,
   evidenceRefs: z.array(evidenceRefSchema),

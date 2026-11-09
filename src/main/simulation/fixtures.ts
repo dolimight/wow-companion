@@ -13,7 +13,7 @@ export function simulationCharacter() {
 export function simulationRequest(): SimulationRequest {
   const character = simulationCharacter()
   const profile = exportCharacterProfile(character)
-  return { schemaVersion: 1, characterId: character.id, activity: 'mythicPlus', baseline: baselineFromCharacter(character), baselineHash: characterBaselineHash(character), candidates: [], mode: 'copy', candidateLabels: [], damageTaken: false, benchmark: null, scenarioId: 'patchwerk', scenario: null, scenarioHash: hash('fixture-patchwerk'), profileHash: profile.profileHash, options: { iterations: 100, threads: 1, timeoutMinutes: 1 }, context: { now: '2026-10-29T12:00:00.000Z', gameBuild: character.gameBuild, seasonId: null, rulesetId: null }, evidenceRefs: [] }
+  return { schemaVersion: 1, characterId: character.id, activity: 'mythicPlus', baseline: baselineFromCharacter(character), baselineHash: characterBaselineHash(character), candidates: [], mode: 'copy', candidateLabels: [], damageTaken: false, benchmark: null, plan: null, scenarioId: 'patchwerk', scenario: null, scenarioHash: hash('fixture-patchwerk'), profileHash: profile.profileHash, options: { iterations: 100, threads: 1, timeoutMinutes: 1 }, context: { now: '2026-10-29T12:00:00.000Z', gameBuild: character.gameBuild, seasonId: null, rulesetId: null }, evidenceRefs: [] }
 }
 /** A json2 profileset report: the unchanged reference first, then each named candidate, with damage taken */
 export function profilesetJson(names: string[], means: number[]) {

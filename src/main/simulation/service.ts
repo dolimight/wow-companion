@@ -10,9 +10,9 @@ import { asCompatibilityItem } from '../../shared/gear-set-validation'
 import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
-import { benchmarkLabels, benchmarkPlan } from '../../shared/simulation-benchmark'
+import { benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
 import type { TopPlayers } from '../../shared/top-players'
-import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart } from '../../shared/simulation'
+import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
 import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
 import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
 
@@ -144,12 +144,12 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     draining = pump()
     return job
   }
-  function request(prepared: Awaited<ReturnType<typeof prepare>>, start: ReturnType<typeof simulationStartSchema.parse> | ReturnType<typeof simulationSwapsStartSchema.parse> | ReturnType<typeof simulationBenchmarkStartSchema.parse>, candidates: SimulationRequest['candidates'], extra: Pick<SimulationRequest, 'mode' | 'candidateLabels'> & Partial<Pick<SimulationRequest, 'benchmark'>>, hashExtra: unknown = null): SimulationRequest {
+  function request(prepared: Awaited<ReturnType<typeof prepare>>, start: ReturnType<typeof simulationStartSchema.parse> | ReturnType<typeof simulationSwapsStartSchema.parse> | ReturnType<typeof simulationBenchmarkStartSchema.parse> | ReturnType<typeof simulationPlanStartSchema.parse>, candidates: SimulationRequest['candidates'], extra: Pick<SimulationRequest, 'mode' | 'candidateLabels'> & Partial<Pick<SimulationRequest, 'benchmark' | 'plan'>>, hashExtra: unknown = null): SimulationRequest {
     const { current, profile, engine, baseline } = prepared
     const settings = { iterations: start.iterations, threads: Math.min(start.threads, Math.max(1, availableParallelism() - 2)), timeoutMinutes: start.timeoutMinutes }
     const scenario = resolveScenario(start.scenarioId, { targets: start.targets, fightSeconds: start.fightSeconds })
     const damageTaken = tankSpecs.has(current.specId ?? 0)
-    return { schemaVersion: 1, characterId: current.id, activity: start.activity, baseline, baselineHash: characterBaselineHash(current), candidates, benchmark: null, ...extra, damageTaken, scenarioId: start.scenarioId, scenario, scenarioHash: hash({ scenarioId: start.scenarioId, scenario, settings, candidates, mode: extra.mode, damageTaken, engine: engine.hash, ...(hashExtra === null ? {} : { extra: hashExtra }) }), profileHash: profile.profileHash, options: settings, context: { now: now(), gameBuild: current.gameBuild, seasonId: null, rulesetId: null, region: current.region }, evidenceRefs: baseline.evidenceRefs }
+    return { schemaVersion: 1, characterId: current.id, activity: start.activity, baseline, baselineHash: characterBaselineHash(current), candidates, benchmark: null, plan: null, ...extra, damageTaken, scenarioId: start.scenarioId, scenario, scenarioHash: hash({ scenarioId: start.scenarioId, scenario, settings, candidates, mode: extra.mode, damageTaken, engine: engine.hash, ...(hashExtra === null ? {} : { extra: hashExtra }) }), profileHash: profile.profileHash, options: settings, context: { now: now(), gameBuild: current.gameBuild, seasonId: null, rulesetId: null, region: current.region }, evidenceRefs: baseline.evidenceRefs }
   }
   const service = {
     get busy() { return pumping || !!active || jobs.length > 0 || mutations.size > 0 },
@@ -243,6 +243,32 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: start.candidates.map(candidate => candidate.label) })
       return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label)
+    },
+    /** Runs a saved gear plan as a whole and each planned upgrade on its own, so the biggest gains stand out */
+    async startPlan(input: SimulationPlanStart): Promise<SimulationJob> {
+      if (closed) throw new Error('The simulation service is closing')
+      const start = simulationPlanStartSchema.parse(input)
+      const prepared = await prepare(start)
+      const activity = start.planActivity ?? start.activity
+      const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId })
+      if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
+      if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
+      const { swaps, skipped } = planSwaps(prepared.current, draft.items)
+      if (!swaps.length) throw new Error(skipped[0] ?? 'Your plan matches the gear you already wear')
+      try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
+      const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
+      // The whole plan first, then each upgrade alone, all measured against the same unchanged reference
+      const sets = [...(described.length > 1 ? [{ label: 'Whole plan', entries: described }] : []), ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry] }))]
+      const lines = sets.flatMap((set, index) => set.entries.map(entry => `profileset."companion_candidate_${index + 1}"+=${entry.text}`))
+      const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
+      if (!reference) throw new Error('No equipped item could be described to the engine')
+      lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
+      const plan = {
+        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
+        swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
+      }
+      const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })
+      return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, `Plan · ${draft.name}`)
     },
     /** Runs your character with the top players' most worn items and most popular talents, next to your current setup */
     async startBenchmark(input: SimulationBenchmarkStart, top: TopPlayers): Promise<SimulationJob> {

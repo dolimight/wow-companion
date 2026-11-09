@@ -153,3 +153,22 @@ describe('comparing with top players', () => {
     await expect(service.startBenchmark({ characterId: character.id }, topFixture({ slots: {}, builds: [] }))).rejects.toThrow('already wear')
   })
 })
+
+describe('simulating a saved plan', () => {
+  it('runs the whole plan and each planned upgrade against an unchanged reference', async () => {
+    const { character, service, root, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3'], [104_000, 102_000, 101_500]))}));`)
+    await service.configureExecutable(process.execPath)
+    await expect(service.startPlan({ characterId: character.id })).rejects.toThrow('Save a gear plan')
+    const stored = database.getCharacter(character.id)!
+    database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [{ ...stored.gear[0]!, itemId: 2000, name: 'Planned helm', itemLevel: 120, itemLink: null }, { ...stored.gear[1]! }, { ...stored.gear[4]!, itemLevel: 115 }], updatedAt: '2026-10-29T12:00:00.000Z' })
+    const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 })
+    expect(job.label).toBe('Plan · Upgrade plan')
+    expect(job.request.candidateLabels).toEqual(['Whole plan', 'Head: Planned helm at 120', `Chest: ${stored.gear[4]!.name} at 115`])
+    expect(job.request.plan).toMatchObject({ name: 'Upgrade plan', whole: 0, skipped: [], swaps: [{ slot: 'head', to: 'Planned helm' }, { slot: 'chest', itemLevel: 115 }] })
+    const done = await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
+    expect(done.jobs[0]!.state).toBe('completed')
+    const input = await readFile(path.join(root, 'artifacts', job.id, 'input.simc'), 'utf8')
+    expect(input.match(/^profileset\."companion_candidate_1"\+=/gm)).toHaveLength(2)
+    expect(input.match(/^profileset\."companion_candidate_2"\+=.*$/gm)).toEqual(['profileset."companion_candidate_2"+=head=,id=2000,ilevel=120'])
+  })
+})

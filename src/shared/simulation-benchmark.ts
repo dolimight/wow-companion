@@ -2,6 +2,7 @@ import type { Character, GearItem } from './domain'
 import { itemLinkVariant } from './item-link'
 import { topSlotGroups, type TopPlayers } from './top-players'
 
+export const gearSlotLabels: Record<GearItem['slot'], string> = { head: 'Head', neck: 'Neck', shoulder: 'Shoulder', back: 'Cloak', chest: 'Chest', wrist: 'Wrist', hands: 'Hands', waist: 'Waist', legs: 'Legs', feet: 'Feet', finger1: 'Ring 1', finger2: 'Ring 2', trinket1: 'Trinket 1', trinket2: 'Trinket 2', mainHand: 'Main hand', offHand: 'Off hand' }
 export type BenchmarkKind = 'gear' | 'talents' | 'both'
 export const benchmarkLabels: Record<BenchmarkKind, string> = { gear: "Top players' gear", talents: "Top players' talents", both: "Top players' gear and talents" }
 export type BenchmarkPlan = {
@@ -12,6 +13,42 @@ export type BenchmarkPlan = {
   kinds: BenchmarkKind[]
   /** Slots left as yours, with the reason, so the result says what was not tested */
   skipped: string[]
+}
+
+/**
+ * An item described to the engine by id and level, carrying the enchant and gems of the item you wear in that slot so
+ * a comparison isolates the item itself. Slot metadata comes from the planned item when known, else from yours
+ */
+export function describedItem(current: GearItem, slot: GearItem['slot'], item: Pick<GearItem, 'itemId' | 'name' | 'itemLevel'> & Partial<GearItem>): GearItem {
+  const raw = itemLinkVariant(current.itemLink)
+  return {
+    ...current, inventoryType: item.inventoryType ?? current.inventoryType, classId: item.classId ?? current.classId, subclassId: item.subclassId ?? current.subclassId,
+    slot, itemId: item.itemId, name: item.name, itemLevel: item.itemLevel === null ? null : Math.round(item.itemLevel), itemLink: null, bonusIds: [],
+    enchantId: current.enchantId ?? raw.enchantId ?? 0, gemIds: current.gemIds ?? raw.gemIds ?? [0, 0, 0, 0],
+    variantCoverage: 'complete', stats: [], effects: [], appearanceId: null,
+  }
+}
+
+export type PlanSwaps = { swaps: GearItem[]; skipped: string[] }
+/**
+ * The changes a saved plan makes to the gear you wear. A planned item with its own exact link is used as is; otherwise
+ * it is described by id and level with your enchant and gems. Items you already wear at that level or higher are left alone
+ */
+export function planSwaps(character: Pick<Character, 'gear'>, planned: GearItem[]): PlanSwaps {
+  const swaps: GearItem[] = []
+  const skipped: string[] = []
+  for (const item of planned) {
+    const label = gearSlotLabels[item.slot]
+    if (!item.itemId) { skipped.push(`${label}: the planned item is unknown`); continue }
+    const current = character.gear.find(value => value.slot === item.slot)
+    if (current?.itemId === item.itemId && (item.itemLevel === null || (current.itemLevel ?? 0) >= item.itemLevel)) continue
+    if (item.itemLevel === null) { skipped.push(`${label}: the planned item level is unknown`); continue }
+    const exact = item.itemLink && itemLinkVariant(item.itemLink).bonusIds !== null
+    if (exact) { swaps.push(item); continue }
+    if (!current) { skipped.push(`${label}: nothing is equipped there to copy enchants and gems from`); continue }
+    swaps.push(describedItem(current, item.slot, item))
+  }
+  return { swaps, skipped }
 }
 
 const loadoutPattern = /^[A-Za-z0-9+/=]{1,400}$/
@@ -39,12 +76,7 @@ export function benchmarkPlan(character: Pick<Character, 'gear' | 'talents'>, to
       if (level === null) { skipped.push(`${group.label}: the item level top players wear is unknown`); return }
       const already = character.gear.some(item => group.slots.includes(item.slot) && item.itemId === pick.id && (item.itemLevel ?? 0) >= level)
       if (already) return
-      const raw = itemLinkVariant(current.itemLink)
-      gear.push({
-        ...current, slot, itemId: pick.id, name: pick.name, itemLevel: Math.round(level), itemLink: null, bonusIds: [],
-        enchantId: current.enchantId ?? raw.enchantId ?? 0, gemIds: current.gemIds ?? raw.gemIds ?? [0, 0, 0, 0],
-        variantCoverage: 'complete', stats: [], effects: [], appearanceId: null,
-      })
+      gear.push(describedItem(current, slot, { itemId: pick.id, name: pick.name, itemLevel: level }))
     })
   }
   const build = top.builds[0]

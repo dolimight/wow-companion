@@ -31,3 +31,5 @@
 .simulation-benchmark-rows dt { color: var(--muted); }
 .simulation-benchmark-rows dd { margin: 0; display: grid; justify-items: end; font-variant-numeric: tabular-nums; font-weight: 600; }
 .simulation-benchmark-rows small { font-weight: 400; }
+
+.simulation-subheading { margin: 4px 0 0; font-size: 13px; font-weight: 600; }
