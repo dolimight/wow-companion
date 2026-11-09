@@ -171,4 +171,18 @@ describe('simulating a saved plan', () => {
     expect(input.match(/^profileset\."companion_candidate_1"\+=/gm)).toHaveLength(2)
     expect(input.match(/^profileset\."companion_candidate_2"\+=.*$/gm)).toEqual(['profileset."companion_candidate_2"+=head=,id=2000,ilevel=120'])
   })
+  it('adds the top player gear so the finished plan can be read against it', async () => {
+    const { character, service, root, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3', 'companion_candidate_4'], [104_000, 102_000, 101_500, 106_000]))}));`)
+    await service.configureExecutable(process.execPath)
+    const stored = database.getCharacter(character.id)!
+    database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [{ ...stored.gear[0]!, itemId: 2000, name: 'Planned helm', itemLevel: 120, itemLink: null }, { ...stored.gear[4]!, itemLevel: 115 }], updatedAt: '2026-10-29T12:00:00.000Z' })
+    const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, topFixture())
+    expect(job.request.candidateLabels).toEqual(['Whole plan', 'Head: Planned helm at 120', `Chest: ${stored.gear[4]!.name} at 115`, "Top players' gear"])
+    expect(job.request.plan?.top).toMatchObject({ index: 3, players: 10, differences: [{ slot: 'finger1', top: 'Top ring', itemLevel: 111 }] })
+    await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
+    const input = await readFile(path.join(root, 'artifacts', job.id, 'input.simc'), 'utf8')
+    expect(input.match(/^profileset\."companion_candidate_4"\+=.*$/gm)).toEqual(['profileset."companion_candidate_4"+=head=,id=2000,ilevel=112', 'profileset."companion_candidate_4"+=finger1=,id=2010,ilevel=111'])
+    const other = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, topFixture({ specId: 251 }))
+    expect(other.request.plan?.top).toBeNull()
+  })
 })

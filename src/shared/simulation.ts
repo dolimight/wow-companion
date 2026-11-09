@@ -71,6 +71,14 @@ export const simulationPlanSchema = z.object({
   whole: z.number().int().nonnegative().nullable(),
   swaps: z.array(z.object({ slot: z.string().max(20), from: z.string().max(200), to: z.string().max(200), itemLevel: z.number() })).max(16),
   skipped: z.array(z.string().max(200)).max(40),
+  /** The top players' most worn items run in the same job, so the plan can be read against them */
+  top: z.object({
+    /** Index into the request candidates of the top players' gear */
+    index: z.number().int().nonnegative(),
+    population: z.string().max(400), players: z.number().int().nonnegative(),
+    /** Slots where the plan does not reach what top players wear */
+    differences: z.array(z.object({ slot: z.string().max(20), plan: z.string().max(200), top: z.string().max(200), itemLevel: z.number() })).max(16),
+  }).nullable().default(null),
 })
 export type SimulationPlan = z.infer<typeof simulationPlanSchema>
 export const simulationProfileSchema = z.object({

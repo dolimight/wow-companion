@@ -119,6 +119,21 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     }
     return merged
   }
+  /**
+   * The top players' most worn items on your character, for reading a plan against them, plus the slots where the plan
+   * falls short of what they wear. Null when no usable sample exists or their set cannot be described to the engine
+   */
+  function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null) {
+    if (!top || top.specId !== current.specId || !top.gearPlayers) return null
+    const { gear } = benchmarkPlan(current, top)
+    if (!gear.length) return null
+    try { swapIn(current, gear) } catch { return null }
+    const entries = gear.map(item => ({ item, text: itemLine(item) }))
+    if (entries.some(entry => !entry.text.text || entry.text.reasons.length)) return null
+    const planned = swapIn(current, swaps)
+    const differences = benchmarkPlan({ ...current, gear: planned }, top).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
+    return { entries: entries.map(entry => ({ item: entry.item, text: entry.text.text! })), differences }
+  }
   /** Checks shared by every job: engine, activity, role, and a complete matching baseline profile */
   async function prepare(start: { characterId: string; activity: SimulationStart['activity'] }) {
     await loadExecutable()
@@ -245,7 +260,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label)
     },
     /** Runs a saved gear plan as a whole and each planned upgrade on its own, so the biggest gains stand out */
-    async startPlan(input: SimulationPlanStart): Promise<SimulationJob> {
+    async startPlan(input: SimulationPlanStart, top: TopPlayers | null = null): Promise<SimulationJob> {
       if (closed) throw new Error('The simulation service is closing')
       const start = simulationPlanStartSchema.parse(input)
       const prepared = await prepare(start)
@@ -259,12 +274,15 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
       // The whole plan first, then each upgrade alone, all measured against the same unchanged reference
       const sets = [...(described.length > 1 ? [{ label: 'Whole plan', entries: described }] : []), ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry] }))]
+      const comparison = planTopComparison(prepared.current, swaps, top)
+      if (comparison) sets.push({ label: benchmarkLabels.gear, entries: comparison.entries })
       const lines = sets.flatMap((set, index) => set.entries.map(entry => `profileset."companion_candidate_${index + 1}"+=${entry.text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
         name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
+        top: comparison && top ? { index: sets.length - 1, population: top.population, players: top.gearPlayers, differences: comparison.differences } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }
       const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })

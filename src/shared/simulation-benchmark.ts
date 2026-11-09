@@ -2,6 +2,7 @@ import type { Character, GearItem } from './domain'
 import { itemLinkVariant } from './item-link'
 import { topSlotGroups, type TopPlayers } from './top-players'
 
+export type GearSlotName = GearItem['slot']
 export const gearSlotLabels: Record<GearItem['slot'], string> = { head: 'Head', neck: 'Neck', shoulder: 'Shoulder', back: 'Cloak', chest: 'Chest', wrist: 'Wrist', hands: 'Hands', waist: 'Waist', legs: 'Legs', feet: 'Feet', finger1: 'Ring 1', finger2: 'Ring 2', trinket1: 'Trinket 1', trinket2: 'Trinket 2', mainHand: 'Main hand', offHand: 'Off hand' }
 export type BenchmarkKind = 'gear' | 'talents' | 'both'
 export const benchmarkLabels: Record<BenchmarkKind, string> = { gear: "Top players' gear", talents: "Top players' talents", both: "Top players' gear and talents" }
