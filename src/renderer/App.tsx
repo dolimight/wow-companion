@@ -74,7 +74,7 @@ import { outdatedRenderSlots } from "../shared/shown-look";
 import TargetCursor from "./components/TargetCursor";
 
 /** The targeting cursor locks only onto things you can click, choose, or type into, including focusable rows and tooltip terms, and skips disabled ones */
-const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled])`).join(", ");
+const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
