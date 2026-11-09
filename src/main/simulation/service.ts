@@ -1,6 +1,6 @@
 import { availableParallelism } from 'node:os'
 import path from 'node:path'
-import { mkdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import type { Character, GearItem } from '../../shared/domain'
 import type { DatabaseClient } from '../database'
@@ -16,6 +16,26 @@ import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type
 
 type SimulationDatabase = Pick<DatabaseClient, 'call'>
 type Executable = { path: string; name: string; hash: string }
+const engineName = process.platform === 'win32' ? 'simc.exe' : 'simc'
+/** The SimulationCraft desktop app ships beside the command-line engine, so a pick of the app resolves to the engine next to it */
+async function commandLineEngine(selected: string) {
+  if (!/^simulationcraft(\.exe)?$/i.test(path.basename(selected))) return selected
+  const sibling = path.join(path.dirname(selected), engineName)
+  try { if ((await stat(sibling)).isFile()) return sibling } catch { /* reported below */ }
+  throw new Error(`Choose ${engineName}, the command-line engine that comes with SimulationCraft`)
+}
+/** Where the file picker opens: the configured engine, else the newest SimulationCraft folder in a usual install place */
+export async function engineFolder(configured: string | null, roots: string[]) {
+  if (configured) return path.dirname(configured)
+  for (const root of roots) {
+    try {
+      const folders = (await readdir(root, { withFileTypes: true })).filter(entry => entry.isDirectory() && /^simc/i.test(entry.name)).map(entry => entry.name).sort().reverse()
+      for (const folder of folders) { const candidate = path.join(root, folder); try { if ((await stat(path.join(candidate, engineName))).isFile()) return candidate } catch { /* keep looking */ } }
+      if ((await stat(path.join(root, engineName)).catch(() => null))?.isFile()) return root
+    } catch { /* missing root */ }
+  }
+  return undefined
+}
 export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
@@ -38,7 +58,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
   }
   async function inspectExecutable(selected: string): Promise<Executable> {
     if (!path.isAbsolute(selected)) throw new Error('Choose an absolute SimulationCraft executable path')
-    const canonical = await realpath(selected)
+    const canonical = await realpath(await commandLineEngine(selected))
     const info = await stat(canonical)
     if (!info.isFile() || info.size > 256 * 1024 * 1024) throw new Error('Choose a SimulationCraft executable smaller than 256 MiB')
     if (process.platform === 'win32' && path.extname(canonical).toLowerCase() !== '.exe') throw new Error('Choose the SimulationCraft .exe file')
@@ -160,6 +180,8 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       }
       return { ...workspace, configured: !!executable, executableName: executable?.name ?? null, baselineHash, limitations: ['Results model damage in the selected scenario, not player skill, healing effectiveness, or tank survival', 'External report links are bookmarks and do not establish a verified combat gain', 'Only matching engine game data and complete baseline coverage can produce a current result'] }
     },
+    /** The folder the engine picker should open in */
+    async engineFolder(roots: string[]) { await loadExecutable(); return engineFolder(executable?.path ?? null, roots) },
     async configureExecutable(selected: string) {
       if (closed) throw new Error('The simulation service is closing')
       const value = await inspectExecutable(selected)

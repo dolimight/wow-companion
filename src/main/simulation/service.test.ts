@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test'
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseRepository } from '../../workers/database/repository'
 import type { DatabaseClient } from '../database'
-import { createSimulationService } from './service'
+import { createSimulationService, engineFolder } from './service'
 import { exportCharacterProfile } from './profiles'
 import { profilesetJson, simulationCharacter, simulationJson } from './fixtures'
 
@@ -104,5 +104,29 @@ describe('simulation workspace and job lifecycle', () => {
     expect(database.getCharacter(character.id)).toBeNull()
     await expect(service.list(character.id)).rejects.toThrow('not found')
     expect(database.exportBackup().featureStates.some(value => value.characterId === character.id)).toBe(false)
+  })
+})
+describe('choosing the engine', () => {
+  const windows = process.platform === 'win32'
+  const engine = windows ? 'simc.exe' : 'simc'
+  const app = windows ? 'SimulationCraft.exe' : 'SimulationCraft'
+  it('opens the picker in the configured folder, else the newest installed SimulationCraft folder', async () => {
+    const { root } = await fixture()
+    const programs = path.join(root, 'Programs')
+    for (const folder of ['simc-1205.01-win64', 'simc-1210.01-win64', 'simc-1299.01-empty']) await mkdir(path.join(programs, folder), { recursive: true })
+    await writeFile(path.join(programs, 'simc-1205.01-win64', engine), '')
+    await writeFile(path.join(programs, 'simc-1210.01-win64', engine), '')
+    expect(await engineFolder(null, [path.join(root, 'missing'), programs])).toBe(path.join(programs, 'simc-1210.01-win64'))
+    expect(await engineFolder(path.join(root, 'elsewhere', engine), [programs])).toBe(path.join(root, 'elsewhere'))
+    expect(await engineFolder(null, [path.join(root, 'missing')])).toBeUndefined()
+  })
+  it('uses the command-line engine when the SimulationCraft desktop app is picked', async () => {
+    const { root, service } = await fixture()
+    const folder = path.join(root, 'simc-1210.01-win64'); await mkdir(folder)
+    await writeFile(path.join(folder, app), 'desktop app')
+    await expect(service.configureExecutable(path.join(folder, app))).rejects.toThrow(`Choose ${engine}`)
+    await writeFile(path.join(folder, engine), 'engine')
+    expect(await service.configureExecutable(path.join(folder, app))).toEqual({ configured: true, name: engine })
+    expect(JSON.parse(await readFile(path.join(root, 'artifacts', 'engine.json'), 'utf8')).path).toBe(path.join(folder, engine))
   })
 })
