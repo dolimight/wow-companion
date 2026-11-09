@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, net, Notification, protocol, safeStorage, screen, shell, Tray } from 'electron'
 import { mkdirSync } from 'node:fs'
 import { readFile, writeFile, mkdir, realpath, stat, rename } from 'node:fs/promises'
-import { dirname, extname, resolve, sep } from 'node:path'
+import { dirname, extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { DatabaseClient } from './database'
 import { startLocalService } from './local-service'
@@ -111,7 +111,7 @@ async function main(){
   handle('companion:update-install',()=>updates.install())
   handle('companion:update-channel',(channel:unknown)=>{if(!isUpdateChannel(channel))throw new Error('Choose Stable or Nightly');return updates.setChannel(channel)})
   handle('companion:update-blockers',(values:unknown)=>{if(!Array.isArray(values)||values.length>20||values.some(value=>typeof value!=='string'||value.length>160))throw new Error('Invalid pending work');updateBlockerAcknowledgedAt=Date.now();updates.setBlockers(values)})
-  async function selectedFile(filters:Electron.FileFilter[]){const result=await dialog.showOpenDialog(window!,{properties:['openFile'],filters});return result.canceled?null:result.filePaths[0]??null}
+  async function selectedFile(filters:Electron.FileFilter[],extra:Pick<Electron.OpenDialogOptions,'title'|'defaultPath'>={}){const result=await dialog.showOpenDialog(window!,{...extra,properties:['openFile'],filters});return result.canceled?null:result.filePaths[0]??null}
   async function smallText(path:string){const info=await stat(path);if(!info.isFile()||info.size>16*1024*1024)throw new Error('Choose a file smaller than 16 MiB');return readFile(path,'utf8')}
   handle('companion:connection',()=>service.connection)
   handle('companion:choose-model-file',async(characterId:unknown)=>{if(typeof characterId!=='string'||characterId.length>100)throw Error('Invalid character');const file=await selectedFile([{name:'Self-contained 3D model',extensions:['glb']}]);if(!file)return null;const model=await service.models.importFile(characterId,file);await service.changed(characterId);return model})
@@ -124,7 +124,7 @@ async function main(){
   handle('companion:export-backup',async()=>{const result=await dialog.showSaveDialog(window!,{defaultPath:'wow-companion-backup.json',filters:[{name:'JSON backup',extensions:['json']}]});if(result.canceled||!result.filePath)return false;const backup=await db.call('exportBackup');await writeFile(result.filePath,JSON.stringify(backup,null,2),'utf8');return true})
   handle('companion:import-backup',async()=>{const path=await selectedFile([{name:'JSON backup',extensions:['json']}]);if(!path)return null;const input=JSON.parse(await smallText(path));const result=await db.call('importBackup',input);await service.changed();return {imported:(input.characters as {id:string}[]).map(c=>c.id),unchanged:[],errors:[],revision:result.revision}})
   handle('companion:choose-wow-folder',async()=>{const result=await dialog.showOpenDialog(window!,{title:'Choose your World of Warcraft folder',properties:['openDirectory']});if(result.canceled||!result.filePaths[0])return null;return service.connections.useInstallPath(result.filePaths[0])})
-  handle('companion:choose-simulation-executable',async()=>{const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft executable',extensions:['exe']}]:[{name:'SimulationCraft',extensions:['*']}]);return selected?service.simulations.configureExecutable(await realpath(selected)):null})
+  handle('companion:choose-simulation-executable',async()=>{const local=process.env.LOCALAPPDATA,roots=process.platform==='win32'?[...(local?[join(local,'Programs','SimulationCraft'),join(local,'Programs')]:[]),join(process.env.ProgramFiles??'C:/Program Files','SimulationCraft'),process.env.ProgramFiles??'C:/Program Files',app.getPath('downloads')]:process.platform==='darwin'?['/Applications',app.getPath('downloads')]:['/usr/local/bin','/usr/bin',app.getPath('downloads')];const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft engine (simc.exe)',extensions:['exe']}]:[{name:'SimulationCraft engine (simc)',extensions:['*']}],{title:'Choose the SimulationCraft engine',defaultPath:await service.simulations.engineFolder(roots)});return selected?service.simulations.configureExecutable(await realpath(selected)):null})
   handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=new URL(value);if(url.protocol!=='https:'||!['raider.io','www.wowhead.com','worldofwarcraft.blizzard.com','news.blizzard.com','github.com','www.warcraftlogs.com','warcraftlogs.com','raidbots.com','www.raidbots.com','simulationcraft.org','www.simulationcraft.org','develop.battle.net','oauth.battle.net','community.developer.battle.net'].includes(url.hostname))throw new Error('This external link is not supported');await shell.openExternal(url.href)})
   const iconRoot=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets':'public/assets')
   const iconPath=(variant:AppIconVariant)=>resolve(iconRoot,appIconFiles[variant].png)

@@ -171,3 +171,29 @@ export async function stagePlanItem(input: {
   publish()
   return { status: authored ? "replaced" : "added", slot }
 }
+
+/**
+ * Puts simulated items onto a saved plan in one step. A plan without unsaved edits is saved right away; a plan with
+ * unsaved edits in the planner only gains the items, so the player's own pending changes are never saved for them
+ */
+export async function addSimulatedItemsToPlan(input: { character: Character; activity: Activity; items: GearItem[] }): Promise<{ saved: boolean; slots: GearSlot[] }> {
+  const key = planKey(input.character.id, input.activity, input.character.specId)
+  const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: input.character.specId })
+  const memory = gearMemory.get(key) ?? { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", dirty: false }
+  const slots = input.items.map((item) => item.slot)
+  const items = [...memory.items.filter((item) => !slots.includes(item.slot)), ...input.items.map((item) => stagedFromExact(item, item.slot))]
+  if (memory.dirty) {
+    gearMemory.set(key, { ...memory, items, dirty: true })
+    publish()
+    return { saved: false, slots }
+  }
+  const saved = await api.saveGearDraft({ id: draft?.id ?? crypto.randomUUID(), characterId: input.character.id, specId: input.character.specId, activity: input.activity, rulesetId: draft?.rulesetId ?? "unknown", name: memory.name, items, updatedAt: new Date().toISOString() })
+  gearMemory.set(key, { items: saved?.items ?? items, name: memory.name, dirty: false })
+  publish()
+  return { saved: true, slots }
+}
+
+/** Whether every item is already on the plan at that level or higher */
+export function planHolds(plan: GearItem[] | null | undefined, items: GearItem[]) {
+  return !!plan && items.length > 0 && items.every((item) => plan.some((planned) => planned.slot === item.slot && planned.itemId === item.itemId && (planned.itemLevel ?? 0) >= (item.itemLevel ?? 0)))
+}
