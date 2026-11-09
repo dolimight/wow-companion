@@ -7,7 +7,8 @@ import { DatabaseRepository } from '../../workers/database/repository'
 import type { DatabaseClient } from '../database'
 import { createSimulationService, engineFolder } from './service'
 import { exportCharacterProfile } from './profiles'
-import { profilesetJson, simulationCharacter, simulationJson } from './fixtures'
+import { profilesetJson, simulationCharacter, simulationJson, topFixture } from './fixtures'
+
 
 const databases: DatabaseRepository[] = []
 const directories: string[] = []
@@ -128,5 +129,27 @@ describe('choosing the engine', () => {
     await writeFile(path.join(folder, engine), 'engine')
     expect(await service.configureExecutable(path.join(folder, app))).toEqual({ configured: true, name: engine })
     expect(JSON.parse(await readFile(path.join(root, 'artifacts', 'engine.json'), 'utf8')).path).toBe(path.join(folder, engine))
+  })
+})
+
+describe('comparing with top players', () => {
+  it('runs the top player items, their talents, and both as profilesets against an unchanged reference', async () => {
+    const { character, service, root } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3'], [104_000, 101_000, 105_500]))}));`)
+    await service.configureExecutable(process.execPath)
+    const job = await service.startBenchmark({ characterId: character.id, activity: 'mythicPlus', scenarioId: 'big-pulls', iterations: 100 }, topFixture())
+    expect(job.request.candidateLabels).toEqual(["Top players' gear", "Top players' talents", "Top players' gear and talents"])
+    expect(job.request.benchmark).toMatchObject({ kinds: ['gear', 'talents', 'both'], players: 10, talentPlayers: 6, swapped: [{ slot: 'head', to: 'Top helm', itemLevel: 112 }, { slot: 'finger1', to: 'Top ring', itemLevel: 111 }] })
+    const done = await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
+    expect(done.jobs[0]!.state).toBe('completed')
+    const input = await readFile(path.join(root, 'artifacts', job.id, 'input.simc'), 'utf8')
+    expect(input.match(/^profileset\."companion_candidate_1"\+=.*$/gm)).toEqual(['profileset."companion_candidate_1"+=head=,id=2000,ilevel=112', 'profileset."companion_candidate_1"+=finger1=,id=2010,ilevel=111'])
+    expect(input.match(/^profileset\."companion_candidate_2"\+=.*$/gm)).toEqual(['profileset."companion_candidate_2"+=talents=TOPBUILD123'])
+    expect(input.match(/^profileset\."companion_candidate_3"\+=.*$/gm)).toHaveLength(3)
+  })
+  it('refuses another specialization or a setup you already match', async () => {
+    const { character, service } = await fixture()
+    await service.configureExecutable(process.execPath)
+    await expect(service.startBenchmark({ characterId: character.id }, topFixture({ specId: 251 }))).rejects.toThrow('another specialization')
+    await expect(service.startBenchmark({ characterId: character.id }, topFixture({ slots: {}, builds: [] }))).rejects.toThrow('already wear')
   })
 })

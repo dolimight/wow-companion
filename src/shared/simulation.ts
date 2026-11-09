@@ -50,6 +50,18 @@ export const simulationSwapsStartSchema = simulationStartSchema.omit({ comparePl
   label: z.string().min(1).max(200).default('Gear swaps'),
 })
 export type SimulationSwapsStart = z.input<typeof simulationSwapsStartSchema>
+/** Your character run with the sampled top players' items and talents, as a reference point for your own number */
+export const simulationBenchmarkStartSchema = simulationStartSchema.omit({ comparePlan: true })
+export type SimulationBenchmarkStart = z.input<typeof simulationBenchmarkStartSchema>
+export const simulationBenchmarkSchema = z.object({
+  kinds: z.array(z.enum(['gear', 'talents', 'both'])).max(3),
+  population: z.string().max(400), players: z.number().int().nonnegative(),
+  itemLevel: z.object({ yours: z.number().nullable(), average: z.number().nullable() }),
+  swapped: z.array(z.object({ slot: z.string().max(20), from: z.string().max(200), to: z.string().max(200), itemLevel: z.number() })).max(16),
+  talentPlayers: z.number().int().nonnegative().nullable(),
+  skipped: z.array(z.string().max(200)).max(20),
+})
+export type SimulationBenchmark = z.infer<typeof simulationBenchmarkSchema>
 export const simulationProfileSchema = z.object({
   schemaVersion: z.literal(1), text: z.string().max(1_048_576),
   source: z.enum(['companion', 'manual']), createdAt: z.string().datetime(),
@@ -65,6 +77,7 @@ export const simulationRequestSchema = z.object({
   candidateLabels: z.array(z.string().max(200)).max(PROFILESET_LIMIT).default([]),
   /** Tanks also record damage taken per second as a modeled survivability measure */
   damageTaken: z.boolean().default(false),
+  benchmark: simulationBenchmarkSchema.nullable().default(null),
   scenarioId: simulationScenarioSchema, scenario: scenarioSettingsSchema.nullable().default(null), scenarioHash: z.string(), profileHash: z.string(),
   options: simulationOptionsSchema, context: evaluationContextSchema,
   evidenceRefs: z.array(evidenceRefSchema),

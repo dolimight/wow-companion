@@ -48,6 +48,7 @@ export const api={
  importSimulationProfile:async(input:{characterId:string;text:string})=>(await client()).importSimulationProfile.mutate(input),
  clearSimulationProfile:async(input:{characterId:string})=>(await client()).clearSimulationProfile.mutate(input),
  saveSimulationReport:async(input:{characterId:string;url:string;notes:string})=>(await client()).saveSimulationReport.mutate(input),
+ startSimulationBenchmark:async(input:{characterId:string;activity:Activity;scenarioId:SimulationScenarioId;targets?:number;fightSeconds?:number;threads?:number;timeoutMinutes?:number})=>(await client()).startSimulationBenchmark.mutate(input),
  startSimulation:async(input:{characterId:string;activity:Activity;scenarioId:SimulationScenarioId;targets?:number;fightSeconds?:number;iterations?:number;threads?:number;timeoutMinutes?:number;comparePlan?:boolean})=>(await client()).startSimulation.mutate(input),
  cancelSimulation:async(input:{characterId:string;jobId:string})=>(await client()).cancelSimulation.mutate(input),
  chooseSimulationExecutable:()=>native('chooseSimulationExecutable'),
