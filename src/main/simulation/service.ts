@@ -12,7 +12,7 @@ import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
 import { classifySimulationResult, resolveScenario, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart } from '../../shared/simulation'
 import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
-import { parseSimulationReport, runSimulationProcess, type SimulationProcess } from './runner'
+import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
 
 type SimulationDatabase = Pick<DatabaseClient, 'call'>
 type Executable = { path: string; name: string; hash: string }
@@ -213,6 +213,10 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         }
         candidates.push(candidate.items.map(item => toItemVariant(item)))
       })
+      // Restating one equipped item changes nothing, which gives SimulationCraft a profileset for current gear
+      const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
+      if (!reference) throw new Error('No equipped item could be described to the engine')
+      lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: start.candidates.map(candidate => candidate.label) })
       return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label)
     },

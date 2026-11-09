@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test'
 import { spawn } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseRepository } from '../../workers/database/repository'
@@ -74,14 +74,17 @@ describe('simulation workspace and job lifecycle', () => {
     await expect(service.startJob({ characterId: healer.id })).rejects.toThrow('damage modeling')
   })
   it('runs many swaps as profilesets and keeps each candidate label with its result', async () => {
-    const { character, service } = await fixture(`await fs.writeFile('args.json',JSON.stringify(process.argv.slice(2)));await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [103_000, 99_500]))}));`)
+    const { character, service, root } = await fixture(`await fs.writeFile('args.json',JSON.stringify(process.argv.slice(2)));await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [103_000, 99_500]))}));`)
     await service.configureExecutable(process.execPath)
     const [first, second] = character.gear
     const candidates = [{ label: `${first!.name} at ${first!.itemLevel! + 13}`, items: [{ ...first!, itemLevel: first!.itemLevel! + 13 }] }, { label: `${second!.name} at ${second!.itemLevel! + 6}`, items: [{ ...second!, itemLevel: second!.itemLevel! + 6 }] }]
     await service.startSwaps({ characterId: character.id, scenarioId: 'big-pulls', candidates, iterations: 100 })
     const done = await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
     expect(done.jobs[0]).toMatchObject({ state: 'completed', label: 'Gear swaps', request: { mode: 'profileset', damageTaken: true, candidateLabels: candidates.map(candidate => candidate.label), scenario: { style: 'Patchwerk', targets: 5, fightSeconds: 60 } } })
-    expect(done.jobs[0]!.result!.values.map(value => value.mean)).toEqual([100_000, 103_000, 99_500])
+    expect(done.jobs[0]!.result!.values.map(value => value.mean)).toEqual([100_200, 103_000, 99_500])
+    const input = await readFile(path.join(root, 'artifacts', done.jobs[0]!.id, 'input.simc'), 'utf8')
+    expect(input).toMatch(/^profileset\."companion_reference"\+=\w+=,id=/m)
+    expect(input.match(/^profileset\."companion_candidate_\d"\+=/gm)).toHaveLength(2)
   })
   it('refuses a swap the character cannot wear or that breaks unique-equipped limits', async () => {
     const { character, service } = await fixture()

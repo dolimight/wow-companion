@@ -14,6 +14,16 @@ function stable(value: unknown): string { if (value === null || typeof value !==
 export function characterBaselineHash(character: Character): string { return hash({ characterId: character.id, className: character.className, specId: character.specId, level: character.level, raceName: character.raceName, gameBuild: character.gameBuild, gear: [...character.gear].sort((a, b) => a.slot.localeCompare(b.slot)), talents: character.talents ? { loadout: character.talents.loadout, specId: character.talents.specId } : null }) }
 export function token(value: string): string { return value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') }
 export function classToken(character: Character): string { return token(character.className) }
+// Race keywords SimulationCraft accepts (engine/util/util.cpp race_type_string)
+const engineRaces = new Set(['blood_elf', 'dark_iron_dwarf', 'dracthyr_alliance', 'dracthyr_horde', 'draenei', 'dwarf', 'earthen_alliance', 'earthen_horde', 'gnome', 'goblin', 'haranir_alliance', 'haranir_horde', 'highmountain_tauren', 'human', 'kul_tiran', 'lightforged_draenei', 'maghar_orc', 'mechagnome', 'night_elf', 'nightborne', 'orc', 'pandaren', 'pandaren_alliance', 'pandaren_horde', 'tauren', 'troll', 'undead', 'void_elf', 'vulpera', 'worgen', 'zandalari_troll'])
+/** The engine's keyword for a race name. Races split by faction have the same racials on both sides, so the Horde keyword stands in when the faction isn't recorded */
+export function engineRace(raceName: string): string | null {
+  const name = token(raceName).replace(/^mag_har_orc$/, 'maghar_orc')
+  if (engineRaces.has(name)) return name
+  return engineRaces.has(`${name}_horde`) ? `${name}_horde` : null
+}
+/** SimulationCraft's own class keywords drop the underscore, such as deathknight and demonhunter */
+export function engineClass(className: string): string { return className === 'death_knight' ? 'deathknight' : className === 'demon_hunter' ? 'demonhunter' : className }
 export function itemLine(item: GearItem): { text: string | null; reasons: string[] } {
   if (!item.itemId) return { text: null, reasons: [`Item identity is unknown for ${item.slot}`] }
   const raw = itemLinkVariant(item.itemLink)
@@ -44,10 +54,12 @@ export function exportCharacterProfile(character: Character, now = new Date().to
   if (!character.talents || !/^[A-Za-z0-9+/=]+$/.test(character.talents.loadout)) reasons.push('A supported talent export is missing')
   if (character.talents?.specId !== character.specId) reasons.push('The talent specialization does not match the character')
   const lines = [`# WOW Companion profile v1`, `# Character baseline ${characterBaselineHash(character)}`, `# Game build ${character.gameBuild ?? 'unknown'}`]
-  if (classes.includes(className)) lines.push(`${className}=companion_baseline`)
+  if (classes.includes(className)) lines.push(`${engineClass(className)}=companion_baseline`)
   else lines.push('# The recorded character class is unavailable')
   if (character.level) lines.push(`level=${character.level}`)
-  if (character.raceName !== 'Unknown') lines.push(`race=${token(character.raceName)}`)
+  const race = character.raceName !== 'Unknown' ? engineRace(character.raceName) : null
+  if (race) lines.push(`race=${race}`)
+  else if (character.raceName !== 'Unknown') reasons.push(`SimulationCraft does not know the race ${character.raceName}`)
   else reasons.push('The character race is unknown')
   if (spec) lines.push(`spec=${spec}`)
   lines.push(`role=${tankSpecs.has(character.specId ?? 0) ? 'tank' : healerSpecs.has(character.specId ?? 0) ? 'heal' : 'attack'}`)
@@ -78,7 +90,7 @@ export function parseSimulationProfile(text: string): ParsedProfile {
     if (classes.includes(key)) {
       if (className) throw new Error('Import exactly one character profile')
       if (!/^"?[A-Za-z0-9_ -]{1,100}"?$/.test(value)) throw new Error('The character label contains unsupported characters')
-      className = key; fields[key] = 'companion_baseline'; lines.push(`${key}=companion_baseline`); continue
+      className = key; fields[key] = 'companion_baseline'; lines.push(`${engineClass(key)}=companion_baseline`); continue
     }
     if (!permitted.has(key)) throw new Error(`Unsupported profile directive: ${key}`)
     if (Object.values(slots).includes(key)) {
