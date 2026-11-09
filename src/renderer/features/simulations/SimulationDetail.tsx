@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, Check, ClipboardList, FlaskConical, Plus, Shield, Sparkles, Trophy } from 'lucide-react'
 import { gearItemSchema, type Activity, type Character, type GearItem } from '../../../shared/domain'
@@ -10,6 +10,8 @@ import { addSimulatedItemsToPlan, gearMemory, planHolds, planKey, subscribeGearP
 import { Badge, Button } from '../../components/ui/primitives'
 import { AppSelect } from '../../components/AppSelect'
 import { ItemIcon } from '../items/ItemIcon'
+import TargetCursor from '../../components/TargetCursor'
+import StarBorder from '../../components/StarBorder'
 import { ItemHoverCard } from '../items/ItemHoverCard'
 import { BenchmarkSummary } from './BenchmarkSummary'
 import { PlanSummary } from './PlanSummary'
@@ -49,6 +51,9 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const [planActivity, setPlanActivity] = useState<Activity>(job.request.plan?.activity ?? (activity === 'raiding' ? 'raiding' : 'mythicPlus'))
   const [all, setAll] = useState(false)
   const [, refresh] = useReducer((count: number) => count + 1, 0)
+  const root = useRef<HTMLDivElement>(null)
+  // The targeting cursor is a flourish for this page only, and stays off when the app is set to reduce motion
+  const motion = document.documentElement.dataset.reducedMotion !== 'true'
   useEffect(() => subscribeGearPlan(refresh), [])
   const queryClient = useQueryClient()
   const plans = useQuery({ queryKey: ['gear-draft', character.id, 'simulation-plans', character.specId], queryFn: async () => { const [mythicPlus, raiding] = await Promise.all([api.getGearDraft({ characterId: character.id, activity: 'mythicPlus', specId: character.specId }), api.getGearDraft({ characterId: character.id, activity: 'raiding', specId: character.specId })]); return { mythicPlus, raiding } } })
@@ -82,10 +87,8 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   }
 
   const Icon = kind.icon
-  return <div className="sim-detail">
-    <Button variant="quiet" className="sim-detail-back" onClick={onBack}><ArrowLeft size={15} />All simulations</Button>
-    <header className="sim-hero">
-      <div className="sim-hero-glow" aria-hidden="true" />
+  const light = document.documentElement.dataset.theme === 'light'
+  const header = <header className="sim-hero">
       <div className="sim-hero-main">
         <span className="sim-hero-eyebrow"><Icon size={14} />{kind.label}</span>
         <h2>{job.label}</h2>
@@ -98,10 +101,14 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         </div>
       </div>
       <div className="sim-hero-stats">
-        <div><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>
-        {best && baseline && <div className="sim-hero-best"><span>Best result</span><strong>{signed(best.comparison.difference)}</strong><small>{percent(best.comparison.difference / baseline.mean)} · {best.label}</small></div>}
+        <div className="cursor-target" data-cursor-label="Your baseline"><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>
+        {best && baseline && <div className="sim-hero-best cursor-target" data-cursor-label="Biggest gain"><span>Best result</span><strong>{signed(best.comparison.difference)}</strong><small>{percent(best.comparison.difference / baseline.mean)} · {best.label}</small></div>}
       </div>
     </header>
+  return <div className="sim-detail" ref={root}>
+    {motion && <TargetCursor container={root} targetSelector=".cursor-target, .sim-detail button, .sim-detail [role='combobox']" cursorColor="#ffffff" cursorColorOnTarget="#7cc4ff" spinDuration={3} />}
+    <Button variant="quiet" className="sim-detail-back" onClick={onBack}><ArrowLeft size={15} />All simulations</Button>
+    {motion ? <StarBorder as="div" className="sim-hero-frame" radius={16} thickness={1.5} stars={2} sparkle glow={0.8} duration={7} theme={light ? 'light' : 'dark'} color={light ? '#0065c7' : '#77b9ff'} trailColor={light ? '#8455b9' : '#ceb0f3'} backgroundColor="transparent" textColor="inherit" borderColor="var(--line)">{header}</StarBorder> : header}
 
     {job.failure && <p role="alert" className="error-surface">{job.failure.replace(/\.+$/, '')}</p>}
     {!result && !job.failure && <section className="surface sim-panel"><p className="muted">This simulation is {job.state} · Results appear here when it finishes</p></section>}
@@ -119,7 +126,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
             const width = Math.abs(entry.comparison.difference) / scale * 50
             const spread = (entry.comparison.uncertainty ?? 0) / scale * 50
             const center = 50 + (entry.comparison.difference >= 0 ? width : -width)
-            return <li key={entry.value.name} data-verdict={entry.comparison.verdict}>
+            return <li key={entry.value.name} className="cursor-target" data-verdict={entry.comparison.verdict}>
               <span className="sim-chart-label" title={entry.label}>{entry.label}</span>
               <span className="sim-chart-track" aria-hidden="true">
                 <span className="sim-chart-zero" />
@@ -141,7 +148,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
           {shown.map((entry, rank) => {
             const inPlan = planHolds(current, entry.items)
             const taken = takenText(baseline, entry.value)
-            return <article className="sim-card" key={entry.value.name} data-verdict={entry.comparison.verdict}>
+            return <article className="sim-card cursor-target" data-cursor-label={`#${rank + 1}`} key={entry.value.name} data-verdict={entry.comparison.verdict}>
               <header>
                 <span className="sim-card-rank">{rank + 1}</span>
                 <strong className="sim-card-title">{entry.label}</strong>
@@ -152,7 +159,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
                 {entry.items.map(item => {
                   const was = before.get(item.slot)
                   const gain = item.itemLevel != null && was?.itemLevel != null ? item.itemLevel - was.itemLevel : null
-                  return <li key={item.slot}>
+                  return <li key={item.slot} className="cursor-target" data-cursor-label={gearSlotLabels[item.slot]}>
                     <span className="sim-swap-slot">{gearSlotLabels[item.slot]}</span>
                     <Piece item={was ?? null} icon={was?.itemId ? icons.get(was.itemId) : undefined} muted />
                     <ArrowRight className="sim-swap-arrow" size={15} aria-hidden="true" />

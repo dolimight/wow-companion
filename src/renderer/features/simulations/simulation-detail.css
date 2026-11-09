@@ -3,11 +3,7 @@
 .sim-detail h2, .sim-detail h3, .sim-detail p { margin: 0; }
 .sim-detail-back { justify-self: start; }
 
-.sim-hero { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: flex-end; padding: 28px; border-radius: 16px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)) 0%, var(--surface) 55%, color-mix(in srgb, var(--purple) 12%, var(--surface)) 100%); isolation: isolate; }
-.sim-hero-glow { position: absolute; inset: -40% -10% auto auto; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 65%); filter: blur(10px); z-index: -1; animation: sim-drift 14s ease-in-out infinite alternate; }
-@keyframes sim-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-60px, 30px) scale(1.12); } }
-@media (prefers-reduced-motion: reduce) { .sim-hero-glow { animation: none; } }
-:root[data-reduced-motion="true"] .sim-hero-glow { animation: none; }
+.sim-hero { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: flex-end; padding: 28px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); isolation: isolate; }
 .sim-hero-main { display: grid; gap: 10px; min-width: 0; flex: 1 1 320px; }
 .sim-hero-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 .sim-hero h2 { font-size: 28px; letter-spacing: -.03em; line-height: 1.15; overflow-wrap: anywhere; }
@@ -94,3 +90,9 @@
 }
 :root[data-reduced-motion="true"] .sim-card, :root[data-reduced-motion="true"] .sim-chart-bar { transition: none; }
 :root[data-reduced-motion="true"] .sim-card:hover { transform: none; }
+
+/* A star of light runs around the header; the frame leaves the edge clear so the trail shows */
+.sim-hero-frame { display: block; padding: 1.5px; font-weight: inherit; line-height: inherit; text-align: inherit; }
+.sim-hero-frame > .sim-hero { border-color: transparent; border-radius: 14.5px; }
+/* The star light bleeds past the header; clip it so the page never scrolls sideways */
+.sim-detail { overflow-x: clip; overflow-clip-margin: 40px; }
