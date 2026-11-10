@@ -400,18 +400,21 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await openView('Gear', 'Plan')
         await wait(`document.querySelector('.gear-inspector input')?.value==='Illustrative headpiece'`, 'gear hydration')
         await field('Plan name', 'Acceptance Serath plan')
-        await field('Planned item name', 'Acceptance local headpiece')
+        // The item name comes from the picked item and cannot be typed over
+        assert(await evaluate(`[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent.trim()==='Planned item name')?.querySelector('input')?.readOnly===true`), 'Planned item name is editable')
         await field('Planned item level', '275')
         await field('Enchant', 'Acceptance enchant')
         await field('Gems', 'Acceptance gem')
-        await click('Save plan')
-        await waitDb(async () => (await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' }))?.items.some((item) => item.slot === 'head' && item.itemLevel === 275 && item.name === 'Acceptance local headpiece') ?? false, 'Serath gear draft')
+        // Edits save on their own; leaving the field commits the last one
+        await evaluate(`document.activeElement?.blur()`)
+        await waitDb(async () => (await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' }))?.items.some((item) => item.slot === 'head' && item.itemLevel === 275 && item.name === 'Illustrative headpiece') ?? false, 'Serath gear draft')
         await capture('gear-planner')
         return await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' })
       })
       await step('Base UI toasts stack repeated notifications and support keyboard dismissal in both themes', async () => {
-        const titles = `[...document.querySelectorAll('[data-slot="toast"]:not([data-ending-style])')].filter(node=>node.querySelector('[data-slot="toast-title"]')?.textContent==='Gear plan saved locally')`
-        await click('Save plan')
+        const titles = `[...document.querySelectorAll('[data-slot="toast"]:not([data-ending-style])')].filter(node=>node.querySelector('[data-slot="toast-title"]')?.textContent==='Character goal saved')`
+        await click('Save target')
+        await click('Save target')
         await wait(`${titles}.length>=2`, 'repeated save notifications remain distinct')
         assert(await evaluate(`!document.querySelector('.toast')&&!!document.querySelector('[data-slot="toast-viewport"]')`), 'Legacy toast remains or Base UI viewport is missing')
         const originalSize = window.getContentSize()
@@ -442,7 +445,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         assert(name !== 'Acceptance Serath plan', 'Alt draft leaked into main')
         assert((await db.call('getGearDraft', { characterId: 'demo-vaelith', specId: 64, activity: 'mythicPlus' })) === null, 'Main unexpectedly acquired alt plan')
         await switchCharacter('Serath')
-        await wait(`document.body.innerText.includes('Acceptance local headpiece')`, 'alt saved plan restored')
+        await wait(`[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent==='Plan name')?.querySelector('input')?.value==='Acceptance Serath plan'`, 'alt saved plan restored')
       })
       await step('Favorite toggle persists through the real roster control', async () => {
         await nav('Characters', 'Characters')
@@ -504,7 +507,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await openView('Gear', 'Plan')
         const url = contents.getURL()
         await window.loadURL(url)
-        await wait(`document.body.innerText.includes('Acceptance local headpiece')`, 'saved gear after offline reload')
+        await wait(`[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent==='Plan name')?.querySelector('input')?.value==='Acceptance Serath plan'`, 'saved gear after offline reload')
         const draft = await db.call('getGearDraft', { characterId: 'demo-serath', specId: 66, activity: 'mythicPlus' })
         assert(draft?.name === 'Acceptance Serath plan', 'Reload lost saved draft')
         await capture('gear-after-reopen')
@@ -597,11 +600,9 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       contents.sendInputEvent({type:'keyUp',keyCode:'Enter'})
       await wait(`document.querySelector('.gear-inspector h3')?.textContent==='Neck'&&document.querySelector('.gear-inspector input')?.value==='Matched neck'`, 'dimmed target keyboard selection')
       assert(await evaluate(`getComputedStyle(document.querySelectorAll('.planner-table tbody tr')[1].querySelector('.game-icon')).opacity==='1'`), 'Focused target remains dimmed')
-      await field('Planned item name','Manual neck target')
-      await evaluate(`(()=>{const input=[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent.trim()==='Planned item name')?.querySelector('input');input?.dispatchEvent(new FocusEvent('focusout',{bubbles:true}))})()`)
-      await wait(`!document.querySelectorAll('.planner-table tbody tr')[1].dataset.targetEquipped`, 'manual target clears stale item identity')
-      await click('Save plan')
-      await waitDb(async()=>{const draft=await db.call('getGearDraft',{characterId:fixture.id,specId:64,activity:'mythicPlus'});return draft?.items.some(item=>item.slot==='neck'&&item.name==='Manual neck target'&&item.itemId===null&&item.itemLink===null)??false}, 'manual target saved without old identity')
+      // Names come from the picked item; the field cannot rename a target away from its item
+      assert(await evaluate(`[...document.querySelectorAll('label.field')].find(node=>node.querySelector(':scope > span')?.textContent.trim()==='Planned item name')?.querySelector('input')?.readOnly===true`), 'Planned item name is editable')
+      assert(await evaluate(`!!document.querySelectorAll('.planner-table tbody tr')[1].dataset.targetEquipped`), 'Selecting a matched target changed its identity')
       const originalSize=window.getContentSize()
       const settings=await db.call('getSettings')
       try {
@@ -612,7 +613,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         await capture('planner-current-planned-light-minimum')
       } finally {window.setContentSize(originalSize[0],originalSize[1]);await db.call('setSettings',{theme:settings.theme});await service.changed()}
       await window.loadURL(contents.getURL())
-      await wait(`document.querySelector('.planner-table')?.textContent.includes('Manual neck target')&&!document.querySelectorAll('.planner-table tbody tr')[1].dataset.targetEquipped`, 'comparison state persists after reload')
+      await wait(`document.querySelector('.planner-table')?.textContent.includes('Matched neck')&&!!document.querySelectorAll('.planner-table tbody tr')[1].dataset.targetEquipped`, 'comparison state persists after reload')
       await nav('Characters','Characters')
       return {currentAndPlanned:true,matchedTargetDimmed:true,missingIdsNotMatched:true,levelsPreserved:true,keyboardEditable:true,manualIdentityCleared:true,minimumWidthLight:true,persisted:true}
     })
@@ -828,9 +829,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`!!document.querySelector('[aria-label="Resize sidebar"]')&&!document.querySelector('[aria-label="Open navigation"]')`, 'sidebar returns on wide windows')
       return { destinations: labels.length, legacyRedirects: 6, notFoundRecovery: true, drawer: true }
     })
-    await step('Owned gear stages an exact copy into the Plan draft, protects unsaved changes, and leaves freely after saving', async () => {
+    await step('Owned gear stages an exact copy into the Plan, saves it with Undo in a toast, and leaves freely', async () => {
       assert(workflowSeeded, 'Workflow fixtures must be available')
       const base = contents.getURL().split('#')[0]
+      const draftHasRobes = async () => (await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes') ?? false
       await window.loadURL(base + `#/characters/${workflowId}/gear/owned`)
       await wait(`document.querySelector('.subnav a[aria-current="page"]')?.textContent==='Owned'&&!!document.querySelector('.inventory-list')`, 'owned view')
       await click('Bags')
@@ -839,17 +841,16 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`!!document.querySelector('[role="dialog"] .inventory-use')`, 'use in plan action')
       assert(await evaluate(`document.querySelector('[role="dialog"] .inventory-use')?.textContent.includes('does not mean the item is equipped')`), 'Use in plan implied the item was equipped')
       await click('Use in plan', '[role="dialog"] button')
-      await wait(`location.hash.includes('/gear/plan')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')&&document.querySelector('.save-status')?.textContent.includes('Unsaved changes')`, 'staged copy opens Plan as an unsaved draft')
-      assert(!(await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes'), 'Staging saved the plan before Save plan')
+      await wait(`location.hash.includes('/gear/plan')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')`, 'staged copy opens Plan')
+      await waitDb(draftHasRobes, 'staging saves the plan at once')
+      const undo = `[...document.querySelectorAll('[data-slot="toast"]:not([data-ending-style])')].find(node=>node.querySelector('[data-slot="toast-title"]')?.textContent.includes('Workflow bag robes'))?.querySelector('button:not([data-slot="toast-close"])')`
+      await wait(`${undo}?.textContent==='Undo'`, 'saved toast offers Undo')
+      await evaluate(`${undo}.click()`)
+      await waitDb(async () => !(await draftHasRobes()), 'Undo restores the plan before the change')
+      await wait(`!document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')`, 'Undo updates the open plan')
       await click('Overview', '.navigation a')
-      await wait(`document.querySelector('[role="alertdialog"]')?.textContent.includes('Leave this plan without saving?')&&location.hash.includes('/gear/plan')`, 'unsaved plan blocks leaving')
-      await click('Keep editing')
-      await wait(`!document.querySelector('[role="alertdialog"]')&&document.querySelector('.planner-table')?.textContent.includes('Workflow bag robes')`, 'keep editing preserves the draft')
-      await click('Save plan')
-      await waitDb(async () => (await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' }))?.items.some(item => item.name === 'Workflow bag robes') ?? false, 'saved staged plan')
-      await click('Overview', '.navigation a')
-      await wait(`location.hash.includes('/overview')`, 'leaving after saving is not blocked')
-      return { exactCopyStaged: true, unsavedUntilSave: true, leaveProtection: true }
+      await wait(`location.hash.includes('/overview')&&!document.querySelector('[role="alertdialog"]')`, 'leaving is never blocked')
+      return { exactCopyStaged: true, savedAtOnce: true, undo: true, leavesFreely: true }
     })
     await step('Simulations export a partial baseline, reject executable profile directives, and persist external report bookmarks by character', async () => {
       assert(workflowSeeded, 'Workflow fixtures must be available')
@@ -1038,7 +1039,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await wait(`innerWidth===${originalSize[0]}&&document.querySelector('.app-shell')?.dataset.navigation===${literal(originalSize[0] < 1100 ? 'drawer' : 'sidebar')}&&document.documentElement.dataset.theme==='dark'`, 'editor layout restored before saving')
       contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' }); contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
       await wait(`document.querySelector('input[aria-label="Gems"]')?.getAttribute('aria-expanded')!=='true'`, 'close gem dropdown before saving')
-      await click('Save plan')
+      // Picks save on their own
       await waitDb(async () => {
         const draft = await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' })
         const head = draft?.items.find(item => item.slot === 'head')

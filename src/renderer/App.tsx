@@ -44,12 +44,12 @@ import {
   FileText,
   History,
   Info,
+  LoaderCircle,
   Menu,
   NotebookPen,
   Plus,
   RefreshCw,
   Search,
-  Save,
   Settings,
   Shield,
   Sparkles,
@@ -66,7 +66,6 @@ import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
 import { errorMessage, notify } from "./lib/notify";
 import { Term } from "./components/Term";
-import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
@@ -81,7 +80,7 @@ import TargetCursor from "./components/TargetCursor";
 const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
-import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
+import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
 import { clearRenamedPlanIdentity, isPlannedItemEquipped } from "./lib/gear-plan-match";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
@@ -138,10 +137,10 @@ import type {
   ActivityRating,
   AddCharacterInput,
   Character,
-  GearDraft,
   GearItem,
   GearSlot,
   ImportReport,
+  StatWeights,
 } from "../shared/domain";
 import "./style.css";
 import "./sidebar-settings.css";
@@ -579,6 +578,7 @@ function Shell() {
   const shellNavigate = useNavigate();
   const openSimulation = useCallback((characterId: string, job: string) => void shellNavigate({ to: "/characters/$characterId/$section/$view", params: { characterId, section: "gear", view: "simulations" }, search: { job } as never }), [shellNavigate]);
   useSimulationToasts(openSimulation);
+  usePlanQueryClient();
   const roster = useRoster();
   const settings = useSettings();
   const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
@@ -1672,23 +1672,15 @@ function GearEditor({
     setEnchantEdited(false);
     setGemsEdited(false);
   }, [selected, current]);
+  // The plan saves itself; the shared helper marks it clean and offers Undo in a toast
   const save = useMutation({
-    mutationFn: (draft: GearDraft) => api.saveGearDraft(draft),
-    onSuccess: () => {
-      setDirty(false);
-      notify("Gear plan saved locally");
-      void client.invalidateQueries({ queryKey: ["gear-draft", character.id] });
-    },
+    mutationFn: (draft: { items: GearItem[]; name: string; statWeights?: StatWeights }) => persistPlan(planOwner(character, activity), draft),
     onError: (e) => notify(errorMessage(e)),
   });
-  // Leaving the plan by route, character, subsection, or window close asks first while changes are unsaved
   const unsaved = dirty || inspectorDirty;
-  const blocker = useBlocker({ shouldBlockFn: () => unsaved, enableBeforeUnload: unsaved, withResolver: true });
-  const [closing, setClosing] = useState(false);
-  // The wording follows the last request, so it holds still while the dialog fades out
-  const [closeWording, setCloseWording] = useState(false);
-  useCloseGuard(unsaved, () => { setClosing(true); setCloseWording(true); });
-  useEffect(() => { if (blocker.status === "blocked") setCloseWording(false); }, [blocker.status]);
+  // Leaving or closing never asks: a pending edit is saved on the way out
+  useBlocker({ shouldBlockFn: () => { if (unsaved) savePlan(); return false; }, enableBeforeUnload: unsaved });
+  useCloseGuard(unsaved, () => savePlan(() => closeWindow()));
   const equipped = character.gear.find((i) => i.slot === selected);
   const values = items.map((i) => i.itemLevel).filter((v): v is number => v != null);
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
@@ -1738,18 +1730,14 @@ function GearEditor({
   function savePlan(onSaved?: () => void) {
     const planned = inspectorDirty ? updateItem(true) : items;
     if (!planned) return;
-    save.mutate({
-      id: query.data?.id ?? crypto.randomUUID(),
-      characterId: character.id,
-      specId: character.specId,
-      activity,
-      rulesetId: query.data?.rulesetId ?? "unknown",
-      name: name.trim() || "My upgrade plan",
-      items: planned,
-      statWeights,
-      updatedAt: new Date().toISOString(),
-    }, { onSuccess: onSaved });
+    save.mutate({ items: planned, name, statWeights }, { onSuccess: onSaved });
   }
+  // Edits save a moment after they stop, typed slot fields included, so a burst of changes becomes one save and one Undo
+  useEffect(() => {
+    if (!hydrated.current || !(dirty || inspectorDirty) || save.isPending) return;
+    const timer = setTimeout(() => savePlan(), 800);
+    return () => clearTimeout(timer);
+  }, [items, name, statWeights, dirty, inspectorDirty, itemLevel, enchant, gems, save.isPending]);
   function selectSlot(slot: GearSlot) {
     if (inspectorDirty && !updateItem(true)) return;
     setSelected(slot);
@@ -1759,36 +1747,17 @@ function GearEditor({
       <div className="page-heading gear-plan-heading">
         <div>
           <h2 className="gear-section-title"><NotebookPen size={18} aria-hidden="true" />Plan</h2>
-          <p>Your imported gear stays separate from this plan · Edits update the draft, and Save plan keeps them</p>
+          <p>Your imported gear stays separate from this plan · Changes save automatically, with Undo in the toast</p>
         </div>
         <div className="actions">
-          <span className="save-status" role="status" data-state={save.isError ? "error" : save.isPending ? "saving" : dirty || inspectorDirty ? "unsaved" : "saved"}>
-            {save.isError ? <><CircleHelp size={14} />Could not save</> : save.isPending ? "Saving…" : dirty || inspectorDirty ? <Badge tone="amber">Unsaved changes</Badge> : query.data ? <><Check size={14} />Saved locally</> : null}
+          <span className="save-status" role="status" data-state={save.isError ? "error" : save.isPending || dirty ? "saving" : inspectorDirty ? "editing" : "saved"}>
+            {save.isError ? <><CircleHelp size={14} />Could not save · <Button variant="quiet" onClick={() => savePlan()}>Try again</Button></> : save.isPending || dirty ? <><LoaderCircle size={14} className="spin" />Saving…</> : inspectorDirty ? "Editing" : query.data ? <><Check size={14} />Saved</> : null}
           </span>
-          <Button
-            variant="primary"
-            disabled={save.isPending || query.isPending}
-            onClick={() => savePlan()}
-          >
-            <Save />
-            {save.isPending ? "Saving…" : "Save plan"}
-          </Button>
         </div>
       </div>
       <div className="gear-summary">
         <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
-      <LeaveGuard
-        open={blocker.status === "blocked" || closing}
-        title={closeWording ? "Close without saving this plan?" : "Leave this plan without saving?"}
-        description="This plan has changes that are not saved"
-        saving={save.isPending}
-        saveLabel={closeWording ? "Save and close" : undefined}
-        discardLabel={closeWording ? "Close without saving" : undefined}
-        onKeep={() => { setClosing(false); if (blocker.status === "blocked") blocker.reset(); }}
-        onSave={() => savePlan(() => { if (closing) closeWindow(); else blocker.proceed?.(); })}
-        onDiscard={() => { gearMemory.delete(memoryKey); if (closing) closeWindow(); else blocker.proceed?.(); }}
-      />
       {query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
@@ -1937,13 +1906,8 @@ function GearEditor({
               Search items for this slot
             </Button>
             <Field label="Planned item name">
-              <Input
-                value={itemName}
-                maxLength={200}
-                onChange={(e) => setItemName(e.target.value)}
-                onBlur={() => { if (inspectorDirty) updateItem(true); }}
-                placeholder="Search or name your planned item"
-              />
+              {/* The name always comes from the picked item, so a renamed row never disagrees with its item */}
+              <Input value={itemName} readOnly aria-readonly="true" placeholder="Pick one with Search items for this slot" />
             </Field>
             <PlannedLevelField
               itemId={current?.itemId ?? null}
@@ -1986,7 +1950,6 @@ function GearEditor({
               notify(`${item.name} doesn't match this character's class, specialization, or gear slot`);
               return;
             }
-            notify(`Added ${item.name} to ${slotNames[slot]}`);
           }).catch((error) => notify(errorMessage(error)));
         }}
       />
@@ -2019,7 +1982,6 @@ function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: n
         options={[...options, ...custom].map(({ value, label }) => ({ value, label }))}
       />
       {origin}
-      {selected?.beyond && <small className="muted">Past the crest upgrades · top players wear only a few items this high</small>}
       {tracks.max.assumed && source !== "observed" && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
     </Field>
   );

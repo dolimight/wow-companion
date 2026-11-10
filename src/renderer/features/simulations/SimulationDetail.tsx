@@ -79,9 +79,8 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
 
   async function add(items: GearItem[], label: string) {
     try {
-      const outcome = await addSimulatedItemsToPlan({ character, activity: planActivity, items })
+      await addSimulatedItemsToPlan({ character, activity: planActivity, items, message: `${label} added to your ${activityName(planActivity)} plan` })
       await queryClient.invalidateQueries({ queryKey: ['gear-draft', character.id] })
-      notify(outcome.saved ? `${label} added to your ${activityName(planActivity)} plan` : `${label} added to your unsaved ${activityName(planActivity)} plan · Save it in Plan`)
     } catch (error) { notify(errorMessage(error)) }
   }
 

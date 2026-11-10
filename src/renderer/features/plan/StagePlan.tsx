@@ -29,9 +29,8 @@ export function useStagePlan() {
     const name = request.exact?.name ?? request.item?.name ?? 'Item'
     if (result.status === 'incompatible') { notify(`${name} doesn't match this character's class, specialization, or gear slot`); return }
     if (result.status === 'conflict') { setPending({ request, options, slot: result.slot, current: result.current, incoming: result.incoming }); return }
-    notify(result.status === 'noop'
-      ? `${name} is already your target for ${slotNames[result.slot]}`
-      : `${result.status === 'replaced' ? 'Replaced' : 'Added'} ${name} on ${slotNames[result.slot]} in ${request.character.name}’s ${activityNames[request.activity]} draft · Save plan to keep it`)
+    // Added and replaced items are saved at once, and that toast already says so with Undo
+    if (result.status === 'noop') notify(`${name} is already your target for ${slotNames[result.slot]}`)
     if (!options.stay) void navigate({ to: '/characters/$characterId/$section/$view', params: { characterId: request.character.id, section: 'gear', view: 'plan' }, search: {} })
   }, [navigate])
   const stage = useCallback(async (request: StageRequest, options: Options = {}) => {

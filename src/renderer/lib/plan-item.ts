@@ -1,10 +1,13 @@
 import { useEffect, useReducer } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { gearSlotSchema, type Activity, type Character, type GearItem, type GearSlot, type StatWeights } from "../../shared/domain"
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
+import { gearSlotSchema, type Activity, type Character, type GearDraft, type GearItem, type GearSlot, type StatWeights } from "../../shared/domain"
+import { toast } from "../components/ui/toast"
+import { errorMessage } from "./notify"
 import type { ItemSummary } from "../../shared/gamedata"
 import { api } from "./client"
 import { getItemCompatibility } from "../../shared/item-compatibility"
 import { isPlannedItemEquipped } from "./gear-plan-match"
+import { slotNames } from "./slot-names"
 
 export const gearMemory = new Map<string, { items: GearItem[]; name: string; dirty: boolean; statWeights?: StatWeights }>()
 
@@ -25,19 +28,58 @@ function publish() {
   for (const listener of listeners) listener()
 }
 
+/** The app's query client, so plans saved outside the planner refresh every view that shows them */
+let planClient: QueryClient | null = null
+export function usePlanQueryClient() {
+  const client = useQueryClient()
+  useEffect(() => { planClient = client; return () => { if (planClient === client) planClient = null } }, [client])
+}
+
+/** Whose plan it is, plus the gear they wear, which Undo returns to when the plan had never been saved */
+export const planOwner = (character: Character, activity: Activity): PlanOwner => ({ characterId: character.id, activity, specId: character.specId, gear: character.gear })
+export type PlanOwner = { characterId: string; activity: Activity; specId: number | null; gear: GearItem[] }
+let savedToast: string | null = null
+
+/**
+ * Saves a plan and offers to undo it. Undo puts back the plan as it was before this save; a plan that was never
+ * saved goes back to the gear the character wears. Memory is only marked clean when no newer edit arrived meanwhile
+ */
+export async function savePlan(owner: PlanOwner, next: { items: GearItem[]; name: string; statWeights?: StatWeights }, options: { undo?: boolean; message?: string; replace?: boolean } = {}): Promise<GearDraft> {
+  const key = planKey(owner.characterId, owner.activity, owner.specId)
+  const before = await api.getGearDraft({ characterId: owner.characterId, activity: owner.activity, specId: owner.specId })
+  const saved = await api.saveGearDraft({ id: before?.id ?? crypto.randomUUID(), characterId: owner.characterId, specId: owner.specId, activity: owner.activity, rulesetId: before?.rulesetId ?? "unknown", name: next.name.trim() || "My upgrade plan", items: next.items, statWeights: next.statWeights, updatedAt: new Date().toISOString() })
+  const current = gearMemory.get(key)
+  if (options.replace || !current || (current.items === next.items && current.name === next.name)) // The saved list keeps its identity, so an open planner does not reset fields the player is still typing in
+    gearMemory.set(key, { items: next.items, name: next.name, statWeights: next.statWeights, dirty: false })
+  publish()
+  void planClient?.invalidateQueries({ queryKey: ["gear-draft", owner.characterId] })
+  if (options.undo !== false) {
+    if (savedToast) toast.close(savedToast)
+    savedToast = toast.add({ type: "success", title: options.message ?? "Plan saved", timeout: 6000, actionProps: { children: "Undo", onClick: () => void undoPlan(owner, before) } })
+  }
+  return saved
+}
+
+export async function undoPlan(owner: PlanOwner, before: GearDraft | null) {
+  try {
+    await savePlan(owner, { items: before?.items ?? owner.gear.map((item) => ({ ...item })), name: before?.name ?? "My upgrade plan", statWeights: before?.statWeights }, { undo: false, replace: true })
+    toast.add({ type: "info", title: before ? "Plan change undone" : "Plan reset to your equipped gear", timeout: 4000 })
+  } catch (error) {
+    toast.add({ type: "error", title: "Could not undo", description: errorMessage(error), timeout: 6000 })
+  }
+}
+
 export function pickPlanSlot(slots: GearSlot[], items: GearItem[], preferred?: GearSlot): GearSlot | undefined {
   if (preferred && slots.includes(preferred)) return preferred
   const empty = slots.find((slot) => !items.some((item) => item.slot === slot && item.itemId))
   return empty ?? slots[0]
 }
 
-/**
- * A new target starts at the top crest rank, from the search row when it carried one, else from its upgrade tracks.
- * Ranks past the crest ladder are real but players only wear a few items that high, so they are picked explicitly
- */
+/** A new target starts at the highest level it can reach, from the search row when it carried one, else from its upgrade tracks */
 export async function plannedLevel(item: ItemSummary & { maxLevel?: { itemLevel: number; ladderLevel?: number } | null }): Promise<number | null> {
-  if (item.maxLevel?.itemLevel) return item.maxLevel.ladderLevel ?? item.maxLevel.itemLevel
-  try { const max = (await api.itemPower({ id: item.id }))?.tracks?.max; return max ? max.ladderLevel ?? max.itemLevel : null } catch { return null }
+  // Always the true maximum, ranks past the crest ladder included
+  if (item.maxLevel?.itemLevel) return item.maxLevel.itemLevel
+  try { return (await api.itemPower({ id: item.id }))?.tracks?.max.itemLevel ?? null } catch { return null }
 }
 
 /** An exact copy seen on a real character; its level and bonus IDs beat anything the game files suggest */
@@ -104,12 +146,11 @@ export async function addItemToPlan(input: {
   if (!slot) return null
   const previous = memory.items.find((item) => item.slot === slot)
   const level = await plannedLevel(input.item)
-  gearMemory.set(key, {
-    ...memory,
-    items: [...memory.items.filter((item) => item.slot !== slot), itemToGear(slot, item, previous, level)],
-    dirty: true,
-  })
+  const items = [...memory.items.filter((item) => item.slot !== slot), itemToGear(slot, item, previous, level)]
+  gearMemory.set(key, { ...memory, items, dirty: true })
   publish()
+  // Plans save as they change; the toast offers Undo
+  await savePlan(planOwner(input.character, input.activity), { items, name: memory.name, statWeights: memory.statWeights }, { message: `Added ${item.name} to ${slotNames[slot]}` })
   return slot
 }
 
@@ -185,29 +226,23 @@ export async function stagePlanItem(input: {
   const authored = !!existing && !isPlannedItemEquipped(observed, existing)
   if (authored && sameVariant(existing!, incoming)) return { status: "noop", slot }
   if (authored && !input.replace) return { status: "conflict", slot, current: existing!, incoming }
-  gearMemory.set(key, { ...memory, items: [...memory.items.filter((item) => item.slot !== slot), incoming], dirty: true })
+  const items = [...memory.items.filter((item) => item.slot !== slot), incoming]
+  gearMemory.set(key, { ...memory, items, dirty: true })
   publish()
+  await savePlan(planOwner(input.character, input.activity), { items, name: memory.name, statWeights: memory.statWeights }, { message: `${authored ? "Replaced" : "Added"} ${incoming.name} on ${slotNames[slot]} in ${input.character.name}’s plan` })
   return { status: authored ? "replaced" : "added", slot }
 }
 
-/**
- * Puts simulated items onto a saved plan in one step. A plan without unsaved edits is saved right away; a plan with
- * unsaved edits in the planner only gains the items, so the player's own pending changes are never saved for them
- */
-export async function addSimulatedItemsToPlan(input: { character: Character; activity: Activity; items: GearItem[] }): Promise<{ saved: boolean; slots: GearSlot[] }> {
+/** Puts simulated items onto the plan and saves it, like every other plan change */
+export async function addSimulatedItemsToPlan(input: { character: Character; activity: Activity; items: GearItem[]; message?: string }): Promise<{ saved: boolean; slots: GearSlot[] }> {
   const key = planKey(input.character.id, input.activity, input.character.specId)
   const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: input.character.specId })
   const memory = gearMemory.get(key) ?? { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", statWeights: draft?.statWeights, dirty: false }
   const slots = input.items.map((item) => item.slot)
   const items = [...memory.items.filter((item) => !slots.includes(item.slot)), ...input.items.map((item) => stagedFromExact(item, item.slot))]
-  if (memory.dirty) {
-    gearMemory.set(key, { ...memory, items, dirty: true })
-    publish()
-    return { saved: false, slots }
-  }
-  const saved = await api.saveGearDraft({ id: draft?.id ?? crypto.randomUUID(), characterId: input.character.id, specId: input.character.specId, activity: input.activity, rulesetId: draft?.rulesetId ?? "unknown", name: memory.name, statWeights: memory.statWeights, items, updatedAt: new Date().toISOString() })
-  gearMemory.set(key, { items: saved?.items ?? items, name: memory.name, statWeights: memory.statWeights, dirty: false })
+  gearMemory.set(key, { ...memory, items, dirty: true })
   publish()
+  await savePlan(planOwner(input.character, input.activity), { items, name: memory.name, statWeights: memory.statWeights }, { message: input.message })
   return { saved: true, slots }
 }
 
