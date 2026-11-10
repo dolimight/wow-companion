@@ -123,3 +123,14 @@
 .sim-meta > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .sim-meta:not([open]) { padding-top: 14px; padding-bottom: 14px; }
 .sim-meta ul { margin: 0; padding-left: 18px; font-size: 12.5px; display: grid; gap: 4px; }
+
+/* Plan against top players: the verdict leads, then the slots where they differ */
+.plan-verdict { gap: 6px; }
+.plan-verdict > strong { font-size: 30px; }
+.plan-verdict .simulation-benchmark-meter { margin: 6px 0 0; }
+.plan-tiles .plan-tile:last-child:not(:first-child) > strong { font-size: 18px; }
+.plan-compare { display: grid; gap: 10px; }
+.plan-compare h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.plan-compare-table th[scope="row"] { font-weight: 500; color: var(--secondary); white-space: nowrap; }
+.plan-compare-table td { font-size: 13px; }
+.plan-compare-table td:last-child { color: var(--ink); font-weight: 550; }

@@ -83,7 +83,11 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const best = entries.find(entry => entry.comparison.verdict === 'higher') ?? null
   // The header's second number is what this run was for: your whole plan, the top players' setup, or the best option
   const plan = job.request.plan
-  const headline = plan ? entries.find(entry => entry.index === (plan.whole ?? 0)) ?? null : best
+  const wholePlan = plan ? entries.find(entry => entry.index === (plan.whole ?? 0)) ?? null : null
+  const topGear = plan?.top ? entries.find(entry => entry.index === plan.top!.index) ?? null : null
+  // A plan run measured against top players answers one question first: is the finished plan as strong as their gear
+  const versusTop = wholePlan && topGear ? compareSimulationValues(topGear.value, wholePlan.value) : null
+  const headline = plan ? wholePlan : best
   const headlineLabel = plan ? 'With your whole plan' : job.request.benchmark ? `With ${headline?.label.replace(/^Top players'/, "the top players'") ?? "the top players' setup"}` : `With ${headline?.label ?? 'the best option'}`
   const scale = Math.max(1, ...entries.map(entry => Math.abs(entry.comparison.difference) + (entry.comparison.uncertainty ?? 0)))
   const shown = all ? entries : entries.slice(0, PAGE)
@@ -112,8 +116,11 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         </div>
       </div>
       <div className="sim-hero-stats">
-        <div><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>
-        {headline && baseline && headline.comparison.verdict !== 'unknown' && <div className="sim-hero-best" data-verdict={headline.comparison.verdict}><span title={headlineLabel}>{headlineLabel}</span><strong>{headline.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(headline.comparison.difference)} DPS`}</strong><small>{headline.comparison.verdict === 'sidegrade' ? 'No measurable change from your current gear' : `${percent(Math.abs(headline.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${headline.comparison.difference > 0 ? 'more' : 'less'} damage than your current gear`}</small></div>}
+        {versusTop && wholePlan
+          ? <div><span>Your finished plan</span><strong>{Math.round(wholePlan.value.mean).toLocaleString()}</strong><small>DPS{wholePlan.value.standardError != null ? ` · ±${Math.round(wholePlan.value.standardError * 1.96).toLocaleString()}` : ''}</small></div>
+          : <div><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>}
+        {versusTop && topGear && versusTop.verdict !== 'unknown' ? <div className="sim-hero-best" data-verdict={versusTop.verdict}><span>Your plan against top players' gear</span><strong>{versusTop.verdict === 'sidegrade' ? 'Even' : `${signed(versusTop.difference)} DPS`}</strong><small>{versusTop.verdict === 'sidegrade' ? 'No measurable difference once your plan is done' : `${percent(Math.abs(versusTop.difference) / topGear.value.mean).replace(/^[+−]/, '')} ${versusTop.difference > 0 ? 'more' : 'less'} damage than their gear`}</small></div>
+        : headline && baseline && headline.comparison.verdict !== 'unknown' && <div className="sim-hero-best" data-verdict={headline.comparison.verdict}><span title={headlineLabel}>{headlineLabel}</span><strong>{headline.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(headline.comparison.difference)} DPS`}</strong><small>{headline.comparison.verdict === 'sidegrade' ? 'No measurable change from your current gear' : `${percent(Math.abs(headline.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${headline.comparison.difference > 0 ? 'more' : 'less'} damage than your current gear`}</small></div>}
       </div>
     </header>
   return <div className="sim-detail">
