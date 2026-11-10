@@ -31,12 +31,18 @@ export function pickPlanSlot(slots: GearSlot[], items: GearItem[], preferred?: G
   return empty ?? slots[0]
 }
 
-export function itemToGear(slot: GearSlot, item: ItemSummary, previous?: GearItem): GearItem {
+/** A new target starts at the highest level it can reach, from the search row when it carried one, else from its upgrade tracks */
+export async function plannedLevel(item: ItemSummary & { maxLevel?: { itemLevel: number } | null }): Promise<number | null> {
+  if (item.maxLevel?.itemLevel) return item.maxLevel.itemLevel
+  try { return (await api.itemPower({ id: item.id }))?.tracks?.max.itemLevel ?? null } catch { return null }
+}
+
+export function itemToGear(slot: GearSlot, item: ItemSummary, previous?: GearItem, level?: number | null): GearItem {
   return {
     slot,
     name: item.name,
     itemId: item.id,
-    itemLevel: item.itemLevel || previous?.itemLevel || null,
+    itemLevel: level || item.itemLevel || previous?.itemLevel || null,
     // A new target never inherits the previous item's enchant or gems; the player authors those goals explicitly
     enchant: null,
     enchantCoverage: "unknown",
@@ -87,9 +93,10 @@ export async function addItemToPlan(input: {
   const slot = pickPlanSlot(compatibleSlots, memory.items, input.preferredSlot)
   if (!slot) return null
   const previous = memory.items.find((item) => item.slot === slot)
+  const level = await plannedLevel(input.item)
   gearMemory.set(key, {
     ...memory,
-    items: [...memory.items.filter((item) => item.slot !== slot), itemToGear(slot, item, previous)],
+    items: [...memory.items.filter((item) => item.slot !== slot), itemToGear(slot, item, previous, level)],
     dirty: true,
   })
   publish()
