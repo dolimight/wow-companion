@@ -162,7 +162,15 @@ function SourceButton({ url, children }: { url: string; children: ReactNode }) {
   );
 }
 
-function ItemFacts({ item, label }: { item: ItemVariant | null; label: string }) {
+type SeasonTracks = NonNullable<ProgressionResult["seasonReference"]>["tracks"];
+/** A track as players know it, such as Hero 6/6, falling back to the raw ID when the season reference doesn't name it */
+function trackLabel(tracks: SeasonTracks | undefined, id: string | null | undefined, rank: number | null | undefined) {
+  if (!id) return null;
+  const track = tracks?.find((entry) => entry.id === id);
+  return track ? `${track.name}${rank != null ? ` ${rank}/${track.ranks.length}` : ""}` : `${id}${rank != null ? ` · Rank ${rank}` : ""}`;
+}
+
+function ItemFacts({ item, label, tracks }: { item: ItemVariant | null; label: string; tracks?: SeasonTracks }) {
   if (!item)
     return (
       <div className="progression-evidence-item">
@@ -196,8 +204,7 @@ function ItemFacts({ item, label }: { item: ItemVariant | null; label: string })
         <div>
           <dt>Upgrade track</dt>
           <dd>
-            {item.upgradeTrackId ?? "Unknown"}
-            {item.upgradeRank != null ? ` · Rank ${item.upgradeRank}` : ""}
+            {trackLabel(tracks, item.upgradeTrackId, item.upgradeRank) ?? "Unknown"}
           </dd>
         </div>
         <div>
@@ -264,9 +271,10 @@ function WhyPanel({
         </ul>
         {details && (
           <>
-            <ItemFacts item={details.current} label="Currently equipped" />
+            <ItemFacts item={details.current} label="Currently equipped" tracks={result.seasonReference?.tracks} />
             {viewKey !== "equipped" && (
               <ItemFacts
+                tracks={result.seasonReference?.tracks}
                 item={candidate}
                 label={views.find((option) => option.value === viewKey)!.label}
               />
@@ -537,8 +545,7 @@ export function ProgressionPage({
                                 </strong>
                                 <small>
                                   {candidate ? number(candidate.itemLevel) : "Unknown"}
-                                  {candidate?.upgradeTrackId ? ` · ${candidate.upgradeTrackId}` : ""}
-                                  {candidate?.upgradeRank != null ? ` ${candidate.upgradeRank}` : ""}
+                                  {candidate?.upgradeTrackId ? ` · ${trackLabel(result.seasonReference?.tracks, candidate.upgradeTrackId, candidate.upgradeRank)}` : ""}
                                 </small>
                                 {candidate?.source?.name && <small>{candidate.source.name}</small>}
                               </div>

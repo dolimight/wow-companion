@@ -8,7 +8,7 @@
       "seasonId": "midnight-season-2",
       "builds": {
         "min": "12.1.5.70688",
-        "max": "12.1.5.70688"
+        "max": "12.1.5.70783"
       },
       "regions": [
         "us",
@@ -16,25 +16,25 @@
         "kr",
         "tw"
       ],
-      "effectiveFrom": "2026-11-02T20:27:28.597Z",
-      "effectiveUntil": "2026-11-09T20:27:28.597Z",
+      "effectiveFrom": "2026-11-10T16:12:50.000Z",
+      "effectiveUntil": null,
       "status": "active",
       "validated": true,
       "sources": [
         {
-          "title": "Installed Retail 12.1.5.70688 numeric tables · mapping definitions",
+          "title": "Installed Retail 12.1.5.70783 numeric tables · mapping definitions",
           "url": "https://github.com/wowdev/WoWDBDefs",
-          "checkedAt": "2026-11-02T20:27:28.597Z"
+          "checkedAt": "2026-11-10T16:12:50.000Z"
         },
         {
           "title": "Blizzard 12.1.5 content notes",
           "url": "https://news.blizzard.com/en-gb/article/24304162/12-1-5-content-update-notes",
-          "checkedAt": "2026-11-02T20:27:28.597Z"
+          "checkedAt": "2026-11-10T16:12:50.000Z"
         },
         {
           "title": "Blizzard hotfixes · Venomstone item-level correction",
           "url": "https://news.blizzard.com/en-gb/article/24307310/hotfixes-october-27-2026",
-          "checkedAt": "2026-11-02T20:27:28.597Z"
+          "checkedAt": "2026-11-10T16:12:50.000Z"
         }
       ],
       "validationFixtures": [

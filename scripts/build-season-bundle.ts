@@ -13,7 +13,9 @@ import {seasonRulesetSchema} from '../src/shared/season-rules'
 import {gearItemSchema} from '../src/shared/domain'
 import {toItemVariant,type ItemVariant} from '../src/shared/gear-variants'
 import {gearSlotsForInventoryType} from '../src/shared/gamedata'
-const version='12.1.5.70688',install=await detectInstall()
+// Each build is reviewed before it is supported; the range runs from the first reviewed build to this one
+// Keys and first availability stay tied to the first review, so saved references survive a re-review of a later build
+const reviewedSince='12.1.5.70688',firstReviewedAt='2026-11-02T20:27:28.597Z',version='12.1.5.70783',install=await detectInstall()
 if(!install||install.build.version!==version)throw Error(`This reviewed mapping supports exactly ${version}; review another build before generating its rules`)
 if(!process.argv[2])throw Error('Pass the path of the matching item index')
 const index=new Database(process.argv[2],{readonly:true,fileMustExist:true})
@@ -25,7 +27,7 @@ try{
     tables.set(name,readTable(bytes,await definitions.fields(name,casc.version,readHeader(bytes).layoutHash)))
   }
   const table=(name:string)=>tables.get(name)!,rows=(name:string)=>[...table(name).values()]
-  const checkedAt=new Date().toISOString(),id=`midnight-s2-${version}`,bonusRanks:Record<string,{trackId:string;rank:number;itemLevel:number}>={}
+  const checkedAt=new Date().toISOString(),id=`midnight-s2-${reviewedSince}`,bonusRanks:Record<string,{trackId:string;rank:number;itemLevel:number}>={}
   const tracks=[614,615,616,617,618].map((group,trackIndex)=>{
     const currencyId=3442+trackIndex,currency=table('CurrencyTypes').get(currencyId)
     if(!currency||!String(currency.Name_lang).endsWith('Mistcrest'))throw Error('The reviewed currency identities changed')
@@ -67,10 +69,10 @@ try{
       for(const bonus of bonuses.get(list)??[])if(bonus.Type===49){const config=table('ItemScalingConfig').get((bonus.Value as number[])[0]!);if(config&&config.RequiredLevel===90&&config.ItemSquishEraID===2)possibilities.set(`scaling:${list}`,{itemLevel:Number(config.ItemLevel),trackId:null,rank:null,bonusIds:[list]})}
     }}
     for(const tree of itemTrees.get(itemId)??[])visit(tree)
-    for(const [key,variant]of possibilities)for(const slot of slots)candidates.push(toItemVariant(gearItemSchema.parse({slot,itemId,name:item.name,itemLevel:variant.itemLevel,inventoryType:item.inventory_type,classId:item.class_id,subclassId:item.subclass_id,requiredLevel:item.required_level,allowableClassMask:item.allowable_class_mask,specIds:item.spec_ids?JSON.parse(String(item.spec_ids)):null,primaryStats:item.primary_stats?JSON.parse(String(item.primary_stats)):null,bonusIds:variant.bonusIds,upgradeTrackId:variant.trackId,upgradeRank:variant.rank}),{variantKey:`client:${version}:${itemId}:${key}:${slot}`,owned:false,coverage:'partial',source,availableFrom:checkedAt,currencyCost:null,evidenceRefs:[{id:`client:${version}:journal:${reward.ID}`,contentHash:hashes.JournalEncounterItem!}]}))
+    for(const [key,variant]of possibilities)for(const slot of slots)candidates.push(toItemVariant(gearItemSchema.parse({slot,itemId,name:item.name,itemLevel:variant.itemLevel,inventoryType:item.inventory_type,classId:item.class_id,subclassId:item.subclass_id,requiredLevel:item.required_level,allowableClassMask:item.allowable_class_mask,specIds:item.spec_ids?JSON.parse(String(item.spec_ids)):null,primaryStats:item.primary_stats?JSON.parse(String(item.primary_stats)):null,bonusIds:variant.bonusIds,upgradeTrackId:variant.trackId,upgradeRank:variant.rank}),{variantKey:`client:${reviewedSince}:${itemId}:${key}:${slot}`,owned:false,coverage:'partial',source,availableFrom:firstReviewedAt,currencyCost:null,evidenceRefs:[{id:`client:${reviewedSince}:journal:${reward.ID}`,contentHash:hashes.JournalEncounterItem!}]}))
   }
   const unique=[...new Map(candidates.map(item=>[item.variantKey,item])).values()]
-  const rules=seasonRulesetSchema.parse({schemaVersion:1,id,name:'Midnight Season 2 · installed-client reference',seasonId:'midnight-season-2',builds:{min:version,max:version},regions:['us','eu','kr','tw'],effectiveFrom:checkedAt,effectiveUntil:new Date(Date.parse(checkedAt)+7*86_400_000).toISOString(),status:'active',validated:true,sources:[{title:`Installed Retail ${version} numeric tables · mapping definitions`,url:'https://github.com/wowdev/WoWDBDefs',checkedAt},{title:'Blizzard 12.1.5 content notes',url:'https://news.blizzard.com/en-gb/article/24304162/12-1-5-content-update-notes',checkedAt},{title:'Blizzard hotfixes · Venomstone item-level correction',url:'https://news.blizzard.com/en-gb/article/24307310/hotfixes-october-27-2026',checkedAt}],validationFixtures:['src/main/progression/season-bundle.test.ts'],candidateCoverage:'partial',constraintsCoverage:'partial',upgradeTracks:tracks})
+  const rules=seasonRulesetSchema.parse({schemaVersion:1,id,name:'Midnight Season 2 · installed-client reference',seasonId:'midnight-season-2',builds:{min:reviewedSince,max:version},regions:['us','eu','kr','tw'],effectiveFrom:checkedAt,effectiveUntil:null,status:'active',validated:true,sources:[{title:`Installed Retail ${version} numeric tables · mapping definitions`,url:'https://github.com/wowdev/WoWDBDefs',checkedAt},{title:'Blizzard 12.1.5 content notes',url:'https://news.blizzard.com/en-gb/article/24304162/12-1-5-content-update-notes',checkedAt},{title:'Blizzard hotfixes · Venomstone item-level correction',url:'https://news.blizzard.com/en-gb/article/24307310/hotfixes-october-27-2026',checkedAt}],validationFixtures:['src/main/progression/season-bundle.test.ts'],candidateCoverage:'partial',constraintsCoverage:'partial',upgradeTracks:tracks})
   await mkdir('data/season-rules',{recursive:true})
   await writeFile('data/season-rules/catalog.json',JSON.stringify({schemaVersion:1,rulesets:[rules]},null,2)+'\n')
   await writeFile('data/season-rules/candidates.json',JSON.stringify({[id]:unique},null,2)+'\n')
