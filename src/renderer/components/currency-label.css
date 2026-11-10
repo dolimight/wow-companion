@@ -1,0 +1,2 @@
+.currency-label { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.currency-label img { width: 18px; height: 18px; border-radius: 4px; flex: none; box-shadow: 0 0 0 1px color-mix(in srgb, var(--line) 80%, transparent); }

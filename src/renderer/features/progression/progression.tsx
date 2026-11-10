@@ -5,7 +5,7 @@ import { ArrowRight, Check, CircleHelp, Coins, ExternalLink, Info, RefreshCw, Sa
 import type { Activity, Character, GearSlot } from "../../../shared/domain";
 import type { ItemVariant } from "../../../shared/gear-variants";
 import type { ProgressionResult } from "../../../shared/progression-evaluation";
-import {currencyName, formatCurrency} from "../../../shared/currency-display";
+import { CurrencyLabel } from "../../components/CurrencyLabel";
 import { CrestBudget } from "../season/season";
 import { defaultContentPreferences, type ContentPreferences } from "../../../shared/season-rules";
 import { AppSelect } from "../../components/AppSelect";
@@ -223,7 +223,7 @@ function ItemFacts({ item, label, tracks }: { item: ItemVariant | null; label: s
         <ul className="progression-reasons">
           {item.currencyCost.map((cost) => (
             <li key={cost.currencyId}>
-              {formatCurrency(cost.currencyId,cost.amount)}
+              <CurrencyLabel id={cost.currencyId} amount={cost.amount} />
             </li>
           ))}
         </ul>
@@ -483,7 +483,7 @@ export function ProgressionPage({
             </div>
           )}
           {result.seasonReference&&<CrestBudget character={character} tracks={result.seasonReference.tracks} />}
-          {result.seasonReference&&<details className="surface progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.map(cost=>formatCurrency(cost.currencyId,cost.amount)).join(' + ')??'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></details>}
+          {result.seasonReference&&<details className="surface progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.length?track.ranks[1].cost.map((cost,index)=><span key={cost.currencyId}>{index?' + ':''}<CurrencyLabel id={cost.currencyId} amount={cost.amount} /></span>):'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></details>}
           <div className="progression-layout">
             <section className="progression-slots" aria-label="Per-slot progression">
               <div className="surface-heading">
@@ -721,7 +721,7 @@ export function ProgressionPage({
                   <dl className="progression-budget">
                     {view.costs.map((cost) => (
                       <div key={cost.currencyId}>
-                        <dt>{currencyName(cost.currencyId)}</dt>
+                        <dt><CurrencyLabel id={cost.currencyId} /></dt>
                         <dd>
                           {cost.spent.toLocaleString()} spent ·{" "}
                           {cost.remaining == null

@@ -9,6 +9,7 @@ import type { Character } from "../../../shared/domain";
 import { comfortableLevel, keyLevels, overallVerdict, seasonDungeons, tonightKeys, verdictLabels, type KeyVerdict } from "../../../shared/key-range";
 import { crestPlan } from "../../../shared/crest-plan";
 import { currencyName } from "../../../shared/currency-display";
+import { CurrencyLabel } from "../../components/CurrencyLabel";
 import { dungeonVaultPlan } from "../../../shared/vault-plan";
 import { vaultTracks, weeklyRuns } from "../../../shared/weekly";
 import type { SeasonRuleset } from "../../../shared/season-rules";
@@ -128,7 +129,7 @@ export function CrestBudget({ character, tracks }: { character: Character; track
         <dl className="crest-totals">
           {plan.totals.map((total) => (
             <div key={total.currencyId}>
-              <dt>{currencyName(total.currencyId)}</dt>
+              <dt><CurrencyLabel id={total.currencyId} /></dt>
               <dd>
                 <strong>{total.balance == null ? "Unknown" : total.balance.toLocaleString()}</strong> held
                 <small>{total.next.toLocaleString()} for every next rank · {total.full.toLocaleString()} to finish every track</small>
@@ -145,8 +146,9 @@ export function CrestBudget({ character, tracks }: { character: Character; track
               <strong>{step.name}</strong>
               <small>{step.track} · {step.fromLevel} → {step.toLevel}</small>
             </div>
-            <span>{step.crestId ? `${step.crests} ${currencyName(step.crestId)}` : "No crest"}{step.gold ? ` · ${step.gold.toLocaleString()} gold` : ""}</span>
-            {currencies && <Badge tone={affordable.has(step.slot) ? "green" : "neutral"}>{affordable.has(step.slot) ? "Affordable now" : "Needs more"}</Badge>}
+            <span>{step.crestId ? <CurrencyLabel id={step.crestId} amount={step.crests} /> : "No crest"}{step.gold ? ` · ${step.gold.toLocaleString()} gold` : ""}</span>
+            {/* Only judge affordability against a crest balance the addon actually read */}
+            {currencies && (!step.crestId || plan.totals.find((total) => total.currencyId === step.crestId)?.balance != null) && <Badge tone={affordable.has(step.slot) ? "green" : "neutral"}>{affordable.has(step.slot) ? "Affordable now" : "Needs more"}</Badge>}
           </li>
         ))}
       </ol>
