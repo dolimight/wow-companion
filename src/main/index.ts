@@ -20,6 +20,9 @@ import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinn
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
 
+// Windows names toasts after this identity, and startup sync can raise one before the window exists, so set it before anything else
+if(process.platform==='win32')app.setAppUserModelId(windowsAppId)
+
 protocol.registerSchemesAsPrivileged([
   {scheme:'app',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}},
   {scheme:'wow-asset',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true,stream:true}},
@@ -153,7 +156,6 @@ async function main(){
     return next
   }
   handle('companion:apply-app-icon',applyAppIcon)
-  if(process.platform==='win32')app.setAppUserModelId(windowsAppId)
   if(process.platform==='darwin')app.dock?.setIcon(windowIcon)
   const titleBarOverlay=()=>({color:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',symbolColor:nativeTheme.shouldUseDarkColors?'#f5f5f5':'#1c2430',height:48})
   const placementFile=resolve(userDir,'window-placement.json')
