@@ -43,7 +43,7 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
   return <div className="plan-summary">
     <div className="plan-tiles">
       <Tile label={plan.whole === null ? 'Your plan' : `Your plan · ${plan.swaps.length} upgrades`} value={measured ? `${signed(total.comparison.difference)} DPS` : total.comparison.verdict === 'sidegrade' ? 'About the same' : 'Unknown'}
-        note={measured ? `${percent(total.comparison.difference / baseline.mean)} over your current gear${total.takenText ? ` · ${total.takenText}` : ''}` : undefined} tone={total.comparison.verdict === 'higher' ? 'up' : total.comparison.verdict === 'lower' ? 'down' : undefined} />
+        note={measured ? `${percent(Math.abs(total.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${total.comparison.difference > 0 ? 'more' : 'less'} damage than your current gear${total.takenText ? ` · ${total.takenText}` : ''}` : undefined} tone={total.comparison.verdict === 'higher' ? 'up' : total.comparison.verdict === 'lower' ? 'down' : undefined} />
       {reading && topGain && <Tile label="Against top players" value={reading.matches ? 'Even' : `${Math.round(reading.share * 100)}%`}
         note={reading.matches ? 'Once your plan is done, items stop being the gap' : `of their gear's damage · theirs adds ${signed(topGain.difference)} DPS more`} />}
       {first && <Tile label="Get this first" value={itemOnly(first.label)} note={`${signed(first.comparison.difference)} DPS on its own`} tone="up" />}

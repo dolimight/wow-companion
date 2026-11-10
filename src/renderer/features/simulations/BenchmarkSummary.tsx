@@ -27,7 +27,7 @@ export function BenchmarkSummary({ job, result }: { job: SimulationJob; result: 
   const tile = (row: (typeof rows)[number] | undefined, label: string) => row && <div className="plan-tile" data-tone={row.comparison.verdict === 'higher' ? 'up' : row.comparison.verdict === 'lower' ? 'down' : undefined}>
     <span>{label}</span>
     <strong>{row.comparison.verdict === 'unknown' ? 'Unknown' : row.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(row.comparison.difference)} DPS`}</strong>
-    {row.comparison.verdict !== 'unknown' && row.comparison.verdict !== 'sidegrade' && <small>{percent(row.comparison.difference / baseline.mean)} over yours</small>}
+    {row.comparison.verdict !== 'unknown' && row.comparison.verdict !== 'sidegrade' && <small>{percent(Math.abs(row.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} {row.comparison.difference > 0 ? 'more' : 'less'} damage than your current setup</small>}
   </div>
   // Three numbers, the same shape as a plan reading; each run's damage taken is in the results below
   return <div className="plan-summary">

@@ -81,6 +81,10 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const details = useQuery({ queryKey: ['simulation-item-details', ids], queryFn: () => api.getItems(ids), enabled: ids.length > 0, retry: false, staleTime: 60_000 })
   const icons = useMemo(() => new Map((details.data ?? []).map(item => [item.id, item])), [details.data])
   const best = entries.find(entry => entry.comparison.verdict === 'higher') ?? null
+  // The header's second number is what this run was for: your whole plan, the top players' setup, or the best option
+  const plan = job.request.plan
+  const headline = plan ? entries.find(entry => entry.index === (plan.whole ?? 0)) ?? null : best
+  const headlineLabel = plan ? 'With your whole plan' : job.request.benchmark ? `With ${headline?.label.replace(/^Top players'/, "the top players'") ?? "the top players' setup"}` : `With ${headline?.label ?? 'the best option'}`
   const scale = Math.max(1, ...entries.map(entry => Math.abs(entry.comparison.difference) + (entry.comparison.uncertainty ?? 0)))
   const shown = all ? entries : entries.slice(0, PAGE)
   // The chart is compact, so it shows every result unless a profileset run holds hundreds
@@ -109,7 +113,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
       </div>
       <div className="sim-hero-stats">
         <div><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>
-        {best && baseline && <div className="sim-hero-best"><span>Best result</span><strong>{signed(best.comparison.difference)}</strong><small>{percent(best.comparison.difference / baseline.mean)} · {best.label}</small></div>}
+        {headline && baseline && headline.comparison.verdict !== 'unknown' && <div className="sim-hero-best" data-verdict={headline.comparison.verdict}><span title={headlineLabel}>{headlineLabel}</span><strong>{headline.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(headline.comparison.difference)} DPS`}</strong><small>{headline.comparison.verdict === 'sidegrade' ? 'No measurable change from your current gear' : `${percent(Math.abs(headline.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${headline.comparison.difference > 0 ? 'more' : 'less'} damage than your current gear`}</small></div>}
       </div>
     </header>
   return <div className="sim-detail">

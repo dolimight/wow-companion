@@ -15,6 +15,10 @@
 .sim-hero-stats strong { font-size: 40px; line-height: 1.05; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .sim-hero-stats small { color: var(--muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sim-hero-best strong { color: var(--sim-up); }
+.sim-hero-best[data-verdict="lower"] strong { color: var(--sim-down); }
+.sim-hero-best[data-verdict="sidegrade"] strong { color: var(--ink); }
+/* The explanation under the headline number is a sentence, so it wraps instead of cutting off */
+.sim-hero-stats .sim-hero-best small { white-space: normal; max-width: 220px; line-height: 1.45; }
 
 .sim-panel { padding: 22px; display: grid; gap: 14px; min-width: 0; }
 .sim-panel.sim-results { padding: 0; }
