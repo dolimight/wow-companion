@@ -23,6 +23,12 @@ const bridge:NativeBridge={
   setWindowTheme:(theme)=>ipcRenderer.invoke('companion:window-theme',theme),
   applyAppIcon:()=>ipcRenderer.invoke('companion:apply-app-icon'),
   toggleMaximizeWindow:()=>ipcRenderer.invoke('companion:window-toggle-maximize'),
+  onCloseRequested:(listener)=>{
+    const receive=()=>listener()
+    ipcRenderer.on('companion:close-requested',receive)
+    return ()=>ipcRenderer.removeListener('companion:close-requested',receive)
+  },
+  closeWindow:()=>ipcRenderer.invoke('companion:window-close'),
   connection:()=>ipcRenderer.invoke('companion:connection'),
   chooseImportFile:()=>ipcRenderer.invoke('companion:import-file'),
   chooseWatchFile:()=>ipcRenderer.invoke('companion:watch-file'),

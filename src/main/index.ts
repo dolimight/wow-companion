@@ -118,6 +118,9 @@ async function main(){
   const windowState=():WindowState=>({platform:process.platform==='darwin'?'darwin':process.platform==='win32'?'win32':'linux',frame:windowFrame,controls:process.platform==='darwin'?'native-traffic-lights':'native-overlay',maximized:window?.isMaximized()??false,fullScreen:window?.isFullScreen()??false,focused:window?.isFocused()??false})
   handle('companion:window-state',windowState)
   handle('companion:window-theme',(theme:unknown)=>{if(theme!=='system'&&theme!=='light'&&theme!=='dark')throw new Error('Invalid window theme');nativeTheme.themeSource=theme})
+  // Electron cancels a close without a word when the page holds unsaved work, so the page shows its own Save or discard choice instead
+  let allowUnload=false
+  handle('companion:window-close',()=>{allowUnload=true;window?.close()})
   handle('companion:window-toggle-maximize',()=>{if(window?.isFullScreen())return;if(window?.isMaximized())window.unmaximize();else window?.maximize()})
   handle('companion:import-file',async()=>{const path=await selectedFile([{name:'Addon snapshot',extensions:['lua','json','txt']}]);return path?service.importText(await smallText(path)):null})
   handle('companion:watch-file',async()=>{const path=await selectedFile([{name:'Addon SavedVariables',extensions:['lua','json']}]);if(!path)return null;const canonical=await realpath(path);if(!['.lua','.json'].includes(extname(canonical).toLowerCase()))throw new Error('Choose an addon Lua or JSON snapshot');await service.setWatchPath(canonical);await service.changed();return canonical})
@@ -173,6 +176,8 @@ async function main(){
   window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show()})
   window.on('closed',()=>{window=null})
   // With the tray option on, closing hides the window so syncs and alerts continue; Quit lives in the tray menu
+  window.webContents.on('will-prevent-unload',event=>{if(allowUnload){event.preventDefault();return}window?.webContents.send('companion:close-requested')})
+  window.webContents.on('did-start-navigation',(_event,_url,_inPlace,isMainFrame)=>{if(isMainFrame)allowUnload=false})
   window.on('close',event=>{if(keepInTray&&tray&&!quitting&&!installingUpdate){event.preventDefault();window?.hide()}})
   if(!isolated){
     tray=new Tray(windowIcon)
@@ -192,4 +197,9 @@ async function main(){
 }
 app.on('window-all-closed',()=>app.quit())
 app.on('before-quit',event=>{quitting=true;saveWindowPlacement?.();if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
+// One copy per data folder: a second launch focuses the open window instead of sharing the database and item data files
+if(!app.requestSingleInstanceLock())app.quit()
+else{
+app.on('second-instance',()=>{if(!window)return;if(window.isMinimized())window.restore();window.show();window.focus()})
 app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})
+}
