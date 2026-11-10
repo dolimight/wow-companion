@@ -829,7 +829,7 @@ function Shell() {
   );
   return (
     <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
-      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor={appIconCursor[appIcon].color} cursorColorOnTarget={appIconCursor[appIcon].target} blendMode="normal" spinDuration={3} showLabel={false} />}
+      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor={appIconCursor[appIcon].color} cursorColorOnTarget={appIconCursor[appIcon].target} blendMode="normal" spinDuration={3} showLabel={false} thickness={1.5} cornerSize={10} dotSize={3} />}
       {drawerMode ? (
         <>
           <div className="workspace-flat">{workspaceNode}</div>
