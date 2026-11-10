@@ -147,3 +147,21 @@ describe('local character-compatible item search',()=>{
     expect(engine.search({character:{className:'Mage',specId:64,level:90}})).toHaveLength(0)
   })
 })
+
+describe('replacing the item index on disk',()=>{
+  it.runIf(process.platform==='win32')('waits for another handle to let go, then names the cause when it never does',async()=>{
+    const {replaceFile}=await import('./engine')
+    const {writeFileSync,readFileSync}=await import('node:fs')
+    const folder=mkdtempSync(path.join(tmpdir(),'wow-replace-'));folders.push(folder)
+    const target=path.join(folder,'items.sqlite'),next=path.join(folder,'items.sqlite.tmp')
+    const held=new Database(target);held.exec('CREATE TABLE t(x)')
+    writeFileSync(next,'new')
+    setTimeout(()=>held.close(),300)
+    await replaceFile(next,target)
+    expect(readFileSync(target,'utf8')).toBe('new')
+    const again=new Database(path.join(folder,'locked.sqlite'));again.exec('CREATE TABLE t(x)')
+    writeFileSync(next,'new')
+    await expect(replaceFile(next,path.join(folder,'locked.sqlite'),3,20)).rejects.toThrow('another program')
+    again.close()
+  })
+})

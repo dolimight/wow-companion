@@ -12,6 +12,18 @@ import type { AppearanceSlot } from '../../shared/domain'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
 
+/** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
+export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
+  for (let attempt = 1; ; attempt++) {
+    try { return await rename(from, to) } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (!['EPERM', 'EBUSY', 'EACCES'].includes(code ?? '')) throw error
+      if (attempt >= attempts) throw new Error('Item data is open in another program, such as a second copy of WOW Companion · Close it and try again')
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+    }
+  }
+}
+
 export const INDEX_VERSION = 4
 /** Game tables that are plain text rather than client databases, by file ID in the community listfile */
 const GAME_TABLES = { combatRatings: 1391670, stamina: 1980632, socketCost: 1391643 }
@@ -247,7 +259,7 @@ export class GameDataEngine {
       db.close()
       buildingDb = undefined
       this.db?.close(); this.db = null
-      await rename(temporary, target)
+      await replaceFile(temporary, target)
       await this.removeOldIndexes(target)
       await this.useInstall(install)
     } catch (error) {
