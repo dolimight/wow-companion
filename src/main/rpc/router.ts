@@ -12,7 +12,7 @@ import type { Sync } from '../sync'
 import type { ProgressionService } from '../progression/service'
 import { contentPreferencesSchema } from '../../shared/season-rules'
 import { appearanceSlotSchema } from '../../shared/domain'
-import { armorTypes, itemSearchCharacterSchema, itemSearchSchema } from '../../shared/gamedata'
+import { armorTypes, ascensionItem, itemSearchCharacterSchema, itemSearchSchema } from '../../shared/gamedata'
 import { itemTracks } from '../item-tracks'
 import { blizzardRegions } from '../providers/blizzard'
 import type { SessionService } from '../session/service'
@@ -101,9 +101,9 @@ export function createRouter(s:RouterServices){return t.router({
   searchItemsPage:p.input(itemSearchSchema).query(({input})=>run(async()=>{
     const page=await s.gameData.call('searchPage',input)
     const tracks=await s.gameData.call('trackInfoFor',page.items.map(item=>item.id))
-    const rows=page.items.map(item=>({...item,maxLevel:itemTracks(item.id,tracks[item.id]?.groups??null,tracks[item.id]?.info??null)?.max??null}))
+    const rows=page.items.map(item=>({...item,maxLevel:itemTracks(item.id,tracks[item.id]?.groups??null,tracks[item.id]?.info??null,ascensionItem(item))?.max??null}))
     // Effects read at the level each row shows, so the numbers match the detail pane
-    const effects=await s.gameData.call('effectsFor',rows.map(item=>({id:item.id,itemLevel:item.maxLevel?.itemLevel??item.itemLevel})))
+    const effects=await s.gameData.call('effectsFor',rows.map(item=>({id:item.id,itemLevel:item.maxLevel?.ladderLevel??item.maxLevel?.itemLevel??item.itemLevel})))
     return {...page,items:rows.map(item=>({...item,effects:effects[item.id]??[]}))}
   })),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
@@ -111,8 +111,9 @@ export function createRouter(s:RouterServices){return t.router({
   // Stats, effects, and track of one item, shown at its highest level unless a level is picked
   itemPower:p.input(z.object({id:z.number().int().positive(),itemLevel:z.number().int().min(1).max(2000).nullable().default(null),character:itemSearchCharacterSchema.nullable().default(null)})).query(({input})=>run(async()=>{
     const base=await s.gameData.call('item',input.id)
-    const tracks=itemTracks(input.id,base?.trackGroups??null,base?.trackInfo??null)
-    const level=input.itemLevel??tracks?.max.itemLevel??(base?.itemLevel||null)
+    const tracks=itemTracks(input.id,base?.trackGroups??null,base?.trackInfo??null,base?ascensionItem(base):null)
+    // Shown at the top crest rank by default; Venomstone and Elevated levels are there to pick
+    const level=input.itemLevel??tracks?.max.ladderLevel??tracks?.max.itemLevel??(base?.itemLevel||null)
     const [power,loot]=await Promise.all([level?s.gameData.call('itemPower',input.id,level):Promise.resolve(null),s.gameData.call('lootShare',input.id,input.character)])
     return {tracks,power,loot,level,basis:input.itemLevel?'picked' as const:tracks?(tracks.max.assumed?'season' as const:'track' as const):'base' as const}
   })),

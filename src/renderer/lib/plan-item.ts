@@ -75,11 +75,11 @@ export function pickPlanSlot(slots: GearSlot[], items: GearItem[], preferred?: G
   return empty ?? slots[0]
 }
 
-/** A new target starts at the highest level it can reach, from the search row when it carried one, else from its upgrade tracks */
+/** A new target starts at the top crest rank, such as Myth 6/6, from the search row when it carried one, else from its upgrade tracks */
 export async function plannedLevel(item: ItemSummary & { maxLevel?: { itemLevel: number; ladderLevel?: number } | null }): Promise<number | null> {
-  // Always the true maximum, ranks past the crest ladder included
-  if (item.maxLevel?.itemLevel) return item.maxLevel.itemLevel
-  try { return (await api.itemPower({ id: item.id }))?.tracks?.max.itemLevel ?? null } catch { return null }
+  const top = (max: { itemLevel: number; ladderLevel?: number } | null | undefined) => max ? max.ladderLevel ?? max.itemLevel : null
+  if (item.maxLevel?.itemLevel) return top(item.maxLevel)
+  try { return top((await api.itemPower({ id: item.id }))?.tracks?.max) } catch { return null }
 }
 
 /** An exact copy seen on a real character; its level and bonus IDs beat anything the game files suggest */
