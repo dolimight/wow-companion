@@ -59,6 +59,12 @@ export const itemSearchSchema = z.object({
   withEffect: z.boolean().default(false),
   /** Only items with at least one gem socket */
   withSocket: z.boolean().default(false),
+  /** Result order: best match, or item level high to low by the highest reachable level or the base level */
+  sort: z.enum(['relevance', 'maxLevel', 'baseLevel']).default('relevance'),
+  /** Item level range, read against the highest reachable level or the base level */
+  levelBasis: z.enum(['max', 'base']).default('max'),
+  minLevel: z.number().int().min(1).max(2000).nullable().default(null),
+  maxLevel: z.number().int().min(1).max(2000).nullable().default(null),
   limit: z.number().int().min(1).max(100).default(40),
   offset: z.number().int().nonnegative().default(0),
 })

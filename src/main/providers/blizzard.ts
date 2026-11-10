@@ -318,6 +318,43 @@ export async function fetchCollectedAppearances(api: BlizzardApi, userToken: str
   } catch { return null }
 }
 
+/** Names arrive as a plain string or, from the search API, one string per locale */
+const localized = z.union([z.string(), z.record(z.string(), z.string().nullable())]).transform(value => typeof value === 'string' ? value : value.en_US ?? value.en_GB ?? Object.values(value).find(Boolean) ?? '')
+const typed = z.object({ type: z.string().max(40) }).passthrough()
+const connectedRealmSearchSchema = z.object({
+  pageCount: z.number().int().nonnegative().default(1),
+  results: z.array(z.object({ data: z.object({
+    id: z.number().int().positive(),
+    has_queue: z.boolean().default(false),
+    status: typed, population: typed.nullable().default(null),
+    realms: z.array(z.object({ name: localized, slug: z.string().max(80), timezone: z.string().max(80).nullable().optional(), category: localized.nullable().optional() })).max(40),
+  }).passthrough() })).max(1000),
+})
+export type RealmStatus = { id: number; realms: Array<{ name: string; slug: string }>; up: boolean; population: string | null; queue: boolean; timezone: string | null }
+const populations: Record<string, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', FULL: 'Full', LOCKED: 'Locked', RECOMMENDED: 'New players', NEW: 'New' }
+
+/** Connected realms with their up or down state, population, and queue, from the live (dynamic) namespace */
+export function parseConnectedRealms(pages: unknown[]): RealmStatus[] {
+  return pages.flatMap(page => connectedRealmSearchSchema.parse(page).results).map(({ data }) => ({
+    id: data.id,
+    realms: data.realms.map(realm => ({ name: realm.name, slug: realm.slug })).sort((a, b) => a.name.localeCompare(b.name)),
+    up: data.status.type === 'UP',
+    population: data.population ? populations[data.population.type] ?? null : null,
+    queue: data.has_queue,
+    timezone: data.realms.find(realm => realm.timezone)?.timezone ?? null,
+  })).sort((a, b) => a.realms[0]!.name.localeCompare(b.realms[0]!.name))
+}
+
+export async function fetchRealmStatus(api: BlizzardApi, region: BlizzardRegion, signal?: AbortSignal): Promise<RealmStatus[]> {
+  const pages: unknown[] = []
+  for (let page = 1; page <= 5; page++) {
+    const data = await api.get(`/data/wow/search/connected-realm?orderby=id&_page=${page}&_pageSize=1000`, 'dynamic', { region, signal, what: 'Realm status' })
+    pages.push(data)
+    if (page >= connectedRealmSearchSchema.parse(data).pageCount) break
+  }
+  return parseConnectedRealms(pages).filter(entry => entry.realms.length)
+}
+
 const tokenIndexSchema = z.object({ price: z.number().int().nonnegative(), last_updated_timestamp: z.number() })
 /** WoW Token price in gold for one region, as Blizzard publishes it */
 export async function fetchTokenPrice(api: BlizzardApi, region: BlizzardRegion, signal?: AbortSignal) {

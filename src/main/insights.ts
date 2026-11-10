@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
-import { fetchItemPreview, fetchTokenPrice, type BlizzardApi, type BlizzardRegion, type ItemPreview } from './providers/blizzard'
+import { fetchItemPreview, fetchRealmStatus, fetchTokenPrice, type BlizzardApi, type BlizzardRegion, type ItemPreview, type RealmStatus } from './providers/blizzard'
 import type { GameDataClient } from './gamedata/client'
 import type { ItemDetail } from '../shared/gamedata'
 import { fetchAffixes, fetchTopPlayers, type WeeklyAffixes } from './providers/raiderio-top'
@@ -10,10 +10,13 @@ import type { TopPlayers, TopRegion } from '../shared/top-players'
 
 const TOP_TTL = 6 * 3_600_000
 const TOKEN_TTL = 20 * 60_000
+/** Blizzard refreshes realm state every minute or so; two minutes keeps the list current without hammering the API */
+const REALM_TTL = 2 * 60_000
 const HISTORY_DAYS = 30
 const PREVIEW_TTL = 24 * 3_600_000
 const PREVIEW_LIMIT = 800
 
+export type RealmStatusReport = { configured: false } | { configured: true; region: BlizzardRegion; checkedAt: string; realms: RealmStatus[] }
 export type TokenPrice = { configured: false } | { configured: true; region: BlizzardRegion; gold: number; updatedAt: string; history: Array<{ at: string; gold: number }> }
 
 const historySchema = z.record(z.string(), z.array(z.object({ at: z.string().datetime(), gold: z.number().int().nonnegative() })).max(5000))
@@ -34,6 +37,8 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
   const top = new Map<string, { value: TopPlayers; at: number }>()
   const inflight = new Map<string, Promise<TopPlayers>>()
   const tokenChecked = new Map<BlizzardRegion, number>()
+  const realms = new Map<BlizzardRegion, { value: RealmStatus[]; at: number }>()
+  const realmRequests = new Map<BlizzardRegion, Promise<RealmStatus[]>>()
   const historyFile = path.join(options.cacheDir, 'token-history.json')
   const topFile = (key: string) => path.join(options.cacheDir, `top-players-${key}.json`)
 
@@ -85,6 +90,27 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     return { configured: true, region, gold: latest.gold, updatedAt: latest.at, history: series }
   }
 
+  /** Every connected realm's state, shared by all open views and fetched at most once per refresh window */
+  async function realmStatus(region: BlizzardRegion, force = false): Promise<RealmStatusReport> {
+    const api = await options.blizzardApi()
+    if (!api) return { configured: false }
+    const cached = realms.get(region)
+    if (!force && cached && Date.now() - cached.at < REALM_TTL) return { configured: true, region, checkedAt: new Date(cached.at).toISOString(), realms: cached.value }
+    let request = realmRequests.get(region)
+    if (!request) {
+      request = fetchRealmStatus(api, region).then(value => { realms.set(region, { value, at: Date.now() }); return value }).finally(() => realmRequests.delete(region))
+      realmRequests.set(region, request)
+    }
+    try {
+      await request
+    } catch (error) {
+      // A failed check keeps showing the last known state, marked by its age, rather than blanking the list
+      if (!cached) throw error
+    }
+    const latest = realms.get(region)!
+    return { configured: true, region, checkedAt: new Date(latest.at).toISOString(), realms: latest.value }
+  }
+
   /** Local name, icon, and sources plus Blizzard's stat lines when a key is connected; each half is optional */
   async function itemTooltip(id: number): Promise<ItemTooltip> {
     const local = Promise.resolve().then(() => options.gameData.call('item', id)).catch(() => null) as Promise<ItemDetail | null>
@@ -127,6 +153,6 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     return value
   }
 
-  return { topPlayers, wowToken, itemTooltip, affixes }
+  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes }
 }
 export type Insights = ReturnType<typeof createInsights>

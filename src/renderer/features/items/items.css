@@ -101,6 +101,11 @@
   border-bottom: 1px solid var(--line);
 }
 .item-search-filters .app-select-trigger { min-height: 32px; }
+/* Basis, from, and to read as one control */
+.item-level-range { display: inline-flex; align-items: center; gap: 6px; }
+.item-level-range input { width: 62px; min-height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
+.item-level-range input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.item-level-range > span { color: var(--muted); }
 .item-search-context {
   display: flex;
   flex-wrap: wrap;

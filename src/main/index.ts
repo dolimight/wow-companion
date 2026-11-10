@@ -15,10 +15,14 @@ import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
 import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
+import { openSplash } from './splash'
 import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
 
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
+
+// Windows names toasts after this identity, and startup sync can raise one before the window exists, so set it before anything else
+if(process.platform==='win32')app.setAppUserModelId(windowsAppId)
 
 protocol.registerSchemesAsPrivileged([
   {scheme:'app',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}},
@@ -32,6 +36,7 @@ let installingUpdate=false
 let saveWindowPlacement:(()=>void)|undefined
 let tray:Tray|null=null
 let quitting=false
+let splash:Awaited<ReturnType<typeof openSplash>>=null
 const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: wow-asset:; connect-src 'self' blob: data: ws://127.0.0.1:* wow-asset:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'"
 async function main(){
   const userDir=process.env.WOW_COMPANION_DATA_DIR?resolve(process.env.WOW_COMPANION_DATA_DIR):app.getPath('userData')
@@ -39,6 +44,13 @@ async function main(){
   const db=new DatabaseClient(resolve(userDir,'companion.sqlite'))
   const settings=await db.call('getSettings')
   nativeTheme.themeSource=settings.theme
+  // The boot screen stays out of test runs and hidden launches, where nobody is watching
+  if(!process.env.WOW_COMPANION_HEADLESS&&!process.argv.includes('--acceptance')&&!process.argv.includes('--smoke')){
+    const variant=resolveAppIcon(settings.appIcon,app.getVersion())
+    const assets=resolve(app.isPackaged?resolve(root,'../renderer'):app.getAppPath(),app.isPackaged?'assets':'public/assets')
+    splash=await openSplash({logoPath:resolve(assets,appIconFiles[variant].logo),icon:resolve(assets,appIconFiles[variant].png),variant,version:app.getVersion(),reducedMotion:settings.reducedMotion}).catch(()=>null)
+    splash?.step('Opening your data',.2)
+  }
   const windowFrame='custom' as const
   const devUrl=process.env.ELECTRON_RENDERER_URL
   const origins=['app://companion',...(devUrl?[new URL(devUrl).origin]:[])]
@@ -56,10 +68,12 @@ async function main(){
     notice.on('click',showWindow)
     notice.show()
   }
+  splash?.step('Starting local services',.4)
   const service=await startLocalService({db,origins,refreshCharacter:id=>refreshPublicCharacter(db,id),gameDataDir:resolve(userDir,'gamedata'),secrets,addonDir,assetsDir:userDir,autoSync:!process.env.WOW_COMPANION_DATA_DIR,onAlert:alert=>void onAlert(alert),onSettings:next=>{keepInTray=next.keepInTray}})
   let nativeOperations=0
   let updateBlockerAcknowledgedAt=0
   const updatePreferences=resolve(userDir,'updates.json')
+  splash?.step('Checking for updates',.6)
   const updates=await createUpdateService({
     version:app.getVersion(),
     disabledReason:!app.isPackaged?'Updates are available in installed release builds':process.env.WOW_COMPANION_DATA_DIR||process.argv.includes('--acceptance')||process.argv.includes('--smoke')?'Automatic updates are disabled in isolated test runs':process.platform!=='win32'&&process.platform!=='darwin'?'In-app updates currently support Windows and macOS':null,
@@ -153,7 +167,6 @@ async function main(){
     return next
   }
   handle('companion:apply-app-icon',applyAppIcon)
-  if(process.platform==='win32')app.setAppUserModelId(windowsAppId)
   if(process.platform==='darwin')app.dock?.setIcon(windowIcon)
   const titleBarOverlay=()=>({color:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',symbolColor:nativeTheme.shouldUseDarkColors?'#f5f5f5':'#1c2430',height:48})
   const placementFile=resolve(userDir,'window-placement.json')
@@ -173,7 +186,7 @@ async function main(){
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}))
   window.webContents.on('will-navigate',(event,url)=>{if(!origins.includes(rendererOrigin(url)??''))event.preventDefault()})
   window.webContents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false))
-  window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show()})
+  window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show();void splash?.close();splash=null})
   window.on('closed',()=>{window=null})
   // With the tray option on, closing hides the window so syncs and alerts continue; Quit lives in the tray menu
   window.webContents.on('will-prevent-unload',event=>{if(allowUnload){event.preventDefault();return}window?.webContents.send('companion:close-requested')})
@@ -190,6 +203,7 @@ async function main(){
     ]))
     tray.on('click',showWindow)
   }
+  splash?.step('Loading your characters',.8)
   if(devUrl)await window.loadURL(devUrl);else await window.loadURL('app://companion/index.html')
   updates.startPolling()
   if(process.argv.includes('--acceptance')){const report=await runDesktopAcceptance({window,db,service,outputDir:resolve(userDir,'acceptance')});console.log('DESKTOP_ACCEPTANCE',JSON.stringify({passed:report.passed,steps:report.steps.map(s=>({name:s.name,status:s.status,detail:s.status==='fail'?s.detail:undefined})),evidence:resolve(userDir,'acceptance/report.json')}));process.exitCode=report.passed?0:1;app.quit()}
@@ -201,5 +215,5 @@ app.on('before-quit',event=>{quitting=true;saveWindowPlacement?.();if(cleanup&&!
 if(!app.requestSingleInstanceLock())app.quit()
 else{
 app.on('second-instance',()=>{if(!window)return;if(window.isMinimized())window.restore();window.show();window.focus()})
-app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})
+app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);void splash?.close();splash=null;process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})
 }

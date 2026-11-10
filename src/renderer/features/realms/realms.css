@@ -1,0 +1,35 @@
+/* Realm status: a footer light and a panel listing every connected realm */
+:root { --realm-down: #b12630; }
+:root[data-theme="dark"] { --realm-down: #ff8a8f; }
+.realm-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.realm-dot[data-health="up"] { background: var(--green); }
+.realm-dot[data-health="queue"] { background: var(--amber); }
+.realm-dot[data-health="down"] { background: var(--realm-down); box-shadow: 0 0 0 3px color-mix(in srgb, var(--realm-down) 25%, transparent); }
+.realm-chip { gap: 8px; color: var(--secondary); background: var(--surface); max-width: 220px; }
+.realm-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.realm-chip[data-health="down"] { color: var(--realm-down); }
+@media (max-width: 760px) { .realm-chip span { display: none; } }
+
+.realm-sheet { display: grid; gap: 18px; }
+.realm-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.realm-overview > div { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--surface2); }
+.realm-overview strong { font-size: 22px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.realm-overview span { font-size: 12px; color: var(--muted); }
+.realm-overview > div[data-health="down"] strong { color: var(--realm-down); }
+.realm-overview > div[data-health="queue"] strong { color: var(--amber); }
+.realm-checked { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); }
+.realm-heading { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.realm-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.realm-tools input { flex: 1; min-width: 0; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; }
+.realm-tools input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.realm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.realm-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 8px; }
+.realm-row:nth-child(odd) { background: color-mix(in srgb, var(--surface2) 60%, transparent); }
+.realm-row-name { display: grid; min-width: 0; }
+.realm-row-name strong { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.realm-row-name small { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.realm-row-meta { font-size: 12px; color: var(--secondary); }
+.realm-pill { font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
+.realm-pill[data-health="queue"] { background: color-mix(in srgb, var(--amber) 16%, transparent); color: var(--amber); }
+.realm-pill[data-health="down"] { background: color-mix(in srgb, var(--realm-down) 16%, transparent); color: var(--realm-down); }
+.realm-empty { display: grid; gap: 10px; justify-items: start; }
