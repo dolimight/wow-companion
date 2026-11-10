@@ -93,6 +93,7 @@ import { WardrobePage } from "./features/outfits/WardrobePage";
 import { UpdateSettings } from "./features/updates/UpdateSettings";
 import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
+import { closeWindow, useCloseGuard, useCloseRequests } from "./lib/close-guard";
 import {
   defaultDestination,
   destinationLabel,
@@ -568,6 +569,7 @@ function useDrawerNavigation(path: string, drawerMode: boolean) {
 }
 function Shell() {
   useUpdateSafety();
+  useCloseRequests();
   const roster = useRoster();
   const settings = useSettings();
   const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
@@ -1668,6 +1670,11 @@ function GearEditor({
   // Leaving the plan by route, character, subsection, or window close asks first while changes are unsaved
   const unsaved = dirty || inspectorDirty;
   const blocker = useBlocker({ shouldBlockFn: () => unsaved, enableBeforeUnload: unsaved, withResolver: true });
+  const [closing, setClosing] = useState(false);
+  // The wording follows the last request, so it holds still while the dialog fades out
+  const [closeWording, setCloseWording] = useState(false);
+  useCloseGuard(unsaved, () => { setClosing(true); setCloseWording(true); });
+  useEffect(() => { if (blocker.status === "blocked") setCloseWording(false); }, [blocker.status]);
   const equipped = character.gear.find((i) => i.slot === selected);
   const values = items.map((i) => i.itemLevel).filter((v): v is number => v != null);
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
@@ -1753,13 +1760,15 @@ function GearEditor({
         <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
       <LeaveGuard
-        open={blocker.status === "blocked"}
-        title="Leave this plan without saving?"
+        open={blocker.status === "blocked" || closing}
+        title={closeWording ? "Close without saving this plan?" : "Leave this plan without saving?"}
         description="This plan has changes that are not saved"
         saving={save.isPending}
-        onKeep={() => blocker.status === "blocked" && blocker.reset()}
-        onSave={() => savePlan(() => blocker.proceed?.())}
-        onDiscard={() => { gearMemory.delete(memoryKey); blocker.proceed?.(); }}
+        saveLabel={closeWording ? "Save and close" : undefined}
+        discardLabel={closeWording ? "Close without saving" : undefined}
+        onKeep={() => { setClosing(false); if (blocker.status === "blocked") blocker.reset(); }}
+        onSave={() => savePlan(() => { if (closing) closeWindow(); else blocker.proceed?.(); })}
+        onDiscard={() => { gearMemory.delete(memoryKey); if (closing) closeWindow(); else blocker.proceed?.(); }}
       />
       {query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />

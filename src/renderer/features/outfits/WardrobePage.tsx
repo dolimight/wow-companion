@@ -15,6 +15,7 @@ import { OutfitTools } from './OutfitTools'
 import { AppearanceSlotIcon } from './AppearanceSlotIcon'
 import {ModelStage} from '../model-stage/ModelStage'
 import { useUpdateBlocker } from '../../lib/update-safety'
+import { closeWindow, useCloseGuard } from '../../lib/close-guard'
 import './outfits.css'
 
 const editableSlots: Array<{ value: AppearanceSlot; label: string }> = [{ value: 'head', label: 'Head' }, { value: 'shoulder', label: 'Shoulders' }, { value: 'shoulderLeft', label: 'Left shoulder' }, { value: 'shoulderRight', label: 'Right shoulder' }, { value: 'back', label: 'Cloak' }, { value: 'chest', label: 'Chest' }, { value: 'shirt', label: 'Shirt' }, { value: 'wrist', label: 'Wrists' }, { value: 'hands', label: 'Hands' }, { value: 'waist', label: 'Waist' }, { value: 'legs', label: 'Legs' }, { value: 'feet', label: 'Feet' }, { value: 'tabard', label: 'Tabard' }, { value: 'mainHand', label: 'Main hand' }, { value: 'offHand', label: 'Off hand' }]
@@ -38,6 +39,11 @@ export function WardrobePage({ character }: { character: Character }) {
   useEffect(() => setRenderFailed(false), [render])
   const hasRender = !!render && !renderFailed
   const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: dirty, withResolver: true })
+  const [closing, setClosing] = useState(false)
+  // The wording follows the last request, so it holds still while the dialog fades out
+  const [closeWording, setCloseWording] = useState(false)
+  useCloseGuard(dirty, () => { setClosing(true); setCloseWording(true) })
+  useEffect(() => { if (blocker.status === 'blocked' || pending) setCloseWording(false) }, [blocker.status, pending])
   const save = useMutation({ mutationFn: (value: Outfit) => api.saveOutfit(value), onSuccess: value => { if (value.characterId === character.id) { setDraft(value); setDirty(false) } void queryClient.invalidateQueries({ queryKey: ['outfits', value.characterId] }); notify('Outfit saved') }, onError: error => notify(errorMessage(error)) })
   const remove = useMutation({ mutationFn: (id: string) => api.deleteOutfit({ id }), onSuccess: (_, id) => { const remaining = (query.data ?? []).filter(outfit => outfit.id !== id); queryClient.setQueryData(['outfits', character.id], remaining); setDraft(remaining[0] ?? null); setDirty(false); setDeleting(false); void queryClient.invalidateQueries({ queryKey: ['outfits', character.id] }); notify('Outfit deleted') }, onError: error => notify(errorMessage(error)) })
   useEffect(() => { setDraft(null); setDirty(false); setPending(null); setDeleting(false); setSearchOpen(false) }, [character.id])
@@ -65,7 +71,7 @@ export function WardrobePage({ character }: { character: Character }) {
       <summary><Box size={17} aria-hidden="true" /><span>Inspect a 3D model</span><ChevronRight className="wardrobe-disclosure-chevron" size={16} aria-hidden="true" /></summary>
       {modelOpen && <ModelStage key={character.id} characterId={character.id} />}
     </details>
-    <LeaveGuard open={!!pending || blocker.status === 'blocked'} title="Discard unsaved outfit changes?" description="This outfit has changes that are not saved" onKeep={() => { setPending(null); if (blocker.status === 'blocked') blocker.reset() }} discardLabel="Discard changes" onDiscard={() => { setDirty(pending ? !query.data?.some(outfit => outfit.id === pending.id) : false); if (pending) { setDraft(pending); setPending(null) } if (blocker.status === 'blocked') blocker.proceed() }} />
+    <LeaveGuard open={!!pending || blocker.status === 'blocked' || closing} title="Discard unsaved outfit changes?" description="This outfit has changes that are not saved" onKeep={() => { setPending(null); setClosing(false); if (blocker.status === 'blocked') blocker.reset() }} discardLabel={closeWording ? 'Close without saving' : 'Discard changes'} onDiscard={() => { if (closing) { closeWindow(); return } setDirty(pending ? !query.data?.some(outfit => outfit.id === pending.id) : false); if (pending) { setDraft(pending); setPending(null) } if (blocker.status === 'blocked') blocker.proceed() }} />
     {query.isError ? <div role="alert"><p>{errorMessage(query.error)}</p><Button onClick={() => void query.refetch()}>Try again</Button></div> : query.isPending ? <p className="muted" role="status">Loading outfits…</p> : <div className="wardrobe-workspace" data-empty={!draft && !query.data.length || undefined}>
       {(query.data.length > 0 || draft) && <aside className="wardrobe-outfit-list" aria-label="Saved outfits">
         {query.data.length ? query.data.map(outfit => <button type="button" className={`wardrobe-outfit-choice ${draft?.id === outfit.id ? 'selected' : ''}`} aria-pressed={draft?.id === outfit.id} key={outfit.id} onClick={() => choose(outfit)}>

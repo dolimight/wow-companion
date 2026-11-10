@@ -3,7 +3,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { Button } from './ui/button'
 
 /** Asks before leaving unsaved work; the router blocker stays pending until one of the three choices is made */
-export function LeaveGuard({ open, title, description, saving = false, onKeep, onSave, onDiscard, discardLabel = 'Leave without saving' }: {
+export function LeaveGuard({ open, title, description, saving = false, onKeep, onSave, onDiscard, discardLabel = 'Leave without saving', saveLabel = 'Save and leave' }: {
   open: boolean
   title: string
   description: ReactNode
@@ -12,6 +12,7 @@ export function LeaveGuard({ open, title, description, saving = false, onKeep, o
   onSave?: () => void
   onDiscard: () => void
   discardLabel?: string
+  saveLabel?: string
 }) {
   return (
     <AlertDialog open={open} onOpenChange={next => { if (!next) onKeep() }}>
@@ -23,7 +24,7 @@ export function LeaveGuard({ open, title, description, saving = false, onKeep, o
         <AlertDialogFooter>
           <AlertDialogCancel>Keep editing</AlertDialogCancel>
           <Button variant="outline" onClick={onDiscard}>{discardLabel}</Button>
-          {onSave && <Button disabled={saving} onClick={onSave}>{saving ? 'Saving…' : 'Save and leave'}</Button>}
+          {onSave && <Button disabled={saving} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
