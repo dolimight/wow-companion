@@ -6,16 +6,24 @@ type Result = NonNullable<SimulationJob['result']>
 type Value = Result['values'][number]
 const signed = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(Math.round(value)).toLocaleString()}`
 const percent = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value * 100).toFixed(1)}%`
+/** "Main hand: Maze-roa, Warlord's Fury at 344" reads as just the item in a tile */
+const itemOnly = (label: string) => label.replace(/^[^:]+: /, '').replace(/ at \d+$/, '')
 
 function change(baseline: Value, value: Value) {
   const comparison = compareSimulationValues(baseline, value)
-  const text = comparison.verdict === 'unknown' ? 'Comparison unavailable' : comparison.verdict === 'sidegrade' ? 'No measurable difference' : `${signed(comparison.difference)} DPS · ${percent(comparison.difference / baseline.mean)}`
   const taken = value.damageTaken && baseline.damageTaken ? compareSimulationValues(baseline.damageTaken, value.damageTaken) : null
-  const takenText = !taken || taken.verdict === 'unknown' ? null : taken.verdict === 'sidegrade' ? 'Damage taken about the same' : `${Math.abs(Math.round(taken.difference)).toLocaleString()} ${taken.difference < 0 ? 'less' : 'more'} damage taken per second`
-  return { comparison, text, takenText }
+  const takenText = !taken || taken.verdict === 'unknown' || taken.verdict === 'sidegrade' ? null : `${Math.abs(Math.round(taken.difference)).toLocaleString()} ${taken.difference < 0 ? 'less' : 'more'} damage taken per second`
+  return { comparison, takenText }
 }
 
-/** A saved plan in plain words: what the whole plan adds, then which planned upgrade is worth the most */
+function Tile({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: 'up' | 'down' }) {
+  return <div className="plan-tile" data-tone={tone}><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</div>
+}
+
+/**
+ * A saved plan in three numbers: what the whole plan adds, how close it gets to the top players' gear, and which
+ * upgrade to get first. The per-upgrade list lives in the results below, so it is not repeated here
+ */
 export function PlanSummary({ job, result }: { job: SimulationJob; result: Result }) {
   const plan = job.request.plan
   const baseline = result.values[0]
@@ -26,48 +34,53 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
   const topEntry = topIndex === null ? null : entries[topIndex] ?? null
   const singles = entries.filter(entry => entry.index !== plan.whole && entry.index !== topIndex).map(entry => ({ ...entry, ...change(baseline, entry.value) })).sort((a, b) => b.comparison.difference - a.comparison.difference)
   if (!whole) return null
-  // How far the whole plan gets you toward the top players' gear, judged with the same uncertainty as every comparison
   const reading = topEntry ? benchmarkReading(whole.value, [{ kind: 'gear', value: topEntry.value }]) : null
-  const topGain = topEntry ? change(whole.value, topEntry.value) : null
+  const topGain = topEntry ? compareSimulationValues(whole.value, topEntry.value) : null
   const total = change(baseline, whole.value)
   const losses = singles.filter(entry => entry.comparison.verdict === 'lower')
-  const gains = singles.filter(entry => entry.comparison.verdict === 'higher')
-  const headline = total.comparison.verdict === 'higher' ? `${signed(total.comparison.difference)} DPS` : total.comparison.verdict === 'lower' ? `${signed(total.comparison.difference)} DPS` : 'About the same'
-  const advice = total.comparison.verdict === 'unknown' ? 'The engine did not report uncertainty, so the change cannot be judged'
-    : gains[0] ? `Get ${gains[0].label.replace(/^[^:]+: /, '')} first, it is the biggest single upgrade in your plan${losses.length ? ` · ${losses.length === 1 ? 'One planned item is' : `${losses.length} planned items are`} worse than what you wear now` : ''}`
-    : losses.length ? 'None of the planned items beats what you wear now in this scenario' : 'Each planned upgrade is too small to measure on its own here'
-  return <div className="simulation-benchmark">
-    <div className="simulation-benchmark-headline">
-      <span className="muted">{plan.whole === null ? 'Your plan changes one slot' : `Your plan · ${plan.swaps.length} upgrades together`}</span>
-      <strong>{headline}</strong>
-      {total.comparison.verdict !== 'unknown' && total.comparison.verdict !== 'sidegrade' && <span className="muted">{percent(total.comparison.difference / baseline.mean)} over your current gear{total.takenText ? ` · ${total.takenText}` : ''}</span>}
-      <p>{advice}</p>
+  const first = singles.find(entry => entry.comparison.verdict === 'higher')
+  const measured = total.comparison.verdict === 'higher' || total.comparison.verdict === 'lower'
+  // Plan minus top players' gear: positive means the finished plan does more damage than their gear
+  const versus = topEntry ? compareSimulationValues(topEntry.value, whole.value) : null
+  const versusValue = !versus || versus.verdict === 'unknown' ? 'Unknown' : versus.verdict === 'sidegrade' ? 'Even' : versus.difference > 0 ? 'Ahead' : 'Behind'
+  const versusNote = !versus || !topEntry || versus.verdict === 'unknown' ? 'The engine did not report uncertainty, so the gap cannot be judged'
+    : versus.verdict === 'sidegrade' ? 'Your finished plan matches their gear within the uncertainty'
+    : `${versus.difference > 0 ? 'Your plan does' : 'Their gear does'} ${Math.abs(Math.round(versus.difference)).toLocaleString()} DPS more · ${(Math.abs(versus.difference) / topEntry.value.mean * 100).toFixed(1)}% ${versus.difference > 0 ? 'above' : 'below'} theirs`
+  const planLevels = new Map(plan.swaps.map(item => [item.slot, item]))
+  const totalTile = <Tile label={plan.whole === null ? 'Against your current gear' : `Against your current gear · ${plan.swaps.length} upgrades`} value={measured ? `${signed(total.comparison.difference)} DPS` : total.comparison.verdict === 'sidegrade' ? 'About the same' : 'Unknown'}
+    note={measured ? `${percent(Math.abs(total.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${total.comparison.difference > 0 ? 'more' : 'less'} damage than you do now${total.takenText ? ` · ${total.takenText}` : ''}` : undefined} tone={total.comparison.verdict === 'higher' ? 'up' : total.comparison.verdict === 'lower' ? 'down' : undefined} />
+  return <div className="plan-summary">
+    <div className="plan-tiles">
+      {versus && <div className="plan-tile plan-verdict" data-tone={versusValue === 'Ahead' || versusValue === 'Even' ? 'up' : versusValue === 'Behind' ? 'down' : undefined}>
+        <span>Your finished plan against top players' gear</span><strong>{versusValue}</strong><small>{versusNote}</small>
+        {reading && <span className="simulation-benchmark-meter" aria-label={`Your plan reaches ${Math.round(reading.share * 100)}% of their gear's damage`}><span style={{ width: `${Math.max(4, Math.min(100, Math.round(reading.share * 100)))}%` }} /></span>}
+      </div>}
+      {totalTile}
+      {first && <Tile label="Get this first" value={itemOnly(first.label)} note={`${signed(first.comparison.difference)} DPS on its own`} tone="up" />}
     </div>
-    {plan.top && reading && topGain && <>
-      <h3 className="simulation-subheading">Against the top players</h3>
-      <div className="simulation-benchmark-headline">
-        <strong>{reading.matches ? "As strong as the top players' gear" : `${Math.round(reading.share * 100)}% of the top players' gear`}</strong>
-        <p>{reading.matches ? 'Once your plan is done, items stop being the gap' : `Their most worn items add ${topGain.text.replace(/ · .*/, '')} over your finished plan${plan.top.differences.length ? ` · ${plan.top.differences.length === 1 ? 'One slot differs' : `${plan.top.differences.length} slots differ`}` : ''}`}</p>
-      </div>
-      <div className="simulation-benchmark-meter" aria-hidden="true"><span style={{ width: `${Math.max(4, Math.round(reading.share * 100))}%` }} /></div>
-      {plan.top.differences.length > 0 && <dl className="simulation-benchmark-rows">
-        {plan.top.differences.map(item => <div key={item.slot}><dt>{gearSlotLabels[item.slot as GearSlotName] ?? item.slot}</dt><dd>{`${item.top} at ${item.itemLevel}`}<small className="muted">{item.plan === item.top ? 'Top players wear it at a higher item level' : `Your plan has ${item.plan}`}</small></dd></div>)}
-      </dl>}
-      <p className="muted">{plan.top.population} · Measured on your character with your enchants and gems</p>
-    </>}
-    {plan.whole !== null && <>
-      <h3 className="simulation-subheading">Upgrades by value</h3>
-      <dl className="simulation-benchmark-rows">
-        {singles.map(entry => <div key={entry.value.name}><dt>{entry.label}</dt><dd>{entry.comparison.verdict === 'lower' ? `Worse · ${entry.text}` : entry.text}{entry.takenText && <small className="muted">{entry.takenText}</small>}</dd></div>)}
-      </dl>
-      <p className="muted">Stats interact, so the upgrades do not add up exactly to the whole plan</p>
-    </>}
-    <details className="simulation-details"><summary>What was tested</summary>
+    {losses.length > 0 && <p className="plan-warning">{losses.length === 1 ? `${itemOnly(losses[0]!.label)} is worse than what you wear now` : `${losses.length} planned items are worse than what you wear now`} · They are at the bottom of the results</p>}
+    {plan.top && <section className="plan-compare" aria-label="Your plan beside top players' gear">
+      <h4>{plan.top.differences.length ? `Where top players' gear differs from your plan · ${plan.top.differences.length} ${plan.top.differences.length === 1 ? 'slot' : 'slots'}` : 'Your plan matches the top players’ items slot for slot'}</h4>
+      {plan.top.differences.length > 0 && <div className="table-wrap"><table className="data-table plan-compare-table">
+        <thead><tr><th scope="col">Slot</th><th scope="col">Your plan</th><th scope="col">Top players</th></tr></thead>
+        <tbody>{plan.top.differences.map(item => {
+          const mine = planLevels.get(item.slot)
+          return <tr key={item.slot}>
+            <th scope="row">{gearSlotLabels[item.slot as GearSlotName] ?? item.slot}</th>
+            <td>{item.plan}{mine && mine.to === item.plan ? <small className="muted"> · {mine.itemLevel}</small> : null}</td>
+            <td>{item.top}<small className="muted"> · {item.itemLevel}</small>{item.plan === item.top && <small className="muted"> · same item, higher level</small>}</td>
+          </tr>
+        })}</tbody>
+      </table></div>}
+      <p className="muted small">{plan.top.population} · Their most worn items at the highest level any of them wears, run on your character with your enchants and gems</p>
+    </section>}
+    <details className="simulation-details">
+      <summary>What was tested</summary>
       <ul>
         {plan.swaps.map(item => <li key={item.slot}>{item.from === item.to ? `${item.to} raised to item level ${item.itemLevel}` : `${item.from} → ${item.to} at item level ${item.itemLevel}`}</li>)}
         {plan.skipped.map(reason => <li key={reason}>{reason}</li>)}
       </ul>
-      <p>Planned items without an exact item link keep the enchant and gems of what you wear in that slot · Item bonuses such as extra sockets are not modeled</p>
+      <p>Stats interact, so single upgrades do not add up exactly to the whole plan · Planned items without an exact item link keep the enchant and gems of what you wear in that slot · Item bonuses such as extra sockets are not modeled</p>
     </details>
   </div>
 }

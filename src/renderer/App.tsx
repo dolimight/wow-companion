@@ -3,6 +3,7 @@ import { transparentPortrait } from "./lib/portrait";
 import { version as appVersion } from '../../package.json';
 import { appIconChoices, appIconCursor, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm, useStore } from "@tanstack/react-form";
 import {
   createRootRoute,
   createHashHistory,
@@ -44,12 +45,12 @@ import {
   FileText,
   History,
   Info,
+  LoaderCircle,
   Menu,
   NotebookPen,
   Plus,
   RefreshCw,
   Search,
-  Save,
   Settings,
   Shield,
   Sparkles,
@@ -66,9 +67,12 @@ import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
 import { errorMessage, notify } from "./lib/notify";
 import { Term } from "./components/Term";
-import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
+import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
+import { equalWeights } from "../shared/enhancement-recommendations";
+import { trackLevelOptions } from "../shared/gamedata";
+import { Input } from "./components/ui/input";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
 import { outdatedRenderSlots } from "../shared/shown-look";
 import TargetCursor from "./components/TargetCursor";
@@ -77,7 +81,7 @@ import TargetCursor from "./components/TargetCursor";
 const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
-import { addItemToPlan, gearMemory, subscribeGearPlan } from "./lib/plan-item";
+import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
 import { clearRenamedPlanIdentity, isPlannedItemEquipped } from "./lib/gear-plan-match";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
@@ -94,6 +98,7 @@ import { UpdateSettings } from "./features/updates/UpdateSettings";
 import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
 import { closeWindow, useCloseGuard, useCloseRequests } from "./lib/close-guard";
+import { useSimulationToasts } from "./lib/simulation-toasts";
 import {
   defaultDestination,
   destinationLabel,
@@ -133,10 +138,10 @@ import type {
   ActivityRating,
   AddCharacterInput,
   Character,
-  GearDraft,
   GearItem,
   GearSlot,
   ImportReport,
+  StatWeights,
 } from "../shared/domain";
 import "./style.css";
 import "./sidebar-settings.css";
@@ -571,6 +576,10 @@ function useDrawerNavigation(path: string, drawerMode: boolean) {
 function Shell() {
   useUpdateSafety();
   useCloseRequests();
+  const shellNavigate = useNavigate();
+  const openSimulation = useCallback((characterId: string, job: string) => void shellNavigate({ to: "/characters/$characterId/$section/$view", params: { characterId, section: "gear", view: "simulations" }, search: { job } as never }), [shellNavigate]);
+  useSimulationToasts(openSimulation);
+  usePlanQueryClient();
   const roster = useRoster();
   const settings = useSettings();
   const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
@@ -1616,15 +1625,18 @@ function GearEditor({
   const itemMap = useMemo(() => new Map((itemDetails.data ?? []).map((item) => [item.id, item])), [itemDetails.data]);
   const [selected, setSelected] = useState<GearSlot>("head");
   const [slotSearch, setSlotSearch] = useState(false);
-  const [name, setName] = useState(memory?.name ?? "My upgrade plan");
+  const [statWeights, setStatWeights] = useState(memory?.statWeights ?? equalWeights);
   const [dirty, setDirty] = useState(memory?.dirty ?? false);
-  const [itemName, setItemName] = useState("");
-  const [itemLevel, setItemLevel] = useState("");
-  const [enchant, setEnchant] = useState("");
-  const [gems, setGems] = useState("");
-  const [enchantEdited, setEnchantEdited] = useState(false);
-  const [gemsEdited, setGemsEdited] = useState(false);
-  const [target, setTarget] = useState(character.targetItemLevel?.toString() ?? "");
+  // The plan's own fields and the selected slot's fields are TanStack forms; items stay plain state
+  // Defaults are created once: TanStack Form re-applies changed defaults to an untouched form, which would wipe edits on every render
+  const [planDefaults] = useState(() => ({ name: memory?.name ?? "My upgrade plan", target: character.targetItemLevel?.toString() ?? "" }));
+  const [slotDefaults] = useState(() => slotValues(undefined));
+  const planForm = useForm({ defaultValues: planDefaults });
+  const name = useStore(planForm.store, (state) => state.values.name);
+  const target = useStore(planForm.store, (state) => state.values.target);
+  const setName = (value: string) => planForm.setFieldValue("name", value, { dontUpdateMeta: true });
+  const slotForm = useForm({ defaultValues: slotDefaults });
+  const { itemLevel, enchant, gems } = useStore(slotForm.store, (state) => state.values);
   const updateGoal = useAction(api.updateCharacter, "Character goal saved");
   const client = useQueryClient();
   useEffect(() => {
@@ -1633,57 +1645,51 @@ function GearEditor({
       if (!gearMemory.get(memoryKey)) {
         setItems(query.data?.items ?? character.gear.map((i) => ({ ...i })));
         setName(query.data?.name ?? "My upgrade plan");
+        setStatWeights(query.data?.statWeights ?? equalWeights);
         setDirty(false);
       }
     }
   }, [query.data, query.isSuccess, activity, character.id, memoryKey]);
   useEffect(() => {
-    if (hydrated.current) gearMemory.set(memoryKey, { items, name, dirty });
-  }, [items, name, dirty, memoryKey]);
+    if (hydrated.current) gearMemory.set(memoryKey, { items, name, dirty, statWeights });
+  }, [items, name, dirty, statWeights, memoryKey]);
   useEffect(() => subscribeGearPlan(() => {
     const stored = gearMemory.get(memoryKey);
     if (!stored) return;
     setItems(stored.items);
     setName(stored.name);
+    setStatWeights(stored.statWeights ?? equalWeights);
     setDirty(stored.dirty);
   }), [memoryKey]);
   const current = items.find((i) => i.slot === selected);
+  const itemName = current?.name ?? "";
   const displayedItem = useRef<{ slot: GearSlot; item: GearItem | undefined } | null>(null);
-  const inspectorDirty = hydrated.current && (itemName !== (current?.name ?? '') || itemLevel !== (current?.itemLevel?.toString() ?? '') || enchant !== (current?.enchant ?? '') || gems !== (current?.gems.join(', ') ?? ''));
+  const shown = slotValues(current);
+  const inspectorDirty = hydrated.current && (itemLevel !== shown.itemLevel || enchant !== shown.enchant || gems !== shown.gems);
   useUpdateBlocker(dirty || inspectorDirty || target !== (character.targetItemLevel?.toString() ?? ''), 'Save your gear plan and slot edits before restarting');
   useEffect(() => {
     if (displayedItem.current?.slot === selected && displayedItem.current.item === current) return;
     displayedItem.current = { slot: selected, item: current };
-    setItemName(current?.name ?? "");
-    setItemLevel(current?.itemLevel?.toString() ?? "");
-    setEnchant(current?.enchant ?? "");
-    setGems(current?.gems.join(", ") ?? "");
-    setEnchantEdited(false);
-    setGemsEdited(false);
+    slotForm.reset(slotValues(current), { keepDefaultValues: true });
   }, [selected, current]);
+  // The plan saves itself; the shared helper marks it clean and offers Undo in a toast
   const save = useMutation({
-    mutationFn: (draft: GearDraft) => api.saveGearDraft(draft),
-    onSuccess: () => {
-      setDirty(false);
-      notify("Gear plan saved locally");
-      void client.invalidateQueries({ queryKey: ["gear-draft", character.id] });
-    },
+    mutationFn: (draft: { items: GearItem[]; name: string; statWeights?: StatWeights }) => persistPlan(planOwner(character, activity), draft),
     onError: (e) => notify(errorMessage(e)),
   });
-  // Leaving the plan by route, character, subsection, or window close asks first while changes are unsaved
   const unsaved = dirty || inspectorDirty;
-  const blocker = useBlocker({ shouldBlockFn: () => unsaved, enableBeforeUnload: unsaved, withResolver: true });
-  const [closing, setClosing] = useState(false);
-  // The wording follows the last request, so it holds still while the dialog fades out
-  const [closeWording, setCloseWording] = useState(false);
-  useCloseGuard(unsaved, () => { setClosing(true); setCloseWording(true); });
-  useEffect(() => { if (blocker.status === "blocked") setCloseWording(false); }, [blocker.status]);
+  // Leaving or closing never asks: a pending edit is saved on the way out
+  useBlocker({ shouldBlockFn: () => { if (unsaved) savePlan(); return false; }, enableBeforeUnload: unsaved });
+  useCloseGuard(unsaved, () => savePlan(() => closeWindow()));
   const equipped = character.gear.find((i) => i.slot === selected);
   const values = items.map((i) => i.itemLevel).filter((v): v is number => v != null);
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
   /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
   function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string; itemLevel?: string }): GearItem[] | null {
+    // The form's latest values, which can be newer than this render's
+    const { itemLevel, enchant, gems } = slotForm.state.values;
+    const enchantEdited = enchant !== slotValues(current).enchant, gemsEdited = gems !== slotValues(current).gems;
     const levelText = enhancement?.itemLevel ?? itemLevel;
     const ilvl = levelText.trim() ? Number(levelText) : null;
     if (ilvl != null && (!Number.isFinite(ilvl) || ilvl < 0)) {
@@ -1695,6 +1701,9 @@ function GearEditor({
       name: itemName.trim() || `${slotNames[selected]} draft`,
       itemId: current?.itemId ?? null,
       itemLevel: ilvl,
+      bonusIds: current?.bonusIds,
+      variantCoverage: current?.variantCoverage,
+      levelSource: current?.itemLevel === ilvl ? current?.levelSource : ilvl == null ? null : "manual",
       enchant: (enhancement?.enchant ?? enchant).trim() || null,
       enchantCoverage: enchantEdited || enhancement?.enchant !== undefined ? "complete" : (current?.enchantCoverage ?? "unknown"),
       gemsCoverage: gemsEdited || enhancement?.gems !== undefined ? "complete" : (current?.gemsCoverage ?? "unknown"),
@@ -1710,12 +1719,7 @@ function GearEditor({
     const nextItems = [...items.filter((i) => i.slot !== selected), next];
     // Local commits must not rehydrate over a newer edit in another inspector field
     displayedItem.current = { slot: selected, item: next };
-    setItemName(next.name);
-    setItemLevel(next.itemLevel?.toString() ?? "");
-    setEnchant(next.enchant ?? "");
-    setGems(next.gems.join(", "));
-    setEnchantEdited(false);
-    setGemsEdited(false);
+    slotForm.reset(slotValues(next), { keepDefaultValues: true });
     setItems(nextItems);
     setDirty(true);
     if (!quiet) notify("Slot updated in your draft");
@@ -1724,17 +1728,17 @@ function GearEditor({
   function savePlan(onSaved?: () => void) {
     const planned = inspectorDirty ? updateItem(true) : items;
     if (!planned) return;
-    save.mutate({
-      id: query.data?.id ?? crypto.randomUUID(),
-      characterId: character.id,
-      specId: character.specId,
-      activity,
-      rulesetId: query.data?.rulesetId ?? "unknown",
-      name: name.trim() || "My upgrade plan",
-      items: planned,
-      updatedAt: new Date().toISOString(),
-    }, { onSuccess: onSaved });
+    save.mutate({ items: planned, name, statWeights }, { onSuccess: onSaved });
   }
+  // Edits save a moment after they stop, typed slot fields included, so a burst of changes becomes one save and one Undo
+  useEffect(() => {
+    if (!hydrated.current || !(dirty || inspectorDirty) || save.isPending) return;
+    // Text typed into an enchant or gem search is only a search until a choice is picked or the field is left
+    let timer = 0;
+    const attempt = () => { timer = window.setTimeout(() => document.activeElement?.getAttribute("role") === "combobox" ? attempt() : savePlan(), 800); };
+    attempt();
+    return () => clearTimeout(timer);
+  }, [items, name, statWeights, dirty, inspectorDirty, itemLevel, enchant, gems, save.isPending]);
   function selectSlot(slot: GearSlot) {
     if (inspectorDirty && !updateItem(true)) return;
     setSelected(slot);
@@ -1744,70 +1748,42 @@ function GearEditor({
       <div className="page-heading gear-plan-heading">
         <div>
           <h2 className="gear-section-title"><NotebookPen size={18} aria-hidden="true" />Plan</h2>
-          <p>Your imported gear stays separate from this plan · Edits update the draft, and Save plan keeps them</p>
+          <p>Your imported gear stays separate from this plan · Changes save automatically, with Undo in the toast</p>
         </div>
         <div className="actions">
-          <span className="save-status" role="status" data-state={save.isError ? "error" : save.isPending ? "saving" : dirty || inspectorDirty ? "unsaved" : "saved"}>
-            {save.isError ? <><CircleHelp size={14} />Could not save</> : save.isPending ? "Saving…" : dirty || inspectorDirty ? <Badge tone="amber">Unsaved changes</Badge> : query.data ? <><Check size={14} />Saved locally</> : null}
+          <span className="save-status" role="status" data-state={save.isError ? "error" : save.isPending || dirty ? "saving" : inspectorDirty ? "editing" : "saved"}>
+            {save.isError ? <><CircleHelp size={14} />Could not save · <Button variant="quiet" onClick={() => savePlan()}>Try again</Button></> : save.isPending || dirty ? <><LoaderCircle size={14} className="spin" />Saving…</> : inspectorDirty ? "Editing" : query.data ? <><Check size={14} />Saved</> : null}
           </span>
-          <Button
-            variant="primary"
-            disabled={save.isPending || query.isPending}
-            onClick={() => savePlan()}
-          >
-            <Save />
-            {save.isPending ? "Saving…" : "Save plan"}
-          </Button>
         </div>
       </div>
       <div className="gear-summary">
         <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
-      <LeaveGuard
-        open={blocker.status === "blocked" || closing}
-        title={closeWording ? "Close without saving this plan?" : "Leave this plan without saving?"}
-        description="This plan has changes that are not saved"
-        saving={save.isPending}
-        saveLabel={closeWording ? "Save and close" : undefined}
-        discardLabel={closeWording ? "Close without saving" : undefined}
-        onKeep={() => { setClosing(false); if (blocker.status === "blocked") blocker.reset(); }}
-        onSave={() => savePlan(() => { if (closing) closeWindow(); else blocker.proceed?.(); })}
-        onDiscard={() => { gearMemory.delete(memoryKey); if (closing) closeWindow(); else blocker.proceed?.(); }}
-      />
       {query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
         <div className="planner-layout">
           <section className="planner-workspace">
             <div className="plan-controls">
-              <Field label="Plan name">
-                <input
-                  value={name}
-                  maxLength={100}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setDirty(true);
-                  }}
-                />
-              </Field>
+              <planForm.Field name="name">
+                {(field) => (
+                  <Field label="Plan name">
+                    <Input value={field.state.value} maxLength={100} onBlur={field.handleBlur} onChange={(e) => { field.handleChange(e.target.value); setDirty(true); }} />
+                  </Field>
+                )}
+              </planForm.Field>
               <div className="goal-editor">
-                <Field
-                  label="Your item-level target"
-                  hint="A personal goal, separate from a verified legal maximum"
-                >
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={target}
-                    placeholder="No target set"
-                    onChange={(e) => setTarget(e.target.value)}
-                  />
-                </Field>
+                <planForm.Field name="target" validators={{ onChange: ({ value }) => levelError(value, "Enter a valid target item level") }}>
+                  {(field) => (
+                    <Field label="Your item-level target" hint={field.state.meta.errors[0] ?? "A personal goal, separate from a verified legal maximum"}>
+                      <Input type="number" min="0" step="0.1" value={field.state.value} placeholder="No target set" aria-invalid={field.state.meta.errors.length > 0 || undefined} onBlur={field.handleBlur} onChange={(e) => field.handleChange(e.target.value)} />
+                    </Field>
+                  )}
+                </planForm.Field>
                 <Button
                   onClick={() => {
                     const value = target.trim() ? Number(target) : null;
-                    if (value != null && (!Number.isFinite(value) || value < 0)) {
+                    if (levelError(target, "Enter a valid target item level")) {
                       notify("Enter a valid target item level");
                       return;
                     }
@@ -1880,7 +1856,7 @@ function GearEditor({
                               <div className={item ? `item-name quality-text-${item.itemId ? itemMap.get(item.itemId)?.quality ?? 1 : 1}` : "secondary"}>
                                 {item?.name ?? "No planned item"}
                               </div>
-                              <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known></div>
+                              <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known>{item?.itemLevel != null && item.levelSource === "estimated" && <span className="muted"> · Estimate</span>}</div>
                               <div className="item-subtitle planner-improvements">
                                 <span>{item?.enchant ??
                                   (item?.enchantCoverage === "complete"
@@ -1922,32 +1898,28 @@ function GearEditor({
               Search items for this slot
             </Button>
             <Field label="Planned item name">
-              <input
-                value={itemName}
-                maxLength={200}
-                onChange={(e) => setItemName(e.target.value)}
-                onBlur={() => { if (inspectorDirty) updateItem(true); }}
-                placeholder="Search or name your planned item"
-              />
+              {/* The name always comes from the picked item, so a renamed row never disagrees with its item */}
+              <Input value={itemName} readOnly aria-readonly="true" placeholder="Pick one with Search items for this slot" />
             </Field>
             <PlannedLevelField
               itemId={current?.itemId ?? null}
               value={itemLevel}
-              onPick={(level) => { setItemLevel(level); updateItem(true, { itemLevel: level }); }}
+              source={current?.itemLevel != null && String(current.itemLevel) === itemLevel.trim() ? current.levelSource : "manual"}
+              onPick={(level) => { slotForm.setFieldValue("itemLevel", level); updateItem(true, { itemLevel: level }); }}
               input={
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={itemLevel}
-                  onChange={(e) => setItemLevel(e.target.value)}
-                  onBlur={() => { if (inspectorDirty) updateItem(true); }}
-                  placeholder="Unknown"
-                />
+                <slotForm.Field name="itemLevel" validators={{ onChange: ({ value }) => levelError(value, "Enter a valid item level") }}>
+                  {(field) => (
+                    <>
+                      <Input type="number" min="0" step="0.1" value={field.state.value} placeholder="Unknown" aria-invalid={field.state.meta.errors.length > 0 || undefined} onChange={(e) => field.handleChange(e.target.value)} onBlur={() => { field.handleBlur(); if (inspectorDirty && !field.state.meta.errors.length) updateItem(true); }} />
+                      {field.state.meta.errors[0] && <small className="error small" role="alert">{field.state.meta.errors[0]}</small>}
+                    </>
+                  )}
+                </slotForm.Field>
               }
             />
-            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else { setEnchant(value); setEnchantEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
-            <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else { setGems(value); setGemsEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else slotForm.setFieldValue("enchant", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else slotForm.setFieldValue("gems", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementRecommendations character={character} items={items} slot={selected} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}
               {activityNames[activity]}
@@ -1969,25 +1941,39 @@ function GearEditor({
               notify(`${item.name} doesn't match this character's class, specialization, or gear slot`);
               return;
             }
-            notify(`Added ${item.name} to ${slotNames[slot]}`);
           }).catch((error) => notify(errorMessage(error)));
         }}
       />
     </>
   );
 }
+/** The slot fields as text, the way the inspector edits them */
+function slotValues(item: GearItem | undefined) {
+  return { itemLevel: item?.itemLevel?.toString() ?? "", enchant: item?.enchant ?? "", gems: item?.gems.join(", ") ?? "" };
+}
+/** An empty level is allowed; anything typed must be a non-negative number */
+function levelError(value: string, message: string) {
+  if (!value.trim()) return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? undefined : message;
+}
 /**
  * Planned level as the item's own upgrade ranks, such as Hero 6/6 · 321, with the highest first.
  * Items without known tracks, and levels typed before, keep the free number box
  */
-function PlannedLevelField({ itemId, value, onPick, input }: { itemId: number | null; value: string; onPick: (level: string) => void; input: React.ReactNode }) {
+function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: number | null; value: string; source: GearItem["levelSource"]; onPick: (level: string) => void; input: React.ReactNode }) {
   const power = useQuery({ queryKey: ["item-power", itemId, null, null], queryFn: () => api.itemPower({ id: itemId! }), enabled: itemId != null, staleTime: 5 * 60_000 });
   const tracks = power.data?.tracks;
-  if (!itemId || !tracks?.tracks.length) return <Field label="Planned item level">{input}</Field>;
-  const options = [...tracks.tracks].reverse().flatMap((track) => track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, label: `${track.name} ${index + 1}/${track.ranks} · ${level}${track.name === tracks.max.track && index + 1 === track.ranks ? " · Max" : ""}` })).reverse());
+  const origin = value.trim() && source === "observed"
+    ? <small className="muted">Seen on a real character’s copy of this item</small>
+    : value.trim() && source === "estimated"
+      ? <small className="muted">Estimated from local game files · a copy seen on a real character is more accurate</small>
+      : null;
+  if (!itemId || !tracks?.tracks.length) return <Field label="Planned item level">{input}{origin}</Field>;
+  const options = trackLevelOptions(tracks);
   const typed = Number(value);
-  const selected = options.find((option) => option.level === typed);
-  const custom = value.trim() && !selected ? [{ value: "custom", level: typed, label: `Custom · ${value}` }] : [];
+  const selected = options.find((option) => option.level === typed && !option.beyond) ?? options.find((option) => option.level === typed);
+  const custom = value.trim() && !selected ? [{ value: "custom", level: typed, label: `${source === "observed" ? "Observed" : "Custom"} · ${value}` }] : [];
   return (
     <Field label="Planned item level">
       <AppSelect
@@ -1996,7 +1982,8 @@ function PlannedLevelField({ itemId, value, onPick, input }: { itemId: number | 
         onValueChange={(next) => { const option = options.find((entry) => entry.value === next); if (option) onPick(String(option.level)); }}
         options={[...options, ...custom].map(({ value, label }) => ({ value, label }))}
       />
-      {tracks.max.assumed && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
+      {origin}
+      {tracks.max.assumed && source !== "observed" && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
     </Field>
   );
 }

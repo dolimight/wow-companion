@@ -19,9 +19,27 @@ export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId:
 /** An upgrade-track group from the game files: its season scaling set, cross-season track key, and item level per rank */
 export type ItemTrackGroup = { group: number; set: number; key: number; levels: number[]; latest: boolean }
 export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; trackInfo?: ItemTrackGroup[] | null; classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
-export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[] }
-/** Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track */
-export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean } }
+/** `levels` are the crest upgrade ranks; `beyond` are higher ranks with no crest cost that players still reach and wear */
+export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[]; beyond?: number[] }
+/**
+ * Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track.
+ * `max` is the highest level including ranks past the crest ladder; `ladderLevel` is the top crest rank, which a new plan target starts at
+ */
+export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean; ladderLevel?: number } }
+
+/** Crest ranks read as Myth 4/6; ranks past the ladder read as Myth 6/6 +2 */
+export function trackRankLabel(track: string, rank: number, ranks: number) {
+  return rank <= ranks ? `${track} ${rank}/${ranks}` : `${track} ${ranks}/${ranks} +${rank - ranks}`
+}
+
+export type TrackLevelOption = { value: string; level: number; label: string; beyond: boolean }
+/** Every rank an item can reach, highest first, with the season's true top marked Max */
+export function trackLevelOptions(tracks: ItemTracks): TrackLevelOption[] {
+  return [...tracks.tracks].reverse().flatMap(track => [...track.levels, ...(track.beyond ?? [])].map((level, index) => ({
+    value: `${track.name}:${index + 1}`, level, beyond: index >= track.ranks,
+    label: `${trackRankLabel(track.name, index + 1, track.ranks)} · ${level}${track.name === tracks.max.track && level === tracks.max.itemLevel ? ' · Max' : ''}`,
+  })).reverse())
+}
 export type ItemPowerStat = { type: number; name: string; value: number; secondary: boolean }
 export type ItemPowerEffect = { label: string; text: string; complete: boolean; cooldown: string | null }
 /** Stats and effects worked out from the game's scaling tables for one item level; null parts are unknown */

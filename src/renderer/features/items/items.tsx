@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { ExternalLink, RefreshCw, Search, Sparkles, X } from "lucide-react";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -11,7 +12,7 @@ import { api } from "../../lib/client";
 import { ItemIcon } from "./ItemIcon";
 import { ItemPowerSection, wowheadItemUrl } from "./ItemPower";
 import { errorMessage, notify } from "../../lib/notify";
-import { armorSlots, armorTypes, gearSlotsForInventoryType, qualityNames, type ArmorType, type ItemSearch, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
+import { armorSlots, armorTypes, gearSlotsForInventoryType, qualityNames, trackRankLabel, type ArmorType, type ItemSearch, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
 import { getItemCompatibility } from "../../../shared/item-compatibility";
 import type { AppearanceSlot, Character, GearItem } from "../../../shared/domain";
 import "./items.css";
@@ -152,7 +153,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
-                        <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${item.maxLevel.track} ${item.maxLevel.rank}/${item.maxLevel.ranks}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
+                        <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${trackRankLabel(item.maxLevel.track, item.maxLevel.rank, item.maxLevel.ranks)}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
                         {item.effects?.map((effect, index) => <small key={index} className="item-result-effect"><Sparkles aria-hidden="true" /><span><strong>{effect.label}:</strong> {effect.text}</span></small>)}
                         {sourceLine(item) && <small className="item-result-source">{sourceLine(item)}</small>}
                         {context && !getItemCompatibility(item,context).verified && <small>{getItemCompatibility(item,context).reason ?? "Some equipment restrictions are unknown"}</small>}
@@ -259,15 +260,9 @@ export function ItemDetail({ id, onPick, addLabel, compact = false, character = 
   );
 }
 
-/** Opens item search from anywhere with Ctrl+K or Cmd+K */
+/** Opens item search from anywhere with Ctrl+K, or Cmd+K on a Mac, including from inside a text field */
 export function useItemSearchShortcut(open: () => void) {
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); open(); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  useHotkey("Mod+K", () => open());
 }
 
 /** Resolves "Enchant #123" and "Gem #456" placeholders from older imports into readable names */

@@ -1,0 +1,25 @@
+.enhancement-recommendations { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 10px; }
+.enhancement-recommendations-trigger { display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 0; border: 0; background: transparent; color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; text-align: left; }
+.enhancement-recommendations-trigger > svg:first-child { color: var(--secondary); }
+.enhancement-recommendations-trigger > svg:last-child { margin-left: auto; color: var(--secondary); transition: transform 160ms ease; }
+.enhancement-recommendations-trigger[data-panel-open] > svg:last-child { transform: rotate(180deg); }
+.enhancement-recommendations-panel { display: grid; gap: 12px; font-size: 12px; line-height: 1.5; }
+.enhancement-recommendations-panel p { margin: 0; }
+.stat-weights { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.stat-weights legend { padding: 0; margin-bottom: 6px; font-size: 12px; font-weight: 600; }
+.stat-weight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.stat-weight-grid label { display: grid; gap: 4px; font-size: 12px; color: var(--secondary); }
+.stat-weight-grid label > span { display: flex; align-items: center; gap: 4px; }
+.stat-weight-grid input { width: 100%; min-width: 0; }
+.stat-help { display: inline-flex; color: var(--secondary); cursor: help; border-radius: 4px; }
+.stat-help:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.stat-weights .button { justify-self: start; }
+.enhancement-suggestions { display: grid; gap: 6px; }
+.enhancement-suggestions h4 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; font-weight: 600; }
+.enhancement-suggestions h4 > svg { color: var(--secondary); }
+.enhancement-suggestion { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; background: var(--surface2, var(--surface)); }
+.enhancement-suggestion > div { display: grid; min-width: 0; }
+.enhancement-suggestion strong { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.enhancement-suggestion small { color: var(--secondary); overflow-wrap: anywhere; }
+.enhancement-score { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.enhancement-footnote { font-size: 11px; }

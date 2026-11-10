@@ -37,6 +37,8 @@
     "@radix-ui/react-slot": "1.5.0",
     "@react-three/fiber": "^9.8.2",
     "@tailwindcss/vite": "4.3.3",
+    "@tanstack/react-form": "1.33.5",
+    "@tanstack/react-hotkeys": "0.17.0",
     "@tanstack/react-query": "5.104.2",
     "@tanstack/react-router": "1.170.44",
     "@tanstack/react-table": "8.21.3",

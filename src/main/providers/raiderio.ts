@@ -5,7 +5,8 @@ import { gearItemSchema, specializationIdSchema, type ActivityRating, type AddCh
 
 const positiveRank = z.number().int().nonnegative().nullable().optional()
 const rankGroup = z.object({ world: positiveRank, region: positiveRank, realm: positiveRank })
-const itemSchema = z.object({item_id:z.number().int().positive(),item_level:z.number().nonnegative().nullable().optional(),name:z.string().nullable().optional(),enchant:z.number().int().nullable().optional(),gems:z.array(z.object({item_id:z.number().int().optional()})).nullable().optional()})
+const itemSchema = z.object({item_id:z.number().int().positive(),item_level:z.number().nonnegative().nullable().optional(),name:z.string().nullable().optional(),enchant:z.number().int().nullable().optional(),gems:z.array(z.union([z.number().int(),z.object({item_id:z.number().int().optional()})])).nullable().optional(),bonuses:z.array(z.number().int().nonnegative()).max(128).nullable().optional()})
+const gemId=(gem:number|{item_id?:number})=>typeof gem==='number'?gem:gem.item_id
 const profileSchema = z.object({
   name:z.string().min(1),realm:z.string().min(1),region:z.enum(['us','eu','kr','tw','cn']),class:z.string(),race:z.string(),active_spec_name:z.string().optional(),active_spec_id:z.number().int().optional(),profile_url:z.string().url(),last_crawled_at:z.string().nullable().optional(),
   gear:z.object({item_level_equipped:z.number().nonnegative().optional(),items:z.record(z.string(),z.unknown()).optional()}).nullable().optional(),
@@ -31,7 +32,7 @@ export function parseRaiderIoProfile(input:unknown):RaiderIoProfile {
   // Each raid keeps its own kill summary; kill counts are never treated as a parse percentile
   const raids=Object.entries(data.raid_progression??{}).map(([slug,raid])=>`${slug}: ${raid.summary}`)
   const raiding:ActivityRating|null=raids.length?{...base,value:null,label:raids.join(' · ').slice(0,120)}:null
-  const gear=Object.entries(data.gear?.items??{}).flatMap(([key,raw])=>{const parsed=itemSchema.safeParse(raw);if(!slots[key]||!parsed.success)return [];const item=parsed.data;return [gearItemSchema.parse({slot:slots[key],itemId:item.item_id,name:item.name??`Item ${item.item_id}`,itemLevel:item.item_level??null,enchant:item.enchant?`Enchant #${item.enchant}`:null,enchantCoverage:item.enchant!=null?'complete':'unknown',gemsCoverage:item.gems!=null?'complete':'unknown',gems:(item.gems??[]).map(gem=>gem.item_id?`Gem #${gem.item_id}`:'Unknown gem')})]})
+  const gear=Object.entries(data.gear?.items??{}).flatMap(([key,raw])=>{const parsed=itemSchema.safeParse(raw);if(!slots[key]||!parsed.success)return [];const item=parsed.data;return [gearItemSchema.parse({slot:slots[key],itemId:item.item_id,name:item.name??`Item ${item.item_id}`,itemLevel:item.item_level??null,enchant:item.enchant?`Enchant #${item.enchant}`:null,enchantCoverage:item.enchant!=null?'complete':'unknown',gemsCoverage:item.gems!=null?'complete':'unknown',gems:(item.gems??[]).map(gem=>gemId(gem)?`Gem #${gemId(gem)}`:'Unknown gem'),bonusIds:item.bonuses??null,enchantId:item.enchant??null,gemIds:item.gems?item.gems.map(gem=>gemId(gem)??0):null,variantCoverage:item.bonuses?'partial':'unknown',levelSource:item.item_level!=null?'observed':null})]})
   // Weekly runs belong to the reset week in which Raider.IO crawled them, never the week they were fetched
   const crawled=observedAt?Date.parse(observedAt):null
   const week=crawled!=null?weekStart(data.region,crawled):null

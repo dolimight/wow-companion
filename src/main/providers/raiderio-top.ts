@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { topRegionNames, type TopPlayers, type TopRegion, type TopSlotGroup } from '../../shared/top-players'
+import { commonCopy, topRegionNames, type TopCopy, type TopCount, type TopPlayers, type TopRegion, type TopSlotGroup } from '../../shared/top-players'
 
 const ORIGIN = 'https://raider.io'
 const MAX_BYTES = 4 * 1024 * 1024
@@ -64,18 +64,37 @@ async function rankedForSpec(season: SeasonInfo, input: { specId: number; specNa
   } catch (error) { if (signal?.aborted) throw error; return null }
 }
 
-const gearItemSchema = z.object({ item_id: z.number().int().positive(), name: z.string().optional(), item_level: z.number().optional(), gems: z.array(z.number().int()).optional(), gems_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional(), enchants_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional() }).passthrough()
+const gearItemSchema = z.object({ item_id: z.number().int().positive(), name: z.string().optional(), item_level: z.number().optional(), bonuses: z.array(z.number().int().nonnegative()).max(128).optional(), gems: z.array(z.number().int()).optional(), gems_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional(), enchants_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional() }).passthrough()
 const gearSchema = z.object({ gear: z.object({ item_level_equipped: z.number().optional(), items: z.record(z.string(), z.unknown()).default({}) }).nullable().optional() })
 const groups: Record<string, TopSlotGroup> = { head: 'head', neck: 'neck', shoulder: 'shoulder', back: 'back', chest: 'chest', wrist: 'wrist', hands: 'hands', waist: 'waist', legs: 'legs', feet: 'feet', finger1: 'rings', finger2: 'rings', trinket1: 'trinkets', trinket2: 'trinkets', mainhand: 'mainHand', offhand: 'offHand' }
 /** Strips WoW colour and quality markup such as |cnIQ4:…|r and |cffa335ee…|r */
 const plain = (name: string) => name.replace(/\|cn[^:|]*:|\|c[0-9a-fA-F]{8}|\|r|\|A:[^|]*\|a|\|T[^|]*\|t/g, '').trim()
 const enchantName = (name: string) => plain(name).replace(/^Enchant\s+[^-–]+[-–]\s*/i, '').trim()
 
-function tally<T extends { id: number }>(map: Map<number, T & { count: number; levelSum?: number; levelCount?: number }>, entry: T, level?: number | null) {
+/**
+ * The level most sampled players wear an item at, the higher one on a tie, plus the spread. An average
+ * would land between upgrade ranks, such as 342 from a mix of 341 and 344, which no copy of the item has
+ */
+export function wornLevels(levels: Map<number, number> | undefined): { level: number | null; levelRange?: { min: number; max: number } } {
+  if (!levels?.size) return { level: null }
+  const entries = [...levels.entries()]
+  const [level] = entries.reduce((best, entry) => entry[1] > best[1] || (entry[1] === best[1] && entry[0] > best[0]) ? entry : best)
+  const all = entries.map(([value]) => value)
+  return { level, levelRange: { min: Math.min(...all), max: Math.max(...all) } }
+}
+type Tallied = { id: number; name: string; count: number; levels?: Map<number, number>; copies?: Map<string, TopCopy> }
+function tally(map: Map<number, Tallied>, entry: { id: number; name: string }, level?: number | null, bonusIds?: number[] | null) {
   const current = map.get(entry.id)
   const target = current ?? map.set(entry.id, { ...entry, count: 0 }).get(entry.id)!
   target.count += 1
-  if (level) { target.levelSum = (target.levelSum ?? 0) + level; target.levelCount = (target.levelCount ?? 0) + 1 }
+  if (level) { target.levels ??= new Map(); target.levels.set(level, (target.levels.get(level) ?? 0) + 1) }
+  if (level && bonusIds) {
+    const sorted = [...bonusIds].sort((a, b) => a - b)
+    const key = `${level}:${sorted.join('/')}`
+    target.copies ??= new Map()
+    const copy = target.copies.get(key) ?? target.copies.set(key, { itemLevel: level, bonusIds: sorted, count: 0 }).get(key)!
+    copy.count += 1
+  }
 }
 
 /**
@@ -116,7 +135,7 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
   }
   // Gear needs one profile request per player, so only the first few players are sampled
   const sample = players.slice(0, input.gearSample ?? 12)
-  const slotItems = new Map<TopSlotGroup, { items: Map<number, { id: number; name: string; count: number }>; enchants: Map<number, { id: number; name: string; count: number }>; gems: Map<number, { id: number; name: string; count: number }> }>()
+  const slotItems = new Map<TopSlotGroup, { items: Map<number, Tallied>; enchants: Map<number, Tallied>; gems: Map<number, Tallied> }>()
   let gearPlayers = 0
   const itemLevels: number[] = []
   for (let index = 0; index < sample.length; index += 4) {
@@ -135,14 +154,14 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
         const bucket = slotItems.get(group) ?? { items: new Map(), enchants: new Map(), gems: new Map() }
         slotItems.set(group, bucket)
         const mark = (kind: string, id: number) => { const key = `${group}:${kind}:${id}`; if (seen.has(key)) return false; seen.add(key); return true }
-        if (mark('item', item.data.item_id)) tally(bucket.items, { id: item.data.item_id, name: item.data.name ? plain(item.data.name) : `Item ${item.data.item_id}` }, item.data.item_level)
+        if (mark('item', item.data.item_id)) tally(bucket.items, { id: item.data.item_id, name: item.data.name ? plain(item.data.name) : `Item ${item.data.item_id}` }, item.data.item_level, item.data.bonuses)
         for (const enchant of item.data.enchants_detail ?? []) if (mark('enchant', enchant.id)) tally(bucket.enchants, { id: enchant.id, name: enchantName(enchant.name ?? `Enchant ${enchant.id}`) })
         const gems = item.data.gems_detail ?? (item.data.gems ?? []).map(id => ({ id, name: undefined }))
         for (const gem of gems) if (mark('gem', gem.id)) tally(bucket.gems, { id: gem.id, name: gem.name ? plain(gem.name) : `Gem ${gem.id}` })
       }
     }
   }
-  const top = <T extends { count: number; levelSum?: number; levelCount?: number }>(map: Map<number, T>, limit: number) => [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit).map(({ levelSum, levelCount, ...entry }) => ({ ...entry, level: levelCount ? Math.round((levelSum ?? 0) / levelCount) : null }))
+  const top = (map: Map<number, Tallied>, limit: number): TopCount[] => [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit).map(({ levels, copies, ...entry }) => ({ ...entry, ...wornLevels(levels), ...(copies ? { copy: commonCopy(copies.values()) } : {}) }))
   return {
     season, specId: input.specId, specName: input.specName, className: input.className, region: input.region, observedAt: new Date().toISOString(), runsScanned,
     source: ranked ? 'Raider.IO spec rankings' : 'Raider.IO top runs',

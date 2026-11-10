@@ -34,7 +34,16 @@ try{
     const entries=rows('ItemBonusListGroupEntry').filter(r=>r.ItemBonusListGroupID===group&&Number(r.SequenceValue)<=6).sort((a,b)=>Number(a.SequenceValue)-Number(b.SequenceValue))
     if(entries.length!==6)throw Error('The reviewed track rank count changed')
     const trackId=`client-group-${group}`
-    return {id:trackId,name:String(currency.Name_lang).replace(' Mistcrest',''),ranks:entries.map(entry=>{
+    const levelOf=(entry:Row)=>{
+      const scaling=rows('ItemBonus').find(b=>b.ParentItemBonusListID===entry.ItemBonusListID&&b.Type===49),config=scaling&&table('ItemScalingConfig').get((scaling.Value as number[])[0]!)
+      if(!config||config.RequiredLevel!==90||config.ItemSquishEraID!==2)throw Error('The reviewed level mapping changed')
+      return Number(config.ItemLevel)
+    }
+    // Ranks past six have no crest cost in the client; top players wear them, so they are listed apart from the crest ladder
+    const beyond=rows('ItemBonusListGroupEntry').filter(r=>r.ItemBonusListGroupID===group&&Number(r.SequenceValue)>6).sort((a,b)=>Number(a.SequenceValue)-Number(b.SequenceValue))
+    if(beyond.some(entry=>Number(entry.ItemExtendedCostID)))throw Error('A rank past six gained a crest cost; review it before listing it')
+    const beyondRanks=beyond.map(entry=>({rank:Number(entry.SequenceValue),itemLevel:levelOf(entry)}))
+    return {id:trackId,name:String(currency.Name_lang).replace(' Mistcrest',''),beyondRanks,ranks:entries.map(entry=>{
       const rank=Number(entry.SequenceValue),bonuses=rows('ItemBonus').filter(b=>b.ParentItemBonusListID===entry.ItemBonusListID)
       const scaling=bonuses.find(b=>b.Type===49),config=scaling&&table('ItemScalingConfig').get((scaling.Value as number[])[0]!)
       if(!config||config.RequiredLevel!==90||config.ItemSquishEraID!==2)throw Error('The reviewed level mapping changed')

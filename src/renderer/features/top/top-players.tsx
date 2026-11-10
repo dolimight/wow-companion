@@ -4,7 +4,7 @@ import { Check, CircleHelp, Copy, Crown, ExternalLink, Plus, RefreshCw, Shield, 
 import { GearSlotIcon } from "../../components/GearSlotIcon";
 import { api } from "../../lib/client";
 import { errorMessage, notify } from "../../lib/notify";
-import { usePlanItemIds } from "../../lib/plan-item";
+import { usePlanItemIds, type ObservedCopy } from "../../lib/plan-item";
 import { useStagePlan } from "../plan/StagePlan";
 import { Term } from "../../components/Term";
 import { AppSelect } from "../../components/AppSelect";
@@ -62,6 +62,12 @@ function planItemFromEntry(entry: TopCount, known?: ItemSummary): ItemSummary {
   };
 }
 
+/** The copy top players wear; results cached before bonus IDs were recorded fall back to the average level they wear it at */
+function observedCopy(entry: TopCount): ObservedCopy | null {
+  if (entry.copy) return { itemLevel: entry.copy.itemLevel, bonusIds: entry.copy.bonusIds };
+  return entry.level ? { itemLevel: entry.level, bonusIds: null } : null;
+}
+
 function ItemCell({
   entry,
   items,
@@ -91,7 +97,7 @@ function ItemCell({
           </div>
         );
         return replaces
-          ? <ItemCompareCard top={{ id: entry.id, name: entry.name, level: entry.level ?? null, item }} mine={replaces} topLevel={entry.level} stats={stats}>{row}</ItemCompareCard>
+          ? <ItemCompareCard top={{ id: entry.id, name: entry.name, level: entry.copy?.itemLevel ?? entry.level ?? null, item, range: entry.levelRange }} mine={replaces} topLevel={entry.copy?.itemLevel ?? entry.level} stats={stats}>{row}</ItemCompareCard>
           : <ItemHoverCard itemId={entry.id} item={item} name={entry.name}>{row}</ItemHoverCard>;
       })()}
       {onAdd && (
@@ -203,7 +209,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                                 replaces={swapTarget(mine, entry)}
                                 stats={character.stats}
                                 onAdd={mine.some((item) => item.itemId === entry.id) || planned.has(entry.id) ? undefined : () => {
-                                  void stage({ character, activity, item: planItemFromEntry(entry, itemMap.get(entry.id)), slots }, { stay: true });
+                                  void stage({ character, activity, item: planItemFromEntry(entry, itemMap.get(entry.id)), slots, copy: observedCopy(entry) }, { stay: true });
                                 }}
                               />
                             ))}
@@ -224,7 +230,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                               // Hovering your item shows what the most-worn item you don't have would change
                               const candidate = popular.find((entry) => !mine.some((owned) => owned.itemId === entry.id));
                               return candidate && item.itemId
-                                ? <ItemCompareCard key={item.slot} top={{ id: candidate.id, name: candidate.name, level: candidate.level ?? null, item: itemMap.get(candidate.id) }} mine={item} topLevel={candidate.level} stats={character.stats}>{row}</ItemCompareCard>
+                                ? <ItemCompareCard key={item.slot} top={{ id: candidate.id, name: candidate.name, level: candidate.level ?? null, item: itemMap.get(candidate.id), range: candidate.levelRange }} mine={item} topLevel={candidate.level} stats={character.stats}>{row}</ItemCompareCard>
                                 : <ItemHoverCard key={item.slot} itemId={item.itemId} item={known} gear={item}>{row}</ItemHoverCard>;
                             }) : <span className="muted">Unknown</span>}
                           </div>

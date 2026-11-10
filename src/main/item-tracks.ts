@@ -3,7 +3,7 @@ import candidatesJson from '../../data/season-rules/candidates.json'
 import type { ItemTrackGroup, ItemTracks, ItemTrackRange } from '../shared/gamedata'
 
 type Candidate = { itemId: number; upgradeTrackId: string | null; source: { activity: string } }
-type Track = { id: string; name: string; ranks: Array<{ rank: number; itemLevel: number }> }
+type Track = { id: string; name: string; ranks: Array<{ rank: number; itemLevel: number }>; beyondRanks?: Array<{ rank: number; itemLevel: number }> }
 type Ruleset = { id: string; name: string; upgradeTracks: Track[] }
 
 const rulesets = (catalogJson as unknown as { rulesets: Ruleset[] }).rulesets
@@ -22,11 +22,11 @@ function seasonLoot() {
   return map
 }
 
-const range = (track: Track): ItemTrackRange => ({ name: track.name, ranks: track.ranks.length, minLevel: track.ranks[0]!.itemLevel, maxLevel: track.ranks.at(-1)!.itemLevel, levels: track.ranks.map(rank => rank.itemLevel) })
+const range = (track: Track): ItemTrackRange => ({ name: track.name, ranks: track.ranks.length, minLevel: track.ranks[0]!.itemLevel, maxLevel: track.ranks.at(-1)!.itemLevel, levels: track.ranks.map(rank => rank.itemLevel), beyond: (track.beyondRanks ?? []).map(rank => rank.itemLevel) })
 const season = (ruleset: Ruleset) => ruleset.name.split(' · ')[0]!
 function result(ruleset: Ruleset, tracks: Track[], assumed: boolean): ItemTracks {
-  const best = tracks.at(-1)!
-  return { season: season(ruleset), tracks: tracks.map(range), max: { itemLevel: best.ranks.at(-1)!.itemLevel, track: best.name, rank: best.ranks.length, ranks: best.ranks.length, assumed } }
+  const best = tracks.at(-1)!, ladder = best.ranks.at(-1)!, top = best.beyondRanks?.at(-1)
+  return { season: season(ruleset), tracks: tracks.map(range), max: { itemLevel: top?.itemLevel ?? ladder.itemLevel, track: best.name, rank: best.ranks.length + (best.beyondRanks?.length ?? 0), ranks: best.ranks.length, assumed, ladderLevel: ladder.itemLevel } }
 }
 
 // Track keys from ItemBonus type 34 stay the same every season; 971 to 978 match the current season's
@@ -40,7 +40,7 @@ function fromGameFiles(info: ItemTrackGroup[]): ItemTracks | null {
   if (!groups.length) return null
   const tracks = groups.map(group => ({ name: trackNames[group.key]!, ranks: group.levels.length, minLevel: group.levels[0]!, maxLevel: group.levels.at(-1)!, levels: group.levels }))
   const best = tracks.at(-1)!
-  return { season: groups[0]!.latest ? 'This season' : 'An earlier season', tracks, max: { itemLevel: best.maxLevel, track: best.name, rank: best.ranks, ranks: best.ranks, assumed: false } }
+  return { season: groups[0]!.latest ? 'This season' : 'An earlier season', tracks, max: { itemLevel: best.maxLevel, track: best.name, rank: best.ranks, ranks: best.ranks, assumed: false, ladderLevel: best.maxLevel } }
 }
 
 /**

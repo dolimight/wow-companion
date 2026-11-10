@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, ClipboardList, Copy, ExternalLink, FlaskConical, FolderOpen, Play, RefreshCw, Trophy, X } from 'lucide-react'
+import { ChevronRight, ClipboardList, Copy, Cpu, ExternalLink, FileCode2, FlaskConical, FolderOpen, Link2, LoaderCircle, Play, Settings2, Trophy, X } from 'lucide-react'
 import type { Activity, Character } from '../../../shared/domain'
 import { compareSimulationValues, requestScenario, simulationScenarios, type SimulationJob, type SimulationScenarioId } from '../../../shared/simulation'
 import { api } from '../../lib/client'
@@ -8,15 +8,19 @@ import { Button, Badge, Field } from '../../components/ui/primitives'
 import { AppSelect } from '../../components/AppSelect'
 import { errorMessage, notify } from '../../lib/notify'
 import { useUpdateBlocker } from '../../lib/update-safety'
-import { BenchmarkSummary } from './BenchmarkSummary'
-import { PlanSummary } from './PlanSummary'
+import { trackSimulation } from '../../lib/simulation-toasts'
 import { SimulationDetail } from './SimulationDetail'
 import './simulations.css'
 
 type Navigation = { jobId?: string; onOpenJob?: (jobId: string | null) => void }
+type Kind = 'gear' | 'plan' | 'top'
+const kindOf = (job: SimulationJob): Kind => job.request.plan ? 'plan' : job.request.benchmark ? 'top' : 'gear'
+const active = (job: SimulationJob) => job.state === 'queued' || job.state === 'running'
+
 export function SimulationsPage({ character, activity, jobId, onOpenJob }: { character: Character; activity: Activity } & Navigation) {
   return <SimulationContent key={character.id} character={character} activity={activity} jobId={jobId} onOpenJob={onOpenJob} />
 }
+
 function SimulationContent({ character, activity, jobId, onOpenJob }: { character: Character; activity: Activity } & Navigation) {
   const queryClient = useQueryClient()
   const [scenario, setScenario] = useState<SimulationScenarioId>(activity === 'mythicPlus' ? 'big-pulls' : 'patchwerk')
@@ -27,7 +31,9 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
   const [savedProfileText, setSavedProfileText] = useState<string | null>(null)
   const [reportUrl, setReportUrl] = useState('')
   const [notes, setNotes] = useState('')
-  const workspace = useQuery({ queryKey: ['simulations', character.id], queryFn: () => api.simulationWorkspace({ characterId: character.id }), refetchInterval: query => query.state.data?.jobs.some(job => job.state === 'queued' || job.state === 'running') ? 1500 : false })
+  const [allJobs, setAllJobs] = useState(false)
+  const [starting, setStarting] = useState<Kind | null>(null)
+  const workspace = useQuery({ queryKey: ['simulations', character.id], queryFn: () => api.simulationWorkspace({ characterId: character.id }), refetchInterval: query => query.state.data?.jobs.some(active) ? 1500 : false })
   const plans = useQuery({ queryKey: ['gear-draft', character.id, 'simulation-plans', character.specId], queryFn: async () => { const [mythicPlus, raiding] = await Promise.all([api.getGearDraft({ characterId: character.id, activity: 'mythicPlus', specId: character.specId }), api.getGearDraft({ characterId: character.id, activity: 'raiding', specId: character.specId })]); return { mythicPlus, raiding } } })
   const profile = useQuery({ queryKey: ['simulation-profile', character.id, character.gearObservedAt, character.talents?.observedAt], queryFn: () => api.simulationProfile({ characterId: character.id }) })
   const mutation = useMutation({ mutationFn: (task: () => Promise<unknown>) => task(), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['simulations', character.id] }) }, onError: error => notify(errorMessage(error)) })
@@ -35,55 +41,140 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
   const exported = profile.data
   useUpdateBlocker(text !== null && text !== exported?.text && text !== savedProfileText, 'Save your simulation profile before restarting')
   const data = workspace.data
-  const runnable = !mutation.isPending && !!data?.configured && exported?.coverage === 'complete' && activity !== 'pvp'
+  const running = data?.jobs.find(active) ?? null
+  // Only one simulation at a time: every run waits until the current one finishes
+  const busy = starting !== null || running !== null || mutation.isPending
+  const ready = !!data?.configured && exported?.coverage === 'complete' && activity !== 'pvp'
   const chosenPlan = plans.data?.[planActivity === 'raiding' ? 'raiding' : 'mythicPlus'] ?? null
-  const simulatePlan = () => { const input = { characterId: character.id, activity, planActivity, scenarioId: scenario, threads, timeoutMinutes }; perform(() => api.startSimulationPlan(input)) }
-  const benchmark = () => { const input = { characterId: character.id, activity, scenarioId: scenario, threads, timeoutMinutes }; perform(() => api.startSimulationBenchmark(input)) }
+  const loadingKind = starting ?? (running ? kindOf(running) : null)
+  const launch = (kind: Kind, task: () => Promise<SimulationJob>) => {
+    if (busy) return
+    setStarting(kind)
+    mutation.mutate(async () => { try { trackSimulation(await task()) } finally { setStarting(null) } })
+  }
+  const base = { characterId: character.id, activity, scenarioId: scenario, threads, timeoutMinutes }
   const opened = jobId ? data?.jobs.find(job => job.id === jobId) : undefined
-  const start = () => { const input = { characterId: character.id, activity, scenarioId: scenario, threads, timeoutMinutes }; perform(() => api.startSimulation(input)) }
   if (opened) return <SimulationDetail character={character} activity={activity} job={opened} onBack={() => onOpenJob?.(null)} />
+  const finished = data?.jobs.filter(job => !active(job)) ?? []
+  const shownJobs = allJobs ? finished : finished.slice(0, 5)
+  const blocked = !data?.configured ? null : activity === 'pvp' ? 'Simulations model Mythic+ and Raiding · Switch the activity above to run one' : exported && exported.coverage !== 'complete' ? 'Your profile is missing some fields · Open the profile below to see which' : null
+  const runButton = (kind: Kind, label: string, icon: ReactNode, onClick: () => void, extraDisabled = false, primary = false) => {
+    const loading = loadingKind === kind
+    return <Button variant={primary ? 'primary' : 'secondary'} disabled={!ready || busy || extraDisabled} aria-busy={loading || undefined} onClick={onClick}>{loading ? <LoaderCircle size={14} className="spin" /> : icon}{loading ? 'Running…' : label}</Button>
+  }
   return <div className="simulation-page">
-    <div className="page-heading"><div><h2>Simulations</h2><p>Compare modeled damage against a reproducible character baseline</p></div><Button disabled={workspace.isFetching} onClick={() => void workspace.refetch()}><RefreshCw size={15} />Refresh</Button></div>
+    <div className="page-heading"><div><h2>Simulations</h2><p>See how your gear, your plan, and top players' setups compare on your own character</p></div></div>
     {(workspace.isError || profile.isError) && <p role="alert" className="error-surface">{errorMessage(workspace.error ?? profile.error)}</p>}
-    <section className="surface simulation-section" aria-label="Simulation profile">
-      <div className="simulation-heading"><h2>Your baseline</h2><Badge tone={exported?.coverage === 'complete' ? 'green' : 'amber'}>{exported?.coverage === 'complete' ? 'Complete profile' : 'Partial profile'}</Badge></div>
-      <p className="muted">{character.name} · {character.specName} · Build {character.gameBuild ?? 'unknown'}</p>
-      <p className="muted">Export your observed gear and talents, or import a supported single-character /simc profile</p>
+
+    <section className="surface simulation-section sim-run" aria-label="Run a simulation">
+      <div className="simulation-heading">
+        <h2>Run a simulation</h2>
+        <span className="sim-engine"><Cpu size={14} aria-hidden="true" />{data?.configured ? data.executableName : 'No engine chosen'}<Button variant="quiet" disabled={busy} onClick={() => perform(() => api.chooseSimulationExecutable())}><FolderOpen size={14} />{data?.configured ? 'Change' : 'Choose engine'}</Button></span>
+      </div>
+      {!data?.configured && <p className="sim-blocked" role="status">Choose your installed SimulationCraft executable to run simulations on this computer</p>}
+        <Field label="Scenario"><AppSelect label="Simulation scenario" value={scenario} options={Object.entries(simulationScenarios).map(([value, preset]) => ({ value, label: `${preset.label} · ${preset.description}` }))} onValueChange={value => setScenario(value as SimulationScenarioId)} /></Field>
+        <div className="sim-choices">
+          <div className="sim-choice"><strong>Your gear</strong><p className="muted">Your current damage in this scenario</p>{runButton('gear', 'Run simulation', <Play size={14} />, () => launch('gear', () => api.startSimulation(base)), false, true)}</div>
+          <div className="sim-choice"><strong>Your plan</strong><p className="muted">{chosenPlan?.items.length ? 'The whole plan and each upgrade on its own, so you know which to get first' : `No ${planActivity === 'raiding' ? 'Raiding' : 'Mythic+'} plan saved yet · Save one on the Plan tab`}</p>
+            <AppSelect label="Gear plan to simulate" value={planActivity} options={(['mythicPlus', 'raiding'] as const).map(value => { const draft = plans.data?.[value]; return { value, label: `${value === 'raiding' ? 'Raiding' : 'Mythic+'} · ${draft?.items.length ? `${draft.name} · ${draft.items.length} items` : 'Not saved yet'}` } })} onValueChange={value => setPlanActivity(value as Activity)} />
+            {runButton('plan', 'Simulate plan', <ClipboardList size={14} />, () => launch('plan', () => api.startSimulationPlan({ ...base, planActivity })), !chosenPlan?.items.length)}</div>
+          <div className="sim-choice"><strong>Top players</strong><p className="muted">The items and talents top {character.specName ?? ''} players use, on your character</p>{runButton('top', 'Compare with top players', <Trophy size={14} />, () => launch('top', () => api.startSimulationBenchmark(base)))}</div>
+        </div>
+        {blocked && <p className="sim-blocked" role="status">{blocked}</p>}
+        <details className="simulation-details sim-settings"><summary><Settings2 size={14} aria-hidden="true" />Settings · {threads} threads · {timeoutMinutes} minute limit</summary>
+          <div className="simulation-options">
+            <Field label="CPU threads"><AppSelect label="Simulation threads" value={String(threads)} options={[1, 2, 4, 8].map(value => ({ value: String(value), label: `${value} threads` }))} onValueChange={value => setThreads(Number(value))} /></Field>
+            <Field label="Time limit"><AppSelect label="Simulation time limit" value={String(timeoutMinutes)} options={[1, 5, 15, 30, 60, 120].map(value => ({ value: String(value), label: `${value} minutes` }))} onValueChange={value => setTimeoutMinutes(Number(value))} /></Field>
+          </div>
+          <p className="muted">Simulated damage models your character playing without mistakes · Compare it with your own runs, not with damage meters or logs · It does not measure healing, tank survival, or PvP</p>
+        </details>
+    </section>
+
+    {running && <RunningJob job={running} disabled={mutation.isPending} onCancel={() => perform(() => api.cancelSimulation({ characterId: character.id, jobId: running.id }))} />}
+
+    <section className="surface simulation-section" aria-label="Simulation jobs">
+      <div className="simulation-heading"><h2>Results</h2>{finished.length > 0 && <span className="muted small">{finished.length} saved</span>}</div>
+      {workspace.isPending ? <p role="status">Loading saved results…</p>
+        : !finished.length ? <div className="simulation-empty"><FlaskConical size={25} /><p>No results yet</p><span className="muted">Each result keeps the exact gear, scenario, and engine it was run with</span></div>
+        : <ul className="sim-results">{shownJobs.map(job => <JobRow key={job.id} job={job} onOpen={onOpenJob && job.result ? () => onOpenJob(job.id) : undefined} />)}</ul>}
+      {finished.length > 5 && <Button variant="quiet" onClick={() => setAllJobs(value => !value)}>{allJobs ? 'Show the latest 5' : `Show all ${finished.length} results`}</Button>}
+    </section>
+
+    <details className="surface simulation-section sim-disclosure" aria-label="Simulation profile" open={exported?.coverage === 'partial' || undefined}>
+      <summary><FileCode2 size={15} aria-hidden="true" /><span>SimulationCraft profile</span><Badge tone={exported?.coverage === 'complete' ? 'green' : 'amber'}>{exported?.coverage === 'complete' ? 'Complete profile' : 'Partial profile'}</Badge>{data?.profile && <small className="muted">Saved import: {data.profile.matchesCurrent ? 'matches the recorded baseline' : 'does not match the recorded baseline'}</small>}</summary>
+      <p className="muted">{character.name} · {character.specName} · Build {character.gameBuild ?? 'unknown'} · Export your observed gear and talents, or import a supported single-character /simc profile</p>
       <Field label="SimulationCraft profile"><textarea className="simulation-profile" aria-label="SimulationCraft profile" spellCheck={false} value={text ?? exported?.text ?? ''} onChange={event => setText(event.target.value)} maxLength={1_048_576} /></Field>
       <div className="simulation-actions"><Button disabled={!exported} onClick={() => void navigator.clipboard.writeText(text ?? exported?.text ?? '').then(() => notify('Profile copied')).catch(error => notify(errorMessage(error)))}><Copy size={14} />Copy profile</Button><Button disabled={mutation.isPending || !text?.trim()} onClick={() => perform(async () => { const imported = await api.importSimulationProfile({ characterId: character.id, text: text! }); setSavedProfileText(text!); notify(imported.matchesCurrent ? 'Profile saved for this baseline' : 'Profile saved with a baseline mismatch') })}>Save imported profile</Button><Button variant="quiet" disabled={mutation.isPending} onClick={() => perform(async () => { await api.clearSimulationProfile({ characterId: character.id }); setText(null); await profile.refetch() })}>Use current export</Button></div>
       {exported?.reasons.length ? <details className="simulation-details"><summary>{exported.reasons.length} fields need attention before local execution</summary><ul>{exported.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></details> : null}
-      {data?.profile && <p className="muted">Saved import: {data.profile.matchesCurrent ? 'matches the recorded baseline' : 'does not match the recorded baseline'} · {new Date(data.profile.createdAt).toLocaleString()}</p>}
-    </section>
-    <section className="surface simulation-section" aria-label="Local simulation controls">
-      <div className="simulation-heading"><h2>Local engine</h2><Badge tone={data?.configured ? 'green' : 'neutral'}>{data?.configured ? data.executableName : 'Not configured'}</Badge></div>
-      <p className="muted">Choose your installed SimulationCraft executable · One job runs at a time, with CPU and time limits</p>
-      <div className="simulation-options"><Field label="Scenario"><AppSelect label="Simulation scenario" value={scenario} options={Object.entries(simulationScenarios).map(([value, preset]) => ({ value, label: `${preset.label} · ${preset.description}` }))} onValueChange={value => setScenario(value as SimulationScenarioId)} /></Field><Field label="CPU threads"><AppSelect label="Simulation threads" value={String(threads)} options={[1, 2, 4, 8].map(value => ({ value: String(value), label: `${value} threads` }))} onValueChange={value => setThreads(Number(value))} /></Field><Field label="Time limit"><AppSelect label="Simulation time limit" value={String(timeoutMinutes)} options={[1, 5, 15, 30, 60, 120].map(value => ({ value: String(value), label: `${value} minutes` }))} onValueChange={value => setTimeoutMinutes(Number(value))} /></Field></div>
-      <Field label="Gear plan"><AppSelect label="Gear plan to simulate" value={planActivity} options={(['mythicPlus', 'raiding'] as const).map(value => { const draft = plans.data?.[value]; return { value, label: `${value === 'raiding' ? 'Raiding' : 'Mythic+'} plan · ${draft?.items.length ? `${draft.name} · ${draft.items.length} items` : 'Not saved yet'}` } })} onValueChange={value => setPlanActivity(value as Activity)} /></Field>
-      <div className="simulation-actions"><Button disabled={mutation.isPending} onClick={() => perform(() => api.chooseSimulationExecutable())}><FolderOpen size={14} />Choose engine</Button><Button variant="primary" disabled={!runnable} onClick={start}><Play size={14} />Run simulation</Button><Button disabled={!runnable || !chosenPlan?.items.length} onClick={simulatePlan}><ClipboardList size={14} />Simulate plan</Button><Button disabled={!runnable} onClick={benchmark}><Trophy size={14} />Compare with top players</Button></div>
-      <p className="muted">Simulate plan runs the whole plan and each planned upgrade on its own, so you can see which upgrade to get first</p>
-      <p className="muted">Compare with top players runs your character again with the items and talents most top {character.specName ?? ''} players use, in the same scenario, so you can see how close you are and what makes the gap</p>
-      <p className="muted">{activity === 'pvp' ? 'Simulations model damage in Mythic+ and Raiding scenarios · Switch the activity above to run one' : `Simulating for ${activity === 'raiding' ? 'Raiding' : 'Mythic+'} · Damage results do not measure healing effectiveness, tank survival, or PvP performance`}</p>
-    </section>
-    <section className="surface simulation-section" aria-label="Simulation jobs"><h2>Results and jobs</h2><p className="muted">Simulated damage models your character playing this scenario without mistakes · Compare it with other runs of your own character, not with damage meters or logs</p>{workspace.isPending ? <p role="status">Loading saved jobs…</p> : !data?.jobs.length ? <div className="simulation-empty"><FlaskConical size={25} /><p>No simulations yet</p><span className="muted">Saved results retain their exact baseline, engine identity, scenario, and uncertainty</span></div> : data.jobs.map(job => <Job key={job.id} job={job} disabled={mutation.isPending} onOpen={onOpenJob && job.result ? () => onOpenJob(job.id) : undefined} onCancel={() => perform(() => api.cancelSimulation({ characterId: character.id, jobId: job.id }))} />)}</section>
-    <section className="surface simulation-section" aria-label="External simulation reports"><h2>External reports</h2><p className="muted">Save Raidbots or SimulationCraft report links with notes · Links are bookmarks, not imported simulation evidence</p><Field label="Report URL"><input aria-label="Simulation report URL" type="url" placeholder="https://www.raidbots.com/simbot/report/…" value={reportUrl} maxLength={2048} onChange={event => setReportUrl(event.target.value)} /></Field><Field label="Notes"><textarea aria-label="Simulation report notes" value={notes} maxLength={4000} onChange={event => setNotes(event.target.value)} rows={2} /></Field><Button disabled={mutation.isPending || !reportUrl.trim()} onClick={() => perform(async () => { await api.saveSimulationReport({ characterId: character.id, url: reportUrl, notes }); setReportUrl(''); setNotes('') })}>Save report</Button>{data?.reports.map(report => <div className="simulation-report" key={report.id}><div><strong>{new URL(report.url).hostname}</strong><p>{report.notes || 'No notes'}</p><small className="muted">{report.baselineHash === data.baselineHash ? 'Saved against this baseline' : 'Saved against an older baseline'} · {new Date(report.createdAt).toLocaleString()}</small></div><Button variant="quiet" aria-label="Open saved simulation report" onClick={() => void api.openExternal(report.url).catch(error => notify(errorMessage(error)))}><ExternalLink size={15} /></Button></div>)}</section>
+      {data?.profile && <p className="muted">Saved {new Date(data.profile.createdAt).toLocaleString()}</p>}
+    </details>
+
+    <details className="surface simulation-section sim-disclosure" aria-label="External simulation reports">
+      <summary><Link2 size={15} aria-hidden="true" /><span>Saved reports</span>{data?.reports.length ? <small className="muted">{data.reports.length} saved</small> : <small className="muted">Bookmark Raidbots or SimulationCraft links</small>}</summary>
+      <p className="muted">Links are bookmarks with your notes, not imported results</p>
+      <Field label="Report URL"><input aria-label="Simulation report URL" type="url" placeholder="https://www.raidbots.com/simbot/report/…" value={reportUrl} maxLength={2048} onChange={event => setReportUrl(event.target.value)} /></Field>
+      <Field label="Notes"><textarea aria-label="Simulation report notes" value={notes} maxLength={4000} onChange={event => setNotes(event.target.value)} rows={2} /></Field>
+      <Button disabled={mutation.isPending || !reportUrl.trim()} onClick={() => perform(async () => { await api.saveSimulationReport({ characterId: character.id, url: reportUrl, notes }); setReportUrl(''); setNotes('') })}>Save report</Button>
+      {data?.reports.map(report => <div className="simulation-report" key={report.id}><div><strong>{new URL(report.url).hostname}</strong><p>{report.notes || 'No notes'}</p><small className="muted">{report.baselineHash === data.baselineHash ? 'Saved against this baseline' : 'Saved against an older baseline'} · {new Date(report.createdAt).toLocaleString()}</small></div><Button variant="quiet" aria-label="Open saved simulation report" onClick={() => void api.openExternal(report.url).catch(error => notify(errorMessage(error)))}><ExternalLink size={15} /></Button></div>)}
+    </details>
   </div>
 }
+
 const dps = (value: number) => `${Math.round(value).toLocaleString()} DPS`
+const signed = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(Math.round(value)).toLocaleString()}`
 function scenarioLine(job: SimulationJob) {
   const scenario = requestScenario(job.request)
   return [simulationScenarios[job.request.scenarioId].label, scenario.targets && scenario.targets > 1 ? `${scenario.targets} targets` : null, `${Math.round(scenario.fightSeconds / 60 * 10) / 10} min`].filter(Boolean).join(' · ')
 }
-function Measure({ value, baseline, label }: { value: NonNullable<SimulationJob['result']>['values'][number]; baseline: NonNullable<SimulationJob['result']>['values'][number] | null; label: string }) {
-  const comparison = baseline ? compareSimulationValues(baseline, value) : null
-  const taken = value.damageTaken && baseline?.damageTaken ? compareSimulationValues(baseline.damageTaken, value.damageTaken) : null
-  return <div><span>{label}</span><strong>{dps(value.mean)}</strong><small className="muted">{value.standardError === null ? 'Uncertainty unavailable' : `Standard error ±${value.standardError.toFixed(1)} DPS`}{comparison ? ` · ${comparison.verdict === 'unknown' ? 'Comparison unavailable' : comparison.verdict === 'sidegrade' ? 'Within uncertainty · sidegrade' : `${comparison.difference > 0 ? '+' : ''}${Math.round(comparison.difference).toLocaleString()} DPS`}` : ''}</small>{value.damageTaken && <small className="muted">Damage taken {Math.round(value.damageTaken.mean).toLocaleString()} per second{taken && taken.verdict !== 'unknown' ? ` · ${taken.verdict === 'sidegrade' ? 'about the same' : taken.difference < 0 ? `${Math.round(-taken.difference).toLocaleString()} less` : `${Math.round(taken.difference).toLocaleString()} more`}` : ''}</small>}</div>
-}
-function Job({ job, onCancel, onOpen, disabled }: { job: SimulationJob; onCancel: () => void; onOpen?: () => void; disabled: boolean }) {
+
+/** The one number worth reading in the list; everything else lives on the job's detail page */
+function headline(job: SimulationJob): { value: string; note: string; tone?: 'up' | 'down' } | null {
   const result = job.result
-  const [all, setAll] = useState(false)
-  const baseline = result?.values[0] ?? null
-  // Profileset jobs can hold hundreds of candidates, so they are ranked and trimmed
-  const ranked = result ? result.values.slice(1).map((value, index) => ({ value, label: job.request.candidateLabels[index] ?? (job.request.mode === 'copy' ? 'Planned gear' : `Candidate ${index + 1}`) })).sort((a, b) => job.request.mode === 'profileset' ? b.value.mean - a.value.mean : 0) : []
-  const shown = all ? ranked : ranked.slice(0, 10)
-  return <article className="simulation-job"><div className="simulation-heading"><div><strong>{job.label}</strong><p className="muted">{scenarioLine(job)} · {job.request.options.iterations.toLocaleString()} iterations · {new Date(job.createdAt).toLocaleString()}</p></div><Badge tone={job.state === 'completed' && result?.applicability === 'current' ? 'green' : job.state === 'failed' ? 'amber' : 'neutral'}>{job.state}</Badge>{['queued', 'running'].includes(job.state) && <Button disabled={disabled} onClick={onCancel}><X size={14} />Cancel</Button>}{onOpen && <Button onClick={onOpen}>Details<ChevronRight size={14} /></Button>}</div>{job.failure && <p role={job.state === 'failed' ? 'alert' : undefined}>{job.failure.replace(/\.+$/, '')}</p>}{result && <><p className="muted">SimulationCraft {result.engine.version} · Modeled damage · {result.applicability === 'current' ? 'Applicable to this baseline' : 'Historical or unsupported result'}</p>{job.request.benchmark && <BenchmarkSummary job={job} result={result} />}{job.request.plan && <PlanSummary job={job} result={result} />}<div className="simulation-values">{baseline && <Measure value={baseline} baseline={null} label="Current gear" />}{!job.request.plan && !job.request.benchmark && shown.map(entry => <Measure key={entry.value.name} value={entry.value} baseline={baseline} label={entry.label} />)}</div>{!job.request.plan && !job.request.benchmark && ranked.length > 10 && <Button variant="quiet" onClick={() => setAll(value => !value)}>{all ? 'Show the top 10' : `Show all ${ranked.length} candidates`}</Button>}{result.reasons.map(reason => <p className="muted" key={reason}>{reason}</p>)}<details className="simulation-details"><summary>Reproduce this result</summary><dl><dt>Baseline</dt><dd>{result.baselineHash}</dd><dt>Scenario</dt><dd>{result.scenarioHash}</dd><dt>Engine SHA-256</dt><dd>{result.engine.executableHash}</dd><dt>Game data</dt><dd>{result.engine.gameBuild ?? 'Unknown'}</dd><dt>Report adapter</dt><dd>SimulationCraft JSON {result.engine.reportVersion}</dd></dl></details></>}</article>
+  const baseline = result?.values[0]
+  if (!result || !baseline) return null
+  const candidates = result.values.slice(1)
+  const whole = job.request.plan ? candidates[job.request.plan.whole ?? 0] : null
+  const target = whole ?? [...candidates].sort((a, b) => b.mean - a.mean)[0]
+  if (!target) return { value: dps(baseline.mean), note: 'Current gear' }
+  const comparison = compareSimulationValues(baseline, target)
+  const note = job.request.plan ? 'Whole plan' : job.request.benchmark ? 'Top players’ setup' : 'Best option'
+  if (comparison.verdict === 'sidegrade') return { value: 'About the same', note }
+  if (comparison.verdict === 'unknown') return { value: dps(target.mean), note }
+  return { value: `${signed(comparison.difference)} DPS`, note, tone: comparison.difference > 0 ? 'up' : 'down' }
+}
+
+/** A short label for why a result no longer matches, with the full reasons in its tooltip */
+function staleLabel(reasons: string[]) {
+  const text = reasons.join(' ')
+  if (/Gear, talents, specialization/.test(text)) return 'Gear changed since'
+  if (/engine game data/i.test(text)) return 'Engine data is older'
+  if (/game build or seasonal rules/i.test(text)) return 'Game updated since'
+  return 'Not current'
+}
+
+function JobRow({ job, onOpen }: { job: SimulationJob; onOpen?: () => void }) {
+  const top = headline(job)
+  const kind = kindOf(job)
+  const Icon = kind === 'plan' ? ClipboardList : kind === 'top' ? Trophy : Play
+  return <li className="sim-result" data-state={job.state}>
+    <span className="sim-result-icon" aria-hidden="true"><Icon size={15} /></span>
+    <span className="sim-result-text"><strong>{job.label}</strong><small className="muted">{scenarioLine(job)} · {new Date(job.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</small>
+      {job.state === 'failed' && job.failure && <small className="sim-result-failure" role="alert">{job.failure.replace(/\.+$/, '')}</small>}</span>
+    {top ? <span className="sim-result-value" data-tone={top.tone}><strong>{top.value}</strong><small className="muted">{top.note}</small></span>
+      : <Badge tone={job.state === 'failed' ? 'amber' : 'neutral'}>{job.state === 'cancelled' ? 'Cancelled' : job.state === 'failed' ? 'Failed' : job.state}</Badge>}
+    {job.result?.applicability && job.result.applicability !== 'current' && <span title={job.result.reasons.join(' · ') || undefined}><Badge tone="neutral">{staleLabel(job.result.reasons)}</Badge></span>}
+    {onOpen ? <Button variant="quiet" onClick={onOpen} aria-label={`Open details for ${job.label}`}>Details<ChevronRight size={14} /></Button> : <span />}
+  </li>
+}
+
+function RunningJob({ job, disabled, onCancel }: { job: SimulationJob; disabled: boolean; onCancel: () => void }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer) }, [])
+  const since = job.startedAt ? Math.max(0, Math.floor((now - Date.parse(job.startedAt)) / 1000)) : null
+  const elapsed = since == null ? null : `${Math.floor(since / 60)}:${String(since % 60).padStart(2, '0')}`
+  return <section className="surface simulation-section sim-running" aria-label="Running simulation" role="status">
+    <LoaderCircle size={18} className="spin" aria-hidden="true" />
+    <span className="sim-result-text"><strong>{job.state === 'queued' ? 'Waiting to start' : 'Running'} · {job.label}</strong><small className="muted">{scenarioLine(job)} · {job.request.options.iterations.toLocaleString()} iterations{elapsed ? ` · ${elapsed} elapsed` : ''}</small></span>
+    <Button disabled={disabled} onClick={onCancel}><X size={14} />Cancel</Button>
+  </section>
 }

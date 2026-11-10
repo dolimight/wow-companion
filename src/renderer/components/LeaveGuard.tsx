@@ -16,12 +16,13 @@ export function LeaveGuard({ open, title, description, saving = false, onKeep, o
 }) {
   return (
     <AlertDialog open={open} onOpenChange={next => { if (!next) onKeep() }}>
-      <AlertDialogContent>
+      {/* Three choices need more room than the default alert width */}
+      <AlertDialogContent className="!max-w-[min(28rem,calc(100%-2rem))] overflow-hidden">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="border-[var(--line)]">
           <AlertDialogCancel>Keep editing</AlertDialogCancel>
           <Button variant="outline" onClick={onDiscard}>{discardLabel}</Button>
           {onSave && <Button disabled={saving} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>}

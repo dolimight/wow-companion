@@ -8,7 +8,9 @@ export const seasonRulesetSchema=z.object({
   schemaVersion:z.literal(1).default(1),id:z.string().min(1),name:z.string().min(1),seasonId:z.string().min(1),builds:z.object({min:z.string().regex(/^\d+(?:\.\d+)*$/),max:z.string().regex(/^\d+(?:\.\d+)*$/)}),regions:z.array(z.string()).default([]),
   effectiveFrom:z.string().datetime(),effectiveUntil:z.string().datetime().nullable().default(null),status:z.enum(['active','announced','retired']),validated:z.boolean().default(false),sources:z.array(rulesSourceSchema).default([]),validationFixtures:z.array(z.string()).default([]),
   candidateCoverage:z.enum(['complete','partial','unknown']).default('unknown'),constraintsCoverage:z.enum(['complete','partial','unknown']).default('unknown'),
-  upgradeTracks:z.array(z.object({id:z.string().min(1),name:z.string(),ranks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative(),cost:z.array(currencyCostSchema).nullable(),discountRequired:z.boolean().optional()})).min(1)})).default([]),
+  upgradeTracks:z.array(z.object({id:z.string().min(1),name:z.string(),ranks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative(),cost:z.array(currencyCostSchema).nullable(),discountRequired:z.boolean().optional()})).min(1),
+    // Ranks past the crest ladder carry no crest cost; players reach them another way, such as an Ascendant upgrade
+    beyondRanks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative()})).optional()})).default([]),
   restrictions:z.array(z.object({group:z.string().min(1),maxEquipped:z.number().int().nonnegative()})).default([]),minimumGroups:z.array(z.object({group:z.string().min(1),minEquipped:z.number().int().nonnegative()})).default([]),
   rewardTables:z.array(z.object({activity:z.enum([...activitySchema.options,'crafting','world']),difficulty:z.string(),itemLevel:z.number().nonnegative(),sourceUrl:z.string().url()})).default([]),
 }).superRefine((rules,ctx)=>{

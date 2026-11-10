@@ -4,15 +4,15 @@
  */
 export const drBrackets = [
   { from: 0, to: 30, penalty: 0 },
-  { from: 30, to: 39, penalty: 0.1 },
-  { from: 39, to: 47, penalty: 0.2 },
-  { from: 47, to: 54, penalty: 0.3 },
-  { from: 54, to: 66, penalty: 0.4 },
-  { from: 66, to: 126, penalty: 0.5 },
+  { from: 30, to: 40, penalty: 0.1 },
+  { from: 40, to: 50, penalty: 0.2 },
+  { from: 50, to: 60, penalty: 0.3 },
+  { from: 60, to: 80, penalty: 0.4 },
+  { from: 80, to: 200, penalty: 0.5 },
 ] as const
 export type DrBracket = (typeof drBrackets)[number]
 
-/** Effective percentage reached at the end of each bracket, e.g. 30, 38.1, 44.5, 49.4, 56.6, 86.6 */
+/** CurvePoint 21024, verified against client 12.1.5.70783: raw 30/40/50/60/80/200 maps to 30/39/47/54/66/126 */
 const effectiveEnds = (() => { let total = 0; return drBrackets.map(b => (total += (b.to - b.from) * (1 - b.penalty))) })()
 export const maxEffective = effectiveEnds.at(-1)!
 

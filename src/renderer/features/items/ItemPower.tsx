@@ -4,7 +4,7 @@ import { AppSelect } from "../../components/AppSelect";
 import { Term } from "../../components/Term";
 import { api } from "../../lib/client";
 import { specPrimaryStat } from "../../../shared/item-compatibility";
-import type { ItemDetail, ItemPowerStat, ItemSearchCharacter } from "../../../shared/gamedata";
+import { trackLevelOptions, trackRankLabel, type ItemDetail, type ItemPowerStat, type ItemSearchCharacter } from "../../../shared/gamedata";
 
 const primaryNames = { strength: "Strength", agility: "Agility", intellect: "Intellect" } as const;
 
@@ -38,15 +38,16 @@ export function ItemPowerSection({ item, character, onLevel }: { item: ItemDetai
   if (power.isPending) return <p className="muted small">Working out stats…</p>;
   if (!data) return null;
   const { tracks, level } = data;
-  const choices = tracks?.tracks.flatMap((track) => track.levels.map((itemLevel, index) => ({ value: String(itemLevel), label: `${track.name} ${index + 1}/${track.ranks} · ${itemLevel}` }))) ?? [];
-  const unique = [...new Map(choices.map((choice) => [choice.value, choice])).values()].sort((a, b) => Number(b.value) - Number(a.value));
-  if (tracks && !unique.some((choice) => choice.value === String(tracks.max.itemLevel))) unique.unshift({ value: String(tracks.max.itemLevel), label: `${tracks.max.track} ${tracks.max.rank}/${tracks.max.ranks} · ${tracks.max.itemLevel}` });
+  // Crest ranks come first so a level shared with a lower track's extra ranks keeps its familiar name
+  const byLevel = new Map<string, { value: string; label: string }>();
+  for (const option of tracks ? [...trackLevelOptions(tracks)].sort((a, b) => Number(a.beyond) - Number(b.beyond)) : []) if (!byLevel.has(String(option.level))) byLevel.set(String(option.level), { value: String(option.level), label: option.label });
+  const unique = [...byLevel.values()].sort((a, b) => Number(b.value) - Number(a.value));
   const current = String(level ?? "");
   const choose = (value: string) => setPicked(Number(value) === tracks?.max.itemLevel ? null : Number(value));
   const stats = data.power?.stats;
   const primary = stats?.filter((stat) => !stat.secondary) ?? [];
   const secondary = stats?.filter((stat) => stat.secondary) ?? [];
-  const heading = data.basis === "base" ? `At base item level ${level ?? "unknown"}` : data.basis === "picked" ? `At item level ${level}` : `At its highest level, ${tracks!.max.track} ${tracks!.max.rank}/${tracks!.max.ranks} · ${tracks!.max.itemLevel}`;
+  const heading = data.basis === "base" ? `At base item level ${level ?? "unknown"}` : data.basis === "picked" ? `At item level ${level}` : `At its highest level, ${trackRankLabel(tracks!.max.track, tracks!.max.rank, tracks!.max.ranks)} · ${tracks!.max.itemLevel}`;
   return (
     <>
       <section className="item-power" aria-busy={power.isFetching}>
@@ -80,7 +81,7 @@ export function ItemPowerSection({ item, character, onLevel }: { item: ItemDetai
           <h3><Term term="upgrade track">Upgrade tracks</Term></h3>
           <table className="item-tracks">
             <thead><tr><th>Track</th><th>Ranks</th><th>Item level</th></tr></thead>
-            <tbody>{tracks.tracks.map((track) => <tr key={track.name} data-max={track.name === tracks.max.track || undefined}><td>{track.name}</td><td>1–{track.ranks}</td><td>{track.minLevel}–{track.maxLevel}</td></tr>)}</tbody>
+            <tbody>{tracks.tracks.map((track) => <tr key={track.name} data-max={track.name === tracks.max.track || undefined}><td>{track.name}</td><td>1–{track.ranks}</td><td>{track.minLevel}–{track.maxLevel}{track.beyond?.length ? ` · up to ${track.beyond.at(-1)} past crests` : ""}</td></tr>)}</tbody>
           </table>
           <p className="muted small">{tracks.max.assumed ? `${tracks.season}: Mythic+ gear lands on one of these tracks depending on the keystone level` : `${tracks.season}, from your installed game files. Harder difficulties drop on higher tracks; crests and gold upgrade an item through its ranks${tracks.season === 'An earlier season' ? '. Gear from earlier seasons can drop at higher levels when its dungeon or raid returns' : ''}`}</p>
         </section>

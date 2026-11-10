@@ -12,7 +12,7 @@ import { ItemIcon } from "./ItemIcon";
 import "./item-hover-card.css";
 import "./item-compare-card.css";
 
-type Side = { id: number; name: string; level: number | null; item?: ItemSummary };
+type Side = { id: number; name: string; level: number | null; item?: ItemSummary; range?: { min: number; max: number } };
 
 const signed = (value: number, digits = 0) => `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: digits })}`;
 
@@ -24,7 +24,7 @@ function Header({ label, side }: { label: string; side: Side }) {
         <ItemIcon icon={side.item?.icon} quality={side.item?.quality} size="medium" />
         <div>
           <strong className={`quality-text-${side.item?.quality ?? 1}`}>{side.item?.name ?? side.name}</strong>
-          <span>{side.level ? `Item level ${side.level}` : "Item level unknown"}</span>
+          <span>{side.level ? `Item level ${side.level}` : "Item level unknown"}{side.range && side.range.min !== side.range.max ? ` · worn at ${side.range.min}–${side.range.max}` : ""}</span>
         </div>
       </div>
     </div>

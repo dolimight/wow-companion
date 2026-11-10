@@ -55,8 +55,8 @@ export function planSwaps(character: Pick<Character, 'gear'>, planned: GearItem[
 const loadoutPattern = /^[A-Za-z0-9+/=]{1,400}$/
 
 /**
- * Builds the top-player setup to simulate on your own character. Items are the most worn in each slot at the average
- * level the sampled players wear them, keeping your own enchants and gems so the run isolates items and talents.
+ * Builds the top-player setup to simulate on your own character. Items are the most worn in each slot at the highest
+ * level any sampled player wears them, keeping your own enchants and gems so the run isolates items and talents.
  * Enchants are not copied because Raider.IO's enchant identifiers do not match SimulationCraft's
  */
 export function benchmarkPlan(character: Pick<Character, 'gear' | 'talents'>, top: TopPlayers): BenchmarkPlan {
@@ -73,7 +73,8 @@ export function benchmarkPlan(character: Pick<Character, 'gear' | 'talents'>, to
       const pick = picks[index]
       const current = yours[index]
       if (!pick || !current) { if (current) skipped.push(`${group.label}: not enough top players share a second item`); return }
-      const level = pick.level ?? null
+      // The ceiling the sample shows, so the run measures fully upgraded top gear rather than a typical copy
+      const level = pick.levelRange?.max ?? pick.level ?? null
       if (level === null) { skipped.push(`${group.label}: the item level top players wear is unknown`); return }
       const already = character.gear.some(item => group.slots.includes(item.slot) && item.itemId === pick.id && (item.itemLevel ?? 0) >= level)
       if (already) return

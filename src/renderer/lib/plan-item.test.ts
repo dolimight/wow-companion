@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
-import { addItemToPlan, addSimulatedItemsToPlan, authoredGoals, gearMemory, itemToGear, pickPlanSlot, planKey, stagePlanItem } from './plan-item'
+import { addItemToPlan, addSimulatedItemsToPlan, undoPlan, authoredGoals, gearMemory, itemToGear, pickPlanSlot, planKey, stagePlanItem } from './plan-item'
 
 import { characterSchema } from '../../shared/domain'
 
@@ -164,7 +164,9 @@ describe('shared plan staging policy', () => {
 
     const staged = gearMemory.get(planKey('dk', 'mythicPlus', 250))
 
-    expect(staged?.dirty).toBe(true)
+    // Staging saves the plan at once
+    expect(staged?.dirty).toBe(false)
+    expect(vi.mocked(api.saveGearDraft).mock.calls[0]?.[0].items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
 
     expect(staged?.items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
 
@@ -251,12 +253,22 @@ describe('adding simulated items to a plan', () => {
     expect(saved.items).toMatchObject([{ slot: 'neck', itemId: 2 }, { slot: 'head', itemId: 99, itemLevel: 740, enchant: null }])
     expect(gearMemory.get(planKey('c1', 'raiding', 250))?.dirty).toBe(false)
   })
-  it('only stages items onto a plan with unsaved edits', async () => {
+  it('saves alongside edits still waiting to save, and Undo puts back the plan as it was', async () => {
+    const before = { id: 'draft', characterId: 'c1', specId: 250, activity: 'mythicPlus' as const, rulesetId: 'r', name: 'Raid plan', items: [gear('head', 1)], updatedAt: '2026-11-01T00:00:00.000Z' }
+    vi.mocked(api.getGearDraft).mockResolvedValue(before)
+    vi.mocked(api.saveGearDraft).mockImplementation(async draft => draft)
     gearMemory.set(planKey('c1', 'mythicPlus', 250), { items: [gear('head', 5)], name: 'Edited', dirty: true })
     const outcome = await addSimulatedItemsToPlan({ character: owner, activity: 'mythicPlus', items: [gear('neck', 77)] })
-    expect(outcome.saved).toBe(false)
-    expect(api.saveGearDraft).not.toHaveBeenCalled()
-    expect(gearMemory.get(planKey('c1', 'mythicPlus', 250))).toMatchObject({ dirty: true, items: [{ slot: 'head', itemId: 5 }, { slot: 'neck', itemId: 77 }] })
+    expect(outcome.saved).toBe(true)
+    expect(gearMemory.get(planKey('c1', 'mythicPlus', 250))).toMatchObject({ dirty: false, items: [{ slot: 'head', itemId: 5 }, { slot: 'neck', itemId: 77 }] })
+    await undoPlan({ characterId: 'c1', activity: 'mythicPlus', specId: 250, gear: [] }, before)
+    expect(vi.mocked(api.saveGearDraft).mock.calls.at(-1)?.[0]).toMatchObject({ id: 'draft', name: 'Raid plan', items: [{ slot: 'head', itemId: 1 }] })
+    expect(gearMemory.get(planKey('c1', 'mythicPlus', 250))).toMatchObject({ dirty: false, items: [{ slot: 'head', itemId: 1 }] })
+  })
+  it('undoes a first save back to the gear the character wears', async () => {
+    vi.mocked(api.saveGearDraft).mockImplementation(async draft => draft)
+    await undoPlan({ characterId: 'c1', activity: 'mythicPlus', specId: 250, gear: [gear('head', 9)] }, null)
+    expect(vi.mocked(api.saveGearDraft).mock.calls.at(-1)?.[0]).toMatchObject({ name: 'My upgrade plan', items: [{ slot: 'head', itemId: 9 }] })
   })
 })
 
@@ -268,6 +280,22 @@ describe('planned level for a new target', () => {
     await addItemToPlan({ character, activity: 'mythicPlus', item: { ...plate, maxLevel: { itemLevel: 334 } } as never, preferredSlot: 'head' })
     expect(levelOf()).toBe(334)
     expect(api.itemPower).not.toHaveBeenCalled()
+  })
+  it('copies the level and bonus IDs top players wear instead of a lower estimate from the game files', async () => {
+    vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 334 } } } as never)
+    expect(await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head', copy: { itemLevel: 342, bonusIds: [10390, 12350] } })).toEqual({ status: 'added', slot: 'head' })
+    const staged = gearMemory.get(planKey(character.id, 'mythicPlus', 250))?.items.find(entry => entry.slot === 'head')
+    expect(staged).toMatchObject({ itemLevel: 342, bonusIds: [10390, 12350], variantCoverage: 'partial', levelSource: 'observed' })
+    expect(api.itemPower).not.toHaveBeenCalled()
+  })
+  it('starts a new target at its true maximum, ranks past the crest ladder included', async () => {
+    await addItemToPlan({ character, activity: 'mythicPlus', item: { ...plate, maxLevel: { itemLevel: 344, ladderLevel: 334 } } as never, preferredSlot: 'head' })
+    expect(levelOf()).toBe(344)
+  })
+  it('marks a level that only came from the game files as an estimate', async () => {
+    vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 334 } } } as never)
+    await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })
+    expect(gearMemory.get(planKey(character.id, 'mythicPlus', 250))?.items.find(entry => entry.slot === 'head')).toMatchObject({ itemLevel: 334, levelSource: 'estimated' })
   })
   it('looks up the upgrade tracks when the row did not carry them, and keeps the base level when none are known', async () => {
     vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 321 } } } as never)

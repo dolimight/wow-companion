@@ -19,7 +19,24 @@ export const topSlotGroups: Array<{ group: TopSlotGroup; label: string; slots: G
   { group: 'mainHand', label: 'Main hand', slots: ['mainHand'] },
   { group: 'offHand', label: 'Off hand', slots: ['offHand'] },
 ]
-export type TopCount = { id: number; name: string; count: number; /** Average item level the sampled players wear it at, for items */ level?: number | null }
+/** One exact copy of an item as worn by sampled players, which is the level and bonus IDs a plan should copy */
+export type TopCopy = { itemLevel: number; bonusIds: number[]; count: number }
+export type TopCount = {
+  id: number; name: string; count: number
+  /** The item level most sampled players wear it at, the higher one on a tie, for items */
+  level?: number | null
+  /** Lowest and highest level seen across the sample */
+  levelRange?: { min: number; max: number }
+  /** The most worn copy, preferring the higher level on a tie; missing in results cached before it was recorded */
+  copy?: TopCopy | null
+}
+
+/** The copy most players wear, with the higher level winning a tie */
+export function commonCopy(copies: Iterable<TopCopy>): TopCopy | null {
+  let best: TopCopy | null = null
+  for (const copy of copies) if (!best || copy.count > best.count || (copy.count === best.count && copy.itemLevel > best.itemLevel)) best = copy
+  return best
+}
 export type TopPlayers = {
   season: { slug: string; name: string }
   specId: number; specName: string; className: string; region: TopRegion
