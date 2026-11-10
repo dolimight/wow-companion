@@ -26,6 +26,8 @@ local function variantFields(link)
   if #fields>=6 then gems={};for index=3,6 do table.insert(gems,tonumber(fields[index]) or 0) end end
   return bonuses,gems
 end
+-- This season's Adventurer to Myth crests, matching the upgrade costs in data/season-rules; the currency list hides them while their header is collapsed
+local seasonCrests={3442,3443,3444,3445,3446}
 local function observedCurrencies()
   if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyListSize and C_CurrencyInfo.GetCurrencyListLink and C_CurrencyInfo.GetCurrencyInfo) then return nil end
   local ok,count=pcall(C_CurrencyInfo.GetCurrencyListSize)
@@ -42,6 +44,8 @@ local function observedCurrencies()
     for _,cost in ipairs(level.currencies or {}) do local ok,info=pcall(C_CurrencyInfo.GetCurrencyInfo,tonumber(cost.currencyId));if ok and info and type(info.quantity)=="number" and not (issecretvalue and issecretvalue(info.quantity)) and info.quantity>=0 then result[cost.currencyId]=info.quantity end end
     for _,cost in ipairs(level.items or {}) do if C_Item and C_Item.GetItemCount then local ok,quantity=pcall(C_Item.GetItemCount,cost.itemId,false,false,false,false);if ok and type(quantity)=="number" and not (issecretvalue and issecretvalue(quantity)) and quantity>=0 then result["item:"..cost.itemId]=quantity end end end
   end end
+  -- Read each crest by ID so a collapsed header never hides the balances the crest budget needs
+  for _,id in ipairs(seasonCrests) do if result[tostring(id)]==nil then local ok,info=pcall(C_CurrencyInfo.GetCurrencyInfo,id);if ok and info and type(info.quantity)=="number" and not (issecretvalue and issecretvalue(info.quantity)) and info.quantity>=0 then result[tostring(id)]=info.quantity end end end
   return result
 end
 local function timestamp() return date("!%Y-%m-%dT%H:%M:%SZ", GetServerTime()) end
@@ -384,8 +388,8 @@ frame:SetScript("OnEvent",function(_,event,name)
   if event=="ITEM_UPGRADE_MASTER_SET_ITEM" or event=="ITEM_UPGRADE_MASTER_UPDATE" then captureUpgradeQuote() end
   if event=="ADDON_LOADED" then
     if name~="WoWCompanion" then return end
-    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.6",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
-    WoWCompanionDB.addonVersion="0.4.6"
+    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.7",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
+    WoWCompanionDB.addonVersion="0.4.7"
   elseif event=="PLAYER_LOGIN" then
     -- Ask the server for lockouts, vault, and keystone history so the next snapshot can include them
     if RequestRaidInfo then RequestRaidInfo() end
