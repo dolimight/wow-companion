@@ -34,6 +34,13 @@ function verdictText(verdict: Verdict, difference: number, mean: number) {
   if (verdict === 'sidegrade') return 'Within uncertainty'
   return `${signed(difference)} DPS · ${percent(difference / mean)}`
 }
+/** Damage taken change as a compact number, for the chart */
+function takenShort(baseline: Value, value: Value) {
+  if (!value.damageTaken || !baseline.damageTaken) return null
+  const comparison = compareSimulationValues(baseline.damageTaken, value.damageTaken)
+  if (comparison.verdict === 'unknown' || comparison.verdict === 'sidegrade') return null
+  return `${comparison.difference < 0 ? '−' : '+'}${Math.abs(Math.round(comparison.difference)).toLocaleString()}`
+}
 function takenText(baseline: Value, value: Value) {
   if (!baseline.damageTaken || !value.damageTaken) return null
   const taken = compareSimulationValues(baseline.damageTaken, value.damageTaken)
@@ -49,6 +56,8 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const scenario = requestScenario(job.request)
   const [planActivity, setPlanActivity] = useState<Activity>(job.request.plan?.activity ?? (activity === 'raiding' ? 'raiding' : 'mythicPlus'))
   const [all, setAll] = useState(false)
+  // One list of results, read as a ranked chart or as item-by-item cards
+  const [view, setView] = useState<'ranked' | 'items'>('ranked')
   const [, refresh] = useReducer((count: number) => count + 1, 0)
 
   // The star border stays off when the app is set to reduce motion
@@ -116,9 +125,18 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         {job.request.plan && <PlanSummary job={job} result={result} />}
       </section>}
 
-      {entries.length > 0 && <section className="surface sim-panel" aria-label="Every result on one scale">
-        <div className="sim-panel-heading"><div><h3>Every result on one scale</h3><p className="muted">Bars show the change from your current gear · The thin line marks the 95% uncertainty</p></div></div>
-        <ol className="sim-chart">
+      {entries.length > 0 && <section className="surface sim-panel sim-results-panel" aria-label="Results">
+        <div className="sim-panel-heading sim-toolbar">
+          <div><h3>Results</h3><p className="muted">{view === 'ranked' ? 'Change from your current gear · The thin line marks the 95% uncertainty' : 'What each result changes, and what it is worth'}</p></div>
+          <div className="sim-toolbar-plan">
+            <div className="segments" aria-label="Results view">
+              <button aria-pressed={view === 'ranked'} onClick={() => setView('ranked')}>Ranked</button>
+              <button aria-pressed={view === 'items'} onClick={() => setView('items')}>Item by item</button>
+            </div>
+            {view === 'items' && <><span>Add to</span><AppSelect label="Plan to add items to" value={planActivity} onValueChange={value => setPlanActivity(value as Activity)} options={(['mythicPlus', 'raiding'] as const).map(value => { const draft = plans.data?.[value]; return { value, label: `${activityName(value)} plan${draft?.items.length ? ` · ${draft.name}` : ' · New'}` } })} /></>}
+          </div>
+        </div>
+        {view === 'ranked' ? <ol className="sim-chart">
           {charted.map(entry => {
             const width = Math.abs(entry.comparison.difference) / scale * 50
             const spread = (entry.comparison.uncertainty ?? 0) / scale * 50
@@ -130,17 +148,10 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
                 <span className="sim-chart-bar" style={{ left: `${entry.comparison.difference >= 0 ? 50 : 50 - width}%`, width: `${Math.max(width, .4)}%` }} />
                 {spread > 0 && <span className="sim-chart-spread" style={{ left: `${Math.max(0, center - spread)}%`, width: `${Math.min(100, spread * 2)}%` }} />}
               </span>
-              <span className="sim-chart-value">{entry.comparison.verdict === 'unknown' ? '—' : signed(entry.comparison.difference)}</span>
+              <span className="sim-chart-value">{entry.comparison.verdict === 'unknown' ? '—' : signed(entry.comparison.difference)}{takenText(baseline, entry.value) && <small title={takenText(baseline, entry.value)!}><Shield size={11} />{takenShort(baseline, entry.value)}</small>}</span>
             </li>
           })}
-        </ol>
-      </section>}
-
-      {entries.length > 0 && <section className="sim-panel sim-results" aria-label="Item by item">
-        <div className="sim-panel-heading sim-toolbar">
-          <div><h3>Item by item</h3><p className="muted">What each result changes, and what it is worth</p></div>
-          <div className="sim-toolbar-plan"><span>Add to</span><AppSelect label="Plan to add items to" value={planActivity} onValueChange={value => setPlanActivity(value as Activity)} options={(['mythicPlus', 'raiding'] as const).map(value => { const draft = plans.data?.[value]; return { value, label: `${activityName(value)} plan${draft?.items.length ? ` · ${draft.name}` : ' · New'}` } })} /></div>
-        </div>
+        </ol> : <>
         <div className="sim-cards">
           {shown.map((entry, rank) => {
             const inPlan = planHolds(current, entry.items)
@@ -173,6 +184,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
           })}
         </div>
         {entries.length > PAGE && <Button variant="quiet" onClick={() => setAll(value => !value)}>{all ? `Show the top ${PAGE}` : `Show all ${entries.length} results`}</Button>}
+        </>}
       </section>}
 
       {!entries.length && <section className="surface sim-panel" aria-label="Your gear">
@@ -180,11 +192,11 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         <ul className="sim-gear">{[...before.values()].map(item => <li key={item.slot}><span className="sim-swap-slot">{gearSlotLabels[item.slot]}</span><Piece item={item} icon={item.itemId ? icons.get(item.itemId) : undefined} /></li>)}</ul>
       </section>}
 
-      <section className="surface sim-panel sim-meta">
-        <Badge tone={result.applicability === 'current' ? 'green' : 'neutral'}>{result.applicability === 'current' ? 'Applies to your current gear' : 'Historical or unsupported result'}</Badge>
+      <details className="surface sim-panel sim-meta">
+        <summary><span>About this result</span><Badge tone={result.applicability === 'current' ? 'green' : 'neutral'}>{result.applicability === 'current' ? 'Applies to your current gear' : result.reasons.length ? `${result.reasons.length === 1 ? 'One thing has' : `${result.reasons.length} things have`} changed since` : 'Historical result'}</Badge></summary>
         <p className="muted">SimulationCraft {result.engine.version} · Modeled damage of your character playing without mistakes · Compare with other runs of your own character, not with damage meters</p>
-        {result.reasons.map(reason => <p className="muted" key={reason}>{reason}</p>)}
-      </section>
+        {result.reasons.length > 0 && <ul className="muted">{result.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}
+      </details>
     </>}
   </div>
 }

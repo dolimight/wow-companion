@@ -93,3 +93,29 @@
 .sim-hero-frame > .sim-hero { border-color: transparent; border-radius: 14.5px; }
 /* The star light bleeds past the header; clip it so the page never scrolls sideways */
 .sim-detail { overflow-x: clip; overflow-clip-margin: 40px; }
+
+/* Plan reading: three numbers first, details folded below */
+.plan-summary { display: grid; gap: 14px; }
+.plan-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.plan-tile { display: grid; gap: 4px; align-content: start; padding: 16px 18px; border-radius: 12px; background: var(--surface2); min-width: 0; }
+.plan-tile > span { font-size: 12px; color: var(--muted); }
+.plan-tile > strong { font-size: 26px; line-height: 1.15; letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.plan-tile > small { font-size: 12px; color: var(--secondary); line-height: 1.5; }
+.plan-tile[data-tone="up"] > strong { color: var(--sim-up); }
+.plan-tile[data-tone="down"] > strong { color: var(--sim-down); }
+/* An item name is longer than a number, so it steps down a size */
+.plan-tile:last-child:not(:first-child) > strong { font-size: 18px; letter-spacing: -.01em; }
+.plan-warning { font-size: 12.5px; color: var(--sim-down); }
+.plan-top > summary { display: flex; align-items: center; gap: 12px; }
+.plan-top > summary .simulation-benchmark-meter { flex: 0 0 120px; margin: 0; }
+.plan-top[open] > summary { margin-bottom: 10px; }
+
+/* One results panel, switched between the ranked chart and the item cards */
+.sim-results-panel .sim-toolbar { position: static; padding: 0; border: 0; background: none; backdrop-filter: none; }
+.sim-results-panel .sim-toolbar-plan { flex-wrap: wrap; justify-content: flex-end; }
+.sim-chart-value { display: grid; justify-items: end; gap: 1px; }
+.sim-chart-value small { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 500; color: var(--muted); }
+.sim-chart li { grid-template-columns: minmax(120px, 34%) minmax(0, 1fr) 96px; }
+.sim-meta > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.sim-meta:not([open]) { padding-top: 14px; padding-bottom: 14px; }
+.sim-meta ul { margin: 0; padding-left: 18px; font-size: 12.5px; display: grid; gap: 4px; }
