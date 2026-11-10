@@ -14,7 +14,7 @@ import { createUpdateService, type UpdatePreferences } from './updates/service'
 import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
-import { appIconCursor, appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
+import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
 import { openSplash } from './splash'
 import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
 
@@ -48,7 +48,7 @@ async function main(){
   if(!process.env.WOW_COMPANION_HEADLESS&&!process.argv.includes('--acceptance')&&!process.argv.includes('--smoke')){
     const variant=resolveAppIcon(settings.appIcon,app.getVersion())
     const assets=resolve(app.isPackaged?resolve(root,'../renderer'):app.getAppPath(),app.isPackaged?'assets':'public/assets')
-    splash=await openSplash({logoPath:resolve(assets,appIconFiles[variant].logo),icon:resolve(assets,appIconFiles[variant].png),color:appIconCursor[variant].color,accent:appIconCursor[variant].target,version:app.getVersion(),reducedMotion:settings.reducedMotion}).catch(()=>null)
+    splash=await openSplash({logoPath:resolve(assets,appIconFiles[variant].logo),icon:resolve(assets,appIconFiles[variant].png),variant,version:app.getVersion(),reducedMotion:settings.reducedMotion}).catch(()=>null)
     splash?.step('Opening your data',.2)
   }
   const windowFrame='custom' as const

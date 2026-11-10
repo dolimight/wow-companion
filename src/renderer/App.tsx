@@ -113,6 +113,7 @@ import { InventoryPage } from "./features/inventory/InventoryPage";
 import {ProviderSettings} from './features/comparisons/ProviderSettings';
 import { comparePlanCompletion } from "../shared/plan-completion";
 import { SyncButton, SyncSheet, useSyncOnFocus } from "./features/sync/sync";
+import { RealmStatusButton, RealmStatusSheet } from "./features/realms/realms";
 import { AppSelect } from "./components/AppSelect";
 import { Toggle } from "./components/ui/toggle";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./components/ui/dialog";
@@ -607,7 +608,7 @@ function Shell() {
     active.find((c) => c.id === selectedId) ?? active.find((c) => c.isMain) ?? active[0];
   const client = useQueryClient();
   useEffect(()=>{if(match?.[1]&&character?.id===match[1]&&settings.data&&settings.data.lastCharacterId!==character.id){void api.saveSettings({lastCharacterId:character.id}).then(()=>client.invalidateQueries({queryKey:['settings']}));}},[currentPath,character?.id,settings.data?.lastCharacterId]);
-  const [sheet, setSheet] = useState<"add" | "sync" | "manage" | null>(null);
+  const [sheet, setSheet] = useState<"add" | "sync" | "manage" | "realms" | null>(null);
   useSyncOnFocus();
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearch = useCallback(() => setSearchOpen(true), []);
@@ -815,6 +816,7 @@ function Shell() {
           <strong>{title}</strong>
         </div>
         <div className="toolbar-meta">
+          <RealmStatusButton characters={roster.data ?? []} onClick={() => setSheet("realms")} />
           <SearchButton onClick={openSearch} />
         </div>
       </header>
@@ -884,6 +886,7 @@ function Shell() {
       <div className="sr-only" role="status" aria-live="polite">{title}</div>
       <AddCharacter open={sheet === "add"} onOpenChange={(o) => !o && setSheet(null)} />
       <SyncSheet open={sheet === "sync"} onOpenChange={(o) => !o && setSheet(null)} />
+      <RealmStatusSheet open={sheet === "realms"} onOpenChange={(o) => !o && setSheet(null)} characters={roster.data ?? []} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <ManagePanel open={sheet === "manage"} onOpenChange={(o) => !o && setSheet(null)} />
       <ItemSearchDialog

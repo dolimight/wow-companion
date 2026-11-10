@@ -85,6 +85,7 @@ export const api={
  topPlayers:async(input:{specId:number;specName:string;className:string;region:'us'|'eu'|'world';force?:boolean})=>(await client()).topPlayers.query(input),
  itemTooltip:async(id:number)=>(await client()).itemTooltip.query({id}),
  wowToken:async(region:BlizzardRegion)=>(await client()).wowToken.query({region}),
+ realmStatus:async(region:BlizzardRegion,force=false)=>(await client()).realmStatus.query({region,force}),
  weeklyAffixes:async(region:'us'|'eu'|'kr'|'tw')=>(await client()).weeklyAffixes.query({region}),
  characterTimeline:async(characterId:string)=>(await client()).characterTimeline.query({characterId}),
  addBlizzardCharacter:async(input:{region:BlizzardRegion;realm:string;name:string})=>(await client()).addBlizzardCharacter.mutate(input),

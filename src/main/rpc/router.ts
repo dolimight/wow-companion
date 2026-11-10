@@ -126,6 +126,7 @@ export function createRouter(s:RouterServices){return t.router({
   weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
   characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),
   wowToken:p.input(z.object({region:z.enum(blizzardRegions)})).query(({input})=>run(()=>s.insights.wowToken(input.region))),
+  realmStatus:p.input(z.object({region:z.enum(blizzardRegions),force:z.boolean().default(false)})).query(({input})=>run(()=>s.insights.realmStatus(input.region,input.force))),
   // Connections: install, addon, Blizzard key, Battle.net
   connectionsStatus:p.query(()=>run(()=>s.connections.status())),
   detectInstall:p.mutation(()=>run(()=>s.connections.detectInstall())),
