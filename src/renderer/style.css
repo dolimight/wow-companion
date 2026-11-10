@@ -1888,3 +1888,6 @@ input[type="checkbox"] {
 
 /* Blizzard draws an older look than the one shown in game */
 .portrait-outdated { display: block; margin-top: 4px; color: var(--amber); font-size: 12px; line-height: 1.45; }
+/* The fixed portrait height only fits the render and its one-line caption; the note grows the figure instead of covering the metrics */
+.portrait-preview:has(.portrait-outdated) { height: auto; }
+.portrait-preview figcaption { max-width: 100%; text-align: center; text-wrap: pretty; }
