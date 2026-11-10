@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import type { Activity, Character, GearItem, GearSlot } from '../../../shared/domain'
 import type { ItemSummary } from '../../../shared/gamedata'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog'
-import { authoredGoals, stagePlanItem, type StageResult } from '../../lib/plan-item'
+import { authoredGoals, stagePlanItem, type ObservedCopy, type StageResult } from '../../lib/plan-item'
 import { errorMessage, notify } from '../../lib/notify'
 import { slotNames } from '../../lib/slot-names'
 
@@ -14,6 +14,7 @@ export type StageRequest = {
   exact?: GearItem
   preferredSlot?: GearSlot
   slots?: GearSlot[]
+  copy?: ObservedCopy | null
 }
 type Options = { stay?: boolean }
 type Pending = { request: StageRequest; options: Options; slot: GearSlot; current: GearItem; incoming: GearItem }

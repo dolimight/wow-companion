@@ -1,12 +1,12 @@
 import { useEffect, useReducer } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { gearSlotSchema, type Activity, type Character, type GearItem, type GearSlot } from "../../shared/domain"
+import { gearSlotSchema, type Activity, type Character, type GearItem, type GearSlot, type StatWeights } from "../../shared/domain"
 import type { ItemSummary } from "../../shared/gamedata"
 import { api } from "./client"
 import { getItemCompatibility } from "../../shared/item-compatibility"
 import { isPlannedItemEquipped } from "./gear-plan-match"
 
-export const gearMemory = new Map<string, { items: GearItem[]; name: string; dirty: boolean }>()
+export const gearMemory = new Map<string, { items: GearItem[]; name: string; dirty: boolean; statWeights?: StatWeights }>()
 
 const listeners = new Set<() => void>()
 
@@ -37,12 +37,18 @@ export async function plannedLevel(item: ItemSummary & { maxLevel?: { itemLevel:
   try { return (await api.itemPower({ id: item.id }))?.tracks?.max.itemLevel ?? null } catch { return null }
 }
 
-export function itemToGear(slot: GearSlot, item: ItemSummary, previous?: GearItem, level?: number | null): GearItem {
+/** An exact copy seen on a real character; its level and bonus IDs beat anything the game files suggest */
+export type ObservedCopy = { itemLevel: number; bonusIds: number[] | null }
+
+export function itemToGear(slot: GearSlot, item: ItemSummary, previous?: GearItem, level?: number | null, copy?: ObservedCopy | null): GearItem {
+  const itemLevel = copy?.itemLevel || level || item.itemLevel || previous?.itemLevel || null
   return {
     slot,
     name: item.name,
     itemId: item.id,
-    itemLevel: level || item.itemLevel || previous?.itemLevel || null,
+    itemLevel,
+    ...(copy?.bonusIds ? { bonusIds: copy.bonusIds, variantCoverage: "partial" as const } : {}),
+    levelSource: copy ? "observed" : itemLevel ? "estimated" : null,
     // A new target never inherits the previous item's enchant or gems; the player authors those goals explicitly
     enchant: null,
     enchantCoverage: "unknown",
@@ -81,6 +87,7 @@ export async function addItemToPlan(input: {
     memory = {
       items: draft?.items ?? input.character.gear.map((item) => ({ ...item })),
       name: draft?.name ?? "My upgrade plan",
+      statWeights: draft?.statWeights,
       dirty: false,
     }
   }
@@ -122,7 +129,7 @@ export type StageResult =
 
 /** An exact owned copy keeps its identity, but what it was observed wearing is not a goal the player authored */
 export function stagedFromExact(item: GearItem, slot: GearSlot): GearItem {
-  return { ...item, slot, enchant: null, enchantCoverage: "unknown", gems: [], gemsCoverage: "unknown", stats: item.stats ?? [], effects: item.effects ?? [] }
+  return { ...item, slot, enchant: null, enchantCoverage: "unknown", gems: [], gemsCoverage: "unknown", stats: item.stats ?? [], effects: item.effects ?? [], levelSource: item.levelSource ?? (item.itemLevel != null ? "observed" : null) }
 }
 export function sameVariant(current: GearItem, incoming: GearItem) {
   return current.itemId != null && current.itemId === incoming.itemId && (!incoming.itemLink || current.itemLink === incoming.itemLink)
@@ -148,6 +155,7 @@ export async function stagePlanItem(input: {
   preferredSlot?: GearSlot
   slots?: GearSlot[]
   replace?: boolean
+  copy?: ObservedCopy | null
 }): Promise<StageResult> {
   const context = { className: input.character.className, specId: input.character.specId, level: input.character.level }
   let summary = input.item
@@ -163,14 +171,14 @@ export async function stagePlanItem(input: {
   let memory = gearMemory.get(key)
   if (!memory) {
     const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: input.character.specId })
-    memory = { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", dirty: false }
+    memory = { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", statWeights: draft?.statWeights, dirty: false }
   }
   const candidates = (fixedSlot ? [fixedSlot] : input.slots?.length ? input.slots : gearSlotSchema.options).filter(compatible)
   const slot = pickPlanSlot(candidates, memory.items.filter((item) => !isPlannedItemEquipped(input.character.gear.find((observed) => observed.slot === item.slot), item)), fixedSlot)
   if (!slot) return { status: "incompatible" }
   const existing = memory.items.find((item) => item.slot === slot)
   const observed = input.character.gear.find((item) => item.slot === slot)
-  const incoming = input.exact ? stagedFromExact(input.exact, slot) : itemToGear(slot, summary!, existing)
+  const incoming = input.exact ? stagedFromExact(input.exact, slot) : itemToGear(slot, summary!, existing, input.copy ? null : await plannedLevel(input.item ?? summary!), input.copy)
   const authored = !!existing && !isPlannedItemEquipped(observed, existing)
   if (authored && sameVariant(existing!, incoming)) return { status: "noop", slot }
   if (authored && !input.replace) return { status: "conflict", slot, current: existing!, incoming }
@@ -186,7 +194,7 @@ export async function stagePlanItem(input: {
 export async function addSimulatedItemsToPlan(input: { character: Character; activity: Activity; items: GearItem[] }): Promise<{ saved: boolean; slots: GearSlot[] }> {
   const key = planKey(input.character.id, input.activity, input.character.specId)
   const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: input.character.specId })
-  const memory = gearMemory.get(key) ?? { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", dirty: false }
+  const memory = gearMemory.get(key) ?? { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", statWeights: draft?.statWeights, dirty: false }
   const slots = input.items.map((item) => item.slot)
   const items = [...memory.items.filter((item) => !slots.includes(item.slot)), ...input.items.map((item) => stagedFromExact(item, item.slot))]
   if (memory.dirty) {
@@ -194,8 +202,8 @@ export async function addSimulatedItemsToPlan(input: { character: Character; act
     publish()
     return { saved: false, slots }
   }
-  const saved = await api.saveGearDraft({ id: draft?.id ?? crypto.randomUUID(), characterId: input.character.id, specId: input.character.specId, activity: input.activity, rulesetId: draft?.rulesetId ?? "unknown", name: memory.name, items, updatedAt: new Date().toISOString() })
-  gearMemory.set(key, { items: saved?.items ?? items, name: memory.name, dirty: false })
+  const saved = await api.saveGearDraft({ id: draft?.id ?? crypto.randomUUID(), characterId: input.character.id, specId: input.character.specId, activity: input.activity, rulesetId: draft?.rulesetId ?? "unknown", name: memory.name, statWeights: memory.statWeights, items, updatedAt: new Date().toISOString() })
+  gearMemory.set(key, { items: saved?.items ?? items, name: memory.name, statWeights: memory.statWeights, dirty: false })
   publish()
   return { saved: true, slots }
 }

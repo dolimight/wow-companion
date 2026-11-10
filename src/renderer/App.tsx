@@ -69,6 +69,8 @@ import { Term } from "./components/Term";
 import { LeaveGuard } from "./components/LeaveGuard";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
+import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
+import { equalWeights } from "../shared/enhancement-recommendations";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
 import { outdatedRenderSlots } from "../shared/shown-look";
 import TargetCursor from "./components/TargetCursor";
@@ -1617,6 +1619,7 @@ function GearEditor({
   const [selected, setSelected] = useState<GearSlot>("head");
   const [slotSearch, setSlotSearch] = useState(false);
   const [name, setName] = useState(memory?.name ?? "My upgrade plan");
+  const [statWeights, setStatWeights] = useState(memory?.statWeights ?? equalWeights);
   const [dirty, setDirty] = useState(memory?.dirty ?? false);
   const [itemName, setItemName] = useState("");
   const [itemLevel, setItemLevel] = useState("");
@@ -1633,18 +1636,20 @@ function GearEditor({
       if (!gearMemory.get(memoryKey)) {
         setItems(query.data?.items ?? character.gear.map((i) => ({ ...i })));
         setName(query.data?.name ?? "My upgrade plan");
+        setStatWeights(query.data?.statWeights ?? equalWeights);
         setDirty(false);
       }
     }
   }, [query.data, query.isSuccess, activity, character.id, memoryKey]);
   useEffect(() => {
-    if (hydrated.current) gearMemory.set(memoryKey, { items, name, dirty });
-  }, [items, name, dirty, memoryKey]);
+    if (hydrated.current) gearMemory.set(memoryKey, { items, name, dirty, statWeights });
+  }, [items, name, dirty, statWeights, memoryKey]);
   useEffect(() => subscribeGearPlan(() => {
     const stored = gearMemory.get(memoryKey);
     if (!stored) return;
     setItems(stored.items);
     setName(stored.name);
+    setStatWeights(stored.statWeights ?? equalWeights);
     setDirty(stored.dirty);
   }), [memoryKey]);
   const current = items.find((i) => i.slot === selected);
@@ -1695,6 +1700,9 @@ function GearEditor({
       name: itemName.trim() || `${slotNames[selected]} draft`,
       itemId: current?.itemId ?? null,
       itemLevel: ilvl,
+      bonusIds: current?.bonusIds,
+      variantCoverage: current?.variantCoverage,
+      levelSource: current?.itemLevel === ilvl ? current?.levelSource : ilvl == null ? null : "manual",
       enchant: (enhancement?.enchant ?? enchant).trim() || null,
       enchantCoverage: enchantEdited || enhancement?.enchant !== undefined ? "complete" : (current?.enchantCoverage ?? "unknown"),
       gemsCoverage: gemsEdited || enhancement?.gems !== undefined ? "complete" : (current?.gemsCoverage ?? "unknown"),
@@ -1732,6 +1740,7 @@ function GearEditor({
       rulesetId: query.data?.rulesetId ?? "unknown",
       name: name.trim() || "My upgrade plan",
       items: planned,
+      statWeights,
       updatedAt: new Date().toISOString(),
     }, { onSuccess: onSaved });
   }
@@ -1880,7 +1889,7 @@ function GearEditor({
                               <div className={item ? `item-name quality-text-${item.itemId ? itemMap.get(item.itemId)?.quality ?? 1 : 1}` : "secondary"}>
                                 {item?.name ?? "No planned item"}
                               </div>
-                              <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known></div>
+                              <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known>{item?.itemLevel != null && item.levelSource === "estimated" && <span className="muted"> · Estimate</span>}</div>
                               <div className="item-subtitle planner-improvements">
                                 <span>{item?.enchant ??
                                   (item?.enchantCoverage === "complete"
@@ -1933,6 +1942,7 @@ function GearEditor({
             <PlannedLevelField
               itemId={current?.itemId ?? null}
               value={itemLevel}
+              source={current?.itemLevel != null && String(current.itemLevel) === itemLevel.trim() ? current.levelSource : "manual"}
               onPick={(level) => { setItemLevel(level); updateItem(true, { itemLevel: level }); }}
               input={
                 <input
@@ -1948,6 +1958,7 @@ function GearEditor({
             />
             <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else { setEnchant(value); setEnchantEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else { setGems(value); setGemsEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementRecommendations character={character} items={items} slot={selected} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}
               {activityNames[activity]}
@@ -1980,14 +1991,19 @@ function GearEditor({
  * Planned level as the item's own upgrade ranks, such as Hero 6/6 · 321, with the highest first.
  * Items without known tracks, and levels typed before, keep the free number box
  */
-function PlannedLevelField({ itemId, value, onPick, input }: { itemId: number | null; value: string; onPick: (level: string) => void; input: React.ReactNode }) {
+function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: number | null; value: string; source: GearItem["levelSource"]; onPick: (level: string) => void; input: React.ReactNode }) {
   const power = useQuery({ queryKey: ["item-power", itemId, null, null], queryFn: () => api.itemPower({ id: itemId! }), enabled: itemId != null, staleTime: 5 * 60_000 });
   const tracks = power.data?.tracks;
-  if (!itemId || !tracks?.tracks.length) return <Field label="Planned item level">{input}</Field>;
+  const origin = value.trim() && source === "observed"
+    ? <small className="muted">Seen on a real character’s copy of this item</small>
+    : value.trim() && source === "estimated"
+      ? <small className="muted">Estimated from local game files · a copy seen on a real character is more accurate</small>
+      : null;
+  if (!itemId || !tracks?.tracks.length) return <Field label="Planned item level">{input}{origin}</Field>;
   const options = [...tracks.tracks].reverse().flatMap((track) => track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, label: `${track.name} ${index + 1}/${track.ranks} · ${level}${track.name === tracks.max.track && index + 1 === track.ranks ? " · Max" : ""}` })).reverse());
   const typed = Number(value);
   const selected = options.find((option) => option.level === typed);
-  const custom = value.trim() && !selected ? [{ value: "custom", level: typed, label: `Custom · ${value}` }] : [];
+  const custom = value.trim() && !selected ? [{ value: "custom", level: typed, label: `${source === "observed" ? "Observed" : "Custom"} · ${value}` }] : [];
   return (
     <Field label="Planned item level">
       <AppSelect
@@ -1996,7 +2012,8 @@ function PlannedLevelField({ itemId, value, onPick, input }: { itemId: number | 
         onValueChange={(next) => { const option = options.find((entry) => entry.value === next); if (option) onPick(String(option.level)); }}
         options={[...options, ...custom].map(({ value, label }) => ({ value, label }))}
       />
-      {tracks.max.assumed && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
+      {origin}
+      {tracks.max.assumed && source !== "observed" && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
     </Field>
   );
 }

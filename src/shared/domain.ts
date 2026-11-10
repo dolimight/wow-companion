@@ -38,6 +38,8 @@ const itemProgressionFields = {
   upgradeTrackId:z.string().max(100).nullable().optional(),upgradeRank:z.number().int().positive().nullable().optional(),
   uniqueGroups:z.array(z.string().max(100)).max(20).optional(),restrictionGroups:z.array(z.string().max(100)).max(20).optional(),
   variantCoverage:z.enum(['complete','partial','unknown']).optional(),
+  /** Where a planned level came from: a copy seen on a real character, the local game files, or the player */
+  levelSource:z.enum(['observed','estimated','manual']).nullable().optional(),
 }
 const baseGearItemSchema = z.object({ slot: gearSlotSchema, itemId: z.number().int().positive().nullable().default(null), name: z.string().max(200), itemLevel: z.number().nonnegative().nullable().default(null), enchant: z.string().max(200).nullable().default(null), gems: z.array(z.string().max(200)).max(10).default([]), gemsCoverage: z.enum(['unknown', 'complete']).default('unknown'), enchantCoverage: z.enum(['unknown', 'complete']).default('unknown'), appearanceId: z.number().int().positive().nullable().default(null), itemLink: z.string().max(2000).nullable().default(null), stats: z.array(z.object({ text: z.string().max(160), secondary: z.boolean().default(false) })).max(24).default([]), effects: z.array(z.string().max(600)).max(10).default([]) })
 export const gearItemSchema = baseGearItemSchema.extend(itemProgressionFields)
@@ -115,7 +117,9 @@ export type AddCharacterInput = z.input<typeof addCharacterSchema>
 // PATCH contracts must omit absent fields; Zod 4 applies nested defaults inside partial()
 export const characterPatchSchema = z.object({ favorite: characterSchema.shape.favorite.removeDefault().optional(), isMain: characterSchema.shape.isMain.removeDefault().optional(), archived: characterSchema.shape.archived.removeDefault().optional(), targetItemLevel: characterSchema.shape.targetItemLevel.removeDefault().optional() })
 export type CharacterPatch = z.infer<typeof characterPatchSchema>
-export const gearDraftSchema = z.object({ id: z.string(), characterId: z.string(), specId: z.number().int().nullable(), activity: activitySchema, rulesetId: z.string().default('unknown'), name: z.string().max(100), items: z.array(gearItemSchema).max(40), updatedAt: z.string().datetime() })
+export const statWeightsSchema = z.object({ crit: z.number().finite().min(0).max(10), haste: z.number().finite().min(0).max(10), mastery: z.number().finite().min(0).max(10), versatility: z.number().finite().min(0).max(10) })
+export type StatWeights = z.infer<typeof statWeightsSchema>
+export const gearDraftSchema = z.object({ id: z.string(), characterId: z.string(), specId: z.number().int().nullable(), activity: activitySchema, rulesetId: z.string().default('unknown'), name: z.string().max(100), items: z.array(gearItemSchema).max(40), statWeights: statWeightsSchema.optional(), updatedAt: z.string().datetime() })
 export type GearDraft = z.infer<typeof gearDraftSchema>
 export const appearanceRefSchema = z.object({ appearanceId: z.number().int().positive().nullable(), modifiedAppearanceId: z.number().int().positive().nullable().default(null), itemId: z.number().int().positive().nullable().default(null), variantKey: z.string().nullable().default(null), source: z.string().max(100) })
 export type AppearanceRef = z.infer<typeof appearanceRefSchema>

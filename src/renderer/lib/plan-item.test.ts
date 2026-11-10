@@ -269,6 +269,18 @@ describe('planned level for a new target', () => {
     expect(levelOf()).toBe(334)
     expect(api.itemPower).not.toHaveBeenCalled()
   })
+  it('copies the level and bonus IDs top players wear instead of a lower estimate from the game files', async () => {
+    vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 334 } } } as never)
+    expect(await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head', copy: { itemLevel: 342, bonusIds: [10390, 12350] } })).toEqual({ status: 'added', slot: 'head' })
+    const staged = gearMemory.get(planKey(character.id, 'mythicPlus', 250))?.items.find(entry => entry.slot === 'head')
+    expect(staged).toMatchObject({ itemLevel: 342, bonusIds: [10390, 12350], variantCoverage: 'partial', levelSource: 'observed' })
+    expect(api.itemPower).not.toHaveBeenCalled()
+  })
+  it('marks a level that only came from the game files as an estimate', async () => {
+    vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 334 } } } as never)
+    await stagePlanItem({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })
+    expect(gearMemory.get(planKey(character.id, 'mythicPlus', 250))?.items.find(entry => entry.slot === 'head')).toMatchObject({ itemLevel: 334, levelSource: 'estimated' })
+  })
   it('looks up the upgrade tracks when the row did not carry them, and keeps the base level when none are known', async () => {
     vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 321 } } } as never)
     await addItemToPlan({ character, activity: 'mythicPlus', item: plate, preferredSlot: 'head' })

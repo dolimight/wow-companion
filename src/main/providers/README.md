@@ -3,6 +3,7 @@
 The Raider.IO adapter uses the documented public `GET /api/v1/characters/profile` endpoint on a fixed `https://raider.io` origin
 Fields requested are `gear`, `talents`, `mythic_plus_scores_by_season:current`, `mythic_plus_ranks`, `raid_progression`, and `mythic_plus_weekly_highest_level_runs`
 Weekly runs are assigned to the reset week of the crawl time, never the fetch time, and are labelled as an estimate of Great Vault progress
+Each gear item keeps its observed `item_level` and `bonuses` (bonus IDs), which identify the exact copy worn, along with enchant and gem IDs; gems are accepted as plain IDs or objects
 The API contract, current backoff guidance, and attribution requirement were checked against the [official developer API](https://raider.io/api) on 2026-10-14
 
 Provider crawl time is retained independently from the local import time
@@ -22,6 +23,7 @@ No successful live character lookup or private account access is claimed by thes
 Current season comes from the documented `GET /api/v1/mythic-plus/static-data`
 Players come from `GET /api/mythic-plus/rankings/specs`, the same leaderboard the Raider.IO website shows. It is undocumented, so any failure falls back to scanning the documented `GET /api/v1/mythic-plus/runs` roster for the spec
 Gear is sampled from up to 12 of those players through the profile endpoint, four requests at a time, and every count is shown with its sample size
+For each popular item the most worn copy, by level and bonus IDs with the higher level winning a tie, is recorded so Add to plan copies the level top players actually use instead of a level estimated from local game files
 Results are cached for 6 hours in memory and in the profile's `cache` folder; checked live on 2026-10-20 against Midnight Season 2
 
 ## Weekly progress
