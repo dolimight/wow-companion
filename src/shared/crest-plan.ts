@@ -40,6 +40,13 @@ const crestOf = (cost: Track['ranks'][number]['cost']) => cost?.find(entry => en
 export function crestPlan(gear: GearItem[], tracks: Track[], currencies: Record<string, number> | null): CrestPlan {
   const steps: CrestStep[] = []
   const totals = new Map<string, CrestTotal>()
+  // Every crest of the season is listed, held balance included, even when no equipped item needs it right now
+  for (const track of tracks) {
+    for (const rank of track.ranks) {
+      const crest = crestOf(rank.cost)
+      if (crest && !totals.has(crest.currencyId)) totals.set(crest.currencyId, { currencyId: crest.currencyId, balance: currencies?.[crest.currencyId] ?? null, next: 0, full: 0 })
+    }
+  }
   const unknownSlots: GearSlot[] = []
   for (const item of gear) {
     const position = upgradeTrackOf(item)

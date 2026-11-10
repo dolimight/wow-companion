@@ -132,7 +132,7 @@ export function CrestBudget({ character, tracks }: { character: Character; track
               <dt><CurrencyLabel id={total.currencyId} /></dt>
               <dd>
                 <strong>{total.balance == null ? "Unknown" : total.balance.toLocaleString()}</strong> held
-                <small>{total.next.toLocaleString()} for every next rank · {total.full.toLocaleString()} to finish every track</small>
+                <small>{total.full ? `${total.next.toLocaleString()} for every next rank · ${total.full.toLocaleString()} to finish every track` : "None of your equipped gear upgrades with these"}</small>
               </dd>
             </div>
           ))}

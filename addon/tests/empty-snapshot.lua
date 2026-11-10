@@ -67,7 +67,7 @@ test("empty logout preserves the entire previous observation and export time", f
   check(old.observedAt == "time-100" and old.sequence == 9, "refreshed stale observation")
   check(saved.exportedAt == "time-100", "refreshed export time")
   check(saved.characters["Player-other"] == other and saved.sourceProfileId == "existing", "changed unrelated saved data")
-  check(saved.addonVersion == "0.4.5" and saved.schemaVersion == 1, "incorrect version")
+  check(saved.addonVersion == "0.4.8" and saved.schemaVersion == 1, "incorrect version")
 end)
 
 test("first empty capture creates no authoritative empty character", function()
