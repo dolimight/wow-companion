@@ -16,7 +16,7 @@ type Health = "up" | "queue" | "down" | "unknown";
 
 const regionNames: Record<string, string> = { us: "Americas and Oceania", eu: "Europe", kr: "Korea", tw: "Taiwan" };
 /** Same rule as Blizzard's realm slugs, so a character's realm name finds its connected realm */
-export const realmSlug = (realm: string) => realm.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const realmSlug = (realm: string) => realm.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const health = (realm: Realm): Health => !realm.up ? "down" : realm.queue ? "queue" : "up";
 const healthText: Record<Health, string> = { up: "Up", queue: "Queue", down: "Down", unknown: "Unknown" };
 
@@ -31,12 +31,13 @@ export function useRealmStatus() {
 /** The connected realms the player's characters live on, each once */
 function yourRealms(realms: Realm[], characters: Character[], region: string) {
   const bySlug = new Map(realms.flatMap(realm => realm.realms.map(entry => [entry.slug, realm] as const)));
-  const found = new Map<number, { realm: Realm; characters: string[] }>();
+  // Each entry is named after the player's own realm, not whichever realm leads its connected group
+  const found = new Map<number, { realm: Realm; name: string; characters: string[] }>();
   for (const character of characters) {
     if (character.region !== region) continue;
     const realm = bySlug.get(realmSlug(character.realm));
     if (!realm) continue;
-    const entry = found.get(realm.id) ?? { realm, characters: [] };
+    const entry = found.get(realm.id) ?? { realm, name: realm.realms.find(item => item.slug === realmSlug(character.realm))?.name ?? character.realm, characters: [] };
     entry.characters.push(character.name);
     found.set(realm.id, entry);
   }
@@ -48,16 +49,16 @@ function summary(report: Report | undefined, mine: ReturnType<typeof yourRealms>
   if (!report || !report.configured) return { health: "unknown", text: "Checking realms" };
   const watched = mine.length ? mine.map(entry => entry.realm) : report.realms;
   const down = watched.filter(realm => !realm.up), queued = watched.filter(realm => realm.up && realm.queue);
-  const name = (realm: Realm) => realm.realms[0]!.name;
+  const name = (realm: Realm) => mine.find(entry => entry.realm.id === realm.id)?.name ?? realm.realms[0]!.name;
   if (down.length) return { health: "down", text: down.length === 1 ? `${name(down[0]!)} is down` : `${down.length} ${mine.length ? "of your realms are" : "realms are"} down` };
   if (queued.length) return { health: "queue", text: queued.length === 1 ? `${name(queued[0]!)} has a queue` : `${queued.length} realms have queues` };
-  return { health: "up", text: mine.length ? (mine.length === 1 ? `${name(mine[0]!.realm)} is up` : `All ${mine.length} of your realms are up`) : "All realms are up" };
+  return { health: "up", text: mine.length ? (mine.length === 1 ? `${mine[0]!.name} is up` : `All ${mine.length} of your realms are up`) : "All realms are up" };
 }
 
 /** Short label for the title bar chip, so the state reads without opening the panel */
 function chipText(report: Report | undefined, mine: ReturnType<typeof yourRealms>, configured: boolean, state: Health) {
   if (!configured || !report?.configured) return "Realms";
-  if (mine.length === 1) return `${mine[0]!.realm.realms[0]!.name} · ${healthText[state]}`;
+  if (mine.length === 1) return `${mine[0]!.name} · ${healthText[state]}`;
   return state === "up" ? "Realms up" : state === "down" ? "Realm down" : "Realm queue";
 }
 
@@ -78,9 +79,10 @@ export function RealmStatusButton({ characters, onClick }: { characters: Charact
   );
 }
 
-function RealmRow({ realm, note }: { realm: Realm; note?: string }) {
+function RealmRow({ realm, note, lead }: { realm: Realm; note?: string; lead?: string }) {
   const state = health(realm);
-  const [first, ...rest] = realm.realms;
+  const leader = realm.realms.find(entry => entry.name === lead) ?? realm.realms[0]!;
+  const [first, ...rest] = [leader, ...realm.realms.filter(entry => entry !== leader)];
   return (
     <li className="realm-row" data-health={state}>
       <i className="realm-dot" data-health={state} aria-hidden="true" />
@@ -127,7 +129,7 @@ export function RealmStatusSheet({ open, onOpenChange, characters }: { open: boo
           </div>
           {mine.length > 0 && <section>
             <h3 className="realm-heading">Your realms</h3>
-            <ul className="realm-list">{mine.map(entry => <RealmRow key={entry.realm.id} realm={entry.realm} note={entry.characters.slice(0, 3).join(", ") + (entry.characters.length > 3 ? ` and ${entry.characters.length - 3} more` : "")} />)}</ul>
+            <ul className="realm-list">{mine.map(entry => <RealmRow key={entry.realm.id} realm={entry.realm} lead={entry.name} note={entry.characters.slice(0, 3).join(", ") + (entry.characters.length > 3 ? ` and ${entry.characters.length - 3} more` : "")} />)}</ul>
           </section>}
           <section>
             <h3 className="realm-heading">All realms</h3>
