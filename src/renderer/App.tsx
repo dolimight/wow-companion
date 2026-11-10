@@ -71,6 +71,8 @@ import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
 import { equalWeights } from "../shared/enhancement-recommendations";
+import { trackLevelOptions } from "../shared/gamedata";
+import { Input } from "./components/ui/input";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
 import { outdatedRenderSlots } from "../shared/shown-look";
 import TargetCursor from "./components/TargetCursor";
@@ -1790,7 +1792,7 @@ function GearEditor({
           <section className="planner-workspace">
             <div className="plan-controls">
               <Field label="Plan name">
-                <input
+                <Input
                   value={name}
                   maxLength={100}
                   onChange={(e) => {
@@ -1804,7 +1806,7 @@ function GearEditor({
                   label="Your item-level target"
                   hint="A personal goal, separate from a verified legal maximum"
                 >
-                  <input
+                  <Input
                     type="number"
                     min="0"
                     step="0.1"
@@ -1931,7 +1933,7 @@ function GearEditor({
               Search items for this slot
             </Button>
             <Field label="Planned item name">
-              <input
+              <Input
                 value={itemName}
                 maxLength={200}
                 onChange={(e) => setItemName(e.target.value)}
@@ -1945,7 +1947,7 @@ function GearEditor({
               source={current?.itemLevel != null && String(current.itemLevel) === itemLevel.trim() ? current.levelSource : "manual"}
               onPick={(level) => { setItemLevel(level); updateItem(true, { itemLevel: level }); }}
               input={
-                <input
+                <Input
                   type="number"
                   min="0"
                   step="0.1"
@@ -2000,9 +2002,9 @@ function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: n
       ? <small className="muted">Estimated from local game files · a copy seen on a real character is more accurate</small>
       : null;
   if (!itemId || !tracks?.tracks.length) return <Field label="Planned item level">{input}{origin}</Field>;
-  const options = [...tracks.tracks].reverse().flatMap((track) => track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, label: `${track.name} ${index + 1}/${track.ranks} · ${level}${track.name === tracks.max.track && index + 1 === track.ranks ? " · Max" : ""}` })).reverse());
+  const options = trackLevelOptions(tracks);
   const typed = Number(value);
-  const selected = options.find((option) => option.level === typed);
+  const selected = options.find((option) => option.level === typed && !option.beyond) ?? options.find((option) => option.level === typed);
   const custom = value.trim() && !selected ? [{ value: "custom", level: typed, label: `${source === "observed" ? "Observed" : "Custom"} · ${value}` }] : [];
   return (
     <Field label="Planned item level">
@@ -2013,6 +2015,7 @@ function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: n
         options={[...options, ...custom].map(({ value, label }) => ({ value, label }))}
       />
       {origin}
+      {selected?.beyond && <small className="muted">Past the crest upgrades · top players wear only a few items this high</small>}
       {tracks.max.assumed && source !== "observed" && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
     </Field>
   );

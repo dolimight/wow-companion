@@ -31,10 +31,13 @@ export function pickPlanSlot(slots: GearSlot[], items: GearItem[], preferred?: G
   return empty ?? slots[0]
 }
 
-/** A new target starts at the highest level it can reach, from the search row when it carried one, else from its upgrade tracks */
-export async function plannedLevel(item: ItemSummary & { maxLevel?: { itemLevel: number } | null }): Promise<number | null> {
-  if (item.maxLevel?.itemLevel) return item.maxLevel.itemLevel
-  try { return (await api.itemPower({ id: item.id }))?.tracks?.max.itemLevel ?? null } catch { return null }
+/**
+ * A new target starts at the top crest rank, from the search row when it carried one, else from its upgrade tracks.
+ * Ranks past the crest ladder are real but players only wear a few items that high, so they are picked explicitly
+ */
+export async function plannedLevel(item: ItemSummary & { maxLevel?: { itemLevel: number; ladderLevel?: number } | null }): Promise<number | null> {
+  if (item.maxLevel?.itemLevel) return item.maxLevel.ladderLevel ?? item.maxLevel.itemLevel
+  try { const max = (await api.itemPower({ id: item.id }))?.tracks?.max; return max ? max.ladderLevel ?? max.itemLevel : null } catch { return null }
 }
 
 /** An exact copy seen on a real character; its level and bonus IDs beat anything the game files suggest */

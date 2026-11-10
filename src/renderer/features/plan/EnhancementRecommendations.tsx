@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../compo
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip'
 import { Term } from '../../components/Term'
 import { Button } from '../../components/ui/primitives'
+import { Input } from '../../components/ui/input'
 import { errorMessage } from '../../lib/notify'
 import { ItemIcon, useGameData } from '../items/items'
 import { enhancementChoices, plannedRatings, type Enhancement, type PlanRatings } from './enhancement-data'
@@ -143,7 +144,7 @@ export function EnhancementRecommendations({ character, items, slot, weights, on
                     <TooltipContent className="term-tip">{statHelp[key]}</TooltipContent>
                   </Tooltip>
                 </span>
-                <input key={`${key}:${active[key]}`} type="number" min="0" max="10" step="0.1" defaultValue={active[key]} onBlur={event => setWeight(key, event.target.value)} aria-label={`${statNames[key]} weight`} />
+                <Input key={`${key}:${active[key]}`} type="number" min="0" max="10" step="0.1" defaultValue={active[key]} onBlur={event => setWeight(key, event.target.value)} aria-label={`${statNames[key]} weight`} />
               </label>
             ))}
           </div>

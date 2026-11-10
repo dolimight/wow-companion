@@ -128,6 +128,16 @@
               ],
               "discountRequired": true
             }
+          ],
+          "beyondRanks": [
+            {
+              "rank": 7,
+              "itemLevel": 285
+            },
+            {
+              "rank": 8,
+              "itemLevel": 289
+            }
           ]
         },
         {
@@ -214,6 +224,16 @@
                 }
               ],
               "discountRequired": true
+            }
+          ],
+          "beyondRanks": [
+            {
+              "rank": 7,
+              "itemLevel": 298
+            },
+            {
+              "rank": 8,
+              "itemLevel": 302
             }
           ]
         },
@@ -302,6 +322,16 @@
               ],
               "discountRequired": true
             }
+          ],
+          "beyondRanks": [
+            {
+              "rank": 7,
+              "itemLevel": 311
+            },
+            {
+              "rank": 8,
+              "itemLevel": 315
+            }
           ]
         },
         {
@@ -389,6 +419,16 @@
               ],
               "discountRequired": true
             }
+          ],
+          "beyondRanks": [
+            {
+              "rank": 7,
+              "itemLevel": 324
+            },
+            {
+              "rank": 8,
+              "itemLevel": 328
+            }
           ]
         },
         {
@@ -475,6 +515,20 @@
                 }
               ],
               "discountRequired": true
+            }
+          ],
+          "beyondRanks": [
+            {
+              "rank": 7,
+              "itemLevel": 337
+            },
+            {
+              "rank": 8,
+              "itemLevel": 341
+            },
+            {
+              "rank": 9,
+              "itemLevel": 344
             }
           ]
         }
