@@ -97,7 +97,7 @@ function ItemCell({
           </div>
         );
         return replaces
-          ? <ItemCompareCard top={{ id: entry.id, name: entry.name, level: entry.copy?.itemLevel ?? entry.level ?? null, item }} mine={replaces} topLevel={entry.copy?.itemLevel ?? entry.level} stats={stats}>{row}</ItemCompareCard>
+          ? <ItemCompareCard top={{ id: entry.id, name: entry.name, level: entry.copy?.itemLevel ?? entry.level ?? null, item, range: entry.levelRange }} mine={replaces} topLevel={entry.copy?.itemLevel ?? entry.level} stats={stats}>{row}</ItemCompareCard>
           : <ItemHoverCard itemId={entry.id} item={item} name={entry.name}>{row}</ItemHoverCard>;
       })()}
       {onAdd && (
@@ -230,7 +230,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                               // Hovering your item shows what the most-worn item you don't have would change
                               const candidate = popular.find((entry) => !mine.some((owned) => owned.itemId === entry.id));
                               return candidate && item.itemId
-                                ? <ItemCompareCard key={item.slot} top={{ id: candidate.id, name: candidate.name, level: candidate.level ?? null, item: itemMap.get(candidate.id) }} mine={item} topLevel={candidate.level} stats={character.stats}>{row}</ItemCompareCard>
+                                ? <ItemCompareCard key={item.slot} top={{ id: candidate.id, name: candidate.name, level: candidate.level ?? null, item: itemMap.get(candidate.id), range: candidate.levelRange }} mine={item} topLevel={candidate.level} stats={character.stats}>{row}</ItemCompareCard>
                                 : <ItemHoverCard key={item.slot} itemId={item.itemId} item={known} gear={item}>{row}</ItemHoverCard>;
                             }) : <span className="muted">Unknown</span>}
                           </div>

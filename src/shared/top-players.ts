@@ -23,8 +23,10 @@ export const topSlotGroups: Array<{ group: TopSlotGroup; label: string; slots: G
 export type TopCopy = { itemLevel: number; bonusIds: number[]; count: number }
 export type TopCount = {
   id: number; name: string; count: number
-  /** Average item level the sampled players wear it at, for items */
+  /** The item level most sampled players wear it at, the higher one on a tie, for items */
   level?: number | null
+  /** Lowest and highest level seen across the sample */
+  levelRange?: { min: number; max: number }
   /** The most worn copy, preferring the higher level on a tie; missing in results cached before it was recorded */
   copy?: TopCopy | null
 }

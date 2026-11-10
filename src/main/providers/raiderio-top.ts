@@ -71,12 +71,23 @@ const groups: Record<string, TopSlotGroup> = { head: 'head', neck: 'neck', shoul
 const plain = (name: string) => name.replace(/\|cn[^:|]*:|\|c[0-9a-fA-F]{8}|\|r|\|A:[^|]*\|a|\|T[^|]*\|t/g, '').trim()
 const enchantName = (name: string) => plain(name).replace(/^Enchant\s+[^-–]+[-–]\s*/i, '').trim()
 
-type Tallied = { id: number; name: string; count: number; levelSum?: number; levelCount?: number; copies?: Map<string, TopCopy> }
+/**
+ * The level most sampled players wear an item at, the higher one on a tie, plus the spread. An average
+ * would land between upgrade ranks, such as 342 from a mix of 341 and 344, which no copy of the item has
+ */
+export function wornLevels(levels: Map<number, number> | undefined): { level: number | null; levelRange?: { min: number; max: number } } {
+  if (!levels?.size) return { level: null }
+  const entries = [...levels.entries()]
+  const [level] = entries.reduce((best, entry) => entry[1] > best[1] || (entry[1] === best[1] && entry[0] > best[0]) ? entry : best)
+  const all = entries.map(([value]) => value)
+  return { level, levelRange: { min: Math.min(...all), max: Math.max(...all) } }
+}
+type Tallied = { id: number; name: string; count: number; levels?: Map<number, number>; copies?: Map<string, TopCopy> }
 function tally(map: Map<number, Tallied>, entry: { id: number; name: string }, level?: number | null, bonusIds?: number[] | null) {
   const current = map.get(entry.id)
   const target = current ?? map.set(entry.id, { ...entry, count: 0 }).get(entry.id)!
   target.count += 1
-  if (level) { target.levelSum = (target.levelSum ?? 0) + level; target.levelCount = (target.levelCount ?? 0) + 1 }
+  if (level) { target.levels ??= new Map(); target.levels.set(level, (target.levels.get(level) ?? 0) + 1) }
   if (level && bonusIds) {
     const sorted = [...bonusIds].sort((a, b) => a - b)
     const key = `${level}:${sorted.join('/')}`
@@ -150,7 +161,7 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
       }
     }
   }
-  const top = (map: Map<number, Tallied>, limit: number): TopCount[] => [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit).map(({ levelSum, levelCount, copies, ...entry }) => ({ ...entry, level: levelCount ? Math.round((levelSum ?? 0) / levelCount) : null, ...(copies ? { copy: commonCopy(copies.values()) } : {}) }))
+  const top = (map: Map<number, Tallied>, limit: number): TopCount[] => [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit).map(({ levels, copies, ...entry }) => ({ ...entry, ...wornLevels(levels), ...(copies ? { copy: commonCopy(copies.values()) } : {}) }))
   return {
     season, specId: input.specId, specName: input.specName, className: input.className, region: input.region, observedAt: new Date().toISOString(), runsScanned,
     source: ranked ? 'Raider.IO spec rankings' : 'Raider.IO top runs',
