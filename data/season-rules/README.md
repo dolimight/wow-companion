@@ -2,7 +2,9 @@
 
 The production catalog deliberately contains no verified seasonal ceiling yet
 
-The installed client last reviewed was 12.1.5.70688. Between 70575 and 70688 the ItemBonus, ItemScalingConfig and ItemBonusTreeNode tables changed, but regenerating produced identical upgrade tracks, costs, and all 4,434 candidate item levels. The local item index is not an exhaustive source of legal, obtainable reward variants, and published base upgrade tracks do not establish every current-season exception
+The installed client last reviewed was 12.1.5.70783. Between 70575 and 70688 the ItemBonus, ItemScalingConfig and ItemBonusTreeNode tables changed, but regenerating produced identical upgrade tracks, costs, and all 4,434 candidate item levels. 70783 matched 70688 on every reviewed table hash, track, cost, and candidate, so the ruleset covers 70688 through 70783
+
+Rules have no fixed expiry: the supported build range is the guard, so a new client build turns them off until it is reviewed, and an unchanged build keeps working The local item index is not an exhaustive source of legal, obtainable reward variants, and published base upgrade tracks do not establish every current-season exception
 
 ## Adding a supported ruleset
 

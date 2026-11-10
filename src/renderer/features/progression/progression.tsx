@@ -5,7 +5,7 @@ import { ArrowRight, Check, CircleHelp, Coins, ExternalLink, Info, RefreshCw, Sa
 import type { Activity, Character, GearSlot } from "../../../shared/domain";
 import type { ItemVariant } from "../../../shared/gear-variants";
 import type { ProgressionResult } from "../../../shared/progression-evaluation";
-import {currencyName, formatCurrency} from "../../../shared/currency-display";
+import { CurrencyLabel } from "../../components/CurrencyLabel";
 import { CrestBudget } from "../season/season";
 import { defaultContentPreferences, type ContentPreferences } from "../../../shared/season-rules";
 import { AppSelect } from "../../components/AppSelect";
@@ -162,7 +162,15 @@ function SourceButton({ url, children }: { url: string; children: ReactNode }) {
   );
 }
 
-function ItemFacts({ item, label }: { item: ItemVariant | null; label: string }) {
+type SeasonTracks = NonNullable<ProgressionResult["seasonReference"]>["tracks"];
+/** A track as players know it, such as Hero 6/6, falling back to the raw ID when the season reference doesn't name it */
+function trackLabel(tracks: SeasonTracks | undefined, id: string | null | undefined, rank: number | null | undefined) {
+  if (!id) return null;
+  const track = tracks?.find((entry) => entry.id === id);
+  return track ? `${track.name}${rank != null ? ` ${rank}/${track.ranks.length}` : ""}` : `${id}${rank != null ? ` · Rank ${rank}` : ""}`;
+}
+
+function ItemFacts({ item, label, tracks }: { item: ItemVariant | null; label: string; tracks?: SeasonTracks }) {
   if (!item)
     return (
       <div className="progression-evidence-item">
@@ -196,8 +204,7 @@ function ItemFacts({ item, label }: { item: ItemVariant | null; label: string })
         <div>
           <dt>Upgrade track</dt>
           <dd>
-            {item.upgradeTrackId ?? "Unknown"}
-            {item.upgradeRank != null ? ` · Rank ${item.upgradeRank}` : ""}
+            {trackLabel(tracks, item.upgradeTrackId, item.upgradeRank) ?? "Unknown"}
           </dd>
         </div>
         <div>
@@ -216,7 +223,7 @@ function ItemFacts({ item, label }: { item: ItemVariant | null; label: string })
         <ul className="progression-reasons">
           {item.currencyCost.map((cost) => (
             <li key={cost.currencyId}>
-              {formatCurrency(cost.currencyId,cost.amount)}
+              <CurrencyLabel id={cost.currencyId} amount={cost.amount} />
             </li>
           ))}
         </ul>
@@ -264,9 +271,10 @@ function WhyPanel({
         </ul>
         {details && (
           <>
-            <ItemFacts item={details.current} label="Currently equipped" />
+            <ItemFacts item={details.current} label="Currently equipped" tracks={result.seasonReference?.tracks} />
             {viewKey !== "equipped" && (
               <ItemFacts
+                tracks={result.seasonReference?.tracks}
                 item={candidate}
                 label={views.find((option) => option.value === viewKey)!.label}
               />
@@ -447,12 +455,12 @@ export function ProgressionPage({
               <p>{selection.description}</p>
             </div>
             <div className="progression-result-value">
-              <strong data-unknown={view.itemLevel == null || undefined}>{number(view.itemLevel)}</strong>
+              <strong data-unknown={(view.itemLevel ?? view.bestKnownItemLevel) == null || undefined}>{number(view.itemLevel ?? view.bestKnownItemLevel)}</strong>
               <Badge tone={view.status === "supported" ? "green" : "amber"}>
                 {view.status === "supported"
                   ? "Validated"
                   : view.status === "partial"
-                    ? "Partial"
+                    ? view.bestKnownItemLevel != null ? "Best known" : "Partial"
                     : "Unavailable"}
               </Badge>
             </div>
@@ -475,7 +483,7 @@ export function ProgressionPage({
             </div>
           )}
           {result.seasonReference&&<CrestBudget character={character} tracks={result.seasonReference.tracks} />}
-          {result.seasonReference&&<details className="surface progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.map(cost=>formatCurrency(cost.currencyId,cost.amount)).join(' + ')??'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></details>}
+          {result.seasonReference&&<details className="surface progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.length?track.ranks[1].cost.map((cost,index)=><span key={cost.currencyId}>{index?' + ':''}<CurrencyLabel id={cost.currencyId} amount={cost.amount} /></span>):'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></details>}
           <div className="progression-layout">
             <section className="progression-slots" aria-label="Per-slot progression">
               <div className="surface-heading">
@@ -537,8 +545,7 @@ export function ProgressionPage({
                                 </strong>
                                 <small>
                                   {candidate ? number(candidate.itemLevel) : "Unknown"}
-                                  {candidate?.upgradeTrackId ? ` · ${candidate.upgradeTrackId}` : ""}
-                                  {candidate?.upgradeRank != null ? ` ${candidate.upgradeRank}` : ""}
+                                  {candidate?.upgradeTrackId ? ` · ${trackLabel(result.seasonReference?.tracks, candidate.upgradeTrackId, candidate.upgradeRank)}` : ""}
                                 </small>
                                 {candidate?.source?.name && <small>{candidate.source.name}</small>}
                               </div>
@@ -714,7 +721,7 @@ export function ProgressionPage({
                   <dl className="progression-budget">
                     {view.costs.map((cost) => (
                       <div key={cost.currencyId}>
-                        <dt>{currencyName(cost.currencyId)}</dt>
+                        <dt><CurrencyLabel id={cost.currencyId} /></dt>
                         <dd>
                           {cost.spent.toLocaleString()} spent ·{" "}
                           {cost.remaining == null

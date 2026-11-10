@@ -36,6 +36,20 @@ describe('vault plan', () => {
 })
 
 describe('crest plan', () => {
+  it('shows Veteran and later-rank crests even without equipped upgrades, preserving unknown balances', () => {
+    const tracks = [{ id: 'veteran', name: 'Veteran', ranks: [
+      { rank: 1, itemLevel: 250, cost: [] },
+      { rank: 2, itemLevel: 253, cost: [{ currencyId: 'money', amount: 100000 }] },
+      { rank: 3, itemLevel: 256, cost: [{ currencyId: '3443', amount: 20 }] },
+      { rank: 4, itemLevel: 259, cost: [{ currencyId: '3444', amount: 20 }] },
+    ] }]
+    expect(crestPlan([], tracks, { '3443': 42, '3444': 0 }).totals).toEqual([
+      { currencyId: '3443', balance: 42, next: 0, full: 0 },
+      { currencyId: '3444', balance: 0, next: 0, full: 0 },
+    ])
+    expect(crestPlan([], tracks, null).totals.map(total => total.balance)).toEqual([null, null])
+    expect(crestPlan([], tracks, {}).totals.map(total => total.balance)).toEqual([null, null])
+  })
   const tracks = [{ id: 't', name: 'Hero', ranks: [1, 2, 3].map(rank => ({ rank, itemLevel: 270 + rank * 3, cost: rank === 1 ? [] : [{ currencyId: '3445', amount: rank === 2 ? 15 : 20 }, { currencyId: 'money', amount: 100000 }], discountRequired: true })) }]
   it('ranks next upgrades by item level per crest and spends only crests you hold', () => {
     const gear = [

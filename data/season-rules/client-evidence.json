@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "build": "12.1.5.70688",
-  "checkedAt": "2026-11-02T20:27:28.597Z",
+  "build": "12.1.5.70783",
+  "checkedAt": "2026-11-10T16:27:55.297Z",
   "tableHashes": {
     "CurrencyTypes": "6871973aee9e4f73d71faf7e1baa0aac21db778f21c4836243b7c03af71c01f3",
     "ItemBonusListGroupEntry": "bfe87761ddcf42026dbe4683435032d6ba04b260d403ef7bb54af4193b9ecf71",
@@ -173,6 +173,13 @@
     "3444": "Champion Mistcrest",
     "3445": "Hero Mistcrest",
     "3446": "Myth Mistcrest"
+  },
+  "currencyIcons": {
+    "3442": 7734054,
+    "3443": 7734062,
+    "3444": 7734056,
+    "3445": 7734058,
+    "3446": 7734060
   },
   "limitations": [
     "Server availability conditions and boss/difficulty branches are not fully resolved",

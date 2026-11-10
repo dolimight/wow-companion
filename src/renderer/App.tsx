@@ -1683,8 +1683,9 @@ function GearEditor({
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
   /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
-  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string }): GearItem[] | null {
-    const ilvl = itemLevel.trim() ? Number(itemLevel) : null;
+  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string; itemLevel?: string }): GearItem[] | null {
+    const levelText = enhancement?.itemLevel ?? itemLevel;
+    const ilvl = levelText.trim() ? Number(levelText) : null;
     if (ilvl != null && (!Number.isFinite(ilvl) || ilvl < 0)) {
       notify("Enter a valid item level");
       return null;
@@ -1929,17 +1930,22 @@ function GearEditor({
                 placeholder="Search or name your planned item"
               />
             </Field>
-            <Field label="Planned item level">
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={itemLevel}
-                onChange={(e) => setItemLevel(e.target.value)}
-                onBlur={() => { if (inspectorDirty) updateItem(true); }}
-                placeholder="Unknown"
-              />
-            </Field>
+            <PlannedLevelField
+              itemId={current?.itemId ?? null}
+              value={itemLevel}
+              onPick={(level) => { setItemLevel(level); updateItem(true, { itemLevel: level }); }}
+              input={
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={itemLevel}
+                  onChange={(e) => setItemLevel(e.target.value)}
+                  onBlur={() => { if (inspectorDirty) updateItem(true); }}
+                  placeholder="Unknown"
+                />
+              }
+            />
             <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else { setEnchant(value); setEnchantEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else { setGems(value); setGemsEdited(true); } }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             <p className="inspector-note">
@@ -1968,6 +1974,30 @@ function GearEditor({
         }}
       />
     </>
+  );
+}
+/**
+ * Planned level as the item's own upgrade ranks, such as Hero 6/6 · 321, with the highest first.
+ * Items without known tracks, and levels typed before, keep the free number box
+ */
+function PlannedLevelField({ itemId, value, onPick, input }: { itemId: number | null; value: string; onPick: (level: string) => void; input: React.ReactNode }) {
+  const power = useQuery({ queryKey: ["item-power", itemId, null, null], queryFn: () => api.itemPower({ id: itemId! }), enabled: itemId != null, staleTime: 5 * 60_000 });
+  const tracks = power.data?.tracks;
+  if (!itemId || !tracks?.tracks.length) return <Field label="Planned item level">{input}</Field>;
+  const options = [...tracks.tracks].reverse().flatMap((track) => track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, label: `${track.name} ${index + 1}/${track.ranks} · ${level}${track.name === tracks.max.track && index + 1 === track.ranks ? " · Max" : ""}` })).reverse());
+  const typed = Number(value);
+  const selected = options.find((option) => option.level === typed);
+  const custom = value.trim() && !selected ? [{ value: "custom", level: typed, label: `Custom · ${value}` }] : [];
+  return (
+    <Field label="Planned item level">
+      <AppSelect
+        aria-label="Planned item level"
+        value={selected?.value ?? (custom.length ? "custom" : "")}
+        onValueChange={(next) => { const option = options.find((entry) => entry.value === next); if (option) onPick(String(option.level)); }}
+        options={[...options, ...custom].map(({ value, label }) => ({ value, label }))}
+      />
+      {tracks.max.assumed && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
+    </Field>
   );
 }
 function AddCharacter({
