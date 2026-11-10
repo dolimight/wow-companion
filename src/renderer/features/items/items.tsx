@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { ExternalLink, Search, Sparkles, X } from "lucide-react";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ExternalLink, RefreshCw, Search, Sparkles, X } from "lucide-react";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AppSelect } from "../../components/AppSelect";
@@ -49,6 +49,8 @@ const armorOptions = [{ value: "any", label: "Any armor" }, ...armorTypes.map(ar
 /** Item search that runs entirely against the local index built from the user's WoW install */
 export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string }) {
   const status = useGameData();
+  const client = useQueryClient();
+  const rebuild = useMutation({ mutationFn: () => api.rebuildItemData(), onSuccess: () => { notify("Item data prepared"); void client.invalidateQueries(); }, onError: (error) => notify(errorMessage(error)) });
   const [text, setText] = useState("");
   const [slot, setSlot] = useState<AppearanceSlot | "any">(fixedSlot ?? "any");
   const [filters, setFilters] = useState<Filters>(noFilters);
@@ -111,6 +113,10 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
               </Toggle>
               {activeFilters > 0 && <Button variant="quiet" onClick={() => setFilters(noFilters)}>Clear {activeFilters === 1 ? "filter" : `${activeFilters} filters`}</Button>}
             </div>
+            {status.data?.outdated && status.data.state === "ready" && <div className="item-search-outdated" role="status">
+              <span><strong>Item data is from an older version</strong> · Effects, stats, and upgrade tracks appear once it is prepared again{status.data.error ? ` · Last try: ${status.data.error}` : ""}</span>
+              <Button disabled={rebuild.isPending} onClick={() => rebuild.mutate()}><RefreshCw />{rebuild.isPending ? "Preparing…" : "Prepare item data"}</Button>
+            </div>}
             <div className="item-search-context" role="status">
               {character ? <><strong>For {character.name}</strong><span>{[character.specName !== "Unknown" ? character.specName : null, character.className !== "Unknown" ? character.className : "Class unknown", character.level != null ? `Level ${character.level}` : null].filter(Boolean).join(" · ")}</span>{!character.specId && <span>Specialization unknown — refresh this character for spec filtering</span>}</> : <span>Select a character to filter by class and specialization</span>}
             </div>
@@ -132,6 +138,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
                         <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${item.maxLevel.track} ${item.maxLevel.rank}/${item.maxLevel.ranks}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
+                        {item.effects?.map((effect, index) => <small key={index} className="item-result-effect"><Sparkles aria-hidden="true" /><span><strong>{effect.label}:</strong> {effect.text}</span></small>)}
                         {sourceLine(item) && <small className="item-result-source">{sourceLine(item)}</small>}
                         {context && !getItemCompatibility(item,context).verified && <small>{getItemCompatibility(item,context).reason ?? "Some equipment restrictions are unknown"}</small>}
                       </span>

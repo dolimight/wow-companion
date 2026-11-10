@@ -165,3 +165,26 @@ describe('replacing the item index on disk',()=>{
     again.close()
   })
 })
+
+describe('effects on search rows',()=>{
+  it('reads each item’s effects at the level its row shows and leaves plain items out',async()=>{
+    const {db,add,engine}=fixture()
+    add(1,'Acceptance trinket',{inventory:12,classId:4,subclass:0})
+    add(2,'Plain helm')
+    db.exec(`CREATE TABLE scaling(item_level INTEGER PRIMARY KEY,data TEXT);CREATE TABLE armor_locations(inventory_type INTEGER PRIMARY KEY,data TEXT);CREATE TABLE spells(id INTEGER PRIMARY KEY,data TEXT)`)
+    const level=(itemLevel:number)=>JSON.stringify({itemLevel,epic:[100,80,60,40,20],superior:[],good:[],damageReplace:0,damageSecondary:0,rating:null,stamina:null,armorTotal:null,armorQuality:null,shield:null,socketCost:null})
+    db.prepare('INSERT INTO scaling VALUES (?,?)').run(300,level(300))
+    db.prepare('INSERT INTO spells VALUES (?,?)').run(77,JSON.stringify({id:77,name:'Spark',description:'Calls down a fictional spark',durationMs:null,maxStacks:null,effects:[]}))
+    db.prepare('INSERT INTO item_effects VALUES (?,?,?,?,?,?)').run(1,77,0,90000,0,0)
+    db.close();await engine.useInstall(install)
+    const effects=engine.effectsFor([{id:1,itemLevel:300},{id:2,itemLevel:300}])
+    expect(Object.keys(effects)).toEqual(['1'])
+    expect(effects[1]![0]).toMatchObject({label:'Use',text:'Calls down a fictional spark',cooldown:'90 sec'})
+    expect(engine.effectsFor([{id:1,itemLevel:999}])).toEqual({})
+  })
+  it('marks item data from an older version as outdated instead of up to date',async()=>{
+    const {add,db,engine}=fixture(2);add(1,'Old helm');db.close();await engine.useInstall(install)
+    expect(engine.getStatus()).toMatchObject({state:'not-indexed',outdated:true})
+    expect(engine.effectsFor([{id:1,itemLevel:300}])).toEqual({})
+  })
+})
