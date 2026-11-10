@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { ExternalLink, RefreshCw, Search, Sparkles, X } from "lucide-react";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -259,15 +260,9 @@ export function ItemDetail({ id, onPick, addLabel, compact = false, character = 
   );
 }
 
-/** Opens item search from anywhere with Ctrl+K or Cmd+K */
+/** Opens item search from anywhere with Ctrl+K, or Cmd+K on a Mac, including from inside a text field */
 export function useItemSearchShortcut(open: () => void) {
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); open(); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  useHotkey("Mod+K", () => open());
 }
 
 /** Resolves "Enchant #123" and "Gem #456" placeholders from older imports into readable names */
