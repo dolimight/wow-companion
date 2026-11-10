@@ -40,8 +40,13 @@ const slotOptions: Array<{ value: AppearanceSlot | "any"; label: string }> = [
   { value: "finger1", label: "Rings" }, { value: "trinket1", label: "Trinkets" }, { value: "mainHand", label: "Main hand" }, { value: "offHand", label: "Off hand" },
 ];
 
-type Filters = { source: "any" | "dungeon" | "raid"; instance: string; stat: NonNullable<ItemSearch["stat"]>; quality: string; armor: ArmorType | "any"; withEffect: boolean; withSocket: boolean };
-const noFilters: Filters = { source: "any", instance: "any", stat: "any", quality: "any", armor: "any", withEffect: false, withSocket: false };
+type Filters = { source: "any" | "dungeon" | "raid"; instance: string; stat: NonNullable<ItemSearch["stat"]>; quality: string; armor: ArmorType | "any"; withEffect: boolean; withSocket: boolean; levelBasis: "max" | "base"; minLevel: string; maxLevel: string };
+const noFilters: Filters = { source: "any", instance: "any", stat: "any", quality: "any", armor: "any", withEffect: false, withSocket: false, levelBasis: "max", minLevel: "", maxLevel: "" };
+type Sort = NonNullable<ItemSearch["sort"]>;
+const sortOptions = [{ value: "relevance", label: "Best match" }, { value: "maxLevel", label: "Highest max item level" }, { value: "baseLevel", label: "Highest base item level" }];
+const levelBasisOptions = [{ value: "max", label: "Max item level" }, { value: "base", label: "Base item level" }];
+/** A typed item level, or null while the box is empty or not a whole number */
+const levelValue = (text: string) => /^\d{1,4}$/.test(text.trim()) && Number(text) >= 1 ? Math.min(2000, Number(text)) : null;
 const statOptions = [{ value: "any", label: "Any stat" }, { value: "crit", label: "Critical Strike" }, { value: "haste", label: "Haste" }, { value: "mastery", label: "Mastery" }, { value: "versatility", label: "Versatility" }];
 const qualityOptions = [{ value: "any", label: "Any quality" }, ...[2, 3, 4, 5].map(quality => ({ value: String(quality), label: qualityNames[quality]! }))];
 const armorOptions = [{ value: "any", label: "Any armor" }, ...armorTypes.map(armor => ({ value: armor, label: armor[0]!.toUpperCase() + armor.slice(1) }))];
@@ -61,25 +66,28 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => { if (open) { setSlot(fixedSlot ?? "any"); setText(""); setHighlighted(""); } }, [open, fixedSlot, character?.id, character?.className, character?.specId, character?.level]);
   const debouncedText = useDebounced(text);
-  const query = {text:debouncedText,slot:fixedSlot??slot,current,...filters};
+  const [sort, setSort] = useState<Sort>("relevance");
+  // Typed item levels wait for a pause like the name box, so each keystroke doesn't start a search
+  const levels = { min: useDebounced(levelValue(filters.minLevel), 300), max: useDebounced(levelValue(filters.maxLevel), 300) };
+  const query = {text:debouncedText,slot:fixedSlot??slot,current,...filters,sort,levels};
   const shownSlot = fixedSlot ?? (slot === "any" ? null : slot);
   // Armor type only narrows armor slots, and a character already limits results to what they can wear
   const armorFilter = !character && (!shownSlot || armorSlots.has(shownSlot));
   const instances = useQuery({ queryKey: ["item-instances", current], queryFn: () => api.itemInstances(current), enabled: open && status.data?.state === "ready", staleTime: Infinity });
   const instanceOptions = [{ value: "any", label: "Any dungeon or raid" }, ...(instances.data ?? []).filter(entry => source === "any" || entry.kind === source).map(entry => ({ value: entry.name, label: entry.name }))];
   useEffect(() => { if (filters.instance !== "any" && instances.data && !instanceOptions.some(option => option.value === filters.instance)) setFilter("instance", "any"); }, [instances.data, source]);
-  const activeFilters = (Object.keys(noFilters) as Array<keyof Filters>).filter(key => filters[key] !== noFilters[key] && (key !== "armor" || armorFilter)).length;
+  const activeFilters = (Object.keys(noFilters) as Array<keyof Filters>).filter(key => key !== "levelBasis" && filters[key] !== noFilters[key] && (key !== "armor" || armorFilter)).length;
   const context = character ? {className:character.className,specId:character.specId,level:character.level} : null;
   const ready = status.data?.state === "ready";
   const results = useInfiniteQuery({
     queryKey: ["item-search-pages", character?.id, context, query],
-    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, instance: query.instance === "any" ? null : query.instance, stat: query.stat, quality: query.quality === "any" ? null : Number(query.quality), armor: armorFilter && query.armor !== "any" ? query.armor : null, withEffect: query.withEffect, withSocket: query.withSocket, limit: 40, offset: pageParam }),
+    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, instance: query.instance === "any" ? null : query.instance, stat: query.stat, quality: query.quality === "any" ? null : Number(query.quality), armor: armorFilter && query.armor !== "any" ? query.armor : null, withEffect: query.withEffect, withSocket: query.withSocket, sort: query.sort, levelBasis: query.levelBasis, minLevel: query.levels.min, maxLevel: query.levels.max, limit: 40, offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: page => page.nextOffset ?? undefined,
     enabled: open && ready,
   });
   const items = results.data?.pages.flatMap(page => page.items) ?? [];
-  useEffect(() => { list.current?.scrollTo(0, 0); setHighlighted(""); }, [debouncedText, fixedSlot, slot, filters, current, character?.id, character?.className, character?.specId, character?.level]);
+  useEffect(() => { list.current?.scrollTo(0, 0); setHighlighted(""); }, [debouncedText, fixedSlot, slot, filters, current, sort, levels.min, levels.max, character?.id, character?.className, character?.specId, character?.level]);
   const loadMore = () => { if (results.hasNextPage && !results.isFetching && !results.isFetchNextPageError) void results.fetchNextPage(); };
   const pickItem = (item: ItemSummary) => {
     const compatibility = getItemCompatibility(item, context, {slot:fixedSlot ?? (slot === "any" ? null : slot)});
@@ -111,6 +119,13 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
               <Toggle type="button" variant="outline" className="workspace-toggle" pressed={filters.withSocket} onPressedChange={(pressed) => setFilter("withSocket", pressed)} aria-label="Has a gem socket">
                 <span>Has a socket</span><span className="toggle-state">{filters.withSocket ? "On" : "Off"}</span>
               </Toggle>
+              <div className="item-level-range" role="group" aria-label="Item level range">
+                <AppSelect aria-label="Item level to filter by" value={filters.levelBasis} onValueChange={(value) => setFilter("levelBasis", value as Filters["levelBasis"])} options={levelBasisOptions} />
+                <input inputMode="numeric" aria-label="Lowest item level" placeholder="From" value={filters.minLevel} onChange={(event) => setFilter("minLevel", event.target.value.replace(/\D/g, "").slice(0, 4))} />
+                <span aria-hidden="true">–</span>
+                <input inputMode="numeric" aria-label="Highest item level" placeholder="To" value={filters.maxLevel} onChange={(event) => setFilter("maxLevel", event.target.value.replace(/\D/g, "").slice(0, 4))} />
+              </div>
+              <AppSelect aria-label="Sort results" value={sort} onValueChange={(value) => setSort(value as Sort)} options={sortOptions} />
               {activeFilters > 0 && <Button variant="quiet" onClick={() => setFilters(noFilters)}>Clear {activeFilters === 1 ? "filter" : `${activeFilters} filters`}</Button>}
             </div>
             {status.data?.outdated && status.data.state === "ready" && <div className="item-search-outdated" role="status">

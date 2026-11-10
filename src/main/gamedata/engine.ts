@@ -11,6 +11,7 @@ import { scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type It
 import type { AppearanceSlot } from '../../shared/domain'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
+import { itemTracks } from '../item-tracks'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -71,6 +72,8 @@ export class GameDataEngine {
   private idleTimer: ReturnType<typeof setTimeout> | undefined
   private db: Database.Database | null = null
   private indexVersion: number | null = null
+  /** Every upgrade track group, read once per index for sorting and filtering by highest reachable level */
+  private groupCache: Map<number, { group: number; set: number; key: number; levels: number[]; latest: boolean }> | null = null
   private indexing: Promise<void> | null = null
   private status: GameDataStatus = { state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null }
   private definitions: Definitions
@@ -91,7 +94,7 @@ export class GameDataEngine {
 
   async useInstall(install: WowInstall | null) {
     await this.releaseCasc()
-    this.db?.close(); this.db = null; this.indexVersion = null
+    this.db?.close(); this.db = null; this.indexVersion = null; this.groupCache = null
     this.install = install
     if (!install) { this.publish({ state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null, outdated: false }); return }
     const file = this.indexPath(install.build.version)
@@ -447,7 +450,13 @@ export class GameDataEngine {
     if (query.currentOnly) where.push(this.indexVersion === INDEX_VERSION
       ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)))"
       : 'EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND (s.season = (SELECT MAX(season) FROM sources) OR i.expansion = (SELECT MAX(expansion) FROM items WHERE quality = 4 AND id IN (SELECT item_id FROM sources))))')
-    const order = tokens.length ? 'ORDER BY bm25(items_fts), i.expansion DESC, i.item_level DESC, i.id' : 'ORDER BY i.expansion DESC, i.item_level DESC, i.quality DESC, i.id'
+    // Base level is stored, so its range and order stay in SQL; the highest reachable level is worked out per row below
+    const byMax = query.sort === 'maxLevel' || (query.levelBasis === 'max' && (query.minLevel != null || query.maxLevel != null))
+    if (query.levelBasis === 'base' && query.minLevel != null) { where.push('i.item_level >= ?'); params.push(query.minLevel) }
+    if (query.levelBasis === 'base' && query.maxLevel != null) { where.push('i.item_level <= ?'); params.push(query.maxLevel) }
+    const order = query.sort === 'baseLevel' ? 'ORDER BY i.item_level DESC, i.quality DESC, i.expansion DESC, i.id'
+      : tokens.length ? 'ORDER BY bm25(items_fts), i.expansion DESC, i.item_level DESC, i.id' : 'ORDER BY i.expansion DESC, i.item_level DESC, i.quality DESC, i.id'
+    if (byMax) return this.searchByMaxLevel(query, `SELECT i.* FROM items i ${join} WHERE ${where.join(' AND ')} ${order}`, params, extra)
     const statement = db.prepare(`SELECT i.* FROM items i ${join} WHERE ${where.join(' AND ')} ${order} LIMIT ? OFFSET ?`)
     const seen = new Set<string>()
     const unique: ItemRow[] = []
@@ -469,6 +478,39 @@ export class GameDataEngine {
     }
     const sources = this.sourcesFor(unique.map(row => row.id))
     return unique.map(row => this.summary(row, sources))
+  }
+
+  /** The highest level an item reaches, by the same rules as the level shown on each result */
+  maxItemLevel(row: Pick<ItemRow, 'id' | 'item_level' | 'track_groups'>) {
+    const groups = row.track_groups ? JSON.parse(row.track_groups) as number[] : null
+    let info = null
+    if (groups?.length && this.indexVersion === INDEX_VERSION) {
+      if (!this.groupCache) {
+        const rows = this.ready().prepare('SELECT group_id, scaling_set, track_key, levels FROM track_groups').all() as Array<{ group_id: number; scaling_set: number; track_key: number; levels: string }>
+        const latest = Math.max(0, ...rows.map(entry => entry.scaling_set))
+        this.groupCache = new Map(rows.map(entry => [entry.group_id, { group: entry.group_id, set: entry.scaling_set, key: entry.track_key, levels: JSON.parse(entry.levels) as number[], latest: entry.scaling_set === latest }]))
+      }
+      info = groups.flatMap(group => { const found = this.groupCache!.get(group); return found ? [found] : [] })
+    }
+    return itemTracks(row.id, groups, info)?.max.itemLevel ?? row.item_level
+  }
+
+  /** Sorting or filtering by highest level needs every match, since that level isn't stored */
+  private searchByMaxLevel(query: ReturnType<typeof itemSearchSchema.parse>, sql: string, params: unknown[], extra: number): ItemSummary[] {
+    const seen = new Set<string>()
+    const matches: Array<{ row: ItemRow; level: number; order: number }> = []
+    for (const row of this.ready().prepare(sql).iterate(...params) as Iterable<ItemRow>) {
+      const key = `${row.name}|${row.inventory_type}`
+      if (seen.has(key) || !getItemCompatibility(this.summary(row, new Map()), query.character, { slot: query.slot }).compatible) continue
+      seen.add(key)
+      const level = query.levelBasis === 'max' || query.sort === 'maxLevel' ? this.maxItemLevel(row) : row.item_level
+      if (query.levelBasis === 'max' && ((query.minLevel != null && level < query.minLevel) || (query.maxLevel != null && level > query.maxLevel))) continue
+      matches.push({ row, level, order: matches.length })
+    }
+    if (query.sort === 'maxLevel') matches.sort((a, b) => b.level - a.level || a.order - b.order)
+    const page = matches.slice(query.offset, query.offset + query.limit + extra).map(match => match.row)
+    const sources = this.sourcesFor(page.map(row => row.id))
+    return page.map(row => this.summary(row, sources))
   }
 
   item(id: number): ItemDetail | null {

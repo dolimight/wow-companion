@@ -188,3 +188,34 @@ describe('effects on search rows',()=>{
     expect(engine.effectsFor([{id:1,itemLevel:300}])).toEqual({})
   })
 })
+
+describe('item level sort and range',()=>{
+  function levels(){
+    const f=fixture()
+    // Base 280 but upgrades to 320 on a Hero track; base 300 with no track stays 300; base 250 stays 250
+    f.add(1,'Upgradable helm',{level:280});f.add(2,'Fixed helm',{level:300});f.add(3,'Low helm',{level:250})
+    f.db.exec(`CREATE TABLE track_groups(group_id INTEGER PRIMARY KEY,scaling_set INTEGER,track_key INTEGER,levels TEXT)`)
+    f.db.prepare('INSERT INTO track_groups VALUES (?,?,?,?)').run(999001,9,974,JSON.stringify([300,305,310,315,320]))
+    f.db.prepare('UPDATE items SET track_groups=? WHERE id=1').run(JSON.stringify([999001]))
+    return f
+  }
+  const query={slot:'head' as const,character:{className:'Warrior',specId:71,level:90},limit:40}
+  it('sorts by the highest reachable level or by the base level',async()=>{
+    const {db,engine}=levels();db.close();await engine.useInstall(install)
+    expect(engine.searchPage({...query,sort:'maxLevel'}).items.map(item=>item.id)).toEqual([1,2,3])
+    expect(engine.searchPage({...query,sort:'baseLevel'}).items.map(item=>item.id)).toEqual([2,1,3])
+  })
+  it('filters a range against the highest reachable level or the base level',async()=>{
+    const {db,engine}=levels();db.close();await engine.useInstall(install)
+    expect(engine.searchPage({...query,levelBasis:'max',minLevel:310}).items.map(item=>item.id)).toEqual([1])
+    expect(engine.searchPage({...query,levelBasis:'base',minLevel:260,maxLevel:290}).items.map(item=>item.id)).toEqual([1])
+    expect(engine.searchPage({...query,levelBasis:'max',maxLevel:300,sort:'maxLevel'}).items.map(item=>item.id)).toEqual([2,3])
+  })
+  it('pages through a max-level sort without repeating items',async()=>{
+    const {db,engine}=levels();db.close();await engine.useInstall(install)
+    const first=engine.searchPage({...query,sort:'maxLevel',limit:2})
+    const second=engine.searchPage({...query,sort:'maxLevel',limit:2,offset:first.nextOffset!})
+    expect([...first.items,...second.items].map(item=>item.id)).toEqual([1,2,3])
+    expect(second.nextOffset).toBeNull()
+  })
+})
