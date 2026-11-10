@@ -455,12 +455,12 @@ export function ProgressionPage({
               <p>{selection.description}</p>
             </div>
             <div className="progression-result-value">
-              <strong data-unknown={view.itemLevel == null || undefined}>{number(view.itemLevel)}</strong>
+              <strong data-unknown={(view.itemLevel ?? view.bestKnownItemLevel) == null || undefined}>{number(view.itemLevel ?? view.bestKnownItemLevel)}</strong>
               <Badge tone={view.status === "supported" ? "green" : "amber"}>
                 {view.status === "supported"
                   ? "Validated"
                   : view.status === "partial"
-                    ? "Partial"
+                    ? view.bestKnownItemLevel != null ? "Best known" : "Partial"
                     : "Unavailable"}
               </Badge>
             </div>
