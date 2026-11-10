@@ -47,7 +47,7 @@ export function BenchmarkSummary({ job, result }: { job: SimulationJob; result: 
         {benchmark.talentPlayers !== null && <li>Talents: the most popular build, used by {benchmark.talentPlayers} of the sampled players</li>}
         {benchmark.skipped.map(reason => <li key={reason}>{reason}</li>)}
       </ul>
-      <p>{benchmark.population} · Your enchants and gems are kept on every item, so only items and talents change · Item bonuses such as extra sockets are not modeled</p>
+      <p>{benchmark.population} · Their items run at the highest level any of them wears · Your enchants and gems are kept on every item, so only items and talents change · Item bonuses such as extra sockets are not modeled</p>
     </details>
   </div>
 }

@@ -53,7 +53,7 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
       {plan.top.differences.length > 0 && <dl className="simulation-benchmark-rows">
         {plan.top.differences.map(item => <div key={item.slot}><dt>{gearSlotLabels[item.slot as GearSlotName] ?? item.slot}</dt><dd>{`${item.top} at ${item.itemLevel}`}<small className="muted">{item.plan === item.top ? 'Top players wear it at a higher item level' : `Your plan has ${item.plan}`}</small></dd></div>)}
       </dl>}
-      <p className="muted">{plan.top.population} · Measured on your character with your enchants and gems</p>
+      <p className="muted">{plan.top.population} · Their items at the highest level any of them wears, measured on your character with your enchants and gems</p>
     </>}
     {plan.whole !== null && <>
       <h3 className="simulation-subheading">Upgrades by value</h3>

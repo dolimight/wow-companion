@@ -13,6 +13,11 @@ describe('top player benchmark', () => {
     expect(plan.kinds).toEqual(['gear', 'talents', 'both'])
     expect(plan.skipped).toEqual(expect.arrayContaining(['Trinkets: the item level top players wear is unknown', 'Trinkets: not enough top players share a second item']))
   })
+  it('runs each item at the highest level any sampled player wears it, not the most common one', () => {
+    const top = topFixture()
+    top.slots.head!.items[0] = { ...top.slots.head!.items[0]!, level: 112, levelRange: { min: 109, max: 115 } }
+    expect(benchmarkPlan(simulationCharacter(), top).gear.find(item => item.slot === 'head')?.itemLevel).toBe(115)
+  })
   it('skips talents you already use or that too few players share', () => {
     const character = simulationCharacter()
     expect(benchmarkPlan(character, topFixture({ builds: [{ loadout: character.talents!.loadout, count: 6, players: [] }] })).talents).toBeNull()
