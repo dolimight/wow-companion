@@ -98,6 +98,7 @@ import { UpdateSettings } from "./features/updates/UpdateSettings";
 import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
 import { closeWindow, useCloseGuard, useCloseRequests } from "./lib/close-guard";
+import { useSimulationToasts } from "./lib/simulation-toasts";
 import {
   defaultDestination,
   destinationLabel,
@@ -575,6 +576,9 @@ function useDrawerNavigation(path: string, drawerMode: boolean) {
 function Shell() {
   useUpdateSafety();
   useCloseRequests();
+  const shellNavigate = useNavigate();
+  const openSimulation = useCallback((characterId: string, job: string) => void shellNavigate({ to: "/characters/$characterId/$section/$view", params: { characterId, section: "gear", view: "simulations" }, search: { job } as never }), [shellNavigate]);
+  useSimulationToasts(openSimulation);
   const roster = useRoster();
   const settings = useSettings();
   const appIcon = resolveAppIcon(settings.data?.appIcon ?? 'auto', appVersion);
