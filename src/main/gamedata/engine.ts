@@ -93,7 +93,7 @@ export class GameDataEngine {
     await this.releaseCasc()
     this.db?.close(); this.db = null; this.indexVersion = null
     this.install = install
-    if (!install) { this.publish({ state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null }); return }
+    if (!install) { this.publish({ state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null, outdated: false }); return }
     const file = this.indexPath(install.build.version)
     let opened: Database.Database | undefined
     try {
@@ -103,10 +103,10 @@ export class GameDataEngine {
       this.db = db
       this.indexVersion = Number(version)
       const count = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
-      this.publish({ state: this.indexVersion === INDEX_VERSION ? 'ready' : 'not-indexed', install: { root: install.root, version: install.build.version }, indexedVersion: install.build.version, itemCount: count, progress: null, error: null })
+      this.publish({ outdated: this.indexVersion !== INDEX_VERSION, state: this.indexVersion === INDEX_VERSION ? 'ready' : 'not-indexed', install: { root: install.root, version: install.build.version }, indexedVersion: install.build.version, itemCount: count, progress: null, error: null })
     } catch {
       opened?.close(); this.db = null; this.indexVersion = null
-      this.publish({ state: 'not-indexed', install: { root: install.root, version: install.build.version }, indexedVersion: null, itemCount: 0, progress: null, error: null })
+      this.publish({ state: 'not-indexed', install: { root: install.root, version: install.build.version }, indexedVersion: null, itemCount: 0, progress: null, error: null, outdated: false })
     }
   }
 
@@ -267,7 +267,7 @@ export class GameDataEngine {
       await rm(temporary, { force: true }).catch(() => {})
       // Reopen the previous complete file if replacement failed after its handle was closed
       if (!this.db) await this.useInstall(install).catch(() => {})
-      this.publish({ state: this.db ? 'ready' : 'error', progress: null, error: error instanceof Error ? error.message : 'Item data could not be prepared' })
+      this.publish({ state: this.db ? 'ready' : 'error', outdated: !!this.db && this.indexVersion !== INDEX_VERSION, progress: null, error: error instanceof Error ? error.message : 'Item data could not be prepared' })
       throw error
     }
   }
@@ -522,6 +522,21 @@ export class GameDataEngine {
     for (const effect of effects) load(effect.spellId, 0)
     const cleaned = scaledEffects(effects, spells, block, level).map(effect => ({ ...effect, text: cleanGameText(effect.text) }))
     return { itemLevel: level.itemLevel, armor: scaledArmor(block, level, location ? JSON.parse(location.data) as ArmorLocationRow : null), stats: scaledStats(block, level), effects: cleaned, setPiece: !!row.item_set }
+  }
+
+  /** Effects for a page of search results, each at the level its row shows; items without effects are left out */
+  effectsFor(entries: Array<{ id: number; itemLevel: number }>): Record<number, ItemPower['effects']> {
+    const wanted = entries.filter(entry => Number.isInteger(entry.id) && entry.id > 0 && entry.itemLevel > 0).slice(0, 200)
+    if (!wanted.length || this.indexVersion !== INDEX_VERSION) return {}
+    const ids = [...new Set(wanted.map(entry => entry.id))]
+    const withEffects = new Set((this.ready().prepare(`SELECT DISTINCT item_id FROM item_effects WHERE item_id IN (${ids.map(() => '?').join(',')})`).all(...ids) as Array<{ item_id: number }>).map(row => row.item_id))
+    const result: Record<number, ItemPower['effects']> = {}
+    for (const entry of wanted) {
+      if (!withEffects.has(entry.id) || result[entry.id]) continue
+      const effects = this.itemPower(entry.id, entry.itemLevel)?.effects
+      if (effects?.length) result[entry.id] = effects
+    }
+    return result
   }
 
   /** How many items share each boss's loot with this one, for everyone and for the selected character */

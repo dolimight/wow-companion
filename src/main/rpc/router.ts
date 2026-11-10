@@ -101,7 +101,10 @@ export function createRouter(s:RouterServices){return t.router({
   searchItemsPage:p.input(itemSearchSchema).query(({input})=>run(async()=>{
     const page=await s.gameData.call('searchPage',input)
     const tracks=await s.gameData.call('trackInfoFor',page.items.map(item=>item.id))
-    return {...page,items:page.items.map(item=>({...item,maxLevel:itemTracks(item.id,tracks[item.id]?.groups??null,tracks[item.id]?.info??null)?.max??null}))}
+    const rows=page.items.map(item=>({...item,maxLevel:itemTracks(item.id,tracks[item.id]?.groups??null,tracks[item.id]?.info??null)?.max??null}))
+    // Effects read at the level each row shows, so the numbers match the detail pane
+    const effects=await s.gameData.call('effectsFor',rows.map(item=>({id:item.id,itemLevel:item.maxLevel?.itemLevel??item.itemLevel})))
+    return {...page,items:rows.map(item=>({...item,effects:effects[item.id]??[]}))}
   })),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
   itemInstances:p.input(z.object({currentOnly:z.boolean()})).query(({input})=>run(()=>s.gameData.call('instances',input.currentOnly))),
