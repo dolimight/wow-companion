@@ -71,8 +71,9 @@ import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
 import { equalWeights } from "../shared/enhancement-recommendations";
-import { itemSockets, socketLabel, type ItemSockets } from "../shared/sockets";
-import { embellishmentCounts, embellishmentOf, enchantable, type EmbellishmentRules } from "../shared/item-enhancements";
+import { itemSockets } from "../shared/sockets";
+import { embellishmentOf, enchantable } from "../shared/item-enhancements";
+import { offHandUse } from "../shared/item-compatibility";
 import { trackLevelOptions } from "../shared/gamedata";
 import { Input } from "./components/ui/input";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
@@ -1751,9 +1752,15 @@ function GearEditor({
     if (!quiet) notify("Slot updated in your draft");
     return nextItems;
   }
-  const planIssues: PlanIssue[] = allSlots.flatMap((slot) => {
+  // What this specialization can fill: the off hand closes for two-hand-only specs and beside a two-hand weapon
+  const plannedMain = items.find((item) => item.slot === "mainHand");
+  const mainInfo = plannedMain?.itemId ? itemMap.get(plannedMain.itemId) : undefined;
+  const offHand = offHandUse(character.specId, character.specName, mainInfo ?? (plannedMain?.inventoryType != null ? { inventoryType: plannedMain.inventoryType, subclassId: plannedMain.subclassId } : null));
+  const closedSlots: Partial<Record<GearSlot, string>> = offHand.allowed ? {} : { offHand: offHand.reason };
+  const planIssues: PlanIssue[] = allSlots.flatMap((slot): PlanIssue[] => {
     const item = items.find((i) => i.slot === slot);
     if (!item) return [];
+    if (closedSlots[slot]) return [{ slot, kind: "slot" as const, reason: closedSlots[slot]!, item: item.name }];
     const sockets = socketsOf(item), room = sockets ? sockets.sockets + sockets.addable : null;
     return [
       ...(room != null && item.gems.length > room ? [{ slot, kind: "gems" as const, extra: item.gems.length - room, room }] : []),
@@ -1768,8 +1775,10 @@ function GearEditor({
     const nextItems = base.map((item) => {
       const own = fixes.filter((issue) => issue.slot === item.slot);
       if (!own.length) return item;
+      // A slot the specialization can't fill loses its item entirely
+      if (own.some((issue) => issue.kind === "slot")) return null;
       return own.reduce<GearItem>((next, issue) => issue.kind === "gems" ? { ...next, gems: next.gems.slice(0, issue.room), gemsCoverage: "complete" } : { ...next, enchant: null, enchantCoverage: "complete" }, item);
-    });
+    }).filter((item): item is GearItem => item != null);
     const shown = nextItems.find((item) => item.slot === selected);
     if (fixes.some((issue) => issue.slot === selected) && shown) {
       displayedItem.current = { slot: selected, item: shown };
@@ -1874,7 +1883,8 @@ function GearEditor({
                     : null,
                 };
               }}
-              footer={<PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />}
+              embellishments={embellishmentRules.data ?? null}
+              closedSlots={closedSlots}
             />
             <PlanStats character={character} items={items} disabled={inspectorDirty} />
             <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
@@ -1894,10 +1904,11 @@ function GearEditor({
                 <p>Current gear · {equipped?.name ?? "Not imported"}</p>
               </div>
             </div>
-            <Button onClick={() => setSlotSearch(true)} aria-label="Search items for this slot">
+            <Button onClick={() => setSlotSearch(true)} aria-label="Search items for this slot" disabled={!!closedSlots[selected] && !current}>
               <Search />
               Search items for this slot
             </Button>
+            {closedSlots[selected] && <small className="muted">{closedSlots[selected]}</small>}
             <Field label="Planned item name">
               {/* The name always comes from the picked item, so a renamed row never disagrees with its item */}
               <Input value={itemName} readOnly aria-readonly="true" placeholder="Pick one with Search items for this slot" />
@@ -1950,34 +1961,6 @@ function GearEditor({
         }}
       />
     </>
-  );
-}
-/** Enchants, gems, and embellishments across the whole plan, against what its items can hold */
-function PlanEnhancementTotals({ items, slots, canEnchant, socketsOf, embellishments }: {
-  items: GearItem[];
-  slots: GearSlot[];
-  canEnchant: (gear: GearItem | undefined, slot: GearSlot) => boolean | null;
-  socketsOf: (gear: GearItem | undefined) => ItemSockets | null;
-  embellishments: EmbellishmentRules | null;
-}) {
-  const bySlot = new Map(items.map((item) => [item.slot, item]));
-  const enchantSlots = slots.filter((slot) => canEnchant(bySlot.get(slot), slot));
-  const enchanted = enchantSlots.filter((slot) => bySlot.get(slot)?.enchant).length;
-  const sockets = items.reduce((sum, item) => sum + (socketsOf(item)?.sockets ?? 0), 0);
-  const gems = items.reduce((sum, item) => sum + item.gems.length, 0);
-  const counts = embellishmentCounts(embellishments, items).filter((category) => category.name === "Embellished" || category.count > 0);
-  const known = slots.some((slot) => canEnchant(bySlot.get(slot), slot) !== null);
-  return (
-    <div className="plan-enhancement-totals" role="status">
-      {known && <span title={`Enchantable this season: ${enchantSlots.map((slot) => slotNames[slot]).join(", ")}`}>Enchants {enchanted} of {enchantSlots.length}</span>}
-      {sockets > 0 && <span>Gems {gems} of {sockets} sockets</span>}
-      {counts.map((category) => (
-        <span key={category.name} className={category.over ? "error" : undefined}>
-          {category.name === "Embellished" ? "Embellishments" : category.name} {category.count} of {category.limit}{category.over ? ` · ${category.over} too many` : ""}
-        </span>
-      ))}
-      {counts.length > 0 && <small className="muted">Embellishments go on crafted gear · counted from your picks and each item's bonus IDs</small>}
-    </div>
   );
 }
 /** The slot fields as text, the way the inspector edits them */

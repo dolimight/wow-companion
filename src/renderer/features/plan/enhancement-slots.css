@@ -1,0 +1,49 @@
+.enhancement-slots { display: grid; gap: 14px; }
+.enhancement-slot-group { display: grid; gap: 8px; }
+.enhancement-slot-group > header { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.enhancement-slot-group > header svg { width: 14px; height: 14px; color: var(--secondary); }
+.enhancement-slot-group > header strong { font-weight: 600; }
+.enhancement-slot-group > header span { color: var(--secondary); font-variant-numeric: tabular-nums; }
+.enhancement-slot-group > header span[data-warn] { color: var(--panel-problem); }
+.enhancement-slot-group ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
+.enhancement-slot {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 64px;
+  padding: 6px 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+button.enhancement-slot:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+button.enhancement-slot:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.enhancement-slot small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--secondary); }
+.enhancement-slot-art { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: var(--muted); }
+.enhancement-slot-art .game-icon { width: 28px; height: 28px; border-radius: 6px; }
+.enhancement-slot-art > svg { width: 18px; height: 18px; }
+
+/* A gap reads as an empty socket: dashed amber for missing, dashed neutral for unknown or optional */
+.enhancement-slot[data-state="missing"] { border: 1px dashed color-mix(in srgb, var(--amber) 70%, transparent); background: color-mix(in srgb, var(--amber) 8%, transparent); }
+.enhancement-slot[data-state="missing"] small { color: var(--amber); }
+.enhancement-slot[data-state="unknown"] { border: 1px dashed var(--line); background: transparent; }
+.enhancement-slot[data-state="optional"] { border: 1px dashed var(--line); background: transparent; opacity: 0.75; }
+.enhancement-slot[data-state="extra"] { border-color: color-mix(in srgb, var(--panel-problem) 55%, transparent); }
+.enhancement-slot[data-state="extra"] small { color: var(--panel-problem); }
+.enhancement-slot[data-state="open"] { cursor: default; border: 1px dashed var(--line); background: transparent; }
+.enhancement-slot[data-state="open"] .enhancement-slot-art { border: 1px dashed var(--line); }
+
+/* Pressing a slot points at the gear it belongs to */
+@keyframes panel-slot-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.panel-slot[data-pulse] { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .panel-slot[data-pulse] { animation: panel-slot-pulse 700ms ease-out 2; }
+}

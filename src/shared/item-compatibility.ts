@@ -116,3 +116,20 @@ export function getItemCompatibility(item: ItemSummary, character: ItemSearchCha
 export function specPrimaryStat(specId: number | null | undefined): ItemPrimaryStat | null {
   return specId != null ? specs[specId]?.stat ?? null : null
 }
+
+export type OffHandUse = { allowed: true } | { allowed: false; reason: string }
+/**
+ * Whether this specialization can fill the off hand alongside the planned main hand. Specializations with no
+ * dual wield, shield, or held off-hand item never can, and a two-hand main weapon leaves no off hand except for
+ * Fury's Titan's Grip. An unknown specialization leaves the slot open
+ */
+export function offHandUse(specId: number | null | undefined, specName: string, mainHand?: { inventoryType?: number | null; subclassId?: number | null } | null): OffHandUse {
+  const spec = specId == null ? undefined : specs[specId]
+  if (!spec) return { allowed: true }
+  const who = specName && specName !== 'Unknown' ? specName : 'This specialization'
+  if (!spec.dual && !spec.shield && !spec.holdable) return { allowed: false, reason: `${who} uses a two-hand weapon, so there is no off hand` }
+  // Wands (ranged subclass 19) leave the off hand free; bows, guns, and crossbows don't
+  const twoHand = mainHand?.inventoryType === 17 || mainHand?.inventoryType === 15 || (mainHand?.inventoryType === 26 && mainHand.subclassId !== 19)
+  if (twoHand && specId !== 72) return { allowed: false, reason: 'A two-hand weapon is planned in the main hand' }
+  return { allowed: true }
+}

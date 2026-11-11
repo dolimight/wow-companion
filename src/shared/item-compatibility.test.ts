@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vite-plus/test'
-import {getItemCompatibility} from './item-compatibility'
+import {getItemCompatibility,offHandUse} from './item-compatibility'
 import type {ItemSearchCharacter,ItemSummary} from './gamedata'
 
 const character=(className:string,specId:number|null):ItemSearchCharacter=>({className,specId,level:90})
@@ -44,5 +44,21 @@ describe('character and specialization equipment checks',()=>{
     expect(getItemCompatibility(trinket,character('Death Knight',250)).compatible).toBe(true)
     expect(getItemCompatibility(trinket,character('Death Knight',251)).compatible).toBe(false)
     expect(getItemCompatibility({...trinket,specIds:[]},character('Death Knight',250)).compatible).toBe(false)
+  })
+})
+
+describe('off hand by specialization',()=>{
+  it('closes the off hand for specializations that only use two-hand weapons',()=>{
+    for(const spec of [250,252,70,71,103,104,253,254])expect(offHandUse(spec,'Blood').allowed).toBe(false)
+    expect(offHandUse(250,'Blood')).toEqual({allowed:false,reason:'Blood uses a two-hand weapon, so there is no off hand'})
+  })
+  it('opens it for dual wield, shields, and held off-hand items unless a two-hand weapon is planned',()=>{
+    for(const spec of [251,73,65,62,105,268,577])expect(offHandUse(spec,'Any').allowed).toBe(true)
+    expect(offHandUse(251,'Frost',{inventoryType:17}).allowed).toBe(false)
+    expect(offHandUse(72,'Fury',{inventoryType:17}).allowed).toBe(true)
+    expect(offHandUse(62,'Arcane',{inventoryType:26,subclassId:19}).allowed).toBe(true)
+  })
+  it('leaves the slot open when the specialization is unknown',()=>{
+    expect(offHandUse(null,'Unknown').allowed).toBe(true)
   })
 })
