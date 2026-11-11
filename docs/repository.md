@@ -24,7 +24,7 @@ See [releases](releases.md) for signing, versioning, bootstrap installation, and
 
 Actions are pinned to commit SHAs, workflow tokens default to read-only, and Actions cannot approve pull requests
 Dependabot version and security update pull requests are turned off; update dependencies and pinned Actions by hand when needed
-Dependency alerts, secret scanning/push protection, and CodeQL default setup stay enabled in GitHub
+Dependency alerts and secret scanning/push protection stay enabled in GitHub; CodeQL code scanning is turned off
 
 ## Scripts
 
