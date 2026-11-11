@@ -71,6 +71,8 @@ import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
 import { equalWeights } from "../shared/enhancement-recommendations";
+import { itemSockets, socketLabel, type ItemSockets } from "../shared/sockets";
+import { embellishmentCounts, embellishmentOf, enchantable, type EmbellishmentRules } from "../shared/item-enhancements";
 import { trackLevelOptions } from "../shared/gamedata";
 import { Input } from "./components/ui/input";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
@@ -1623,6 +1625,14 @@ function GearEditor({
   const itemIds = useMemo(() => [...new Set([...character.gear, ...items].flatMap((item) => item.itemId ? [item.itemId] : []))], [character.gear, items]);
   const itemDetails = useQuery({ queryKey: ["items", itemIds], queryFn: () => api.getItems(itemIds), enabled: gameData.data?.state === "ready" && itemIds.length > 0 });
   const itemMap = useMemo(() => new Map((itemDetails.data ?? []).map((item) => [item.id, item])), [itemDetails.data]);
+  const socketRules = useQuery({ queryKey: ["socket-rules"], queryFn: () => api.socketRules(), staleTime: Infinity });
+  const embellishmentRules = useQuery({ queryKey: ["embellishment-rules"], queryFn: () => api.embellishmentRules(), staleTime: Infinity });
+  const enchantSlots = useQuery({ queryKey: ["enchant-slots"], queryFn: () => api.enchantSlots(), enabled: gameData.data?.state === "ready", staleTime: Infinity });
+  const canEnchant = (gear: GearItem | undefined, slot: GearSlot) => enchantable(enchantSlots.data, slot, gear?.itemId ? itemMap.get(gear.itemId)?.inventoryType : null);
+  const socketsOf = (gear: GearItem | undefined) => {
+    const info = gear?.itemId ? itemMap.get(gear.itemId) : undefined;
+    return info?.sockets != null ? itemSockets(socketRules.data ?? null, { inventoryType: info.inventoryType, sockets: info.sockets }, gear?.bonusIds) : null;
+  };
   const [selected, setSelected] = useState<GearSlot>("head");
   const [slotSearch, setSlotSearch] = useState(false);
   const [statWeights, setStatWeights] = useState(memory?.statWeights ?? equalWeights);
@@ -1696,6 +1706,17 @@ function GearEditor({
       notify("Enter a valid item level");
       return null;
     }
+    let plannedEnchant = (enhancement?.enchant ?? enchant).trim() || null;
+    if (plannedEnchant && canEnchant(current, selected) === false) {
+      notify(`${slotNames[selected]} can't be enchanted this season, so the enchant was left off`);
+      plannedEnchant = null;
+    }
+    const sockets = socketsOf(current), room = sockets ? sockets.sockets + sockets.addable : null;
+    let plannedGems = (enhancement?.gems ?? gems).split(",").map((g) => g.trim()).filter(Boolean);
+    if (room != null && plannedGems.length > room) {
+      notify(room ? `${current?.name ?? "This item"} holds ${room} gem${room === 1 ? "" : "s"}, so only the first ${room === 1 ? "one was" : `${room} were`} kept` : `${current?.name ?? "This item"} has no sockets, so the gems were left off`);
+      plannedGems = plannedGems.slice(0, room);
+    }
     const next = clearRenamedPlanIdentity(current, {
       slot: selected,
       name: itemName.trim() || `${slotNames[selected]} draft`,
@@ -1704,13 +1725,10 @@ function GearEditor({
       bonusIds: current?.bonusIds,
       variantCoverage: current?.variantCoverage,
       levelSource: current?.itemLevel === ilvl ? current?.levelSource : ilvl == null ? null : "manual",
-      enchant: (enhancement?.enchant ?? enchant).trim() || null,
+      enchant: plannedEnchant,
       enchantCoverage: enchantEdited || enhancement?.enchant !== undefined ? "complete" : (current?.enchantCoverage ?? "unknown"),
       gemsCoverage: gemsEdited || enhancement?.gems !== undefined ? "complete" : (current?.gemsCoverage ?? "unknown"),
-      gems: (enhancement?.gems ?? gems)
-        .split(",")
-        .map((g) => g.trim())
-        .filter(Boolean),
+      gems: plannedGems,
       appearanceId: current?.appearanceId ?? null,
       itemLink: current?.itemLink ?? null,
       stats: current?.itemLevel === ilvl ? current.stats : [],
@@ -1797,6 +1815,7 @@ function GearEditor({
                 </Button>
               </div>
             </div>
+            <PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />
             <div className="table-wrap planner-table-wrap">
               <table className="data-table planner-table">
                 <caption>
@@ -1859,14 +1878,13 @@ function GearEditor({
                               <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known>{item?.itemLevel != null && item.levelSource === "estimated" && <span className="muted"> · Estimate</span>}</div>
                               <div className="item-subtitle planner-improvements">
                                 <span>{item?.enchant ??
-                                  (item?.enchantCoverage === "complete"
-                                    ? "No enchant in draft"
-                                    : "Enchant unknown")}</span>
-                                <span>{item?.gems.length
-                                  ? `${item.gems.length} gem${item.gems.length === 1 ? "" : "s"}`
-                                  : item?.gemsCoverage === "complete"
-                                    ? "No gems in draft"
-                                    : "Gems unknown"}</span>
+                                  (canEnchant(item, slot) === false
+                                    ? "Can't be enchanted"
+                                    : item?.enchantCoverage === "complete"
+                                      ? "No enchant in draft"
+                                      : "Enchant unknown")}</span>
+                                <span>{gemSummary(item, socketsOf(item))}</span>
+                                {embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds) && <span>{embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds)!.name}</span>}
                               </div>
                             </div>
                           </div></ItemHoverCard>
@@ -1917,9 +1935,9 @@ function GearEditor({
                 </slotForm.Field>
               }
             />
-            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else slotForm.setFieldValue("enchant", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
-            <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else slotForm.setFieldValue("gems", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
-            <EnhancementRecommendations character={character} items={items} slot={selected} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
+            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} enchantable={canEnchant(current, selected)} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else slotForm.setFieldValue("enchant", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} sockets={socketsOf(current)} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else slotForm.setFieldValue("gems", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementRecommendations character={character} items={items} slot={selected} sockets={socketsOf(current)} enchantable={canEnchant(current, selected)} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}
               {activityNames[activity]}
@@ -1947,6 +1965,48 @@ function GearEditor({
       />
     </>
   );
+}
+/** Enchants, gems, and embellishments across the whole plan, against what its items can hold */
+function PlanEnhancementTotals({ items, slots, canEnchant, socketsOf, embellishments }: {
+  items: GearItem[];
+  slots: GearSlot[];
+  canEnchant: (gear: GearItem | undefined, slot: GearSlot) => boolean | null;
+  socketsOf: (gear: GearItem | undefined) => ItemSockets | null;
+  embellishments: EmbellishmentRules | null;
+}) {
+  const bySlot = new Map(items.map((item) => [item.slot, item]));
+  const enchantSlots = slots.filter((slot) => canEnchant(bySlot.get(slot), slot));
+  const enchanted = enchantSlots.filter((slot) => bySlot.get(slot)?.enchant).length;
+  const sockets = items.reduce((sum, item) => sum + (socketsOf(item)?.sockets ?? 0), 0);
+  const gems = items.reduce((sum, item) => sum + item.gems.length, 0);
+  const counts = embellishmentCounts(embellishments, items).filter((category) => category.name === "Embellished" || category.count > 0);
+  const known = slots.some((slot) => canEnchant(bySlot.get(slot), slot) !== null);
+  return (
+    <div className="plan-enhancement-totals" role="status">
+      {known && <span title={`Enchantable this season: ${enchantSlots.map((slot) => slotNames[slot]).join(", ")}`}>Enchants {enchanted} of {enchantSlots.length}</span>}
+      {sockets > 0 && <span>Gems {gems} of {sockets} sockets</span>}
+      {counts.map((category) => (
+        <span key={category.name} className={category.over ? "error" : undefined}>
+          {category.name === "Embellished" ? "Embellishments" : category.name} {category.count} of {category.limit}{category.over ? ` · ${category.over} too many` : ""}
+        </span>
+      ))}
+      {counts.length > 0 && <small className="muted">Embellishments go on crafted gear · counted from each item's bonus IDs</small>}
+    </div>
+  );
+}
+/** Planned gems against the item's sockets, as in 1 of 2 gems or No sockets */
+function gemSummary(item: GearItem | undefined, sockets: ItemSockets | null) {
+  const count = item?.gems.length ?? 0;
+  const gemsText = (n: number) => `${n} gem${n === 1 ? "" : "s"}`;
+  if (sockets) {
+    const room = sockets.sockets + sockets.addable;
+    if (count > room) return room ? `${gemsText(count)} · item holds ${room}` : `${gemsText(count)} · item has no sockets`;
+    if (count > sockets.sockets) return `${count} of ${gemsText(room)} · with an added socket`;
+    if (!count && item?.gemsCoverage !== "complete") return `Gems unknown · ${socketLabel(sockets)}`;
+    if (!sockets.sockets) return socketLabel(sockets);
+    return `${count} of ${gemsText(sockets.sockets)}${sockets.addable ? ` · ${sockets.addable} more can be added` : ""}`;
+  }
+  return count ? gemsText(count) : item?.gemsCoverage === "complete" ? "No gems in draft" : "Gems unknown";
 }
 /** The slot fields as text, the way the inspector edits them */
 function slotValues(item: GearItem | undefined) {

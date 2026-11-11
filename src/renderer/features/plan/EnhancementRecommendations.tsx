@@ -2,7 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, CircleHelp, Gem, Sparkles, WandSparkles } from 'lucide-react'
 import type { Character, GearItem, GearSlot, StatWeights } from '../../../shared/domain'
-import { equalWeights, ratingConversions, scoreEnhancement, statHelp, statKeys, statNames, type EnhancementScore, type Ratings } from '../../../shared/enhancement-recommendations'
+import { equalWeights, ratingConversions, scoreEnhancement, statHelp, statKeys, statNames, zeroRatings, type EnhancementScore, type Ratings } from '../../../shared/enhancement-recommendations'
+import type { ItemSockets } from '../../../shared/sockets'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../components/ui/collapsible'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip'
 import { Term } from '../../components/Term'
@@ -31,12 +32,19 @@ function rankEnchants(choices: Enhancement[], plan: PlanRatings, current: GearIt
   return { suggestions: suggestions.sort((a, b) => b.score.score - a.score.score).slice(0, 3), note: suggestions.length ? null : 'Your planned enchant is already the best flat stat choice for these weights' }
 }
 
-/** Gems only replace gems already planned; adding a socket the item does not have is never suggested */
-function rankGems(choices: Enhancement[], plan: PlanRatings, current: GearItem | undefined, score: (previous: Ratings, next: Ratings) => EnhancementScore | null): Ranked {
+/** Gems replace planned gems or fill the item's empty sockets; adding a socket the item does not have is never suggested */
+function rankGems(choices: Enhancement[], plan: PlanRatings, current: GearItem | undefined, sockets: ItemSockets | null, score: (previous: Ratings, next: Ratings) => EnhancementScore | null): Ranked {
   const planned = current?.gems ?? []
-  if (!planned.length) return { suggestions: [], note: 'Add a planned gem above to compare alternatives for that socket' }
+  const empty = sockets ? Math.max(0, sockets.sockets - planned.length) : 0
+  if (sockets && !sockets.sockets && !planned.length) return { suggestions: [], note: sockets.addable ? 'This item has no sockets yet · plan a gem above once you add one' : 'This item has no sockets' }
+  if (!planned.length && !empty) return { suggestions: [], note: 'Add a planned gem above to compare alternatives for that socket' }
   const best = new Map<number, Suggestion>()
   let unknown = 0
+  if (empty) for (const choice of choices) {
+    if (choice.kind !== 'gem' || !choice.stats) continue
+    const result = score(zeroRatings(), choice.stats)
+    if (result && result.score > 0) best.set(choice.itemId, { choice, score: result, value: [...planned, choice.name].join(', ') })
+  }
   planned.forEach((name, index) => {
     const previous = plan.resolve(name, 'gem')
     if (!previous) { unknown += 1; return }
@@ -48,7 +56,7 @@ function rankGems(choices: Enhancement[], plan: PlanRatings, current: GearItem |
     }
   })
   const suggestions = [...best.values()].sort((a, b) => b.score.score - a.score.score).slice(0, 3)
-  const note = unknown === planned.length ? 'The stats of your planned gems are unknown, so alternatives cannot be compared' : suggestions.length ? null : 'Your planned gems are already the best flat stat choices for these weights'
+  const note = planned.length && unknown === planned.length && !empty ? 'The stats of your planned gems are unknown, so alternatives cannot be compared' : suggestions.length ? null : 'Your planned gems are already the best flat stat choices for these weights'
   return { suggestions, note }
 }
 
@@ -76,10 +84,12 @@ function SuggestionList({ title, icon, ranked, onApply }: { title: string; icon:
   )
 }
 
-export function EnhancementRecommendations({ character, items, slot, weights, onWeights, disabled, onApply }: {
+export function EnhancementRecommendations({ character, items, slot, sockets = null, enchantable = null, weights, onWeights, disabled, onApply }: {
   character: Character
   items: GearItem[]
   slot: GearSlot
+  sockets?: ItemSockets | null
+  enchantable?: boolean | null
   weights: StatWeights | undefined
   onWeights: (weights: StatWeights) => void
   disabled: boolean
@@ -103,8 +113,8 @@ export function EnhancementRecommendations({ character, items, slot, weights, on
   const ranked = useMemo(() => {
     if (!choices.data || !plan.data) return null
     const score = (previous: Ratings, next: Ratings) => scoreEnhancement(conversions, plan.data.delta, previous, next, active)
-    return { enchants: rankEnchants(choices.data, plan.data, current, score), gems: rankGems(choices.data, plan.data, current, score) }
-  }, [choices.data, plan.data, conversions, active, current])
+    return { enchants: enchantable === false ? { suggestions: [], note: 'This slot can’t be enchanted this season' } : rankEnchants(choices.data, plan.data, current, score), gems: rankGems(choices.data, plan.data, current, sockets, score) }
+  }, [choices.data, plan.data, conversions, active, current, sockets?.sockets, sockets?.addable, enchantable])
   const unranked = choices.data?.filter(choice => !choice.stats).length ?? 0
   const setWeight = (key: keyof StatWeights, text: string) => {
     const value = Number(text)

@@ -1,13 +1,20 @@
 import catalogJson from '../../data/season-rules/catalog.json'
 import candidatesJson from '../../data/season-rules/candidates.json'
 import type { AscensionItem, ItemAscension, ItemTrackGroup, ItemTracks, ItemTrackRange } from '../shared/gamedata'
+import type { SocketRules } from '../shared/sockets'
+import type { EmbellishmentRules } from '../shared/item-enhancements'
 
 type Candidate = { itemId: number; upgradeTrackId: string | null; source: { activity: string } }
 type Track = { id: string; name: string; ranks: Array<{ rank: number; itemLevel: number }>; beyondRanks?: Array<{ rank: number; itemLevel: number; via?: ItemAscension | null }> }
 type Ascension = { venomstoneInventoryTypes: number[]; elevatedEncounters: string[]; elevatedSets: boolean }
-type Ruleset = { id: string; name: string; upgradeTracks: Track[]; ascension?: Ascension }
+type Ruleset = { id: string; name: string; upgradeTracks: Track[]; ascension?: Ascension; sockets?: SocketRules; embellishments?: EmbellishmentRules }
 
 const rulesets = (catalogJson as unknown as { rulesets: Ruleset[] }).rulesets
+
+/** The current season's socket bonuses, or null when the catalog has none reviewed */
+export const socketRules: SocketRules | null = rulesets.find(ruleset => ruleset.sockets)?.sockets ?? null
+/** How many embellished items a character can wear and how to spot one, or null when none are reviewed */
+export const embellishmentRules: EmbellishmentRules | null = rulesets.find(ruleset => ruleset.embellishments)?.embellishments ?? null
 
 /** Bosses whose drops reach Elevated Myth, so search can tell which items qualify without loading every source */
 export const elevatedEncounters = [...new Set(rulesets.flatMap(ruleset => ruleset.ascension?.elevatedEncounters ?? []))]

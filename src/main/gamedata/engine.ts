@@ -427,7 +427,7 @@ export class GameDataEngine {
 
   private summary(row: ItemRow, sources: Map<number, ItemSource[]>): ItemSummary {
     const armor = row.class_id === 4 && row.subclass_id >= 1 && row.subclass_id <= 4 && ![16].includes(row.inventory_type) ? armorTypes[row.subclass_id - 1]! : null
-    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set }
+    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set, sockets:row.sockets }
   }
 
   search(input: ItemSearch): ItemSummary[] {
@@ -638,10 +638,19 @@ export class GameDataEngine {
   }
 
   /** Current-expansion enchant scrolls for a slot, or gems; rank variants collapse to the best quality */
+  /** Gear slots with an enchant from the newest expansion */
+  enchantSlots(): AppearanceSlot[] {
+    const db = this.ready()
+    const rows = db.prepare(`SELECT DISTINCT subclass_id FROM items i WHERE class_id = 8 AND quality >= 2 AND expansion = (SELECT MAX(expansion) FROM items WHERE class_id = 8) AND ${JUNK}`).all() as Array<{ subclass_id: number }>
+    const current = new Set(rows.map(row => row.subclass_id))
+    return (Object.entries(enchantSubclasses) as Array<[AppearanceSlot, number[]]>).flatMap(([slot, subclasses]) => subclasses.some(subclass => current.has(subclass)) ? [slot] : [])
+  }
+
   enhancements(kind: 'enchant' | 'gem', slot: AppearanceSlot | null): EnhancementOption[] {
     const db = this.ready()
     const filter = kind === 'gem' ? 'class_id = 3' : `class_id = 8 AND subclass_id IN (${(slot && enchantSubclasses[slot]) ? enchantSubclasses[slot]!.join(',') : '-1'})`
-    const latest = (db.prepare(`SELECT MAX(expansion) AS e FROM items i WHERE ${filter} AND ${JUNK}`).get() as { e: number | null }).e
+    // A slot with no enchants from the newest expansion can't be enchanted this season, so older ones aren't offered
+    const latest = (db.prepare(`SELECT MAX(expansion) AS e FROM items i WHERE ${kind === 'gem' ? filter : 'class_id = 8'} AND ${JUNK}`).get() as { e: number | null }).e
     if (latest == null) return []
     const rows = db.prepare(`SELECT id, name, quality, icon FROM items i WHERE ${filter} AND expansion = ? AND quality >= 2 AND ${JUNK} ORDER BY quality DESC, id DESC`).all(latest) as Array<{ id: number; name: string; quality: number; icon: number | null }>
     const seen = new Set<string>()

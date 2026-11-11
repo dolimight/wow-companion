@@ -22,7 +22,7 @@ const index=new Database(process.argv[2],{readonly:true,fileMustExist:true})
 if((index.prepare("SELECT value FROM meta WHERE key='game_version'").get() as {value:string})?.value!==version)throw Error('The item index belongs to another game build')
 const casc=await LocalCasc.open(install),definitions=new Definitions('.local/scratch/gamedata/definitions'),tables=new Map<string,Map<number,Row>>(),hashes:Record<string,string>={}
 try{
-  for(const name of ['ItemNameDescription','CurrencyTypes','ItemBonusListGroupEntry','ItemExtendedCost','ItemBonus','ItemScalingConfig','ItemXBonusTree','ItemBonusTreeNode','JournalTierXInstance','JournalInstance','JournalEncounter','JournalEncounterItem']){
+  for(const name of ['ItemNameDescription','ItemLimitCategory','CurrencyTypes','ItemBonusListGroupEntry','ItemExtendedCost','ItemBonus','ItemScalingConfig','ItemXBonusTree','ItemBonusTreeNode','JournalTierXInstance','JournalInstance','JournalEncounter','JournalEncounterItem']){
     const bytes=await casc.file(await definitions.fileDataId(name));hashes[name]=createHash('sha256').update(bytes).digest('hex')
     tables.set(name,readTable(bytes,await definitions.fields(name,casc.version,readHeader(bytes).layoutHash)))
   }
@@ -63,6 +63,14 @@ try{
   // The Venomous Abyss's last two bosses drop Elevated Myth gear; tier pieces reach the same level. Venomstones raise weapons, off-hands, trinkets and necklaces
   const elevatedEncounters=[2883,2895].map(id=>{const encounter=table('JournalEncounter').get(id);if(!encounter||Number(encounter.JournalInstanceID)!==1320)throw Error('The reviewed final raid bosses changed');return String(encounter.Name_lang)})
   const ascension={venomstoneInventoryTypes:[2,12,13,14,15,17,21,22,23,26],elevatedEncounters,elevatedSets:true}
+  // Bonus type 6 adds sockets. Necks and rings drop with list 13668's socket; head, wrists and waist can have list 13695's added
+  const bonusLists:Record<string,number>={}
+  for(const bonus of rows('ItemBonus'))if(bonus.Type===6)bonusLists[String(bonus.ParentItemBonusListID)]=(bonusLists[String(bonus.ParentItemBonusListID)]??0)+Number((bonus.Value as number[])[0])
+  if(bonusLists['13668']!==1||bonusLists['13695']!==1)throw Error('The reviewed socket bonuses changed')
+  const sockets={bonusLists,drop:{bonusList:13668,inventoryTypes:[2,11]},addable:{bonusList:13695,inventoryTypes:[1,6,9]}}
+  // Embellished limit categories cap how many a character wears; bonus type 35 puts an item in one
+  const embellishments=rows('ItemLimitCategory').filter(row=>/Embellished$/.test(String(row.Name_lang))).map(row=>({name:String(row.Name_lang),limit:Number(row.Quantity),bonusLists:rows('ItemBonus').filter(bonus=>bonus.Type===35&&Number((bonus.Value as number[])[0])===Number(row.ID)).map(bonus=>Number(bonus.ParentItemBonusListID)).sort((a,b)=>a-b)})).filter(category=>category.bonusLists.length)
+  if(embellishments.find(category=>category.name==='Embellished')?.limit!==2)throw Error('The reviewed embellishment limit changed')
   // Current-season Journal entries carry server availability conditions; retain that boundary
   const instances=new Set(rows('JournalTierXInstance').filter(r=>r.JournalTierID===505&&r.AvailabilityCondition===156363).map(r=>Number(r.JournalInstanceID)))
   const loot=rows('JournalEncounterItem').filter(row=>instances.has(Number(table('JournalEncounter').get(Number(row.JournalEncounterID))?.JournalInstanceID)))
@@ -91,7 +99,7 @@ try{
     for(const [key,variant]of possibilities)for(const slot of slots)candidates.push(toItemVariant(gearItemSchema.parse({slot,itemId,name:item.name,itemLevel:variant.itemLevel,inventoryType:item.inventory_type,classId:item.class_id,subclassId:item.subclass_id,requiredLevel:item.required_level,allowableClassMask:item.allowable_class_mask,specIds:item.spec_ids?JSON.parse(String(item.spec_ids)):null,primaryStats:item.primary_stats?JSON.parse(String(item.primary_stats)):null,bonusIds:variant.bonusIds,upgradeTrackId:variant.trackId,upgradeRank:variant.rank}),{variantKey:`client:${reviewedSince}:${itemId}:${key}:${slot}`,owned:false,coverage:'partial',source,availableFrom:firstReviewedAt,currencyCost:null,evidenceRefs:[{id:`client:${reviewedSince}:journal:${reward.ID}`,contentHash:hashes.JournalEncounterItem!}]}))
   }
   const unique=[...new Map(candidates.map(item=>[item.variantKey,item])).values()]
-  const rules=seasonRulesetSchema.parse({schemaVersion:1,id,name:'Midnight Season 2 · installed-client reference',seasonId:'midnight-season-2',builds:{min:reviewedSince,max:version},regions:['us','eu','kr','tw'],effectiveFrom:checkedAt,effectiveUntil:null,status:'active',validated:true,sources:[{title:`Installed Retail ${version} numeric tables · mapping definitions`,url:'https://github.com/wowdev/WoWDBDefs',checkedAt},{title:'Blizzard 12.1.5 content notes',url:'https://news.blizzard.com/en-gb/article/24304162/12-1-5-content-update-notes',checkedAt},{title:'Blizzard hotfixes · Venomstone item-level correction',url:'https://news.blizzard.com/en-gb/article/24307310/hotfixes-october-27-2026',checkedAt}],validationFixtures:['src/main/progression/season-bundle.test.ts'],candidateCoverage:'partial',constraintsCoverage:'partial',upgradeTracks:tracks,ascension})
+  const rules=seasonRulesetSchema.parse({schemaVersion:1,id,name:'Midnight Season 2 · installed-client reference',seasonId:'midnight-season-2',builds:{min:reviewedSince,max:version},regions:['us','eu','kr','tw'],effectiveFrom:checkedAt,effectiveUntil:null,status:'active',validated:true,sources:[{title:`Installed Retail ${version} numeric tables · mapping definitions`,url:'https://github.com/wowdev/WoWDBDefs',checkedAt},{title:'Blizzard 12.1.5 content notes',url:'https://news.blizzard.com/en-gb/article/24304162/12-1-5-content-update-notes',checkedAt},{title:'Blizzard hotfixes · Venomstone item-level correction',url:'https://news.blizzard.com/en-gb/article/24307310/hotfixes-october-27-2026',checkedAt}],validationFixtures:['src/main/progression/season-bundle.test.ts'],candidateCoverage:'partial',constraintsCoverage:'partial',upgradeTracks:tracks,ascension,sockets,embellishments})
   await mkdir('data/season-rules',{recursive:true})
   await writeFile('data/season-rules/catalog.json',JSON.stringify({schemaVersion:1,rulesets:[rules]},null,2)+'\n')
   await writeFile('data/season-rules/candidates.json',JSON.stringify({[id]:unique},null,2)+'\n')

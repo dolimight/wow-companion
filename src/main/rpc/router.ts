@@ -13,7 +13,7 @@ import type { ProgressionService } from '../progression/service'
 import { contentPreferencesSchema } from '../../shared/season-rules'
 import { appearanceSlotSchema } from '../../shared/domain'
 import { armorTypes, ascensionItem, itemSearchCharacterSchema, itemSearchSchema } from '../../shared/gamedata'
-import { itemTracks } from '../item-tracks'
+import { embellishmentRules, itemTracks, socketRules } from '../item-tracks'
 import { blizzardRegions } from '../providers/blizzard'
 import type { SessionService } from '../session/service'
 import { sessionPreferencesSchema, dispositionSchema } from '../../shared/session-plan'
@@ -106,6 +106,9 @@ export function createRouter(s:RouterServices){return t.router({
     const effects=await s.gameData.call('effectsFor',rows.map(item=>({id:item.id,itemLevel:item.maxLevel?.ladderLevel??item.maxLevel?.itemLevel??item.itemLevel})))
     return {...page,items:rows.map(item=>({...item,effects:effects[item.id]??[]}))}
   })),
+  socketRules:p.query(()=>socketRules),
+  embellishmentRules:p.query(()=>embellishmentRules),
+  enchantSlots:p.query(()=>run(()=>s.gameData.call('enchantSlots'))),
   getItem:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('item',input.id))),
   itemInstances:p.input(z.object({currentOnly:z.boolean()})).query(({input})=>run(()=>s.gameData.call('instances',input.currentOnly))),
   // Stats, effects, and track of one item, shown at its highest level unless a level is picked

@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { activitySchema, type Activity } from './domain'
 import type { EvaluationContext } from './evidence'
 import { currencyCostSchema } from './gear-variants'
+import { socketRulesSchema } from './sockets'
+import { embellishmentRulesSchema } from './item-enhancements'
 
 export const rulesSourceSchema=z.object({title:z.string().min(1),url:z.string().url(),checkedAt:z.string().datetime()})
 export const seasonRulesetSchema=z.object({
@@ -13,6 +15,8 @@ export const seasonRulesetSchema=z.object({
     beyondRanks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative(),via:z.enum(['venomstone','elevated']).nullable().optional()})).optional()})).default([]),
   // Which items each route past the crest ladder applies to, reviewed against the content notes and observed top-player gear
   ascension:z.object({venomstoneInventoryTypes:z.array(z.number().int().nonnegative()),elevatedEncounters:z.array(z.string().min(1)),elevatedSets:z.boolean()}).optional(),
+  sockets:socketRulesSchema.optional(),
+  embellishments:embellishmentRulesSchema.optional(),
   restrictions:z.array(z.object({group:z.string().min(1),maxEquipped:z.number().int().nonnegative()})).default([]),minimumGroups:z.array(z.object({group:z.string().min(1),minEquipped:z.number().int().nonnegative()})).default([]),
   rewardTables:z.array(z.object({activity:z.enum([...activitySchema.options,'crafting','world']),difficulty:z.string(),itemLevel:z.number().nonnegative(),sourceUrl:z.string().url()})).default([]),
 }).superRefine((rules,ctx)=>{
