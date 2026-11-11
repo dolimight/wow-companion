@@ -1,8 +1,8 @@
 .gear-section-title { display: flex; align-items: center; gap: 8px; }
 .gear-section-title > svg { flex: none; color: var(--accent); }
-.gear-slot-label, .planner-slot-name { display: inline-flex; align-items: center; gap: 8px; }
+.gear-slot-label { display: inline-flex; align-items: center; gap: 8px; }
 .gear-slot-glyph { flex: none; }
-.gear-slot-label > svg, .planner-slot-name > svg { color: var(--secondary); }
+.gear-slot-label > svg { color: var(--secondary); }
 
 .progression-layout { gap: 24px; }
 .progression-slots { padding: 20px; border-radius: 12px; background: var(--surface); }
@@ -38,18 +38,6 @@
 .plan-enhancement-totals { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: -8px 0 20px; padding: 0 4px; font-variant-numeric: tabular-nums; }
 .plan-enhancement-totals > span { font-weight: 500; }
 .plan-enhancement-totals > small { flex-basis: 100%; }
-.planner-table caption { line-height: 1.6; max-width: 75ch; padding-bottom: 16px; }
-.planner-table td { padding-block: 16px; }
-.planner-gear-item { gap: 12px; }
-.planner-gear-item .item-name { line-height: 1.5; }
-.planner-gear-item .quality-text-0 { color: var(--quality-poor); }
-.planner-gear-item .quality-text-1 { color: var(--quality-common); }
-.planner-gear-item .quality-text-2 { color: var(--quality-uncommon); }
-.planner-gear-item .quality-text-3 { color: var(--quality-rare); }
-.planner-gear-item .quality-text-4 { color: var(--quality-epic); }
-.planner-gear-item .quality-text-5 { color: var(--quality-legendary); }
-.planner-gear-item .quality-text-6 { color: var(--quality-artifact); }
-.planner-gear-item .quality-text-7 { color: var(--quality-heirloom); }
 .gear-inspector { position: sticky; top: 0; padding: 20px; }
 .gear-inspector-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .gear-inspector-heading > div { min-width: 0; }
