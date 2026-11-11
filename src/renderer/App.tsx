@@ -2309,12 +2309,12 @@ function SettingsPage() {
           </section>
           <section className="settings-section" aria-labelledby="alerts-heading">
             <h2 id="alerts-heading">Alerts</h2>
-            <p>Desktop notifications about your characters</p>
+            <p>Desktop notifications about your characters, realms, and updates</p>
             <div className="settings-section-body surface">
               <div className="setting-row">
                 <div>
                   <h3>Desktop alerts</h3>
-                  <p>A new season best, or a Great Vault waiting after the weekly reset</p>
+                  <p>A new season best, a Great Vault waiting after the weekly reset, your realms going down or coming back up, and new app updates</p>
                 </div>
                 <Toggle
                   type="button"

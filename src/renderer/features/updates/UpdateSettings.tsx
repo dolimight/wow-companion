@@ -3,6 +3,7 @@ import { ArrowUpCircle, Download, ExternalLink, RefreshCw, RotateCw } from 'luci
 import type { UpdateChannel, UpdateState } from '../../../shared/updates'
 import { AppSelect } from '../../components/AppSelect'
 import { Badge, Button, Field } from '../../components/ui/primitives'
+import { Toggle } from '../../components/ui/toggle'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { syncUpdateBlockers } from '../../lib/update-safety'
@@ -41,6 +42,15 @@ export function UpdateSettings() {
       <div className="updates-identity"><ArrowUpCircle size={21} aria-hidden="true" /><div><h3>WOW Companion</h3><p>{state ? `Version ${state.currentVersion}` : window.companion ? 'Loading installed version…' : 'Updates are available in the desktop app'}</p></div>{state && <Badge>{state.currentVersion.includes('-nightly.') ? 'Nightly build' : 'Stable build'}</Badge>}</div>
       <Field label="Update track"><AppSelect label="Update track" value={state?.channel ?? 'stable'} options={[{ value: 'stable', label: 'Stable' }, { value: 'nightly', label: 'Nightly' }]} disabled={disabled || locked || state?.status === 'ready'} onValueChange={channel => { setLater(false); void run(() => window.companion!.setUpdateChannel(channel as UpdateChannel)) }} /></Field>
       {state?.status === 'ready' && <p className="muted">Install the downloaded update before changing tracks</p>}
+      <div className="setting-row">
+        <div>
+          <h3>Download updates automatically</h3>
+          <p>New versions download in the background, then you only need to restart · Off asks before downloading</p>
+        </div>
+        <Toggle type="button" variant="outline" className="workspace-toggle" aria-label="Download updates automatically" pressed={state?.autoDownload ?? false} disabled={disabled || busy} onPressedChange={pressed => void run(() => window.companion!.setUpdateAutoDownload(pressed))}>
+          {state?.autoDownload ? 'On' : 'Off'}
+        </Toggle>
+      </div>
       <p className="muted">Nightly builds may contain unfinished changes · Returning to an older Stable build is blocked to protect your local data</p>
       <div className="updates-status" role="status" aria-live="polite"><strong>{state ? state.status === 'idle' && state.checkedAt ? 'No newer release on this track' : labels[state.status] : 'Checking update support…'}</strong>{state?.availableVersion && <span>{state.availableVersion}</span>}{state?.checkedAt && <small>Last checked {new Date(state.checkedAt).toLocaleString()}</small>}</div>
       {state?.status === 'downloading' && <div className="updates-progress"><progress max={100} value={state.progress ?? undefined} aria-label="Update download progress" /><span>{state.progress == null ? 'Preparing download…' : `${Math.round(state.progress)}%`}</span></div>}

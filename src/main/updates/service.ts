@@ -9,7 +9,7 @@ export type UpdaterAdapter = {
   on(event: string, listener: (...args: any[]) => void): void
   off(event: string, listener: (...args: any[]) => void): void
 }
-export type UpdatePreferences = { channel: UpdateChannel; expectedVersion?: string }
+export type UpdatePreferences = { channel: UpdateChannel; expectedVersion?: string; autoDownload?: boolean }
 type Options = {
   version: string
   disabledReason?: string | null
@@ -28,10 +28,10 @@ export async function createUpdateService(options: Options) {
   let preferenceError = false
   try {
     const saved = await options.readPreferences() as Partial<UpdatePreferences> | null
-    if (saved && isUpdateChannel(saved.channel)) preferences = { channel: saved.channel, ...(typeof saved.expectedVersion === 'string' && releaseVersion(saved.expectedVersion) ? { expectedVersion: saved.expectedVersion } : {}) }
+    if (saved && isUpdateChannel(saved.channel)) preferences = { channel: saved.channel, ...(typeof saved.expectedVersion === 'string' && releaseVersion(saved.expectedVersion) ? { expectedVersion: saved.expectedVersion } : {}), ...(saved.autoDownload === true ? { autoDownload: true } : {}) }
   } catch { preferenceError = true }
   let state: UpdateState = {
-    currentVersion: options.version, channel: preferences.channel,
+    currentVersion: options.version, channel: preferences.channel, autoDownload: preferences.autoDownload === true,
     status: options.disabledReason ? 'disabled' : 'idle',
     availableVersion: null, progress: null, releaseNotes: null, releaseUrl: null,
     checkedAt: null, error: preferenceError ? 'Update preferences could not be read' : null,
@@ -89,7 +89,7 @@ export async function createUpdateService(options: Options) {
       failedInstallVersion = preferences.expectedVersion
       publish({ status: state.disabledReason ? 'disabled' : 'error', error: 'The previous update did not apply · Check for updates to retry' })
     }
-    preferences = { channel: preferences.channel }
+    preferences = { channel: preferences.channel, ...(preferences.autoDownload ? { autoDownload: true } : {}) }
     try { await options.writePreferences(preferences) } catch { failure('Update confirmation could not be saved') }
   }
   const service = {
@@ -103,6 +103,7 @@ export async function createUpdateService(options: Options) {
       try { await options.adapter.check(); if (state.status === 'checking') publish({ status: 'idle' }) }
       catch { failure('Could not check for updates · Check your connection and try again') }
       finally { active = false }
+      if (state.autoDownload && state.status === 'available') return service.download()
       return snapshot()
     },
     async download(): Promise<UpdateState> {
@@ -119,7 +120,7 @@ export async function createUpdateService(options: Options) {
       if (disabled() || active || state.status === 'ready' || state.status === 'installing' || channel === state.channel) return snapshot()
       active = true
       try {
-        const next = { channel }
+        const next = { ...preferences, channel }
         await options.writePreferences(next)
         options.adapter.configure(channel)
         preferences = next
@@ -127,6 +128,14 @@ export async function createUpdateService(options: Options) {
       } catch { failure('Could not save the update track · Try again') }
       finally { active = false }
       if (state.channel === channel && state.status === 'idle') return service.check()
+      return snapshot()
+    },
+    async setAutoDownload(value: boolean): Promise<UpdateState> {
+      if (closed || value === state.autoDownload) return snapshot()
+      const next = { ...preferences, autoDownload: value }
+      try { await options.writePreferences(next); preferences = next; publish({ autoDownload: value }) }
+      catch { failure('Could not save the download setting · Try again'); return snapshot() }
+      if (value && !active && state.status === 'available') return service.download()
       return snapshot()
     },
     async install(): Promise<UpdateState> {
@@ -137,9 +146,9 @@ export async function createUpdateService(options: Options) {
       const target = state.availableVersion
       publish({ status: 'installing', error: null })
       try {
-        await options.writePreferences({ channel: state.channel, expectedVersion: target })
+        await options.writePreferences({ ...preferences, expectedVersion: target })
         // Check again after the asynchronous marker write, before workers stop
-        if (blockers().length) { await options.writePreferences({ channel: state.channel }); publish({ status: 'ready', error: 'Finish or save the work listed below before restarting' }); return snapshot() }
+        if (blockers().length) { await options.writePreferences(preferences); publish({ status: 'ready', error: 'Finish or save the work listed below before restarting' }); return snapshot() }
         await options.beforeInstall()
         options.adapter.install()
       } catch { failure('The update could not be installed · Restart the app and check for updates to retry') }

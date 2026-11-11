@@ -17,6 +17,7 @@ export type NativeBridge = {
   downloadUpdate():Promise<UpdateState>
   installUpdate():Promise<UpdateState>
   setUpdateChannel(channel:UpdateChannel):Promise<UpdateState>
+  setUpdateAutoDownload(value:boolean):Promise<UpdateState>
   setUpdateBlockers(blockers:string[]):Promise<void>
   onUpdateState(listener:(state:UpdateState)=>void):()=>void
   windowState():Promise<WindowState>
