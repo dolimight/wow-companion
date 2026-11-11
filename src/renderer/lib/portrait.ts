@@ -20,6 +20,49 @@ export function portraitCrop(pixels: Uint8ClampedArray, width: number, height: n
   return { x: (left + right + 1 - size) / 2, y: top - size * 0.05, size };
 }
 
+/** The silhouette's full bounds, so a full-body render can fill its frame without clipping */
+export function silhouetteBounds(pixels: Uint8ClampedArray, width: number, height: number): { x: number; y: number; width: number; height: number } | null {
+  let top = height, bottom = -1, left = width, right = -1, transparent = false;
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const alpha = pixels[(y * width + x) * 4 + 3];
+    if (alpha < 16) transparent = true;
+    if (alpha > 32) { top = Math.min(top, y); bottom = Math.max(bottom, y); left = Math.min(left, x); right = Math.max(right, x); }
+  }
+  if (!transparent || bottom < top || right < left) return null;
+  return { x: left, y: top, width: right - left + 1, height: bottom - top + 1 };
+}
+
+const figures = new Map<string, Promise<string | null>>();
+
+/** The whole character with the render's empty canvas trimmed away */
+export function trimmedFigure(source: string): Promise<string | null> {
+  const cached = figures.get(source);
+  if (cached) return cached;
+  const request = (async () => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.src = source;
+    await image.decode();
+    const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const bounds = silhouetteBounds(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+    if (!bounds) return null;
+    const figure = document.createElement("canvas");
+    figure.width = bounds.width;
+    figure.height = bounds.height;
+    figure.getContext("2d")?.drawImage(canvas, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, bounds.width, bounds.height);
+    return figure.toDataURL("image/png");
+  })().catch(() => { figures.delete(source); return null; });
+  figures.set(source, request);
+  if (figures.size > 20) figures.delete(figures.keys().next().value!);
+  return request;
+}
+
 const portraits = new Map<string, Promise<string | null>>();
 
 /** Reuse the same local transparent cutout for the roster, sidebar, and character switcher */
