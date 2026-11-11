@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { ShortcutDetails } from 'electron'
-import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
+import { persistWindowsIcon, refreshPinnedShellItems, alignShortcutActivator, appIdentity, registerToastIdentity, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
 
 const directories: string[] = []
 afterEach(async () => { for (const directory of directories.splice(0)) await rm(directory, { recursive: true, force: true }) })
@@ -97,4 +97,42 @@ it('passes link paths to PowerShell through the environment, never the script te
   expect(run).toHaveBeenCalledOnce()
   run.mockImplementationOnce((_file, _args, _options, callback) => callback(new Error('blocked')))
   expect(await refreshPinnedShellItems(directory, files, run as never)).toBe(false)
+})
+
+it('keeps development runs apart from the installed app’s name, data, identity, and activator', () => {
+  const installed = appIdentity(true), development = appIdentity(false)
+  expect(installed).toMatchObject({ appId: windowsAppId, displayName: 'WOW Companion', dataFolder: 'wow-companion' })
+  expect(development).toMatchObject({ displayName: 'WOW Companion Dev', dataFolder: 'wow-companion-dev' })
+  for (const key of ['appId', 'activator', 'displayName', 'dataFolder'] as const) expect(development[key]).not.toBe(installed[key])
+  for (const identity of [installed, development]) expect(identity.activator).toMatch(/^\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}$/)
+})
+
+it('names the toast identity, icon, activator, and launch command in the per-user registry', async () => {
+  const calls: string[][] = []
+  const ok = await registerToastIdentity(appIdentity(true), 'C:\\Icons\\classic.png', '"C:\\Apps\\WOW Companion.exe"', (_file, args, _options, callback) => { calls.push(args); callback(null) })
+  expect(ok).toBe(true)
+  const key = 'HKCU\\Software\\Classes\\AppUserModelId\\local.wowcompanion.desktop'
+  expect(calls.slice(0, 3).map(args => [args[1], args[3], args[7]])).toEqual([
+    [key, 'DisplayName', 'WOW Companion'],
+    [key, 'IconUri', 'C:\\Icons\\classic.png'],
+    [key, 'CustomActivator', '{9E1838B3-D189-4651-AF88-03B4767F6514}'],
+  ])
+  expect(calls[3]).toEqual(['add', 'HKCU\\Software\\Classes\\CLSID\\{9E1838B3-D189-4651-AF88-03B4767F6514}\\LocalServer32', '/ve', '/t', 'REG_SZ', '/d', '"C:\\Apps\\WOW Companion.exe"', '/f'])
+  expect(await registerToastIdentity(appIdentity(true), 'x', 'y', (_file, _args, _options, callback) => callback(new Error('denied')))).toBe(false)
+})
+
+it('points only this installation’s Start Menu link at the fixed activator', () => {
+  const identity = appIdentity(true)
+  const writes: Array<[string, ShortcutDetails]> = []
+  const links: Record<string, ShortcutDetails> = {
+    mine: { target: 'C:\Apps\WOW Companion.exe', appUserModelId: identity.appId, toastActivatorClsid: '{06993883-4B25-45DF-8F02-205B1D5D6E18}' },
+    done: { target: 'C:\Apps\WOW Companion.exe', appUserModelId: identity.appId, toastActivatorClsid: identity.activator.toLowerCase() },
+    other: { target: 'C:\Other\WOW Companion.exe', appUserModelId: identity.appId },
+  }
+  const shell = { readShortcutLink: (file: string) => { const link = links[file]; if (!link) throw Error('missing'); return link }, writeShortcutLink: (file: string, _operation: 'update', details: ShortcutDetails) => { writes.push([file, details]); return true } }
+  expect(alignShortcutActivator('mine', 'c:\apps\wow companion.exe', identity, shell)).toBe(true)
+  expect(alignShortcutActivator('done', 'C:\Apps\WOW Companion.exe', identity, shell)).toBe(false)
+  expect(alignShortcutActivator('other', 'C:\Apps\WOW Companion.exe', identity, shell)).toBe(false)
+  expect(alignShortcutActivator('missing', 'C:\Apps\WOW Companion.exe', identity, shell)).toBe(false)
+  expect(writes).toEqual([['mine', { target: 'C:\Apps\WOW Companion.exe', toastActivatorClsid: identity.activator }]])
 })
