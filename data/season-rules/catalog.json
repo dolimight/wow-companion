@@ -132,11 +132,13 @@
           "beyondRanks": [
             {
               "rank": 7,
-              "itemLevel": 285
+              "itemLevel": 285,
+              "via": null
             },
             {
               "rank": 8,
-              "itemLevel": 289
+              "itemLevel": 289,
+              "via": null
             }
           ]
         },
@@ -229,11 +231,13 @@
           "beyondRanks": [
             {
               "rank": 7,
-              "itemLevel": 298
+              "itemLevel": 298,
+              "via": null
             },
             {
               "rank": 8,
-              "itemLevel": 302
+              "itemLevel": 302,
+              "via": null
             }
           ]
         },
@@ -326,11 +330,13 @@
           "beyondRanks": [
             {
               "rank": 7,
-              "itemLevel": 311
+              "itemLevel": 311,
+              "via": null
             },
             {
               "rank": 8,
-              "itemLevel": 315
+              "itemLevel": 315,
+              "via": null
             }
           ]
         },
@@ -423,11 +429,13 @@
           "beyondRanks": [
             {
               "rank": 7,
-              "itemLevel": 324
+              "itemLevel": 324,
+              "via": null
             },
             {
               "rank": 8,
-              "itemLevel": 328
+              "itemLevel": 328,
+              "via": "venomstone"
             }
           ]
         },
@@ -520,19 +528,41 @@
           "beyondRanks": [
             {
               "rank": 7,
-              "itemLevel": 337
+              "itemLevel": 337,
+              "via": null
             },
             {
               "rank": 8,
-              "itemLevel": 341
+              "itemLevel": 341,
+              "via": "venomstone"
             },
             {
               "rank": 9,
-              "itemLevel": 344
+              "itemLevel": 344,
+              "via": "elevated"
             }
           ]
         }
       ],
+      "ascension": {
+        "venomstoneInventoryTypes": [
+          2,
+          12,
+          13,
+          14,
+          15,
+          17,
+          21,
+          22,
+          23,
+          26
+        ],
+        "elevatedEncounters": [
+          "The Coiled Altar",
+          "Ula'tek"
+        ],
+        "elevatedSets": true
+      },
       "restrictions": [],
       "minimumGroups": [],
       "rewardTables": []

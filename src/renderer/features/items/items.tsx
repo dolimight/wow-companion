@@ -14,7 +14,7 @@ import { ItemPowerSection, wowheadItemUrl } from "./ItemPower";
 import { errorMessage, notify } from "../../lib/notify";
 import { armorSlots, armorTypes, gearSlotsForInventoryType, qualityNames, trackRankLabel, type ArmorType, type ItemSearch, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
 import { getItemCompatibility } from "../../../shared/item-compatibility";
-import type { AppearanceSlot, Character, GearItem } from "../../../shared/domain";
+import type { AppearanceSlot, Character, GearItem, StatWeights } from "../../../shared/domain";
 import "./items.css";
 
 export { ItemIcon } from "./ItemIcon";
@@ -44,7 +44,7 @@ const slotOptions: Array<{ value: AppearanceSlot | "any"; label: string }> = [
 type Filters = { source: "any" | "dungeon" | "raid"; instance: string; stat: NonNullable<ItemSearch["stat"]>; quality: string; armor: ArmorType | "any"; withEffect: boolean; withSocket: boolean; levelBasis: "max" | "base"; minLevel: string; maxLevel: string };
 const noFilters: Filters = { source: "any", instance: "any", stat: "any", quality: "any", armor: "any", withEffect: false, withSocket: false, levelBasis: "max", minLevel: "", maxLevel: "" };
 type Sort = NonNullable<ItemSearch["sort"]>;
-const sortOptions = [{ value: "relevance", label: "Best match" }, { value: "maxLevel", label: "Highest max item level" }, { value: "baseLevel", label: "Highest base item level" }];
+const sortOptions = [{ value: "relevance", label: "Best match · highest level, then stats" }, { value: "maxLevel", label: "Highest max item level" }, { value: "baseLevel", label: "Highest base item level" }];
 const levelBasisOptions = [{ value: "max", label: "Max item level" }, { value: "base", label: "Base item level" }];
 /** A typed item level, or null while the box is empty or not a whole number */
 const levelValue = (text: string) => /^\d{1,4}$/.test(text.trim()) && Number(text) >= 1 ? Math.min(2000, Number(text)) : null;
@@ -53,7 +53,7 @@ const qualityOptions = [{ value: "any", label: "Any quality" }, ...[2, 3, 4, 5].
 const armorOptions = [{ value: "any", label: "Any armor" }, ...armorTypes.map(armor => ({ value: armor, label: armor[0]!.toUpperCase() + armor.slice(1) }))];
 
 /** Item search that runs entirely against the local index built from the user's WoW install */
-export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string }) {
+export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel, weights = null }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string; weights?: StatWeights | null }) {
   const status = useGameData();
   const client = useQueryClient();
   const rebuild = useMutation({ mutationFn: () => api.rebuildItemData(), onSuccess: () => { notify("Item data prepared"); void client.invalidateQueries(); }, onError: (error) => notify(errorMessage(error)) });
@@ -81,8 +81,8 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
   const context = character ? {className:character.className,specId:character.specId,level:character.level} : null;
   const ready = status.data?.state === "ready";
   const results = useInfiniteQuery({
-    queryKey: ["item-search-pages", character?.id, context, query],
-    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, instance: query.instance === "any" ? null : query.instance, stat: query.stat, quality: query.quality === "any" ? null : Number(query.quality), armor: armorFilter && query.armor !== "any" ? query.armor : null, withEffect: query.withEffect, withSocket: query.withSocket, sort: query.sort, levelBasis: query.levelBasis, minLevel: query.levels.min, maxLevel: query.levels.max, limit: 40, offset: pageParam }),
+    queryKey: ["item-search-pages", character?.id, context, query, weights],
+    queryFn: ({ pageParam }) => api.searchItemsPage({ text: query.text, slot: fixedSlot ?? (query.slot === "any" ? null : query.slot), character:context, source: query.source, currentOnly: query.current, instance: query.instance === "any" ? null : query.instance, stat: query.stat, quality: query.quality === "any" ? null : Number(query.quality), armor: armorFilter && query.armor !== "any" ? query.armor : null, withEffect: query.withEffect, withSocket: query.withSocket, sort: query.sort, weights, levelBasis: query.levelBasis, minLevel: query.levels.min, maxLevel: query.levels.max, limit: 40, offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: page => page.nextOffset ?? undefined,
     enabled: open && ready,
@@ -153,7 +153,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
-                        <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${trackRankLabel(item.maxLevel.track, item.maxLevel.rank, item.maxLevel.ranks)}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
+                        <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${trackRankLabel(item.maxLevel.track, item.maxLevel.rank, item.maxLevel.ranks, item.maxLevel.via)}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
                         {item.effects?.map((effect, index) => <small key={index} className="item-result-effect"><Sparkles aria-hidden="true" /><span><strong>{effect.label}:</strong> {effect.text}</span></small>)}
                         {sourceLine(item) && <small className="item-result-source">{sourceLine(item)}</small>}
                         {context && !getItemCompatibility(item,context).verified && <small>{getItemCompatibility(item,context).reason ?? "Some equipment restrictions are unknown"}</small>}

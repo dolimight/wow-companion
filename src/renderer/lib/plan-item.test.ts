@@ -288,9 +288,9 @@ describe('planned level for a new target', () => {
     expect(staged).toMatchObject({ itemLevel: 342, bonusIds: [10390, 12350], variantCoverage: 'partial', levelSource: 'observed' })
     expect(api.itemPower).not.toHaveBeenCalled()
   })
-  it('starts a new target at its true maximum, ranks past the crest ladder included', async () => {
+  it('starts a new target at the top crest rank, leaving Venomstone and Elevated levels to pick', async () => {
     await addItemToPlan({ character, activity: 'mythicPlus', item: { ...plate, maxLevel: { itemLevel: 344, ladderLevel: 334 } } as never, preferredSlot: 'head' })
-    expect(levelOf()).toBe(344)
+    expect(levelOf()).toBe(334)
   })
   it('marks a level that only came from the game files as an estimate', async () => {
     vi.mocked(api.itemPower).mockResolvedValue({ tracks: { max: { itemLevel: 334 } } } as never)

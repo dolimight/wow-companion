@@ -205,6 +205,17 @@ describe('item level sort and range',()=>{
     expect(engine.searchPage({...query,sort:'maxLevel'}).items.map(item=>item.id)).toEqual([1,2,3])
     expect(engine.searchPage({...query,sort:'baseLevel'}).items.map(item=>item.id)).toEqual([2,1,3])
   })
+  it('ranks best match by the highest reachable level, then by the secondary stats the character values',async()=>{
+    const f=levels()
+    // Two more 300 helms: one heavy on haste, one on crit (32 crit, 36 haste)
+    f.add(4,'Haste helm',{level:300});f.add(5,'Crit helm',{level:300})
+    f.db.prepare('UPDATE items SET stats=? WHERE id=4').run(JSON.stringify({t:[36,32],a:[7000,3000],s:[]}))
+    f.db.prepare('UPDATE items SET stats=? WHERE id=5').run(JSON.stringify({t:[36,32],a:[3000,7000],s:[]}))
+    f.db.close();await f.engine.useInstall(install)
+    const ids=(weights:{crit:number;haste:number;mastery:number;versatility:number}|null)=>f.engine.searchPage({...query,weights}).items.map(item=>item.id)
+    expect(ids({crit:1,haste:2,mastery:1,versatility:1})).toEqual([1,4,5,2,3])
+    expect(ids({crit:2,haste:1,mastery:1,versatility:1})).toEqual([1,5,4,2,3])
+  })
   it('filters a range against the highest reachable level or the base level',async()=>{
     const {db,engine}=levels();db.close();await engine.useInstall(install)
     expect(engine.searchPage({...query,levelBasis:'max',minLevel:310}).items.map(item=>item.id)).toEqual([1])

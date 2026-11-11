@@ -1934,6 +1934,7 @@ function GearEditor({
         onOpenChange={setSlotSearch}
         character={character}
         slot={selected}
+        weights={statWeights}
         title={`Search ${slotNames[selected].toLowerCase()} items`}
         onPick={(item) => {
           void addItemToPlan({ character, activity, item, preferredSlot: selected }).then((slot) => {
@@ -1983,6 +1984,8 @@ function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: n
         options={[...options, ...custom].map(({ value, label }) => ({ value, label }))}
       />
       {origin}
+      {selected?.via === "venomstone" && <small className="muted">Needs 10 Ascendant Venomstones at the Catalyst once the item is fully upgraded</small>}
+      {selected?.via === "elevated" && <small className="muted">Drops at this level from Mythic Coiled Altar and Ula'tek, or as a tier piece</small>}
       {tracks.max.assumed && source !== "observed" && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
     </Field>
   );

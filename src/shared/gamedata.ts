@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { appearanceSlotSchema, gearSlotSchema, specializationIdSchema, type GearSlot } from './domain'
+import { appearanceSlotSchema, gearSlotSchema, specializationIdSchema, statWeightsSchema, type GearSlot } from './domain'
 
 export type GameDataStatus = {
   state: 'no-install' | 'not-indexed' | 'indexing' | 'ready' | 'error'
@@ -14,31 +14,38 @@ export type GameDataStatus = {
 
 export type ItemSource = { encounter: string; instance: string; kind: 'dungeon' | 'raid' | 'other' }
 export type ItemPrimaryStat = 'strength' | 'agility' | 'intellect'
-export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null }
+export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null; setPiece?: boolean }
 export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId: number; modifier: number; icon: number | null }
 /** An upgrade-track group from the game files: its season scaling set, cross-season track key, and item level per rank */
 export type ItemTrackGroup = { group: number; set: number; key: number; levels: number[]; latest: boolean }
 export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; trackInfo?: ItemTrackGroup[] | null; classId: number; subclassId: number; bonding: string | null; sockets: number; description: string; appearances: ItemAppearanceOption[] }
-/** `levels` are the crest upgrade ranks; `beyond` are higher ranks with no crest cost that players still reach and wear */
-export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[]; beyond?: number[] }
+/** How an item gets past the crest ladder: a Venomstone at the Catalyst, or an Elevated Myth drop from the raid's last two Mythic bosses */
+export type ItemAscension = 'venomstone' | 'elevated'
+export const ascensionNames: Record<ItemAscension, string> = { venomstone: 'Venomstone', elevated: 'Elevated' }
+/** What decides whether an item can reach a level past the crest ladder */
+export type AscensionItem = { inventoryType: number; encounters: string[]; setPiece: boolean }
+export const ascensionItem = (item: ItemSummary): AscensionItem => ({ inventoryType: item.inventoryType, encounters: item.sources.map(source => source.encounter), setPiece: !!item.setPiece })
+/** `levels` are the crest upgrade ranks; `beyond` are higher levels with no crest cost that this item can still reach */
+export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[]; beyond?: Array<{ level: number; via: ItemAscension }> }
 /**
  * Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track.
- * `max` is the highest level including ranks past the crest ladder; `ladderLevel` is the top crest rank, which a new plan target starts at
+ * `max` is the highest level including any this item reaches past the crest ladder, named by `via`; `ladderLevel` is the top crest rank, which a new plan target starts at
  */
-export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean; ladderLevel?: number } }
+export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean; ladderLevel?: number; via?: ItemAscension } }
 
-/** Crest ranks read as Myth 4/6; ranks past the ladder read as Myth 6/6 +2 */
-export function trackRankLabel(track: string, rank: number, ranks: number) {
-  return rank <= ranks ? `${track} ${rank}/${ranks}` : `${track} ${ranks}/${ranks} +${rank - ranks}`
+/** Crest ranks read as Myth 4/6; levels past the ladder name their route, as in Myth · Venomstone */
+export function trackRankLabel(track: string, rank: number, ranks: number, via?: ItemAscension) {
+  return via ? `${track} · ${ascensionNames[via]}` : `${track} ${rank}/${ranks}`
 }
 
-export type TrackLevelOption = { value: string; level: number; label: string; beyond: boolean }
-/** Every rank an item can reach, highest first, with the season's true top marked Max */
+export type TrackLevelOption = { value: string; level: number; label: string; beyond: boolean; via?: ItemAscension }
+/** Every level an item can reach, highest first, with the season's true top marked Max */
 export function trackLevelOptions(tracks: ItemTracks): TrackLevelOption[] {
-  return [...tracks.tracks].reverse().flatMap(track => [...track.levels, ...(track.beyond ?? [])].map((level, index) => ({
-    value: `${track.name}:${index + 1}`, level, beyond: index >= track.ranks,
-    label: `${trackRankLabel(track.name, index + 1, track.ranks)} · ${level}${track.name === tracks.max.track && level === tracks.max.itemLevel ? ' · Max' : ''}`,
-  })).reverse())
+  const max = (track: ItemTrackRange, level: number) => track.name === tracks.max.track && level === tracks.max.itemLevel ? ' · Max' : ''
+  return [...tracks.tracks].reverse().flatMap(track => [
+    ...(track.beyond ?? []).map(({ level, via }) => ({ value: `${track.name}:${via}`, level, beyond: true, via, label: `${trackRankLabel(track.name, 0, track.ranks, via)} · ${level}${max(track, level)}` })).reverse(),
+    ...track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, beyond: false, label: `${trackRankLabel(track.name, index + 1, track.ranks)} · ${level}${max(track, level)}` })).reverse(),
+  ])
 }
 export type ItemPowerStat = { type: number; name: string; value: number; secondary: boolean }
 export type ItemPowerEffect = { label: string; text: string; complete: boolean; cooldown: string | null }
@@ -79,6 +86,8 @@ export const itemSearchSchema = z.object({
   withSocket: z.boolean().default(false),
   /** Result order: best match, or item level high to low by the highest reachable level or the base level */
   sort: z.enum(['relevance', 'maxLevel', 'baseLevel']).default('relevance'),
+  /** Best match ranks items with the same highest level by their secondary stats under these weights, equal when absent */
+  weights: statWeightsSchema.nullable().default(null),
   /** Item level range, read against the highest reachable level or the base level */
   levelBasis: z.enum(['max', 'base']).default('max'),
   minLevel: z.number().int().min(1).max(2000).nullable().default(null),
