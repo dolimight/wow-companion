@@ -2,13 +2,21 @@
 export type TalentEntry = { id: number; spellId: number; name: string; icon: number | null; maxRanks: number; subTreeId: number }
 /** Where a node sits: the shared class tree, the specialization's own tree, or a hero tree */
 export type TalentSection = 'class' | 'spec' | 'hero' | 'selection'
-export type TalentNode = { id: number; x: number; y: number; type: number; section: TalentSection; subTreeId: number; entries: TalentEntry[]; granted: boolean }
+export type TalentNode = { id: number; x: number; y: number; type: number; section: TalentSection; subTreeId: number; entries: TalentEntry[]; granted: boolean; currency: number | null }
 export type TalentSubTree = { id: number; name: string; description: string; icon: number | null }
 /**
  * A specialization's talent tree from the installed game files. `order` lists every node of the class tree in ID
  * order, which is how export strings are laid out; `nodes` only holds the ones this specialization can see
  */
-export type TalentTree = { treeId: number; specId: number; build: string; order: number[]; nodes: TalentNode[]; edges: Array<[number, number]>; subTrees: TalentSubTree[] }
+export type TalentTree = {
+  treeId: number; specId: number; build: string; order: number[]; nodes: TalentNode[]; edges: Array<[number, number]>; subTrees: TalentSubTree[]
+  /** Points each currency (class, specialization, each hero tree) gives at the level cap */
+  caps: Record<number, number>
+  /** Nodes that unlock once enough points of a currency are spent */
+  gates: Array<{ currency: number; required: number; nodes: number[] }>
+  /** Talent spells and the spells their descriptions borrow values from */
+  spells: Record<number, import('./item-scaling').SpellData>
+}
 
 export type TalentPick = { nodeId: number; ranks: number; entryIndex: number | null; purchased: boolean }
 export type DecodedLoadout = { version: number; specId: number; picks: TalentPick[] }

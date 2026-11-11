@@ -730,7 +730,7 @@ export class GameDataEngine {
   async talentTree(specId: number): Promise<TalentTree | null> {
     if (!this.install) throw new Error('World of Warcraft was not found on this computer')
     const version = this.install.build.version
-    const file = path.join(this.directory, 'talents', `${version}-${specId}.json`)
+    const file = path.join(this.directory, 'talents', `${version}-${specId}-v2.json`)
     try { return JSON.parse(await readFile(file, 'utf8')) as TalentTree } catch { /* build below */ }
     const tree = await buildTalentTree(name => this.traitTable(name), specId, version)
     if (tree) { await mkdir(path.dirname(file), { recursive: true }); await writeFile(file, JSON.stringify(tree)) }

@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardPaste, Copy, Sparkles, Users, X } from "lucide-react";
+import { ChevronsUpDown, ClipboardPaste, Copy, Sparkles, Users, X } from "lucide-react";
 import type { Character, GearDraft } from "../../../shared/domain";
-import { decodeLoadout, type DecodedLoadout, type TalentNode, type TalentSection, type TalentTree } from "../../../shared/talents";
+import { decodeLoadout, type DecodedLoadout, type TalentNode, type TalentTree } from "../../../shared/talents";
+import { blockReason, buildFrom, chooseHeroTree, chosenHero, encodeLoadout, learn, spent, unlearn, type Build } from "../../../shared/talent-editor";
+import { effectText, type ItemStatBlock, type ScalingLevel } from "../../../shared/item-scaling";
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/primitives";
 import { api } from "../../lib/client";
@@ -121,73 +124,142 @@ export function PlanTalents({ character, live, talents, onChange }: {
           : tree.isError ? <p className="error" role="alert">{errorMessage(tree.error)}</p>
             : !tree.data ? <p className="muted">This specialization has no talent tree in your game files</p>
               : build && "error" in build ? <p className="error" role="alert">{build.error}</p>
-                : <TalentTreeView tree={tree.data} decoded={build && "decoded" in build ? build.decoded : null} />}
+                : <TalentEditor tree={tree.data} decoded={build && "decoded" in build ? build.decoded : null}
+                    onBuild={(next) => onChange({ loadout: encodeLoadout(tree.data!, next), source: talents?.source.endsWith("· edited") ? talents.source : `${talents?.source ?? "Built here"} · edited` })} />}
       {!ready && <p className="muted small">Talent names and icons come from your installed game</p>}
+      {tree.data && <p className="muted small talent-hint">Hover a talent for details · click to learn it · right-click to remove a rank</p>}
     </section>
   );
 }
 
-function TalentTreeView({ tree, decoded }: { tree: TalentTree; decoded: DecodedLoadout | null }) {
-  const picks = new Map((decoded?.picks ?? []).map((pick) => [pick.nodeId, pick]));
-  const hero = decoded ? heroOf(tree, decoded) : null;
-  const heroId = hero?.id ?? tree.subTrees[0]?.id;
-  const spent = (section: TalentSection) => tree.nodes.filter((node) => node.section === section && (section !== "hero" || node.subTreeId === heroId)).reduce((sum, node) => { const pick = picks.get(node.id); return sum + (pick?.purchased ? pick.ranks : 0); }, 0);
-  const panels: Array<{ key: string; title: string; icon: number | null; nodes: TalentNode[]; points: number }> = [
-    { key: "class", title: "Class", icon: null, nodes: tree.nodes.filter((node) => node.section === "class"), points: spent("class") },
-    { key: "hero", title: hero?.name ?? tree.subTrees.find((entry) => entry.id === heroId)?.name ?? "Hero", icon: (hero ?? tree.subTrees[0])?.icon ?? null, nodes: tree.nodes.filter((node) => node.section === "hero" && node.subTreeId === heroId), points: spent("hero") },
-    { key: "spec", title: "Specialization", icon: null, nodes: tree.nodes.filter((node) => node.section === "spec"), points: spent("spec") },
+// Talent spells don't scale with items, so only fixed values fill in; anything else stays marked unknown
+const noItem: ItemStatBlock = { statTypes: [], alloc: [], socketShare: [], inventoryType: 0, classId: 0, subclassId: 0, quality: 4 };
+const noLevel: ScalingLevel = { itemLevel: 0, epic: [], superior: [], good: [], damageReplace: 0, damageSecondary: 0, rating: null, stamina: null, armorTotal: null, armorQuality: null, shield: null, socketCost: null };
+function describe(tree: TalentTree, spellId: number) {
+  if (!spellId || !tree.spells[spellId]) return null;
+  const spells = new Map(Object.entries(tree.spells).map(([id, spell]) => [Number(id), spell]));
+  return effectText(spellId, spells, noItem, noLevel).text || null;
+}
+
+function TalentEditor({ tree, decoded, onBuild }: { tree: TalentTree; decoded: DecodedLoadout | null; onBuild: (build: Build) => void }) {
+  const build = useMemo(() => buildFrom(tree, decoded), [tree, decoded]);
+  const heroId = chosenHero(tree, build) ?? tree.subTrees[0]?.id ?? null;
+  const hero = tree.subTrees.find((entry) => entry.id === heroId) ?? null;
+  const currencyOf = (nodes: TalentNode[]) => nodes.find((node) => node.currency != null)?.currency ?? null;
+  const panel = (key: string, title: string, icon: number | null, nodes: TalentNode[]) => {
+    const currency = currencyOf(nodes);
+    return { key, title, icon, nodes, used: spent(tree, build, currency), cap: currency != null ? tree.caps[currency] ?? null : null };
+  };
+  const panels = [
+    panel("class", "Class", null, tree.nodes.filter((node) => node.section === "class")),
+    panel("hero", hero?.name ?? "Hero", hero?.icon ?? null, tree.nodes.filter((node) => node.section === "hero" && node.subTreeId === heroId)),
+    panel("spec", "Specialization", null, tree.nodes.filter((node) => node.section === "spec")),
   ];
   return (
     <div className="talent-trees">
-      {panels.map((panel) => panel.nodes.length > 0 && (
-        <TalentPanel key={panel.key} title={panel.title} icon={panel.icon} points={decoded ? panel.points : null} nodes={panel.nodes} edges={tree.edges} picks={picks} hasBuild={!!decoded} />
+      {panels.map((entry) => entry.nodes.length > 0 && (
+        <TalentPanel {...entry} key={entry.key} tree={tree} build={build} onBuild={onBuild}
+          heroPicker={entry.key === "hero" && tree.subTrees.length > 1 ? <HeroPicker tree={tree} chosen={chosenHero(tree, build)} onChoose={(id) => onBuild(chooseHeroTree(tree, build, id))} /> : null} />
       ))}
     </div>
   );
 }
 
-function TalentPanel({ title, icon, points, nodes, edges, picks, hasBuild }: {
-  title: string; icon: number | null; points: number | null; nodes: TalentNode[]; edges: Array<[number, number]>;
-  picks: Map<number, DecodedLoadout["picks"][number]>; hasBuild: boolean;
+function HeroPicker({ tree, chosen, onChoose }: { tree: TalentTree; chosen: number | null; onChoose: (id: number) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger className="talent-hero-switch" aria-label="Choose a hero tree"><ChevronsUpDown size={14} aria-hidden="true" /></PopoverTrigger>
+      <PopoverContent side="bottom" className="talent-popover">
+        <strong className="talent-popover-title">Hero tree</strong>
+        {tree.subTrees.map((entry) => (
+          <button key={entry.id} type="button" className="talent-choice" aria-pressed={entry.id === chosen} onClick={() => onChoose(entry.id)}>
+            <ItemIcon icon={entry.icon} size="small" fallback={<Sparkles />} />
+            <span><strong>{entry.name}</strong><small>{entry.description}</small></span>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TalentPanel({ title, icon, used, cap, nodes, tree, build, onBuild, heroPicker }: {
+  title: string; icon: number | null; used: number; cap: number | null; nodes: TalentNode[]; tree: TalentTree; build: Build; onBuild: (build: Build) => void; heroPicker: ReactNode;
 }) {
   const minX = Math.min(...nodes.map((node) => node.x)), minY = Math.min(...nodes.map((node) => node.y));
   const at = (node: TalentNode) => ({ left: ((node.x - minX) / STEP) * CELL, top: ((node.y - minY) / STEP) * CELL });
   const width = Math.max(...nodes.map((node) => at(node).left)) + CELL, height = Math.max(...nodes.map((node) => at(node).top)) + CELL;
   const byId = new Map(nodes.map((node) => [node.id, node]));
-  const lines = edges.filter(([from, to]) => byId.has(from) && byId.has(to));
+  const lines = tree.edges.filter(([from, to]) => byId.has(from) && byId.has(to));
   return (
     <section className="talent-panel" aria-label={`${title} talents`}>
       <header>
         {icon && <ItemIcon icon={icon} size="small" />}
         <strong>{title}</strong>
-        {points != null && <span>{points} point{points === 1 ? "" : "s"}</span>}
+        <span data-full={cap != null && used >= cap || undefined}>{used}{cap != null ? ` / ${cap}` : ""}</span>
+        {heroPicker}
       </header>
       <div className="talent-canvas" style={{ width, height }}>
         <svg width={width} height={height} aria-hidden="true">
           {lines.map(([from, to]) => {
             const a = at(byId.get(from)!), b = at(byId.get(to)!);
-            const lit = !!picks.get(from) && !!picks.get(to);
-            return <line key={`${from}-${to}`} x1={a.left + CELL / 2} y1={a.top + CELL / 2} x2={b.left + CELL / 2} y2={b.top + CELL / 2} data-lit={lit || undefined} />;
+            return <line key={`${from}-${to}`} x1={a.left + CELL / 2} y1={a.top + CELL / 2} x2={b.left + CELL / 2} y2={b.top + CELL / 2} data-lit={(build.has(from) && build.has(to)) || undefined} />;
           })}
         </svg>
-        {nodes.map((node) => {
-          const pick = picks.get(node.id);
-          const chosen = pick ? node.entries[pick.entryIndex ?? 0] ?? node.entries[0]! : null;
-          const shown = chosen ?? node.entries[0]!;
-          const max = shown.maxRanks;
-          const label = node.entries.length > 1
-            ? `${node.entries.map((entry) => entry.name).join(" or ")}${chosen ? ` · chose ${chosen.name}` : ""}`
-            : `${shown.name}${max > 1 ? ` · ${pick?.ranks ?? 0}/${max}` : ""}`;
-          return (
-            <span key={node.id} className="talent-node" data-choice={node.entries.length > 1 || undefined} data-picked={pick ? true : undefined}
-              data-dim={hasBuild && !pick ? true : undefined} data-granted={pick && !pick.purchased ? true : undefined}
-              style={{ left: at(node).left + (CELL - NODE) / 2, top: at(node).top + (CELL - NODE) / 2 }} title={label} aria-label={label}>
-              {shown.icon ? <img src={iconUrl(shown.icon) ?? undefined} alt="" width={NODE} height={NODE} /> : <Sparkles aria-hidden="true" />}
-              {max > 1 && pick && <small>{pick.ranks}/{max}</small>}
-            </span>
-          );
-        })}
+        {nodes.map((node) => <TalentButton key={node.id} node={node} tree={tree} build={build} onBuild={onBuild} style={{ left: at(node).left + (CELL - NODE) / 2, top: at(node).top + (CELL - NODE) / 2 }} />)}
       </div>
     </section>
+  );
+}
+
+function TalentButton({ node, tree, build, onBuild, style }: { node: TalentNode; tree: TalentTree; build: Build; onBuild: (build: Build) => void; style: React.CSSProperties }) {
+  const pick = build.get(node.id);
+  const choice = node.entries.length > 1;
+  const shown = node.entries[pick?.entryIndex ?? 0] ?? node.entries[0]!;
+  const max = shown.maxRanks;
+  const blocked = blockReason(tree, build, node.id);
+  const learnable = !blocked;
+  const label = `${choice ? node.entries.map((entry) => entry.name).join(" or ") : shown.name}${pick ? ` · ${pick.ranks}/${max}` : ""}`;
+  return (
+    <Popover>
+      <PopoverTrigger openOnHover delay={250} closeDelay={150}
+        className="talent-node" style={style} aria-label={label}
+        data-choice={choice || undefined} data-picked={pick ? true : undefined} data-granted={pick && !pick.purchased ? true : undefined}
+        data-dim={!pick || undefined} data-available={!pick && learnable ? true : undefined}
+        // A click learns, except on a choice where the popover asks which side
+        onClick={(event) => { if (!choice && learnable) { event.preventDefault(); onBuild(learn(tree, build, node.id)); } }}
+        onContextMenu={(event) => { event.preventDefault(); if (pick) onBuild(unlearn(tree, build, node.id)); }}>
+        {shown.icon ? <img src={iconUrl(shown.icon) ?? undefined} alt="" width={NODE} height={NODE} /> : <Sparkles aria-hidden="true" />}
+        {max > 1 && pick && <small>{pick.ranks}/{max}</small>}
+      </PopoverTrigger>
+      <PopoverContent side="right" align="start" className="talent-popover">
+        {node.entries.map((entry, index) => {
+          const active = !!pick && (pick.entryIndex ?? 0) === index;
+          const reason = choice ? blockReason(tree, build, node.id, index) : blocked;
+          return (
+            <div key={entry.id} className="talent-detail" data-active={active || undefined}>
+              <div className="talent-detail-head">
+                <ItemIcon icon={entry.icon} size="medium" fallback={<Sparkles />} />
+                <div>
+                  <strong>{entry.name}</strong>
+                  <small>{node.granted ? "Learned automatically" : active ? `Rank ${pick!.ranks} of ${entry.maxRanks}` : entry.maxRanks > 1 ? `${entry.maxRanks} ranks` : "1 rank"}</small>
+                </div>
+              </div>
+              {describe(tree, entry.spellId) && <p>{describe(tree, entry.spellId)}</p>}
+              {choice && !node.granted && (active
+                ? <span className="talent-detail-state">Chosen</span>
+                : <Button disabled={!!reason} onClick={() => onBuild(learn(tree, build, node.id, index))}>{pick ? "Switch to this" : "Choose this"}</Button>)}
+              {choice && !active && reason && !pick && <small className="talent-detail-reason">{reason}</small>}
+            </div>
+          );
+        })}
+        {!node.granted && (
+          <div className="talent-actions">
+            {!choice && <Button variant="primary" disabled={!learnable} onClick={() => onBuild(learn(tree, build, node.id))}>{pick ? "Add a rank" : "Learn"}</Button>}
+            {pick && <Button variant="quiet" onClick={() => onBuild(unlearn(tree, build, node.id))}>{pick.ranks > 1 ? "Remove a rank" : "Remove"}</Button>}
+          </div>
+        )}
+        {!choice && blocked && !node.granted && !(pick && blocked === "Already at its highest rank") && <small className="talent-detail-reason">{blocked}</small>}
+      </PopoverContent>
+    </Popover>
   );
 }
