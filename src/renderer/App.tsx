@@ -379,7 +379,7 @@ function Portrait({ character }: { character: Character }) {
           Blizzard character render · {age(character.renders?.observedAt).toLowerCase()}
           {outdated?.length ? (
             <span className="portrait-outdated" title={worn ? `In game you show ${worn}` : undefined}>
-              Out of date · In game you show a different look on {outdated.length === 1 ? "one slot" : `${outdated.length} slots`} · Blizzard updates its picture after you log out, then Sync picks it up
+              Out of date on {outdated.length === 1 ? "one slot" : `${outdated.length} slots`} · Blizzard refreshes it after you log out, then Sync picks it up
             </span>
           ) : null}
         </figcaption>
