@@ -19,7 +19,7 @@ describe('desktop acceptance game data fixture', () => {
     await engine.useInstall((await readInstall(root))!)
     expect(engine.getStatus().state).toBe('ready')
     const query = { slot: 'head' as const, character: { className: 'Mage', specId: 62, level: 90 }, limit: 40 }
-    for (const filters of [{}, { currentOnly: true }, { withEffect: true }, { stat: 'haste' as const }, { source: 'dungeon' as const }]) {
+    for (const filters of [{}, { currentOnly: true }, { withEffect: true }, { stat: 'haste' as const }, { source: 'dungeon' as const }, { source: 'crafted' as const }]) {
       expect(() => engine.searchPage({ ...query, ...filters })).not.toThrow()
     }
     expect(engine.searchPage({ ...query, currentOnly: true }).items[0]?.name).toContain('Acceptance Crown')

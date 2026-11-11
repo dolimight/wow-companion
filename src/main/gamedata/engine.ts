@@ -6,13 +6,13 @@ import { LocalCasc } from './casc'
 import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
-import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EnhancementOption, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
-import { scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
+import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EmbellishmentOption, type EnhancementOption, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
+import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
 import { equalWeights } from '../../shared/enhancement-recommendations'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
-import { elevatedEncounters, itemTracks } from '../item-tracks'
+import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -26,7 +26,7 @@ export async function replaceFile(from: string, to: string, attempts = 20, delay
   }
 }
 
-export const INDEX_VERSION = 5
+export const INDEX_VERSION = 6
 /** Game tables that are plain text rather than client databases, by file ID in the community listfile */
 const GAME_TABLES = { combatRatings: 1391670, stamina: 1980632, socketCost: 1391643 }
 
@@ -116,7 +116,7 @@ export class GameDataEngine {
     try {
       const db = opened = new Database(file, { readonly: true, fileMustExist: true })
       const version = (db.prepare("SELECT value FROM meta WHERE key = 'index_version'").get() as { value: string } | undefined)?.value
-      if (![1, 2, 3, 4, INDEX_VERSION].includes(Number(version))) throw new Error('Index format changed')
+      if (![1, 2, 3, 4, 5, INDEX_VERSION].includes(Number(version))) throw new Error('Index format changed')
       this.db = db
       this.indexVersion = Number(version)
       const count = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
@@ -173,7 +173,7 @@ export class GameDataEngine {
       progress(1)
       const items = await this.table(casc, 'Item', ['ClassID', 'SubclassID', 'InventoryType', 'IconFileDataID'])
       progress(2)
-      const sparse = await this.table(casc, 'ItemSparse', ['Display_lang', 'Description_lang', 'OverallQualityID', 'ItemLevel', 'RequiredLevel', 'ExpansionID', 'Bonding', 'SocketType', 'AllowableClass', 'StatModifier_bonusStat', 'StatPercentEditor', 'StatPercentageOfSocket', 'ItemSet'])
+      const sparse = await this.table(casc, 'ItemSparse', ['Display_lang', 'Description_lang', 'OverallQualityID', 'ItemLevel', 'RequiredLevel', 'ExpansionID', 'Bonding', 'SocketType', 'AllowableClass', 'StatModifier_bonusStat', 'StatPercentEditor', 'StatPercentageOfSocket', 'ItemSet', 'ModifiedCraftingReagentItemID'])
       // A missing or unsupported table leaves restrictions unknown instead of claiming no restrictions
       const specOverrides = await this.table(casc, 'ItemSpecOverride', ['ItemID', 'SpecID']).catch(() => null)
       const completeSpecOverrides = specOverrides && specOverrides.size>0 && [...specOverrides.values()].every(row=>typeof row.ItemID==='number'&&Number.isInteger(row.ItemID)&&row.ItemID>=0&&typeof row.SpecID==='number'&&Number.isInteger(row.SpecID)&&row.SpecID>=0&&((row.ItemID===0&&row.SpecID===0)||(row.ItemID>0&&row.SpecID>0)))
@@ -198,7 +198,8 @@ export class GameDataEngine {
       progress(6)
       // Stats and effects are extras: a table this build can't read leaves them unknown instead of failing item search
       const scaling = await this.scalingTables(casc).catch(() => null)
-      const effects = await this.effectTables(casc, items).catch(() => null)
+      const embellished = await this.embellishmentTables(casc, items, sparse).catch(() => null)
+      const effects = await this.effectTables(casc, items, embellished?.flatMap(entry => [...entry.description.matchAll(/\$@spelldesc(\d+)/g)].map(match => Number(match[1]))) ?? []).catch(() => null)
       const trackGroups = await this.trackGroups(casc).catch(() => null)
       const crafted = await this.table(casc, 'CraftingData', ['CraftedItemID']).then(rows => new Set([...rows.values()].map(row => Number(row.CraftedItemID)).filter(Boolean))).catch(() => null)
       progress(7)
@@ -215,7 +216,8 @@ export class GameDataEngine {
         CREATE TABLE spells (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
         CREATE TABLE appearances (modified_id INTEGER PRIMARY KEY, item_id INTEGER NOT NULL, appearance_id INTEGER NOT NULL, modifier INTEGER NOT NULL, icon INTEGER);
         CREATE TABLE sources (item_id INTEGER NOT NULL, encounter TEXT NOT NULL, instance TEXT NOT NULL, kind TEXT NOT NULL, season INTEGER NOT NULL);
-        CREATE TABLE enchants (id INTEGER PRIMARY KEY, name TEXT NOT NULL, icon INTEGER);`)
+        CREATE TABLE enchants (id INTEGER PRIMARY KEY, name TEXT NOT NULL, icon INTEGER);
+        CREATE TABLE embellishments (item_id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, icon INTEGER, description TEXT NOT NULL, applies TEXT, limit_name TEXT NOT NULL);`)
       const insertItem = db.prepare('INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
       const insertAppearance = db.prepare('INSERT OR IGNORE INTO appearances VALUES (?,?,?,?,?)')
       const insertSource = db.prepare('INSERT INTO sources VALUES (?,?,?,?,?)')
@@ -248,6 +250,10 @@ export class GameDataEngine {
           const insertEffect = db.prepare('INSERT INTO item_effects VALUES (?,?,?,?,?,?)'), insertSpell = db.prepare('INSERT INTO spells VALUES (?,?)')
           for (const link of effects.links) insertEffect.run(link.itemId, link.spellId, link.trigger, link.cooldownMs, link.charges, link.position)
           for (const spell of effects.spells.values()) insertSpell.run(spell.id, JSON.stringify(spell))
+        }
+        if (embellished) {
+          const insertEmbellishment = db.prepare('INSERT INTO embellishments VALUES (?,?,?,?,?,?,?)')
+          for (const entry of embellished) insertEmbellishment.run(entry.itemId, entry.name, entry.quality, entry.icon, entry.description, entry.applies, entry.limit)
         }
         for (const [id, row] of enchants) {
           const name = cleanGameText(String(row.Name_lang ?? ''), row.EffectPointsMin as number[] | undefined)
@@ -377,7 +383,39 @@ export class GameDataEngine {
   }
 
   /** Equip and use effects of wearable items, with the spells their descriptions draw values from */
-  private async effectTables(casc: LocalCasc, items: Map<number, Row>) {
+  /**
+   * Crafting reagents from the newest expansion that make an item Embellished: their bonus tree carries an
+   * embellishment limit's bonus list. Rank variants collapse to one entry per name
+   */
+  private async embellishmentTables(casc: LocalCasc, items: Map<number, Row>, sparse: Map<number, Row>) {
+    const rules = embellishmentRules ?? []
+    if (!rules.length) return []
+    const limitOf = new Map(rules.flatMap(rule => rule.bonusLists.map(list => [list, rule.name] as const)))
+    const reagents = await this.table(casc, 'ModifiedCraftingReagentItem', ['Description_lang', 'ModifiedCraftingCategoryID', 'ItemBonusTreeID'])
+    const categories = await this.table(casc, 'ModifiedCraftingCategory', ['Description_lang'])
+    const nodes = await this.table(casc, 'ItemBonusTreeNode', ['ParentItemBonusTreeID', 'ChildItemBonusListID'])
+    const lists = new Map<number, number[]>()
+    for (const node of nodes.values()) { const tree = Number(node.ParentItemBonusTreeID); lists.set(tree, [...(lists.get(tree) ?? []), Number(node.ChildItemBonusListID)]) }
+    const found: Array<{ itemId: number; name: string; quality: number; icon: number | null; description: string; applies: string | null; limit: string; expansion: number }> = []
+    for (const [id, row] of sparse) {
+      const reagent = reagents.get(Number(row.ModifiedCraftingReagentItemID ?? 0))
+      const base = items.get(id)
+      if (!reagent || Number(base?.ClassID) !== 7) continue
+      const limit = (lists.get(Number(reagent.ItemBonusTreeID)) ?? []).map(list => limitOf.get(list)).find(Boolean)
+      const description = String(reagent.Description_lang ?? '').replace(/\|n/g, ' ').trim()
+      if (!limit || !description) continue
+      const category = String(categories.get(Number(reagent.ModifiedCraftingCategoryID))?.Description_lang ?? '')
+      // "Midnight recipes for most unembellished armor." names the gear a reagent goes on
+      const applies = category.match(/recipes for (?:most )?(?:unembellished )?(.+?)\.?$/i)?.[1] ?? (category.replace(/\.$/, '') || null)
+      found.push({ itemId: id, name: cleanGameText(String(row.Display_lang ?? '')), quality: Number(row.OverallQualityID ?? 1), icon: (base?.IconFileDataID as number) || null, description, applies, limit, expansion: Number(row.ExpansionID ?? 0) })
+    }
+    const newest = Math.max(0, ...found.map(entry => entry.expansion))
+    const byName = new Map<string, (typeof found)[number]>()
+    for (const entry of found.filter(entry => entry.expansion === newest).sort((a, b) => b.quality - a.quality || b.itemId - a.itemId)) if (!byName.has(entry.name)) byName.set(entry.name, entry)
+    return [...byName.values()]
+  }
+
+  private async effectTables(casc: LocalCasc, items: Map<number, Row>, extraSpells: number[] = []) {
     const wearable = new Set(Object.keys(inventoryTypeNames).map(Number))
     const links = await this.table(casc, 'ItemXItemEffect')
     const itemEffects = await this.table(casc, 'ItemEffect', ['SpellID', 'TriggerType', 'CoolDownMSec', 'Charges', 'LegacySlotIndex'])
@@ -390,7 +428,7 @@ export class GameDataEngine {
       result.push({ itemId, spellId: Number(effect.SpellID), trigger: Number(effect.TriggerType), cooldownMs: Number(effect.CoolDownMSec), charges: Number(effect.Charges), position: Number(effect.LegacySlotIndex ?? 0) })
     }
     // Descriptions pull durations, stacks, and values from other spells, two levels deep
-    const wanted = new Set(result.map(link => link.spellId))
+    const wanted = new Set([...result.map(link => link.spellId), ...extraSpells])
     let frontier = [...wanted]
     for (let depth = 0; depth < 2 && frontier.length; depth++) {
       const next: number[] = []
@@ -453,7 +491,8 @@ export class GameDataEngine {
     if (types && query.slot === 'offHand' && query.character?.className.toLowerCase() === 'warrior' && query.character.specId === 72) types.push(17)
     where.push(`i.inventory_type IN (${types ? types.join(',') : EQUIPPABLE})`)
     if (query.armor && (!query.slot || armorSlots.has(query.slot))) { where.push(`(i.inventory_type NOT IN (1,3,5,6,7,8,9,10,20) OR (i.class_id = 4 AND i.subclass_id = ?))`); params.push(armorTypes.indexOf(query.armor) + 1) }
-    if (query.source !== 'any') { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.kind = ?)'); params.push(query.source) }
+    if (query.source === 'crafted') where.push('i.crafted = 1')
+    else if (query.source !== 'any') { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.kind = ?)'); params.push(query.source) }
     if (query.instance) { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.instance = ?)'); params.push(query.instance) }
     if (query.quality != null) { where.push('i.quality = ?'); params.push(query.quality) }
     if (query.withSocket) where.push('i.sockets > 0')
@@ -461,9 +500,9 @@ export class GameDataEngine {
     // A stat counts only when the item gives it a budget share, since unused slots can still name a stat
     if (query.stat !== 'any') where.push(v3 ? `EXISTS (SELECT 1 FROM json_each(i.stats, '$.t') t WHERE t.value = ${secondaryStatTypes[query.stat]} AND COALESCE(json_extract(i.stats, '$.a[' || t.key || ']'), 0) != 0)` : '0')
     if (query.withEffect) where.push(this.indexVersion === INDEX_VERSION ? 'EXISTS (SELECT 1 FROM item_effects e WHERE e.item_id = i.id)' : '0')
-    // This season: on the newest upgrade tracks, or in the newest season's Adventure Guide loot
+    // This season: on the newest upgrade tracks, in the newest season's Adventure Guide loot, or the newest expansion's epic crafted gear
     if (query.currentOnly) where.push(this.indexVersion === INDEX_VERSION
-      ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)))"
+      ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)) OR (i.crafted = 1 AND i.quality >= 4 AND i.class_id IN (2, 4) AND i.expansion = (SELECT MAX(expansion) FROM items WHERE crafted = 1)))"
       : 'EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND (s.season = (SELECT MAX(season) FROM sources) OR i.expansion = (SELECT MAX(expansion) FROM items WHERE quality = 4 AND id IN (SELECT item_id FROM sources))))')
     // Base level is stored, so its range and order stay in SQL; the highest reachable level is worked out per row below
     const byMax = query.sort !== 'baseLevel' || (query.levelBasis === 'max' && (query.minLevel != null || query.maxLevel != null))
@@ -682,6 +721,37 @@ export class GameDataEngine {
     if (!unique.length) return {}
     const rows = this.ready().prepare(`SELECT id, name FROM enchants WHERE id IN (${unique.map(() => '?').join(',')})`).all(...unique) as Array<{ id: number; name: string }>
     return Object.fromEntries(rows.map(row => [row.id, row.name]))
+  }
+
+  /**
+   * This season's embellishments with their effect worked out for the planned item at its level. Values the game
+   * files can't answer leave the effect marked incomplete
+   */
+  embellishments(itemId: number | null, itemLevel: number | null): EmbellishmentOption[] {
+    const db = this.ready()
+    if (this.indexVersion !== INDEX_VERSION) return []
+    const rows = db.prepare('SELECT * FROM embellishments ORDER BY name').all() as Array<{ item_id: number; name: string; quality: number; icon: number | null; description: string; applies: string | null; limit_name: string }>
+    const item = itemId ? db.prepare('SELECT * FROM items WHERE id = ?').get(itemId) as ItemRow | undefined : undefined
+    const scalingRow = itemLevel ? db.prepare('SELECT data FROM scaling WHERE item_level = ?').get(Math.round(itemLevel)) as { data: string } | undefined : undefined
+    const level = scalingRow ? JSON.parse(scalingRow.data) as ScalingLevel : null
+    const parsed = item?.stats ? JSON.parse(item.stats) as { t: number[]; a: number[]; s: number[] } : { t: [], a: [], s: [] }
+    const block: ItemStatBlock = { statTypes: parsed.t, alloc: parsed.a, socketShare: parsed.s, inventoryType: item?.inventory_type ?? 0, classId: item?.class_id ?? 0, subclassId: item?.subclass_id ?? 0, quality: Math.max(item?.quality ?? 4, 4) }
+    const spells = new Map<number, SpellData>()
+    const load = (spellId: number, depth: number) => {
+      if (spells.has(spellId) || depth > 2) return
+      const found = db.prepare('SELECT data FROM spells WHERE id = ?').get(spellId) as { data: string } | undefined
+      if (!found) return
+      const spell = JSON.parse(found.data) as SpellData
+      spells.set(spellId, spell)
+      for (const match of spell.description.matchAll(/\$(?:@spelldesc)?(\d{3,})/g)) load(Number(match[1]), depth + 1)
+    }
+    return rows.map(row => {
+      for (const match of row.description.matchAll(/\$@spelldesc(\d+)/g)) load(Number(match[1]), 0)
+      // The reagent's own text is read like a spell description so its tokens fill in the same way
+      spells.set(-1, { id: -1, name: row.name, description: row.description, durationMs: null, maxStacks: null, effects: [] })
+      const effect = level ? effectText(-1, spells, block, level) : { text: row.description.replace(/\$@spelldesc\d+/g, ''), complete: false }
+      return { itemId: row.item_id, name: row.name, quality: row.quality, icon: row.icon, applies: row.applies, limit: row.limit_name, effect: cleanGameText(effect.text).replace(/Unique-Equipped:[^.]*\.?/gi, ' ').replace(/\.(?=[A-Z])/g, '. ').replace(/\s+/g, ' ').trim(), complete: effect.complete }
+    })
   }
 
   /** Decodes an icon once and keeps the PNG on disk */

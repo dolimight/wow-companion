@@ -15,6 +15,12 @@ describe('embellishments', () => {
     const counts = embellishmentCounts(embellishmentRules, [{ bonusIds: [8960] }, { bonusIds: [8960] }, { bonusIds: [8960, 1] }, { bonusIds: null }])
     expect(counts.find(category => category.name === 'Embellished')).toEqual({ name: 'Embellished', limit: 2, count: 3, over: 1 })
   })
+  it('counts an embellishment planned onto a crafted item against its own limit', () => {
+    const planned = { limit: 'Outdoor Embellished' }
+    expect(embellishmentOf(embellishmentRules, [8960], planned)?.name).toBe('Outdoor Embellished')
+    const counts = embellishmentCounts(embellishmentRules, [{ bonusIds: [8960] }, { embellishment: { limit: 'Embellished' } }, { embellishment: planned }])
+    expect(counts.map(category => [category.name, category.count])).toEqual([['Embellished', 2], ['Outdoor Embellished', 1]])
+  })
 })
 
 describe('enchantable slots', () => {

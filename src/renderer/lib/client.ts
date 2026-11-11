@@ -74,6 +74,7 @@ export const api={
  enchantSlots:async()=>(await client()).enchantSlots.query(),
  itemPower:async(input:{id:number;itemLevel?:number|null;character?:ItemSearchCharacter|null})=>(await client()).itemPower.query(input),
  enhancements:async(input:{kind:'enchant'|'gem';slot:AppearanceSlot|null})=>(await client()).enhancements.query(input),
+ embellishments:async(input:{itemId:number|null;itemLevel:number|null})=>(await client()).embellishments.query(input),
  appearanceOptions:async(input:{slot:AppearanceSlot;text:string;armor:ArmorType|null})=>(await client()).appearanceOptions.query(input),
  enchantNames:async(ids:number[])=>(await client()).enchantNames.query({ids}),
  connectionsStatus:async()=>(await client()).connectionsStatus.query(),

@@ -23,28 +23,31 @@ export type ItemDetail = ItemSummary & { trackGroups?: number[] | null; trackInf
 export type ItemAscension = 'venomstone' | 'elevated'
 export const ascensionNames: Record<ItemAscension, string> = { venomstone: 'Venomstone', elevated: 'Elevated' }
 /** What decides whether an item can reach a level past the crest ladder */
-export type AscensionItem = { inventoryType: number; encounters: string[]; setPiece: boolean }
-export const ascensionItem = (item: ItemSummary): AscensionItem => ({ inventoryType: item.inventoryType, encounters: item.sources.map(source => source.encounter), setPiece: !!item.setPiece })
+export type AscensionItem = { inventoryType: number; encounters: string[]; setPiece: boolean; crafted?: boolean; quality?: number; classId?: number }
+export const ascensionItem = (item: ItemSummary): AscensionItem => ({ inventoryType: item.inventoryType, encounters: item.sources.map(source => source.encounter), setPiece: !!item.setPiece, crafted: !!item.crafted, quality: item.quality, classId: item.classId })
 /** `levels` are the crest upgrade ranks; `beyond` are higher levels with no crest cost that this item can still reach */
-export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[]; beyond?: Array<{ level: number; via: ItemAscension }> }
+export type ItemTrackRange = { name: string; ranks: number; minLevel: number; maxLevel: number; levels: number[]; reagent?: string; beyond?: Array<{ level: number; via: ItemAscension }> }
 /**
  * Where a current-season item can land on the upgrade tracks; `assumed` when the game files don't tie this item to a track.
  * `max` is the highest level including any this item reaches past the crest ladder, named by `via`; `ladderLevel` is the top crest rank, which a new plan target starts at
  */
-export type ItemTracks = { season: string; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean; ladderLevel?: number; via?: ItemAscension } }
+/** `crafted` tracks are reagent bands whose ranks are crafting quality, not crest upgrades */
+export type ItemTracks = { season: string; crafted?: boolean; tracks: ItemTrackRange[]; max: { itemLevel: number; track: string; rank: number; ranks: number; assumed: boolean; ladderLevel?: number; via?: ItemAscension } }
 
-/** Crest ranks read as Myth 4/6; levels past the ladder name their route, as in Myth · Venomstone */
+/** Crest ranks read as Myth 4/6, crafted ones as Crafted Myth · Q5; levels past the ladder name their route, as in Myth · Venomstone */
 export function trackRankLabel(track: string, rank: number, ranks: number, via?: ItemAscension) {
-  return via ? `${track} · ${ascensionNames[via]}` : `${track} ${rank}/${ranks}`
+  if (via) return `${track} · ${ascensionNames[via]}`
+  // Crafted bands rank by crafting quality rather than crest upgrades
+  return track.startsWith('Crafted') ? `${track} · Q${rank}` : `${track} ${rank}/${ranks}`
 }
 
-export type TrackLevelOption = { value: string; level: number; label: string; beyond: boolean; via?: ItemAscension }
+export type TrackLevelOption = { value: string; level: number; label: string; beyond: boolean; via?: ItemAscension; track: string; rank: number; reagent?: string }
 /** Every level an item can reach, highest first, with the season's true top marked Max */
 export function trackLevelOptions(tracks: ItemTracks): TrackLevelOption[] {
   const max = (track: ItemTrackRange, level: number) => track.name === tracks.max.track && level === tracks.max.itemLevel ? ' · Max' : ''
   return [...tracks.tracks].reverse().flatMap(track => [
-    ...(track.beyond ?? []).map(({ level, via }) => ({ value: `${track.name}:${via}`, level, beyond: true, via, label: `${trackRankLabel(track.name, 0, track.ranks, via)} · ${level}${max(track, level)}` })).reverse(),
-    ...track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, beyond: false, label: `${trackRankLabel(track.name, index + 1, track.ranks)} · ${level}${max(track, level)}` })).reverse(),
+    ...(track.beyond ?? []).map(({ level, via }) => ({ value: `${track.name}:${via}`, level, beyond: true, via, track: track.name, rank: 0, label: `${trackRankLabel(track.name, 0, track.ranks, via)} · ${level}${max(track, level)}` })).reverse(),
+    ...track.levels.map((level, index) => ({ value: `${track.name}:${index + 1}`, level, beyond: false, track: track.name, rank: index + 1, reagent: track.reagent, label: `${trackRankLabel(track.name, index + 1, track.ranks)} · ${level}${max(track, level)}` })).reverse(),
   ])
 }
 export type ItemPowerStat = { type: number; name: string; value: number; secondary: boolean }
@@ -54,6 +57,8 @@ export type ItemPower = { itemLevel: number; armor: number | null; stats: ItemPo
 /** How many items each boss that drops this one has in its loot, in total and for the selected character */
 export type ItemLootShare = { encounter: string; instance: string; kind: ItemSource['kind']; total: number; forCharacter: number | null }
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
+/** A crafting reagent that embellishes an item; `effect` is filled for the planned item's level, `complete` false when some values are unknown */
+export type EmbellishmentOption = EnhancementOption & { applies: string | null; limit: string; effect: string; complete: boolean }
 export type ItemSearchPage = { items: Array<ItemSummary & { maxLevel?: ItemTracks['max'] | null; effects?: ItemPowerEffect[] }>; nextOffset: number | null }
 export type AppearanceOption = { appearanceId: number; modifiedAppearanceId: number; itemId: number; itemName: string; quality: number; icon: number | null }
 
@@ -72,7 +77,7 @@ export const itemSearchSchema = z.object({
   slot: appearanceSlotSchema.nullable().default(null),
   armor: z.enum(armorTypes).nullable().default(null),
   character: itemSearchCharacterSchema.nullable().default(null),
-  source: z.enum(['any', 'dungeon', 'raid']).default('any'),
+  source: z.enum(['any', 'dungeon', 'raid', 'crafted']).default('any'),
   currentOnly: z.boolean().default(false),
   /** Only items carrying this secondary stat */
   stat: z.enum(['any', 'crit', 'haste', 'mastery', 'versatility']).default('any'),
