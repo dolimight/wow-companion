@@ -140,11 +140,6 @@
 .panel-slot[data-target-equipped="true"]:not([data-selected]):not(:hover):not(:focus-within) .game-icon { opacity: 0.55; filter: saturate(0.5); }
 
 .character-panel-footer { display: grid; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
-.character-panel-gems { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.character-panel-gem.character-panel-gem { height: 32px; gap: 6px; padding: 0 10px 0 3px; border-radius: 8px; font-size: 12px; font-weight: 500; }
-.character-panel-gem .game-icon { width: 24px; height: 24px; border-radius: 5px; }
-.character-panel-gem[data-pressed] { background: var(--selected); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
-.character-panel-gem-count { color: var(--secondary); font-variant-numeric: tabular-nums; }
 
 .character-panel { --panel-problem: #b12630; }
 :root[data-theme="dark"] .character-panel { --panel-problem: #ff8a8a; }
@@ -160,13 +155,9 @@
 .character-panel-issue-slot { min-width: 0; padding: 4px 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .character-panel-issue-slot:hover { text-decoration: underline; }
 .character-panel-issues li .button { flex: none; }
-.panel-slot[data-gem-match="match"] { border-color: color-mix(in srgb, var(--accent) 70%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
-.panel-slot[data-gem-match="other"] { opacity: 0.35; }
-.panel-slot-gems i[data-focused] { background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
 @media (prefers-reduced-motion: no-preference) {
   .panel-slot { transition: background-color 120ms ease, border-color 120ms ease, opacity 160ms ease, box-shadow 160ms ease; }
 }
-.character-panel-footer .plan-enhancement-totals { margin: 0; justify-content: center; }
 
 @container (max-width: 620px) {
   .character-panel-doll {
@@ -184,3 +175,9 @@
   .panel-slot[data-side="right"] .panel-slot-level,
   .panel-slot[data-side="right"] .panel-slot-enhancements { justify-content: flex-start; }
 }
+
+/* A slot the specialization can't fill: no hover, no pick, and the reason in place of an item */
+.panel-slot[data-closed] { cursor: default; }
+.panel-slot[data-closed]:hover { background: transparent; }
+.panel-slot[data-closed] .game-icon { opacity: 0.45; }
+.panel-slot-text > .panel-slot-closed { color: var(--muted); white-space: normal; }
