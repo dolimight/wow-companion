@@ -87,6 +87,7 @@ import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscrib
 import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
 import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
 import { PlanSources } from "./features/plan/PlanSources";
+import { PlanStats } from "./features/plan/PlanStats";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { KeyRangePage } from "./features/key-range/KeyRangePage";
@@ -1798,7 +1799,7 @@ function GearEditor({
     <>
       <div className="page-heading gear-plan-heading">
         <div>
-          <h2 className="gear-section-title"><NotebookPen size={18} aria-hidden="true" />Plan</h2>
+          <h2 className="gear-section-title"><NotebookPen size={18} aria-hidden="true" />{name.trim() || "Untitled plan"}</h2>
           <p>Your imported gear stays separate from this plan · Changes save automatically, with Undo in the toast</p>
         </div>
         <div className="actions">
@@ -1865,12 +1866,13 @@ function GearEditor({
                   enchantable: canEnchant(item, slot),
                   embellishment: embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds)?.name ?? null,
                   outstanding: completion?.acquisition === "complete" && !completion.complete
-                    ? completion.rank !== "complete" ? "Upgrade goal outstanding" : completion.enhancements !== "complete" ? "Gems or enchant outstanding" : "Variant details unverified"
+                    ? completion.rank !== "complete" ? null : completion.enhancements !== "complete" ? "Gems or enchant still to add" : "Variant details unverified"
                     : null,
                 };
               }}
               footer={<PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />}
             />
+            <PlanStats character={character} items={items} disabled={inspectorDirty} />
             <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
             <div className="roster-footnote">
               <Info />

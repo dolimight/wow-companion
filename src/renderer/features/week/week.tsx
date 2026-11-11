@@ -7,7 +7,7 @@ import { errorMessage, notify } from "../../lib/notify";
 import { Term } from "../../components/Term";
 import { Badge, Button } from "../../components/ui/primitives";
 import { useConnections } from "../connections/connections";
-import type { Character } from "../../../shared/domain";
+import type { Character, CharacterStats } from "../../../shared/domain";
 import { diminishing, drBrackets } from "../../../shared/diminishing";
 import { hasResetSchedule, nextDailyReset, nextWeeklyReset, vaultTracks, weeklyLockouts, weeklyRuns, type VaultTrack } from "../../../shared/weekly";
 import { AffixesSurface, AltReadiness, VaultPlan } from "../season/season";
@@ -237,23 +237,39 @@ const statRows: Array<{ key: "crit" | "haste" | "mastery" | "versatility"; label
   { key: "mastery", label: "Mastery" },
   { key: "versatility", label: "Versatility" },
 ];
-export function StatsSurface({ character }: { character: Character }) {
-  const stats = character.stats;
+/** Change from the synced sheet, shown beside a projected value */
+function Change({ value, unit = "", digits = 0 }: { value: number; unit?: string; digits?: number }) {
+  const rounded = Number(value.toFixed(digits));
+  if (!rounded) return null;
+  return <span className="stat-change" data-direction={rounded > 0 ? "up" : "down"}>{rounded > 0 ? "+" : "−"}{Math.abs(rounded).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}{unit}</span>;
+}
+export function StatsSurface({ character, stats: shownStats, before, heading = "Stats", subtitle, unknown = [], footer }: {
+  character: Character;
+  /** Stats to show in place of the synced sheet, such as a plan's projection */
+  stats?: CharacterStats;
+  /** The sheet the projection started from; each value shows its change against it */
+  before?: CharacterStats;
+  heading?: string;
+  subtitle?: ReactNode;
+  unknown?: Array<"crit" | "haste" | "mastery" | "versatility">;
+  footer?: ReactNode;
+}) {
+  const stats = shownStats ?? character.stats;
   if (!stats) return null;
   const highest = Math.max(1, ...statRows.map((row) => stats[row.key] ?? 0));
   return (
     <section className="surface">
       <div className="surface-heading">
         <div>
-          <h2>Stats</h2>
-          <p>From {stats.source}{stats.observedAt ? ` · ${new Date(stats.observedAt).toLocaleDateString()}` : ""}</p>
+          <h2>{heading}</h2>
+          <p>{subtitle ?? <>From {stats.source}{stats.observedAt ? ` · ${new Date(stats.observedAt).toLocaleDateString()}` : ""}</>}</p>
         </div>
         <Sun size={16} className="secondary" aria-hidden />
       </div>
       <div className="metric-strip stat-primary">
-        <div><small>{stats.primary?.name ?? "Main stat"}</small><strong>{stats.primary ? stats.primary.value.toLocaleString() : "Unknown"}</strong></div>
-        <div><small>Stamina</small><strong>{stats.stamina?.toLocaleString() ?? "Unknown"}</strong></div>
-        <div><small>Health</small><strong>{stats.health?.toLocaleString() ?? "Unknown"}</strong></div>
+        <div><small>{stats.primary?.name ?? "Main stat"}</small><strong>{stats.primary ? stats.primary.value.toLocaleString() : "Unknown"}</strong>{before?.primary && stats.primary && <Change value={stats.primary.value - before.primary.value} />}</div>
+        <div><small>Stamina</small><strong>{stats.stamina?.toLocaleString() ?? "Unknown"}</strong>{before?.stamina != null && stats.stamina != null && <Change value={stats.stamina - before.stamina} />}</div>
+        <div><small>Health</small><strong>{stats.health?.toLocaleString() ?? "Unknown"}</strong>{before?.health != null && stats.health != null && <Change value={stats.health - before.health} />}</div>
       </div>
       <h3 className="stat-heading"><Term term="secondary stats">Secondary stats</Term></h3>
       <div className="stat-bars">
@@ -267,7 +283,9 @@ export function StatsSurface({ character }: { character: Character }) {
                 <span>{row.label}</span>
                 {row.key === "mastery" ? <div className="stat-track"><span style={{ width: `${((value ?? 0) / highest) * 100}%` }} /></div> : <DrTrack raw={reading?.raw ?? 0} />}
                 <strong>{value == null ? "Unknown" : `${value.toFixed(1)}%`}</strong>
+                {before && value != null && before[row.key] != null && <Change value={value - before[row.key]!} unit="%" digits={1} />}
               </div>
+              {unknown.includes(row.key) && <small className="stat-hint">Rating changes by {((stats.ratings?.[row.key] ?? 0) - (before?.ratings?.[row.key] ?? 0)).toLocaleString()}, but the synced sheet doesn't say how much that moves the percentage</small>}
               {reading && (
                 <small className="stat-hint">
                   {reading.capped ? "At the cap, more rating adds nothing" : reading.nextValue === 1 ? "Full value, the next point isn't reduced" : `The next point keeps ${Math.round(reading.nextValue * 100)}% of its value`}
@@ -289,7 +307,7 @@ export function StatsSurface({ character }: { character: Character }) {
           </li>
         ))}
       </ul>
-      <p className="week-footnote">The hard cap from gear rating is {drBrackets.at(-1)!.to}%. Position is worked out from the percentages on your character sheet for critical strike, haste, and versatility, so it is an estimate until the game reports the rating part</p>
+      {footer ?? <p className="week-footnote">The hard cap from gear rating is {drBrackets.at(-1)!.to}%. Position is worked out from the percentages on your character sheet for critical strike, haste, and versatility, so it is an estimate until the game reports the rating part</p>}
     </section>
   );
 }

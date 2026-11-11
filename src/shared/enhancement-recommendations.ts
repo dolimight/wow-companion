@@ -21,13 +21,27 @@ export function flatEnhancement(text: string): Ratings | null {
   return count && !rest && Object.values(result).every(value => Number.isFinite(value) && value >= 0) ? result : null
 }
 
+// Every specialization starts with 8 mastery points before rating
+const BASE_MASTERY = 8
+/**
+ * Sheet percentage per mastery point for the specialization. The game reports mastery from rating already scaled,
+ * so the base 8 points account for the rest of the sheet value. Null when the sheet can't show it
+ */
+export function masteryScale(stats: CharacterStats | null) {
+  const shown = stats?.mastery, bonus = stats?.ratingBonus?.mastery
+  if (shown == null || bonus == null) return null
+  const scale = (shown - bonus) / BASE_MASTERY
+  return Number.isFinite(scale) && scale > 0 ? scale : null
+}
+
 export type StatConversion = { perPoint: number; raw: number }
 export type Conversions = Partial<Record<SecondaryStat, StatConversion>>
 /** Mastery uses rating-derived mastery points, never its specialization's displayed effect percentage */
 export function ratingConversions(stats: CharacterStats | null): Conversions {
   const result: Conversions = {}
   for (const key of statKeys) {
-    const rating = stats?.ratings?.[key], bonus = stats?.ratingBonus?.[key]
+    const rating = stats?.ratings?.[key], scale = key === 'mastery' ? masteryScale(stats) : 1
+    const bonus = stats?.ratingBonus?.[key] == null || !scale ? null : stats.ratingBonus[key]! / scale
     if (rating == null || rating <= 0 || bonus == null || bonus <= 0) continue
     const reading = diminishing(bonus)
     if (reading.capped || reading.raw <= 0) continue

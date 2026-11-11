@@ -1,8 +1,6 @@
 .character-panel {
   container-type: inline-size;
-  margin-top: 18px;
   padding: 20px;
-  border: 1px solid var(--line);
   border-radius: 12px;
   background:
     radial-gradient(ellipse 46% 62% at 50% 44%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 72%),
@@ -107,7 +105,7 @@
 
 .panel-slot-text { display: grid; gap: 2px; min-width: 0; font-size: 12px; line-height: 1.4; }
 .panel-slot-text > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.panel-slot-name { font-size: 13px; font-weight: 600; }
+.panel-slot-text > .panel-slot-name { font-size: 13px; font-weight: 600; line-height: 1.3; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .panel-slot-empty { color: var(--muted); font-weight: 500; }
 .panel-slot-level { display: flex; align-items: baseline; gap: 6px; color: var(--secondary); }
 .panel-slot[data-side="right"] .panel-slot-level,
@@ -119,7 +117,8 @@
 .panel-slot-match { display: inline-flex; align-items: center; gap: 3px; }
 .panel-slot-match svg { width: 12px; height: 12px; }
 
-.panel-slot-enhancements { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.panel-slot-enhancements { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.panel-slot-enchant { max-width: 100%; }
 .panel-slot-enchant { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green); }
 .panel-slot-enchant svg { flex: none; width: 12px; height: 12px; }
 .panel-slot-enchant[data-state="missing"] { color: var(--muted); }

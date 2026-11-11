@@ -30,8 +30,10 @@
 .gear-summary .metric-strip { width: min(100%, 560px); }
 .gear-summary .metric-strip strong[data-unknown="true"] { color: var(--secondary); font-size: 17px; font-weight: 500; }
 .planner-layout { gap: 24px; }
-.planner-workspace { min-width: 0; }
-.plan-controls { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.2fr); align-items: start; gap: 20px; padding: 20px; border-radius: 12px; background: var(--surface); margin-bottom: 20px; }
+.planner-workspace { display: grid; align-content: start; gap: 20px; min-width: 0; }
+.planner-workspace > * { margin-top: 0; margin-bottom: 0; }
+.planner-workspace > .surface { padding: 20px; }
+.plan-controls { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.2fr); align-items: start; gap: 20px; padding: 20px; border-radius: 12px; background: var(--surface); }
 .plan-controls .goal-editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; margin: 0; }
 .plan-controls .goal-editor .field input { max-width: none; }
 .plan-controls .goal-editor > .button { min-height: 36px; }
