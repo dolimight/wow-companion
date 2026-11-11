@@ -1,8 +1,8 @@
-.plan-sources { margin-top: 20px; }
+.plan-sources { margin: 4px 0 0; }
 .plan-sources > header h3 { margin: 0; font-size: 17px; }
 .plan-sources > header p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; }
 .plan-sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; gap: 12px; margin-top: 14px; }
-.plan-source { display: grid; align-content: start; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.plan-source { display: grid; align-content: start; gap: 10px; padding: 16px; border-radius: 12px; background: var(--surface); }
 .plan-source > header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
 .plan-source > header div { display: grid; gap: 1px; min-width: 0; }
 .plan-source > header strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

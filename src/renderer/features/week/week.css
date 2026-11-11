@@ -72,3 +72,9 @@
 .week-expanded > td { padding: 0 0 12px; }
 .week-expanded .surface { margin: 0; }
 .week-expanded-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat-bar:has(.stat-change) { grid-template-columns: 110px minmax(0, 1fr) 52px 52px; }
+.stat-change { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.stat-bar > .stat-change[data-direction="up"], .stat-change[data-direction="up"] { color: var(--green); }
+.stat-bar > .stat-change[data-direction="down"], .stat-change[data-direction="down"] { color: #b12630; }
+:root[data-theme="dark"] .stat-change[data-direction="down"] { color: #ff8a8a; }
+.stat-primary .stat-change { margin-left: 8px; font-size: 13px; }

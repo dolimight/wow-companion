@@ -225,8 +225,8 @@ function SlotTile({ slot, side, name, selected, onSelect, planned, observed, ite
         <span className={planned ? `panel-slot-name quality-text-${quality}` : "panel-slot-name panel-slot-empty"}>{planned?.name ?? name}</span>
         <span className="panel-slot-level">
           {planned?.itemLevel != null ? <strong>{Math.round(planned.itemLevel)}</strong> : <span className="muted">{planned ? "Level unknown" : emptyNote ?? "Nothing planned"}</span>}
-          {equipped ? <span className="panel-slot-match"><Check aria-hidden="true" />Equipped</span>
-            : delta ? <span className="panel-slot-delta" data-sign={delta > 0 ? "up" : "down"}>{delta > 0 ? "+" : "−"}{Math.abs(delta)}</span> : null}
+          {delta ? <span className="panel-slot-delta" data-sign={delta > 0 ? "up" : "down"}>{delta > 0 ? "+" : "−"}{Math.abs(delta)}</span> : null}
+          {equipped && (delta && delta > 0 ? <span className="muted">Upgrade</span> : <span className="panel-slot-match"><Check aria-hidden="true" />Equipped</span>)}
           {planned?.levelSource === "estimated" && <span className="muted">Estimate</span>}
         </span>
         {planned && (showEnchant || pips > 0) && (
