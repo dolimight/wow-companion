@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "../../components/ui/input";
 import { Button, Field } from "../../components/ui/primitives";
 import { api } from "../../lib/client";
+import { iconUrl } from "../../lib/assets";
 import { errorMessage, notify } from "../../lib/notify";
 import { gearMemory, planKey, setActivePlan, type PlanRef } from "../../lib/plan-item";
 import "./plan-bar.css";
@@ -29,6 +30,7 @@ export function PlanBar({ character, activity, current, currentName, currentItem
 }) {
   const client = useQueryClient();
   const drafts = useQuery({ queryKey: ["gear-draft", character.id, "list"], queryFn: () => api.listGearDrafts(character.id) });
+  const specIcons = useSpecIcons();
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const specs = specializationsFor(character.className);
@@ -56,7 +58,7 @@ export function PlanBar({ character, activity, current, currentName, currentItem
     <div className="plan-bar">
       <Field label="Open plan">
         <AppSelect aria-label="Open plan" value={refValue(current)} onValueChange={(value) => open(parseRef(value))}
-          options={plans.map((plan) => ({ value: refValue(plan.ref), label: `${specLabel(plan.ref.specId)} · ${plan.name}` }))} />
+          options={plans.map((plan) => ({ value: refValue(plan.ref), label: `${specLabel(plan.ref.specId)} · ${plan.name}`, image: iconUrl(specIcons.get(plan.ref.specId ?? 0)) ?? undefined }))} />
       </Field>
       <div className="plan-bar-actions">
         <Button onClick={() => setCreating(true)}><Plus size={14} aria-hidden="true" />New plan</Button>
@@ -91,6 +93,7 @@ function NewPlanDialog({ character, activity, specs, current, currentItems, exis
   onCreated: (ref: PlanRef) => void;
 }) {
   const [specId, setSpecId] = useState<number | null>(current.specId ?? specs[0]?.id ?? null);
+  const specIcons = useSpecIcons();
   const [name, setName] = useState("");
   const [start, setStart] = useState<"equipped" | "copy" | "empty">("equipped");
   const [busy, setBusy] = useState(false);
@@ -115,7 +118,7 @@ function NewPlanDialog({ character, activity, specs, current, currentItems, exis
         <div className="new-plan-fields">
           <Field label="Specialization">
             <AppSelect aria-label="Specialization" value={String(specId ?? "")} onValueChange={(value) => setSpecId(Number(value))}
-              options={(specs.length ? specs : [{ id: character.specId ?? 0, name: character.specName }]).map((entry) => ({ value: String(entry.id), label: entry.name }))} />
+              options={(specs.length ? specs : [{ id: character.specId ?? 0, name: character.specName }]).map((entry) => ({ value: String(entry.id), label: entry.name, image: iconUrl(specIcons.get(entry.id)) ?? undefined }))} />
           </Field>
           <Field label="Name">
             <Input value={name} maxLength={100} placeholder={`${spec} plan`} onChange={(event) => setName(event.target.value)} />
@@ -132,4 +135,10 @@ function NewPlanDialog({ character, activity, specs, current, currentItems, exis
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Specialization icons from the installed game, by specialization ID */
+function useSpecIcons() {
+  const specs = useQuery({ queryKey: ["specializations"], queryFn: () => api.specializations(), staleTime: Infinity, retry: false });
+  return new Map((specs.data ?? []).flatMap((spec) => spec.icon ? [[spec.id, spec.icon] as const] : []));
 }

@@ -123,7 +123,9 @@ export const statWeightsSchema = z.object({ crit: z.number().finite().min(0).max
 export type StatWeights = z.infer<typeof statWeightsSchema>
 /** `plan` tells apart several plans for one specialization and activity; the first is always `main` */
 export const planIdSchema = z.string().min(1).max(64).regex(/^[a-z0-9-]+$/)
-export const gearDraftSchema = z.object({ id: z.string(), characterId: z.string(), specId: z.number().int().nullable(), activity: activitySchema, rulesetId: z.string().default('unknown'), plan: planIdSchema.default('main'), name: z.string().max(100), items: z.array(gearItemSchema).max(40), statWeights: statWeightsSchema.optional(), updatedAt: z.string().datetime() })
+export const gearDraftSchema = z.object({ id: z.string(), characterId: z.string(), specId: z.number().int().nullable(), activity: activitySchema, rulesetId: z.string().default('unknown'), plan: planIdSchema.default('main'), name: z.string().max(100),
+  /** The plan's talent build as the game's export string, and where it came from */
+  talents: z.object({ loadout: z.string().min(1).max(400), source: z.string().max(120) }).nullable().optional(), items: z.array(gearItemSchema).max(40), statWeights: statWeightsSchema.optional(), updatedAt: z.string().datetime() })
 export type GearDraft = z.infer<typeof gearDraftSchema>
 export type GearDraftInput = z.input<typeof gearDraftSchema>
 export const appearanceRefSchema = z.object({ appearanceId: z.number().int().positive().nullable(), modifiedAppearanceId: z.number().int().positive().nullable().default(null), itemId: z.number().int().positive().nullable().default(null), variantKey: z.string().nullable().default(null), source: z.string().max(100) })

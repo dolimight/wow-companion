@@ -13,6 +13,8 @@ import { equalWeights } from '../../shared/enhancement-recommendations'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
 import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
+import { buildTalentTree, specializationRows } from './talents'
+import type { TalentTree } from '../../shared/talents'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -140,6 +142,7 @@ export class GameDataEngine {
 
   private async releaseCasc() {
     if (this.idleTimer) clearTimeout(this.idleTimer)
+    this.traitTables.clear()
     const casc = this.casc
     this.casc = null
     if (casc) await (await casc.catch(() => null))?.close()
@@ -714,6 +717,33 @@ export class GameDataEngine {
       const item = byItem.get(row.item_id)!
       return [{ appearanceId: row.appearance_id, modifiedAppearanceId: row.modified_id, itemId: row.item_id, itemName: item.name, quality: item.quality, icon: row.icon ?? item.icon }]
     })
+  }
+
+  /** Reads game tables for talents once per open session; they're large and every specialization shares them */
+  private traitTables = new Map<string, Promise<Map<number, Row>>>()
+  private traitTable(name: string) {
+    let pending = this.traitTables.get(name)
+    if (!pending) { pending = this.openCasc().then(casc => this.table(casc, name)); this.traitTables.set(name, pending); pending.catch(() => this.traitTables.delete(name)) }
+    return pending
+  }
+  /** A specialization's talent tree, built from the installed game and kept on disk per game version */
+  async talentTree(specId: number): Promise<TalentTree | null> {
+    if (!this.install) throw new Error('World of Warcraft was not found on this computer')
+    const version = this.install.build.version
+    const file = path.join(this.directory, 'talents', `${version}-${specId}.json`)
+    try { return JSON.parse(await readFile(file, 'utf8')) as TalentTree } catch { /* build below */ }
+    const tree = await buildTalentTree(name => this.traitTable(name), specId, version)
+    if (tree) { await mkdir(path.dirname(file), { recursive: true }); await writeFile(file, JSON.stringify(tree)) }
+    return tree
+  }
+  /** Every specialization with its class and icon */
+  async specializations() {
+    if (!this.install) return []
+    const file = path.join(this.directory, 'talents', `${this.install.build.version}-specs.json`)
+    try { return JSON.parse(await readFile(file, 'utf8')) as Awaited<ReturnType<typeof specializationRows>> } catch { /* build below */ }
+    const rows = await specializationRows(name => this.traitTable(name))
+    await mkdir(path.dirname(file), { recursive: true }); await writeFile(file, JSON.stringify(rows))
+    return rows
   }
 
   enchantNames(ids: number[]): Record<number, string> {

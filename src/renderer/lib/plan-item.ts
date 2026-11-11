@@ -65,11 +65,13 @@ let savedToast: string | null = null
  * Saves a plan and offers to undo it. Undo puts back the plan as it was before this save; a plan that was never
  * saved goes back to the gear the character wears. Memory is only marked clean when no newer edit arrived meanwhile
  */
-export async function savePlan(owner: PlanOwner, next: { items: GearItem[]; name: string; statWeights?: StatWeights }, options: { undo?: boolean; message?: string; replace?: boolean } = {}): Promise<GearDraft> {
+export async function savePlan(owner: PlanOwner, next: { items: GearItem[]; name: string; statWeights?: StatWeights; talents?: GearDraft["talents"] }, options: { undo?: boolean; message?: string; replace?: boolean } = {}): Promise<GearDraft> {
   const plan = owner.plan ?? "main"
   const key = planKey(owner.characterId, owner.activity, owner.specId, plan)
   const before = await api.getGearDraft({ characterId: owner.characterId, activity: owner.activity, specId: owner.specId, plan })
-  const saved = await api.saveGearDraft({ id: before?.id ?? crypto.randomUUID(), characterId: owner.characterId, specId: owner.specId, activity: owner.activity, rulesetId: before?.rulesetId ?? "unknown", plan, name: next.name.trim() || "My upgrade plan", items: next.items, statWeights: next.statWeights, updatedAt: new Date().toISOString() })
+  const saved = await api.saveGearDraft({ id: before?.id ?? crypto.randomUUID(), characterId: owner.characterId, specId: owner.specId, activity: owner.activity, rulesetId: before?.rulesetId ?? "unknown", plan, name: next.name.trim() || "My upgrade plan", items: next.items, statWeights: next.statWeights,
+    // Item edits never carry talents, so a save keeps the build the plan already has
+    talents: next.talents !== undefined ? next.talents : before?.talents ?? null, updatedAt: new Date().toISOString() })
   const current = gearMemory.get(key)
   if (options.replace || !current || (current.items === next.items && current.name === next.name)) // The saved list keeps its identity, so an open planner does not reset fields the player is still typing in
     gearMemory.set(key, { items: next.items, name: next.name, statWeights: next.statWeights, dirty: false })
