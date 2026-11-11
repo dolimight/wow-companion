@@ -4,9 +4,11 @@
 local _, ns = ...
 ns = ns or {}
 
-local SIZE = 260
+-- Size and turn speed come from the settings page; these are the defaults and the allowed ranges
+local SIZE, MIN_SIZE, MAX_SIZE = 260, 180, 360
+local SPIN, MAX_SPIN = 0.6, 1.5
 local WIDTH, HEIGHT = SIZE, SIZE
-local SPIN = 0.6
+local spin = SPIN
 local preview
 
 local function readable(value)
@@ -187,7 +189,7 @@ local function build()
   frame.status:SetPoint("BOTTOM", 0, 9)
   frame.facing = 0
   frame:SetScript("OnUpdate", function(self, elapsed)
-    self.facing = (self.facing + elapsed * SPIN) % (2 * math.pi)
+    self.facing = (self.facing + elapsed * spin) % (2 * math.pi)
     if self.housingActor then self.housingActor:SetYaw(self.facing)
     elseif self.active then self.active:SetRotation(self.facing) end
     -- The tooltip is followed every frame: it can move, and its own hide events are not always delivered
@@ -284,8 +286,34 @@ end
 
 ns.hide = hide
 
+-- Reads the saved size and turn speed, keeping them inside the ranges the settings page offers
+local function readLook()
+  local settings = WoWCompanionDB and WoWCompanionDB.settings
+  local size = tonumber(settings and settings.previewSize) or SIZE
+  size = math.max(MIN_SIZE, math.min(MAX_SIZE, size))
+  WIDTH, HEIGHT = size, size
+  local speed = tonumber(settings and settings.previewSpin)
+  spin = speed and math.max(0, math.min(MAX_SPIN, speed)) or SPIN
+  if preview then
+    preview:SetSize(WIDTH, HEIGHT)
+    preview.title:SetWidth(WIDTH - 20)
+  end
+end
+
+-- The settings page calls this after a change, so a preview that was turned off closes right away
+function ns.previewSettingsChanged()
+  readLook()
+  if not preview or not preview.key then return end
+  local kind = preview.key:match("^([^:]+):")
+  for name, prefix in pairs(kinds) do
+    if prefix == kind and not enabled(name) then hide() return end
+  end
+  if not enabled() then hide() end
+end
+
 local function show(tooltip, found)
   preview = preview or build()
+  readLook()
   preview.place = place
   preview.owner = tooltip
   preview.goneFor = 0
