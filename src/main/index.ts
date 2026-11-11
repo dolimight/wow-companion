@@ -17,13 +17,19 @@ import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
 import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
 import { openSplash } from './splash'
-import { persistWindowsIcon, refreshPinnedShellItems, taskbarDetails, updatePinnedAppIcons, windowsAppId } from './windows-app-icon'
+import { alignShortcutActivator, appIdentity, persistWindowsIcon, refreshPinnedShellItems, registerToastIdentity, taskbarDetails, updatePinnedAppIcons } from './windows-app-icon'
 
+// Development runs are their own app: own name and data folder, so they never share the installed app's database
+// or single-instance lock. This runs before anything reads the user-data path
+const identity=appIdentity(app.isPackaged)
+if(!app.isPackaged){app.setName(identity.displayName);app.setPath('userData',join(app.getPath('appData'),identity.dataFolder))}
 // Test profiles isolate Chromium caches as well as SQLite, including alongside dev mode
 if(process.env.WOW_COMPANION_DATA_DIR){const testProfile=resolve(process.env.WOW_COMPANION_DATA_DIR);mkdirSync(testProfile,{recursive:true});app.setPath('userData',testProfile);app.setPath('sessionData',testProfile)}
 
-// Windows names toasts after this identity, and startup sync can raise one before the window exists, so set it before anything else
-if(process.platform==='win32')app.setAppUserModelId(windowsAppId)
+// Windows names toasts after this identity and routes their clicks to the activator class; startup sync can raise one
+// before the window exists, so both are set before anything else. A fixed activator keeps Action Center clicks working
+// after a restart, where Electron would otherwise pick a new random class every run
+if(process.platform==='win32'){app.setToastActivatorCLSID(identity.activator);app.setAppUserModelId(identity.appId)}
 
 protocol.registerSchemesAsPrivileged([
   {scheme:'app',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}},
@@ -60,15 +66,24 @@ async function main(){
   let keepInTray=settings.keepInTray
   const isolated=!!process.env.WOW_COMPANION_DATA_DIR||process.env.WOW_COMPANION_HEADLESS==='1'
   const showWindow=()=>{if(!window)return;if(window.isMinimized())window.restore();window.show();window.focus()}
+  // Shown notices are held until dismissed, since a collected one loses its click handler
+  const notices=new Set<Notification>()
+  const notify=(alert:{title:string;body:string})=>{
+    const notice=new Notification({title:alert.title,body:alert.body,icon:windowIcon,silent:false})
+    notices.add(notice)
+    notice.on('click',()=>{notices.delete(notice);showWindow()})
+    notice.on('close',()=>notices.delete(notice))
+    notice.show()
+  }
   // Alerts stay quiet in isolated test profiles and when the player turned them off
   const onAlert=async(alert:{title:string;body:string})=>{
     if(isolated||!Notification.isSupported())return
     const current=await db.call('getSettings').catch(()=>null)
     if(!current?.desktopAlerts)return
-    const notice=new Notification({title:alert.title,body:alert.body,icon:windowIcon,silent:false})
-    notice.on('click',showWindow)
-    notice.show()
+    notify(alert)
   }
+  // Clicks from Action Center, after a restart, or on a launch the click started arrive here rather than on the notice
+  if(process.platform==='win32')Notification.handleActivation(()=>showWindow())
   splash?.step('Starting local services',.4)
   const service=await startLocalService({db,origins,refreshCharacter:id=>refreshPublicCharacter(db,id),gameDataDir:resolve(userDir,'gamedata'),secrets,addonDir,assetsDir:userDir,autoSync:!process.env.WOW_COMPANION_DATA_DIR,onAlert:alert=>void onAlert(alert),onSettings:next=>{keepInTray=next.keepInTray}})
   let nativeOperations=0
@@ -132,6 +147,8 @@ async function main(){
   handle('companion:update-download',()=>updates.download())
   handle('companion:update-install',()=>updates.install())
   handle('companion:update-channel',(channel:unknown)=>{if(!isUpdateChannel(channel))throw new Error('Choose Stable or Nightly');return updates.setChannel(channel)})
+  // A test notice is sent even in test profiles: the player asked for it, so only an unsupported system stops it
+  handle('companion:test-alert',()=>{if(!Notification.isSupported())throw new Error('This system doesn\'t support desktop notifications');notify({title:'WOW Companion alerts are on',body:'Click this notice to bring WOW Companion to the front'})})
   handle('companion:update-auto-download',(value:unknown)=>{if(typeof value!=='boolean')throw new Error('Invalid download setting');return updates.setAutoDownload(value)})
   handle('companion:update-blockers',(values:unknown)=>{if(!Array.isArray(values)||values.length>20||values.some(value=>typeof value!=='string'||value.length>160))throw new Error('Invalid pending work');updateBlockerAcknowledgedAt=Date.now();updates.setBlockers(values)})
   async function selectedFile(filters:Electron.FileFilter[],extra:Pick<Electron.OpenDialogOptions,'title'|'defaultPath'>={}){const result=await dialog.showOpenDialog(window!,{...extra,properties:['openFile'],filters});return result.canceled?null:result.filePaths[0]??null}
@@ -155,6 +172,8 @@ async function main(){
   const iconRoot=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets':'public/assets')
   const iconPath=(variant:AppIconVariant)=>resolve(iconRoot,appIconFiles[variant].png)
   const windowIcon=iconPath(resolveAppIcon(settings.appIcon,app.getVersion()))
+  if(process.platform==='win32'&&app.isPackaged&&!process.env.WOW_COMPANION_DATA_DIR)alignShortcutActivator(resolve(app.getPath('appData'),'Microsoft/Windows/Start Menu/Programs/WOW Companion.lnk'),process.execPath,identity,shell)
+  if(process.platform==='win32'&&!process.env.WOW_COMPANION_HEADLESS)void registerToastIdentity(identity,windowIcon,app.isPackaged?`"${process.execPath}"`:`"${process.execPath}" "${app.getAppPath()}"`)
   const pinnedIcons=resolve(app.getPath('appData'),'Microsoft/Internet Explorer/Quick Launch/User Pinned/TaskBar')
   let iconUpdate:Promise<unknown>=Promise.resolve()
   const applyAppIcon=()=>{
@@ -180,7 +199,7 @@ async function main(){
   const titleBarOverlay=()=>({color:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',symbolColor:nativeTheme.shouldUseDarkColors?'#f5f5f5':'#1c2430',height:48})
   const placementFile=resolve(userDir,'window-placement.json')
   const placement=readWindowPlacement(placementFile,[screen.getPrimaryDisplay().workArea,...screen.getAllDisplays().filter(display=>display.id!==screen.getPrimaryDisplay().id).map(display=>display.workArea)])
-  window=new BrowserWindow({title:'WOW Companion',...placement.bounds,...minimumWindowSize,show:false,backgroundColor:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',autoHideMenuBar:true,icon:windowIcon,...(process.platform==='darwin'?{titleBarStyle:'hiddenInset' as const,trafficLightPosition:{x:14,y:16}}:{titleBarStyle:'hidden' as const,titleBarOverlay:titleBarOverlay()}),webPreferences:{preload:resolve(root,'../preload/index.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true,offscreen:process.env.WOW_COMPANION_HEADLESS==='1',backgroundThrottling:process.env.WOW_COMPANION_HEADLESS!=='1'}})
+  window=new BrowserWindow({title:identity.displayName,...placement.bounds,...minimumWindowSize,show:false,backgroundColor:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',autoHideMenuBar:true,icon:windowIcon,...(process.platform==='darwin'?{titleBarStyle:'hiddenInset' as const,trafficLightPosition:{x:14,y:16}}:{titleBarStyle:'hidden' as const,titleBarOverlay:titleBarOverlay()}),webPreferences:{preload:resolve(root,'../preload/index.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true,offscreen:process.env.WOW_COMPANION_HEADLESS==='1',backgroundThrottling:process.env.WOW_COMPANION_HEADLESS!=='1'}})
   await applyAppIcon().catch(error=>console.warn('Taskbar icon update:',error.message))
   const rememberedWindow=rememberWindowPlacement(window,placementFile,placement)
   saveWindowPlacement=rememberedWindow.save
@@ -197,15 +216,17 @@ async function main(){
   window.webContents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false))
   window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show();void splash?.close();splash=null})
   window.on('closed',()=>{window=null})
+  // Page titles name the app; a development window says so, so it is never mistaken for the installed one
+  if(!app.isPackaged)window.on('page-title-updated',(event,title)=>{event.preventDefault();window?.setTitle(title.replace(/^WOW Companion(?= |$)/,identity.displayName))})
   // With the tray option on, closing hides the window so syncs and alerts continue; Quit lives in the tray menu
   window.webContents.on('will-prevent-unload',event=>{if(allowUnload){event.preventDefault();return}window?.webContents.send('companion:close-requested')})
   window.webContents.on('did-start-navigation',(_event,_url,_inPlace,isMainFrame)=>{if(isMainFrame)allowUnload=false})
   window.on('close',event=>{if(keepInTray&&tray&&!quitting&&!installingUpdate){event.preventDefault();window?.hide()}})
   if(!isolated){
     tray=new Tray(windowIcon)
-    tray.setToolTip('WOW Companion')
+    tray.setToolTip(identity.displayName)
     tray.setContextMenu(Menu.buildFromTemplate([
-      {label:'Open WOW Companion',click:showWindow},
+      {label:`Open ${identity.displayName}`,click:showWindow},
       {label:'Sync characters now',click:()=>void service.sync.run('manual')},
       {type:'separator'},
       {label:'Quit',click:()=>{quitting=true;app.quit()}},

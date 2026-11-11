@@ -30,6 +30,7 @@ import {
 import {
   Archive,
   Backpack,
+  Bell,
   ArrowDownUp,
   ArrowLeft,
   ArrowRight,
@@ -2337,6 +2338,17 @@ function SettingsPage() {
                   {settings.data?.desktopAlerts ?? true ? "On" : "Off"}
                 </Toggle>
               </div>
+              {window.companion && (
+                <div className="setting-row">
+                  <div>
+                    <h3>Try an alert</h3>
+                    <p>Sends a sample notification so you can see how alerts look and check that clicking one opens WOW Companion</p>
+                  </div>
+                  <Button onClick={() => void window.companion!.testAlert().then(() => notify("Sample alert sent")).catch((error) => notify(errorMessage(error)))}>
+                    <Bell size={14} aria-hidden="true" />Send a test alert
+                  </Button>
+                </div>
+              )}
               <div className="setting-row">
                 <div>
                   <h3>Keep running in the tray</h3>
