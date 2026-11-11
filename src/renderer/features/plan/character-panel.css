@@ -1,8 +1,6 @@
 .character-panel {
   container-type: inline-size;
-  margin-top: 18px;
   padding: 20px;
-  border: 1px solid var(--line);
   border-radius: 12px;
   background:
     radial-gradient(ellipse 46% 62% at 50% 44%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 72%),

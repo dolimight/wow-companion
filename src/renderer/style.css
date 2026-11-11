@@ -1741,7 +1741,10 @@ input[type="checkbox"] {
   .button,
   .appearance-choice,
   .surface,
-  .selected-pane {
+  .selected-pane,
+  .plan-controls,
+  .character-panel,
+  .plan-source {
     border: 1px solid var(--line);
   }
 }
