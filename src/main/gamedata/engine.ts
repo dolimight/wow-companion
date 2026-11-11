@@ -26,7 +26,7 @@ export async function replaceFile(from: string, to: string, attempts = 20, delay
   }
 }
 
-export const INDEX_VERSION = 4
+export const INDEX_VERSION = 5
 /** Game tables that are plain text rather than client databases, by file ID in the community listfile */
 const GAME_TABLES = { combatRatings: 1391670, stamina: 1980632, socketCost: 1391643 }
 
@@ -63,7 +63,7 @@ const enchantSubclasses: Partial<Record<AppearanceSlot, number[]>> = { head: [0]
 const JUNK = `i.name != '' AND i.name NOT LIKE 'Monster -%' AND i.name NOT LIKE '%[PH]%' AND i.name NOT LIKE 'OLD%' AND i.name NOT LIKE 'Test %' AND i.name NOT LIKE '%Deprecated%' AND i.name NOT LIKE 'zz%' AND i.name NOT LIKE '%(old)%'`
 const EQUIPPABLE = Object.keys(inventoryTypeNames).join(',')
 
-type ItemRow = { id: number; name: string; quality: number; item_level: number; required_level: number; inventory_type: number; class_id: number; subclass_id: number; icon: number | null; expansion: number; bonding: number; sockets: number; description: string; allowable_class_mask?: number | null; spec_ids?: string | null; primary_stats?: string | null; stats?: string | null; item_set?: number | null; track_groups?: string | null; latest_track?: number | null }
+type ItemRow = { id: number; name: string; quality: number; item_level: number; required_level: number; inventory_type: number; class_id: number; subclass_id: number; icon: number | null; expansion: number; bonding: number; sockets: number; description: string; allowable_class_mask?: number | null; spec_ids?: string | null; primary_stats?: string | null; stats?: string | null; item_set?: number | null; track_groups?: string | null; latest_track?: number | null; crafted?: number | null }
 
 /** An item's secondary stat budget, each stat counted by how much the character values it */
 function statFit(row: Pick<ItemRow, 'stats'>, weights: StatWeights | null) {
@@ -116,7 +116,7 @@ export class GameDataEngine {
     try {
       const db = opened = new Database(file, { readonly: true, fileMustExist: true })
       const version = (db.prepare("SELECT value FROM meta WHERE key = 'index_version'").get() as { value: string } | undefined)?.value
-      if (![1, 2, 3, INDEX_VERSION].includes(Number(version))) throw new Error('Index format changed')
+      if (![1, 2, 3, 4, INDEX_VERSION].includes(Number(version))) throw new Error('Index format changed')
       this.db = db
       this.indexVersion = Number(version)
       const count = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
@@ -200,13 +200,14 @@ export class GameDataEngine {
       const scaling = await this.scalingTables(casc).catch(() => null)
       const effects = await this.effectTables(casc, items).catch(() => null)
       const trackGroups = await this.trackGroups(casc).catch(() => null)
+      const crafted = await this.table(casc, 'CraftingData', ['CraftedItemID']).then(rows => new Set([...rows.values()].map(row => Number(row.CraftedItemID)).filter(Boolean))).catch(() => null)
       progress(7)
       await rm(temporary, { force: true })
       const db = buildingDb = new Database(temporary)
       db.pragma('journal_mode = OFF')
       db.pragma('synchronous = OFF')
       db.exec(`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-        CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, item_level INTEGER NOT NULL, required_level INTEGER NOT NULL, inventory_type INTEGER NOT NULL, class_id INTEGER NOT NULL, subclass_id INTEGER NOT NULL, icon INTEGER, expansion INTEGER NOT NULL, bonding INTEGER NOT NULL, sockets INTEGER NOT NULL, description TEXT NOT NULL, allowable_class_mask INTEGER, spec_ids TEXT, primary_stats TEXT, stats TEXT, item_set INTEGER, track_groups TEXT, latest_track INTEGER);
+        CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, item_level INTEGER NOT NULL, required_level INTEGER NOT NULL, inventory_type INTEGER NOT NULL, class_id INTEGER NOT NULL, subclass_id INTEGER NOT NULL, icon INTEGER, expansion INTEGER NOT NULL, bonding INTEGER NOT NULL, sockets INTEGER NOT NULL, description TEXT NOT NULL, allowable_class_mask INTEGER, spec_ids TEXT, primary_stats TEXT, stats TEXT, item_set INTEGER, track_groups TEXT, latest_track INTEGER, crafted INTEGER NOT NULL DEFAULT 0);
         CREATE TABLE track_groups (group_id INTEGER PRIMARY KEY, scaling_set INTEGER NOT NULL, track_key INTEGER NOT NULL, levels TEXT NOT NULL);
         CREATE TABLE scaling (item_level INTEGER PRIMARY KEY, data TEXT NOT NULL);
         CREATE TABLE armor_locations (inventory_type INTEGER PRIMARY KEY, data TEXT NOT NULL);
@@ -215,7 +216,7 @@ export class GameDataEngine {
         CREATE TABLE appearances (modified_id INTEGER PRIMARY KEY, item_id INTEGER NOT NULL, appearance_id INTEGER NOT NULL, modifier INTEGER NOT NULL, icon INTEGER);
         CREATE TABLE sources (item_id INTEGER NOT NULL, encounter TEXT NOT NULL, instance TEXT NOT NULL, kind TEXT NOT NULL, season INTEGER NOT NULL);
         CREATE TABLE enchants (id INTEGER PRIMARY KEY, name TEXT NOT NULL, icon INTEGER);`)
-      const insertItem = db.prepare('INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      const insertItem = db.prepare('INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
       const insertAppearance = db.prepare('INSERT OR IGNORE INTO appearances VALUES (?,?,?,?,?)')
       const insertSource = db.prepare('INSERT INTO sources VALUES (?,?,?,?,?)')
       const insertEnchant = db.prepare('INSERT INTO enchants VALUES (?,?,?)')
@@ -232,7 +233,7 @@ export class GameDataEngine {
           const sockets = (row.SocketType as number[] | undefined)?.filter(Boolean).length ?? 0
           const icon = (base?.IconFileDataID as number) || appearanceIcons.get(id) || null
           const compatibility = compatibilityMetadata(row, specsByItem?.get(id) ?? (specsByItem ? [] : null))
-          insertItem.run(id, cleanGameText(String(row.Display_lang ?? '')), row.OverallQualityID ?? 1, row.ItemLevel ?? 0, Math.max(0, Number(row.RequiredLevel ?? 0)), base?.InventoryType ?? 0, base?.ClassID ?? 0, base?.SubclassID ?? 0, icon, row.ExpansionID ?? 0, row.Bonding ?? 0, sockets, cleanGameText(String(row.Description_lang ?? '')), compatibility.allowableClassMask, compatibility.specIds===null?null:JSON.stringify(compatibility.specIds), compatibility.primaryStats===null?null:JSON.stringify(compatibility.primaryStats), statBlock(row), Number(row.ItemSet ?? 0) || null, trackGroups?.items.get(id) ? JSON.stringify(trackGroups.items.get(id)) : null, trackGroups?.items.get(id)?.some(group => trackGroups.groups.get(group)?.set === trackGroups.latestSet) ? 1 : 0)
+          insertItem.run(id, cleanGameText(String(row.Display_lang ?? '')), row.OverallQualityID ?? 1, row.ItemLevel ?? 0, Math.max(0, Number(row.RequiredLevel ?? 0)), base?.InventoryType ?? 0, base?.ClassID ?? 0, base?.SubclassID ?? 0, icon, row.ExpansionID ?? 0, row.Bonding ?? 0, sockets, cleanGameText(String(row.Description_lang ?? '')), compatibility.allowableClassMask, compatibility.specIds===null?null:JSON.stringify(compatibility.specIds), compatibility.primaryStats===null?null:JSON.stringify(compatibility.primaryStats), statBlock(row), Number(row.ItemSet ?? 0) || null, trackGroups?.items.get(id) ? JSON.stringify(trackGroups.items.get(id)) : null, trackGroups?.items.get(id)?.some(group => trackGroups.groups.get(group)?.set === trackGroups.latestSet) ? 1 : 0, crafted?.has(id) ? 1 : 0)
         }
         if (scaling) {
           const insertScaling = db.prepare('INSERT INTO scaling VALUES (?,?)'), insertLocation = db.prepare('INSERT INTO armor_locations VALUES (?,?)')
@@ -427,7 +428,7 @@ export class GameDataEngine {
 
   private summary(row: ItemRow, sources: Map<number, ItemSource[]>): ItemSummary {
     const armor = row.class_id === 4 && row.subclass_id >= 1 && row.subclass_id <= 4 && ![16].includes(row.inventory_type) ? armorTypes[row.subclass_id - 1]! : null
-    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set, sockets:row.sockets }
+    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set, sockets:row.sockets, crafted:!!row.crafted }
   }
 
   search(input: ItemSearch): ItemSummary[] {

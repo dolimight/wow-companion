@@ -84,7 +84,9 @@ const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
-import { clearRenamedPlanIdentity, isPlannedItemEquipped } from "./lib/gear-plan-match";
+import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
+import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
+import { PlanSources } from "./features/plan/PlanSources";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { KeyRangePage } from "./features/key-range/KeyRangePage";
@@ -1692,7 +1694,10 @@ function GearEditor({
   useBlocker({ shouldBlockFn: () => { if (unsaved) savePlan(); return false; }, enableBeforeUnload: unsaved });
   useCloseGuard(unsaved, () => savePlan(() => closeWindow()));
   const equipped = character.gear.find((i) => i.slot === selected);
-  const values = items.map((i) => i.itemLevel).filter((v): v is number => v != null);
+  const mainHand = items.find((i) => i.slot === "mainHand");
+  // The game counts a two-handed weapon in both hands when the off hand is empty
+  const twoHanded = !items.some((i) => i.slot === "offHand") && !!mainHand?.itemId && itemMap.get(mainHand.itemId)?.inventoryType === 17;
+  const values = [...items, ...(twoHanded ? [mainHand!] : [])].map((i) => i.itemLevel).filter((v): v is number => v != null);
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
   /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
@@ -1742,6 +1747,34 @@ function GearEditor({
     setDirty(true);
     if (!quiet) notify("Slot updated in your draft");
     return nextItems;
+  }
+  const planIssues: PlanIssue[] = allSlots.flatMap((slot) => {
+    const item = items.find((i) => i.slot === slot);
+    if (!item) return [];
+    const sockets = socketsOf(item), room = sockets ? sockets.sockets + sockets.addable : null;
+    return [
+      ...(room != null && item.gems.length > room ? [{ slot, kind: "gems" as const, extra: item.gems.length - room, room }] : []),
+      ...(item.enchant && canEnchant(item, slot) === false ? [{ slot, kind: "enchant" as const, enchant: item.enchant }] : []),
+    ];
+  });
+  /** Trim what the items can't hold, from one slot or the whole plan, as an ordinary draft edit */
+  function removeInvalid(slot: GearSlot | null) {
+    const base = inspectorDirty ? updateItem(true) : items;
+    if (!base) return;
+    const fixes = planIssues.filter((issue) => slot == null || issue.slot === slot);
+    const nextItems = base.map((item) => {
+      const own = fixes.filter((issue) => issue.slot === item.slot);
+      if (!own.length) return item;
+      return own.reduce<GearItem>((next, issue) => issue.kind === "gems" ? { ...next, gems: next.gems.slice(0, issue.room), gemsCoverage: "complete" } : { ...next, enchant: null, enchantCoverage: "complete" }, item);
+    });
+    const shown = nextItems.find((item) => item.slot === selected);
+    if (fixes.some((issue) => issue.slot === selected) && shown) {
+      displayedItem.current = { slot: selected, item: shown };
+      slotForm.reset(slotValues(shown), { keepDefaultValues: true });
+    }
+    setItems(nextItems);
+    setDirty(true);
+    notify(fixes.length === 1 ? `Removed from ${slotNames[fixes[0].slot]}` : `Fixed ${fixes.length} problems in your plan`);
   }
   function savePlan(onSaved?: () => void) {
     const planned = inspectorDirty ? updateItem(true) : items;
@@ -1815,86 +1848,30 @@ function GearEditor({
                 </Button>
               </div>
             </div>
-            <PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />
-            <div className="table-wrap planner-table-wrap">
-              <table className="data-table planner-table">
-                <caption>
-                  Matching items are dimmed when your planned target is equipped — item levels,
-                  enchants, and gems can still differ
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Slot</th>
-                    <th scope="col">Current gear</th>
-                    <th scope="col">Planned gear</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allSlots.map((slot) => {
-                    const item = items.find((i) => i.slot === slot);
-                    const observed = character.gear.find((i) => i.slot === slot);
-                    const targetEquipped = isPlannedItemEquipped(observed, item);
-                    const completion=item?comparePlanCompletion(character.gear,[item])[0]:null;
-                    return (
-                      <tr
-                        key={slot}
-                        className={`selectable ${slot === selected ? "selected" : ""}`}
-                        data-target-equipped={targetEquipped || undefined}
-                        tabIndex={0}
-                        aria-label={`Edit ${slotNames[slot]}`}
-                        aria-description={targetEquipped ? "Target equipped" : undefined}
-                        onClick={() => selectSlot(slot)}
-                        onKeyDown={(e) => {
-                          if (e.target !== e.currentTarget) return;
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            selectSlot(slot);
-                          }
-                        }}
-                      >
-                        <td>
-                          <div className="planner-slot-name"><GearSlotIcon slot={slot} size={16} /><span>{slotNames[slot]}</span></div>
-                          {targetEquipped && <span className="planner-match"><Check size={12} aria-hidden="true" />Target equipped</span>}
-                          {completion?.acquisition==='complete'&&!completion.complete&&<span className="item-subtitle">{completion.rank!=='complete'?'Upgrade goal outstanding':completion.enhancements!=='complete'?'Gems or enchant outstanding':'Variant details unverified'}</span>}
-                        </td>
-                        <td>
-                          <ItemHoverCard itemId={observed?.itemId} item={observed?.itemId ? itemMap.get(observed.itemId) : undefined} gear={observed}><div className="gear-item planner-gear-item">
-                            <ItemIcon icon={observed?.itemId ? itemMap.get(observed.itemId)?.icon : null} quality={observed?.itemId ? itemMap.get(observed.itemId)?.quality : undefined} fallback={<GearSlotIcon slot={slot} />} />
-                            <div>
-                              <div className={observed ? `item-name quality-text-${observed.itemId ? itemMap.get(observed.itemId)?.quality ?? 1 : 1}` : "secondary"}>
-                                {observed?.name ?? "Not imported"}
-                              </div>
-                              <div className="item-subtitle">Item level <Known>{level(observed?.itemLevel)}</Known></div>
-                            </div>
-                          </div></ItemHoverCard>
-                        </td>
-                        <td>
-                          <ItemHoverCard itemId={item?.itemId} item={item?.itemId ? itemMap.get(item.itemId) : undefined} gear={item}><div className="gear-item planner-gear-item">
-                            <ItemIcon icon={item?.itemId ? itemMap.get(item.itemId)?.icon : null} quality={item?.itemId ? itemMap.get(item.itemId)?.quality : undefined} fallback={<GearSlotIcon slot={slot} />} />
-                            <div>
-                              <div className={item ? `item-name quality-text-${item.itemId ? itemMap.get(item.itemId)?.quality ?? 1 : 1}` : "secondary"}>
-                                {item?.name ?? "No planned item"}
-                              </div>
-                              <div className="item-subtitle">Item level <Known>{level(item?.itemLevel)}</Known>{item?.itemLevel != null && item.levelSource === "estimated" && <span className="muted"> · Estimate</span>}</div>
-                              <div className="item-subtitle planner-improvements">
-                                <span>{item?.enchant ??
-                                  (canEnchant(item, slot) === false
-                                    ? "Can't be enchanted"
-                                    : item?.enchantCoverage === "complete"
-                                      ? "No enchant in draft"
-                                      : "Enchant unknown")}</span>
-                                <span>{gemSummary(item, socketsOf(item))}</span>
-                                {embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds) && <span>{embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds)!.name}</span>}
-                              </div>
-                            </div>
-                          </div></ItemHoverCard>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <CharacterPanel
+              character={character}
+              items={items}
+              selected={selected}
+              onSelect={selectSlot}
+              itemMap={itemMap}
+              slotNames={slotNames}
+              plannedLevel={draftLevel}
+              issues={planIssues}
+              onRemoveInvalid={removeInvalid}
+              facts={(slot, item) => {
+                const completion = item ? comparePlanCompletion(character.gear, [item])[0] : null;
+                return {
+                  sockets: socketsOf(item),
+                  enchantable: canEnchant(item, slot),
+                  embellishment: embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds)?.name ?? null,
+                  outstanding: completion?.acquisition === "complete" && !completion.complete
+                    ? completion.rank !== "complete" ? "Upgrade goal outstanding" : completion.enhancements !== "complete" ? "Gems or enchant outstanding" : "Variant details unverified"
+                    : null,
+                };
+              }}
+              footer={<PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />}
+            />
+            <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
             <div className="roster-footnote">
               <Info />
               <p>
@@ -1993,20 +1970,6 @@ function PlanEnhancementTotals({ items, slots, canEnchant, socketsOf, embellishm
       {counts.length > 0 && <small className="muted">Embellishments go on crafted gear · counted from each item's bonus IDs</small>}
     </div>
   );
-}
-/** Planned gems against the item's sockets, as in 1 of 2 gems or No sockets */
-function gemSummary(item: GearItem | undefined, sockets: ItemSockets | null) {
-  const count = item?.gems.length ?? 0;
-  const gemsText = (n: number) => `${n} gem${n === 1 ? "" : "s"}`;
-  if (sockets) {
-    const room = sockets.sockets + sockets.addable;
-    if (count > room) return room ? `${gemsText(count)} · item holds ${room}` : `${gemsText(count)} · item has no sockets`;
-    if (count > sockets.sockets) return `${count} of ${gemsText(room)} · with an added socket`;
-    if (!count && item?.gemsCoverage !== "complete") return `Gems unknown · ${socketLabel(sockets)}`;
-    if (!sockets.sockets) return socketLabel(sockets);
-    return `${count} of ${gemsText(sockets.sockets)}${sockets.addable ? ` · ${sockets.addable} more can be added` : ""}`;
-  }
-  return count ? gemsText(count) : item?.gemsCoverage === "complete" ? "No gems in draft" : "Gems unknown";
 }
 /** The slot fields as text, the way the inspector edits them */
 function slotValues(item: GearItem | undefined) {
