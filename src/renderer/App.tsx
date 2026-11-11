@@ -87,6 +87,7 @@ import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscrib
 import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
 import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
 import { PlanSources } from "./features/plan/PlanSources";
+import { PlanStats } from "./features/plan/PlanStats";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { KeyRangePage } from "./features/key-range/KeyRangePage";
@@ -1871,6 +1872,7 @@ function GearEditor({
               }}
               footer={<PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />}
             />
+            <PlanStats character={character} items={items} disabled={inspectorDirty} />
             <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
             <div className="roster-footnote">
               <Info />

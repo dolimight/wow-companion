@@ -36,9 +36,13 @@ export async function enhancementChoices(slot: GearSlot): Promise<Enhancement[]>
   const [enchants, gems] = await Promise.all([api.enhancements({ kind: 'enchant', slot }), api.enhancements({ kind: 'gem', slot: null })])
   return boundedMap([...enchants.map(option => ({ option, kind: 'enchant' as const })), ...gems.map(option => ({ option, kind: 'gem' as const }))], entry => readEnhancement(entry.option, entry.kind))
 }
-export type PlanRatings = { delta: Ratings; resolve: (name: string, kind: 'enchant' | 'gem') => Ratings | null }
-export async function plannedRatings(character: Character, items: GearItem[], choices: Enhancement[]): Promise<PlanRatings> {
+export type PlanRatings = { delta: Ratings; primary: number; stamina: number; skipped: string[]; resolve: (name: string, kind: 'enchant' | 'gem') => Ratings | null }
+/** With `lenient`, enhancements without known flat stats are left out and listed in `skipped` instead of failing the plan */
+export async function plannedRatings(character: Character, items: GearItem[], choices: Enhancement[], lenient = false): Promise<PlanRatings> {
+  const skipped: string[] = []
   const delta = zeroRatings()
+  const primaryName = character.stats?.primary?.name
+  let primary = 0, stamina = 0
   const names = new Map(choices.map(choice => [`${choice.kind}:${choice.name}`, choice.stats]))
   const enchantIds = [...new Set(character.gear.flatMap(item => item.enchantId ? [item.enchantId] : []))]
   if (enchantIds.length) {
@@ -48,19 +52,25 @@ export async function plannedRatings(character: Character, items: GearItem[], ch
   // Resolve older or other-slot enhancements only if a changed slot actually needs them
   const resolve = (name: string, kind: 'enchant' | 'gem') => !name ? zeroRatings() : names.get(`${kind}:${name}`) ?? flatEnhancement(name)
   const add = (stats: Ratings, factor: number) => { for (const key of statKeys) delta[key] += stats[key] * factor }
-  const power = async (item: GearItem) => {
+  const power = async (item: GearItem, factor: number) => {
     if (!item.itemId || !item.itemLevel) throw Error(`Choose a known item and level for ${item.slot} to calculate the whole plan`)
     const result = await api.itemPower({ id: item.itemId, itemLevel: item.itemLevel })
     if (!result.power?.stats) throw Error(`Stat data is unavailable for ${item.name} at level ${item.itemLevel}`)
     const stats = zeroRatings()
-    for (const line of result.power.stats) { const key = statKeys.find(key => statNames[key] === line.name); if (key) stats[key] += line.value }
-    return stats
+    for (const line of result.power.stats) {
+      const key = statKeys.find(key => statNames[key] === line.name)
+      if (key) stats[key] += line.value
+      else if (line.name === 'Stamina') stamina += line.value * factor
+      // Hybrid lines such as Agility or Intellect give whichever main stat the specialization uses
+      else if (primaryName && line.name.split(' or ').includes(primaryName)) primary += line.value * factor
+    }
+    add(stats, factor)
   }
   for (const slot of new Set([...character.gear, ...items].map(item => item.slot))) {
     const before = character.gear.find(item => item.slot === slot), after = items.find(item => item.slot === slot)
     if (before?.itemId !== after?.itemId || before?.itemLevel !== after?.itemLevel) {
-      if (before) add(await power(before), -1)
-      if (after) add(await power(after), 1)
+      if (before) await power(before, -1)
+      if (after) await power(after, 1)
     }
     for (const kind of ['enchant', 'gem'] as const) {
       const oldNames = kind === 'enchant' ? [before?.enchant ?? ''] : before?.gems ?? []
@@ -74,10 +84,11 @@ export async function plannedRatings(character: Character, items: GearItem[], ch
           const index = before?.gems.indexOf(name) ?? -1, id = index >= 0 ? before?.gemIds?.filter(Boolean)[index] : undefined
           if (id) { const entry = await readEnhancement({ itemId: id, name, quality: 0, icon: null }, 'gem'); stats = entry.stats; names.set(`gem:${name}`, stats) }
         }
+        if (!stats && lenient) { skipped.push(name); continue }
         if (!stats) throw Error(`Cannot calculate the stat change for ${name}. Keep it unchanged or choose an enhancement with known flat stats`)
         add(stats, count)
       }
     }
   }
-  return { delta, resolve }
+  return { delta, primary, stamina, skipped, resolve }
 }
