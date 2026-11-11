@@ -38,6 +38,8 @@ const itemProgressionFields = {
   upgradeTrackId:z.string().max(100).nullable().optional(),upgradeRank:z.number().int().positive().nullable().optional(),
   uniqueGroups:z.array(z.string().max(100)).max(20).optional(),restrictionGroups:z.array(z.string().max(100)).max(20).optional(),
   variantCoverage:z.enum(['complete','partial','unknown']).optional(),
+  /** A crafting reagent planned onto a crafted item, and the Embellished limit it counts against */
+  embellishment:z.object({name:z.string().min(1).max(200),itemId:z.number().int().positive().nullable().default(null),limit:z.string().min(1).max(100)}).nullable().optional(),
   /** Where a planned level came from: a copy seen on a real character, the local game files, or the player */
   levelSource:z.enum(['observed','estimated','manual']).nullable().optional(),
 }

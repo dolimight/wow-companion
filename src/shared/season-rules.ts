@@ -17,6 +17,8 @@ export const seasonRulesetSchema=z.object({
   ascension:z.object({venomstoneInventoryTypes:z.array(z.number().int().nonnegative()),elevatedEncounters:z.array(z.string().min(1)),elevatedSets:z.boolean()}).optional(),
   sockets:socketRulesSchema.optional(),
   embellishments:embellishmentRulesSchema.optional(),
+  // Epic crafted gear: the reagent sets the band and crafting quality 1 to 5 the level inside it. Not in the game files, so each comes with its sources
+  crafting:z.object({minQuality:z.number().int().min(1).max(5),tracks:z.array(z.object({name:z.string().min(1),reagent:z.string().min(1),levels:z.array(z.number().nonnegative()).length(5)})).min(1),sources:z.array(rulesSourceSchema).min(1)}).optional(),
   restrictions:z.array(z.object({group:z.string().min(1),maxEquipped:z.number().int().nonnegative()})).default([]),minimumGroups:z.array(z.object({group:z.string().min(1),minEquipped:z.number().int().nonnegative()})).default([]),
   rewardTables:z.array(z.object({activity:z.enum([...activitySchema.options,'crafting','world']),difficulty:z.string(),itemLevel:z.number().nonnegative(),sourceUrl:z.string().url()})).default([]),
 }).superRefine((rules,ctx)=>{

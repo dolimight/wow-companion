@@ -890,6 +890,56 @@
           ]
         }
       ],
+      "crafting": {
+        "minQuality": 4,
+        "tracks": [
+          {
+            "name": "Crafted",
+            "reagent": "Spark of Tides",
+            "levels": [
+              292,
+              296,
+              299,
+              302,
+              305
+            ]
+          },
+          {
+            "name": "Crafted Hero",
+            "reagent": "Spark of Tides and 80 Hero Mistcrests",
+            "levels": [
+              305,
+              309,
+              312,
+              315,
+              318
+            ]
+          },
+          {
+            "name": "Crafted Myth",
+            "reagent": "Spark of Tides and 80 Myth Mistcrests",
+            "levels": [
+              318,
+              322,
+              325,
+              328,
+              331
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "title": "Warcraft Wiki · Midnight Season 2 crafted item levels",
+            "url": "https://warcraft.wiki.gg/wiki/Midnight_Season_2",
+            "checkedAt": "2026-11-11T17:00:00.000Z"
+          },
+          {
+            "title": "Midnight crafted gear guide · reagent item-level bands",
+            "url": "https://expcarry.com/midnight-crafted-gear-guide",
+            "checkedAt": "2026-11-11T17:00:00.000Z"
+          }
+        ]
+      },
       "restrictions": [],
       "minimumGroups": [],
       "rewardTables": []

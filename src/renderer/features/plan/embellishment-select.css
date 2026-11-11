@@ -1,0 +1,8 @@
+.embellishment-popup { width: min(420px, var(--available-width)); }
+.embellishment-popup [data-slot="combobox-item"] { align-items: start; }
+.embellishment-choice { display: grid; gap: 2px; min-width: 0; }
+.embellishment-choice strong { font-size: 13px; font-weight: 600; }
+.embellishment-choice > span { font-size: 12px; line-height: 1.45; color: var(--secondary); }
+.embellishment-choice small { font-size: 11px; color: var(--amber); }
+.embellishment-none { color: var(--secondary); }
+.embellishment-field > small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }

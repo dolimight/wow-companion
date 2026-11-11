@@ -88,6 +88,7 @@ import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
 import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
 import { PlanSources } from "./features/plan/PlanSources";
 import { PlanStats } from "./features/plan/PlanStats";
+import { EmbellishmentSelect } from "./features/plan/EmbellishmentSelect";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { KeyRangePage } from "./features/key-range/KeyRangePage";
@@ -1702,7 +1703,7 @@ function GearEditor({
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
   /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
-  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string; itemLevel?: string }): GearItem[] | null {
+  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string; itemLevel?: string; embellishment?: GearItem["embellishment"] }): GearItem[] | null {
     // The form's latest values, which can be newer than this render's
     const { itemLevel, enchant, gems } = slotForm.state.values;
     const enchantEdited = enchant !== slotValues(current).enchant, gemsEdited = gems !== slotValues(current).gems;
@@ -1735,6 +1736,7 @@ function GearEditor({
       enchantCoverage: enchantEdited || enhancement?.enchant !== undefined ? "complete" : (current?.enchantCoverage ?? "unknown"),
       gemsCoverage: gemsEdited || enhancement?.gems !== undefined ? "complete" : (current?.gemsCoverage ?? "unknown"),
       gems: plannedGems,
+      embellishment: enhancement?.embellishment !== undefined ? enhancement.embellishment : current?.embellishment ?? null,
       appearanceId: current?.appearanceId ?? null,
       itemLink: current?.itemLink ?? null,
       stats: current?.itemLevel === ilvl ? current.stats : [],
@@ -1785,9 +1787,11 @@ function GearEditor({
   // Edits save a moment after they stop, typed slot fields included, so a burst of changes becomes one save and one Undo
   useEffect(() => {
     if (!hydrated.current || !(dirty || inspectorDirty) || save.isPending) return;
-    // Text typed into an enchant or gem search is only a search until a choice is picked or the field is left
+    // Text typed into an enchant or gem search is only a search until a choice is picked or the field is left;
+    // the embellishment field only ever holds picks, so it never holds a save back
     let timer = 0;
-    const attempt = () => { timer = window.setTimeout(() => document.activeElement?.getAttribute("role") === "combobox" ? attempt() : savePlan(), 800); };
+    const searching = () => document.activeElement?.getAttribute("role") === "combobox" && !document.activeElement.closest(".embellishment-field");
+    const attempt = () => { timer = window.setTimeout(() => searching() ? attempt() : savePlan(), 800); };
     attempt();
     return () => clearTimeout(timer);
   }, [items, name, statWeights, dirty, inspectorDirty, itemLevel, enchant, gems, save.isPending]);
@@ -1864,7 +1868,7 @@ function GearEditor({
                 return {
                   sockets: socketsOf(item),
                   enchantable: canEnchant(item, slot),
-                  embellishment: embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds)?.name ?? null,
+                  embellishment: item?.embellishment?.name ?? embellishmentOf(embellishmentRules.data ?? null, item?.bonusIds)?.name ?? null,
                   outstanding: completion?.acquisition === "complete" && !completion.complete
                     ? completion.rank !== "complete" ? null : completion.enhancements !== "complete" ? "Gems or enchant still to add" : "Variant details unverified"
                     : null,
@@ -1916,6 +1920,9 @@ function GearEditor({
             />
             <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} enchantable={canEnchant(current, selected)} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else slotForm.setFieldValue("enchant", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} sockets={socketsOf(current)} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else slotForm.setFieldValue("gems", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            {planned?.crafted && current?.itemId && (
+              <EmbellishmentSelect key={`embellishment:${selected}`} item={{ id: current.itemId, classId: planned.classId, subclassId: planned.subclassId, inventoryType: planned.inventoryType }} itemLevel={current.itemLevel != null ? Math.round(current.itemLevel) : null} value={current.embellishment} onChange={(embellishment) => updateItem(true, { embellishment })} />
+            )}
             <EnhancementRecommendations character={character} items={items} slot={selected} sockets={socketsOf(current)} enchantable={canEnchant(current, selected)} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}
@@ -1969,7 +1976,7 @@ function PlanEnhancementTotals({ items, slots, canEnchant, socketsOf, embellishm
           {category.name === "Embellished" ? "Embellishments" : category.name} {category.count} of {category.limit}{category.over ? ` · ${category.over} too many` : ""}
         </span>
       ))}
-      {counts.length > 0 && <small className="muted">Embellishments go on crafted gear · counted from each item's bonus IDs</small>}
+      {counts.length > 0 && <small className="muted">Embellishments go on crafted gear · counted from your picks and each item's bonus IDs</small>}
     </div>
   );
 }
@@ -2012,6 +2019,7 @@ function PlannedLevelField({ itemId, value, source, onPick, input }: { itemId: n
       {selected?.via === "venomstone" && <small className="muted">Needs 10 Ascendant Venomstones at the Catalyst once the item is fully upgraded</small>}
       {selected?.via === "elevated" && <small className="muted">Drops at this level from Mythic Coiled Altar and Ula'tek, or as a tier piece</small>}
       {tracks.max.assumed && source !== "observed" && <small className="muted">The track is set at the end of a run, so the highest is assumed</small>}
+      {tracks.crafted && <small className="muted">{selected?.reagent ? `Crafted at quality ${selected.rank} of 5 with ${selected.reagent}` : `Crafted gear reaches ${tracks.max.itemLevel} at the highest quality and reagent`} · bands from the Warcraft Wiki, not the game files</small>}
     </Field>
   );
 }

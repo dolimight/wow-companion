@@ -53,3 +53,18 @@ it('names an earlier season\'s tracks from the game files\' track keys', () => {
   expect(tracks).toMatchObject({ season: 'An earlier season', max: { itemLevel: 289, track: 'Myth', rank: 6, ranks: 6, assumed: false, ladderLevel: 289 } })
   expect(tracks?.tracks.map(track => track.name)).toEqual(['Hero', 'Myth'])
 })
+
+it('gives epic crafted armour and weapons the reagent bands, topping out at Myth crests', () => {
+  const crafted: AscensionItem = { inventoryType: 5, encounters: [], setPiece: false, crafted: true, quality: 4, classId: 4 }
+  const tracks = itemTracks(999999, null, null, crafted)
+  expect(tracks?.crafted).toBe(true)
+  expect(tracks?.max).toMatchObject({ itemLevel: 331, track: 'Crafted Myth', rank: 5 })
+  expect(tracks?.tracks.map(track => [track.name, track.minLevel, track.maxLevel])).toEqual([['Crafted', 292, 305], ['Crafted Hero', 305, 318], ['Crafted Myth', 318, 331]])
+  expect(trackLevelOptions(tracks!).map(option => option.label).slice(0, 2)).toEqual(['Crafted Myth · Q5 · 331 · Max', 'Crafted Myth · Q4 · 328'])
+})
+
+it('leaves rare crafts, profession tools, and dropped gear on their own rules', () => {
+  expect(itemTracks(999999, null, null, { inventoryType: 5, encounters: [], setPiece: false, crafted: true, quality: 3, classId: 4 })).toBeNull()
+  expect(itemTracks(999999, null, null, { inventoryType: 1, encounters: [], setPiece: false, crafted: true, quality: 4, classId: 19 })).toBeNull()
+  expect(itemTracks(270167, null, null, { ...chest, crafted: false, quality: 4, classId: 4 })?.crafted).toBeUndefined()
+})

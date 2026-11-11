@@ -7,7 +7,8 @@ import type { EmbellishmentRules } from '../shared/item-enhancements'
 type Candidate = { itemId: number; upgradeTrackId: string | null; source: { activity: string } }
 type Track = { id: string; name: string; ranks: Array<{ rank: number; itemLevel: number }>; beyondRanks?: Array<{ rank: number; itemLevel: number; via?: ItemAscension | null }> }
 type Ascension = { venomstoneInventoryTypes: number[]; elevatedEncounters: string[]; elevatedSets: boolean }
-type Ruleset = { id: string; name: string; upgradeTracks: Track[]; ascension?: Ascension; sockets?: SocketRules; embellishments?: EmbellishmentRules }
+type Crafting = { minQuality: number; tracks: Array<{ name: string; reagent: string; levels: number[] }> }
+type Ruleset = { id: string; name: string; upgradeTracks: Track[]; ascension?: Ascension; sockets?: SocketRules; embellishments?: EmbellishmentRules; crafting?: Crafting }
 
 const rulesets = (catalogJson as unknown as { rulesets: Ruleset[] }).rulesets
 
@@ -75,6 +76,8 @@ function fromGameFiles(info: ItemTrackGroup[]): ItemTracks | null {
  * Levels past the crest ladder count only when `item` shows a route to them, such as a Venomstone slot
  */
 export function itemTracks(itemId: number, groups: number[] | null = null, info: ItemTrackGroup[] | null = null, item: AscensionItem | null = null): ItemTracks | null {
+  const crafted = item ? craftedTracks(item) : null
+  if (crafted) return crafted
   if (groups?.length) {
     const wanted = new Set(groups.map(group => `client-group-${group}`))
     for (const ruleset of rulesets) {
@@ -91,4 +94,14 @@ export function itemTracks(itemId: number, groups: number[] | null = null, info:
   if (!entry.ruleset.upgradeTracks.length) return null
   // Mythic+ loot lands on Champion, Hero, or Myth depending on the keystone and the Great Vault
   return result(entry.ruleset, entry.variants[0]?.source.activity === 'mythicPlus' ? entry.ruleset.upgradeTracks.slice(-3) : entry.ruleset.upgradeTracks.slice(-1), true, item)
+}
+
+/** Reagent bands for this season's epic crafted armour and weapons; the five ranks of each are crafting quality */
+function craftedTracks(item: AscensionItem): ItemTracks | null {
+  if (!item.crafted || (item.classId !== 2 && item.classId !== 4)) return null
+  const ruleset = rulesets.find(entry => entry.crafting && (item.quality ?? 0) >= entry.crafting.minQuality)
+  if (!ruleset?.crafting) return null
+  const tracks = ruleset.crafting.tracks.map(track => ({ name: track.name, reagent: track.reagent, ranks: track.levels.length, minLevel: track.levels[0]!, maxLevel: track.levels.at(-1)!, levels: track.levels }))
+  const best = tracks.at(-1)!
+  return { season: season(ruleset), crafted: true, tracks, max: { itemLevel: best.maxLevel, track: best.name, rank: best.ranks, ranks: best.ranks, assumed: false, ladderLevel: best.maxLevel } }
 }

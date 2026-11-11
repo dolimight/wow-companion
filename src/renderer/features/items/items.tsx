@@ -41,7 +41,7 @@ const slotOptions: Array<{ value: AppearanceSlot | "any"; label: string }> = [
   { value: "finger1", label: "Rings" }, { value: "trinket1", label: "Trinkets" }, { value: "mainHand", label: "Main hand" }, { value: "offHand", label: "Off hand" },
 ];
 
-type Filters = { source: "any" | "dungeon" | "raid"; instance: string; stat: NonNullable<ItemSearch["stat"]>; quality: string; armor: ArmorType | "any"; withEffect: boolean; withSocket: boolean; levelBasis: "max" | "base"; minLevel: string; maxLevel: string };
+type Filters = { source: "any" | "dungeon" | "raid" | "crafted"; instance: string; stat: NonNullable<ItemSearch["stat"]>; quality: string; armor: ArmorType | "any"; withEffect: boolean; withSocket: boolean; levelBasis: "max" | "base"; minLevel: string; maxLevel: string };
 const noFilters: Filters = { source: "any", instance: "any", stat: "any", quality: "any", armor: "any", withEffect: false, withSocket: false, levelBasis: "max", minLevel: "", maxLevel: "" };
 type Sort = NonNullable<ItemSearch["sort"]>;
 const sortOptions = [{ value: "relevance", label: "Best match · highest level, then stats" }, { value: "maxLevel", label: "Highest max item level" }, { value: "baseLevel", label: "Highest base item level" }];
@@ -106,7 +106,7 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
             <CommandInput value={text} onValueChange={setText} placeholder={fixedSlot ? "Search items for this slot" : "Search items by name"} aria-label="Search items" />
             <div className="item-search-filters">
               {!fixedSlot && <AppSelect aria-label="Slot" value={slot} onValueChange={(value) => setSlot(value as AppearanceSlot | "any")} options={slotOptions} />}
-              <AppSelect aria-label="Where it comes from" value={source} onValueChange={(value) => setFilter("source", value as Filters["source"])} options={[{ value: "any", label: "Any source" }, { value: "dungeon", label: "Dungeons" }, { value: "raid", label: "Raids" }]} />
+              <AppSelect aria-label="Where it comes from" value={source} onValueChange={(value) => setFilter("source", value as Filters["source"])} options={[{ value: "any", label: "Any source" }, { value: "dungeon", label: "Dungeons" }, { value: "raid", label: "Raids" }, { value: "crafted", label: "Crafted" }]} />
               <AppSelect aria-label="Dungeon or raid" value={filters.instance} onValueChange={(value) => setFilter("instance", value)} options={instanceOptions} />
               <AppSelect aria-label="Secondary stat" value={filters.stat} onValueChange={(value) => setFilter("stat", value as Filters["stat"])} options={statOptions} />
               <AppSelect aria-label="Quality" value={filters.quality} onValueChange={(value) => setFilter("quality", value)} options={qualityOptions} />
@@ -233,7 +233,7 @@ export function ItemDetail({ id, onPick, addLabel, compact = false, character = 
               <ul className="item-sources">
                 {data.sources.map((source, index) => <li key={index}><Badge tone={source.kind === "raid" ? "blue" : "neutral"}>{source.kind === "raid" ? "Raid" : source.kind === "dungeon" ? "Dungeon" : "Other"}</Badge><span>{source.encounter} in {source.instance}</span></li>)}
               </ul>
-            ) : <p className="muted small">The in-game Adventure Guide doesn't list a boss for this item. It may be crafted, sold, or a quest reward</p>}
+            ) : data.crafted ? <p className="muted small">Crafted by players · make it yourself or place a crafting order</p> : <p className="muted small">The in-game Adventure Guide doesn't list a boss for this item. It may be crafted, sold, or a quest reward</p>}
           </section>
           <ItemPowerSection key={data.id} item={data} character={character} onLevel={setShownLevel} />
           {inSlot.length > 0 && (

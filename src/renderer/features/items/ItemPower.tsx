@@ -79,14 +79,14 @@ export function ItemPowerSection({ item, character, onLevel }: { item: ItemDetai
       </section>
       {tracks && tracks.tracks.length > 0 && (
         <section>
-          <h3><Term term="upgrade track">Upgrade tracks</Term></h3>
+          {tracks.crafted ? <h3>Crafted item levels</h3> : <h3><Term term="upgrade track">Upgrade tracks</Term></h3>}
           <table className="item-tracks">
-            <thead><tr><th>Track</th><th>Ranks</th><th>Item level</th></tr></thead>
-            <tbody>{tracks.tracks.map((track) => <tr key={track.name} data-max={track.name === tracks.max.track || undefined}><td>{track.name}</td><td>1–{track.ranks}</td><td>{track.minLevel}–{track.maxLevel}{track.beyond?.map(({ level, via }) => ` · ${level} ${ascensionNames[via]}`).join("")}</td></tr>)}</tbody>
+            <thead><tr><th>{tracks.crafted ? "Reagent" : "Track"}</th><th>{tracks.crafted ? "Quality" : "Ranks"}</th><th>Item level</th></tr></thead>
+            <tbody>{tracks.tracks.map((track) => <tr key={track.name} data-max={track.name === tracks.max.track || undefined}><td>{tracks.crafted && track.reagent ? track.reagent : track.name}</td><td>1–{track.ranks}</td><td>{track.minLevel}–{track.maxLevel}{track.beyond?.map(({ level, via }) => ` · ${level} ${ascensionNames[via]}`).join("")}</td></tr>)}</tbody>
           </table>
           {routes.has("venomstone") && <p className="muted small">Venomstone: once fully upgraded, a weapon, off-hand, trinket, or necklace can be raised at the Catalyst with 10 Ascendant Venomstones</p>}
           {routes.has("elevated") && <p className="muted small">Elevated: Mythic drops from The Coiled Altar and Ula'tek, and tier set pieces, reach this level</p>}
-          <p className="muted small">{tracks.max.assumed ? `${tracks.season}: Mythic+ gear lands on one of these tracks depending on the keystone level` : `${tracks.season}, from your installed game files. Harder difficulties drop on higher tracks; crests and gold upgrade an item through its ranks${tracks.season === 'An earlier season' ? '. Gear from earlier seasons can drop at higher levels when its dungeon or raid returns' : ''}`}</p>
+          {tracks.crafted ? <p className="muted small">{tracks.season}: crafting quality sets the level inside each band, and Hero or Myth Mistcrests raise the band · from the Warcraft Wiki, since the game files don't list crafted levels</p> : <p className="muted small">{tracks.max.assumed ? `${tracks.season}: Mythic+ gear lands on one of these tracks depending on the keystone level` : `${tracks.season}, from your installed game files. Harder difficulties drop on higher tracks; crests and gold upgrade an item through its ranks${tracks.season === 'An earlier season' ? '. Gear from earlier seasons can drop at higher levels when its dungeon or raid returns' : ''}`}</p>}
         </section>
       )}
       {data.loot.length > 0 && (
