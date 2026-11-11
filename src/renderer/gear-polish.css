@@ -35,6 +35,9 @@
 .plan-controls .goal-editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; margin: 0; }
 .plan-controls .goal-editor .field input { max-width: none; }
 .plan-controls .goal-editor > .button { min-height: 36px; }
+.plan-enhancement-totals { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: -8px 0 20px; padding: 0 4px; font-variant-numeric: tabular-nums; }
+.plan-enhancement-totals > span { font-weight: 500; }
+.plan-enhancement-totals > small { flex-basis: 100%; }
 .planner-table caption { line-height: 1.6; max-width: 75ch; padding-bottom: 16px; }
 .planner-table td { padding-block: 16px; }
 .planner-gear-item { gap: 12px; }
