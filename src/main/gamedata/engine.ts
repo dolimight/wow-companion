@@ -8,10 +8,11 @@ import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
 import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EnhancementOption, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
-import type { AppearanceSlot } from '../../shared/domain'
+import type { AppearanceSlot, StatWeights } from '../../shared/domain'
+import { equalWeights } from '../../shared/enhancement-recommendations'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
-import { itemTracks } from '../item-tracks'
+import { elevatedEncounters, itemTracks } from '../item-tracks'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -64,6 +65,18 @@ const EQUIPPABLE = Object.keys(inventoryTypeNames).join(',')
 
 type ItemRow = { id: number; name: string; quality: number; item_level: number; required_level: number; inventory_type: number; class_id: number; subclass_id: number; icon: number | null; expansion: number; bonding: number; sockets: number; description: string; allowable_class_mask?: number | null; spec_ids?: string | null; primary_stats?: string | null; stats?: string | null; item_set?: number | null; track_groups?: string | null; latest_track?: number | null }
 
+/** An item's secondary stat budget, each stat counted by how much the character values it */
+function statFit(row: Pick<ItemRow, 'stats'>, weights: StatWeights | null) {
+  if (!row.stats) return 0
+  const { t, a } = JSON.parse(row.stats) as { t: number[]; a: number[] }
+  const active = weights ?? equalWeights
+  return t.reduce((sum, type, index) => {
+    const stat = secondaryStatKeys.get(type)
+    return stat ? sum + Math.max(0, a[index] ?? 0) * active[stat] : sum
+  }, 0)
+}
+const secondaryStatKeys = new Map(Object.entries(secondaryStatTypes).map(([key, type]) => [type as number, key as keyof StatWeights]))
+
 export type EngineEvents = { status(status: GameDataStatus): void }
 
 export class GameDataEngine {
@@ -74,6 +87,7 @@ export class GameDataEngine {
   private indexVersion: number | null = null
   /** Every upgrade track group, read once per index for sorting and filtering by highest reachable level */
   private groupCache: Map<number, { group: number; set: number; key: number; levels: number[]; latest: boolean }> | null = null
+  private elevatedCache: Map<number, string[]> | null = null
   private indexing: Promise<void> | null = null
   private status: GameDataStatus = { state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null }
   private definitions: Definitions
@@ -94,7 +108,7 @@ export class GameDataEngine {
 
   async useInstall(install: WowInstall | null) {
     await this.releaseCasc()
-    this.db?.close(); this.db = null; this.indexVersion = null; this.groupCache = null
+    this.db?.close(); this.db = null; this.indexVersion = null; this.groupCache = null; this.elevatedCache = null
     this.install = install
     if (!install) { this.publish({ state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null, outdated: false }); return }
     const file = this.indexPath(install.build.version)
@@ -413,7 +427,7 @@ export class GameDataEngine {
 
   private summary(row: ItemRow, sources: Map<number, ItemSource[]>): ItemSummary {
     const armor = row.class_id === 4 && row.subclass_id >= 1 && row.subclass_id <= 4 && ![16].includes(row.inventory_type) ? armorTypes[row.subclass_id - 1]! : null
-    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null }
+    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set }
   }
 
   search(input: ItemSearch): ItemSummary[] {
@@ -451,7 +465,7 @@ export class GameDataEngine {
       ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)))"
       : 'EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND (s.season = (SELECT MAX(season) FROM sources) OR i.expansion = (SELECT MAX(expansion) FROM items WHERE quality = 4 AND id IN (SELECT item_id FROM sources))))')
     // Base level is stored, so its range and order stay in SQL; the highest reachable level is worked out per row below
-    const byMax = query.sort === 'maxLevel' || (query.levelBasis === 'max' && (query.minLevel != null || query.maxLevel != null))
+    const byMax = query.sort !== 'baseLevel' || (query.levelBasis === 'max' && (query.minLevel != null || query.maxLevel != null))
     if (query.levelBasis === 'base' && query.minLevel != null) { where.push('i.item_level >= ?'); params.push(query.minLevel) }
     if (query.levelBasis === 'base' && query.maxLevel != null) { where.push('i.item_level <= ?'); params.push(query.maxLevel) }
     const order = query.sort === 'baseLevel' ? 'ORDER BY i.item_level DESC, i.quality DESC, i.expansion DESC, i.id'
@@ -481,7 +495,7 @@ export class GameDataEngine {
   }
 
   /** The highest level an item reaches, by the same rules as the level shown on each result */
-  maxItemLevel(row: Pick<ItemRow, 'id' | 'item_level' | 'track_groups'>) {
+  maxItemLevel(row: Pick<ItemRow, 'id' | 'item_level' | 'track_groups' | 'inventory_type' | 'item_set'>) {
     const groups = row.track_groups ? JSON.parse(row.track_groups) as number[] : null
     let info = null
     if (groups?.length && this.indexVersion === INDEX_VERSION) {
@@ -492,22 +506,34 @@ export class GameDataEngine {
       }
       info = groups.flatMap(group => { const found = this.groupCache!.get(group); return found ? [found] : [] })
     }
-    return itemTracks(row.id, groups, info)?.max.itemLevel ?? row.item_level
+    this.elevatedCache ??= this.elevatedSources()
+    const ascension = { inventoryType: row.inventory_type, encounters: this.elevatedCache.get(row.id) ?? [], setPiece: !!row.item_set }
+    return itemTracks(row.id, groups, info, ascension)?.max.itemLevel ?? row.item_level
+  }
+
+  private elevatedSources() {
+    const map = new Map<number, string[]>()
+    if (!elevatedEncounters.length) return map
+    const rows = this.ready().prepare(`SELECT DISTINCT item_id, encounter FROM sources WHERE encounter IN (${elevatedEncounters.map(() => '?').join(',')})`).all(...elevatedEncounters) as Array<{ item_id: number; encounter: string }>
+    for (const row of rows) map.set(row.item_id, [...(map.get(row.item_id) ?? []), row.encounter])
+    return map
   }
 
   /** Sorting or filtering by highest level needs every match, since that level isn't stored */
   private searchByMaxLevel(query: ReturnType<typeof itemSearchSchema.parse>, sql: string, params: unknown[], extra: number): ItemSummary[] {
     const seen = new Set<string>()
-    const matches: Array<{ row: ItemRow; level: number; order: number }> = []
+    const matches: Array<{ row: ItemRow; level: number; fit: number; order: number }> = []
     for (const row of this.ready().prepare(sql).iterate(...params) as Iterable<ItemRow>) {
       const key = `${row.name}|${row.inventory_type}`
       if (seen.has(key) || !getItemCompatibility(this.summary(row, new Map()), query.character, { slot: query.slot }).compatible) continue
       seen.add(key)
-      const level = query.levelBasis === 'max' || query.sort === 'maxLevel' ? this.maxItemLevel(row) : row.item_level
+      const level = query.levelBasis === 'max' || query.sort !== 'baseLevel' ? this.maxItemLevel(row) : row.item_level
       if (query.levelBasis === 'max' && ((query.minLevel != null && level < query.minLevel) || (query.maxLevel != null && level > query.maxLevel))) continue
-      matches.push({ row, level, order: matches.length })
+      matches.push({ row, level, fit: query.sort === 'relevance' ? statFit(row, query.weights) : 0, order: matches.length })
     }
     if (query.sort === 'maxLevel') matches.sort((a, b) => b.level - a.level || a.order - b.order)
+    // Best match: the highest level first, then the secondary stats this character values most, then the name match
+    if (query.sort === 'relevance') matches.sort((a, b) => b.level - a.level || b.fit - a.fit || a.order - b.order)
     const page = matches.slice(query.offset, query.offset + query.limit + extra).map(match => match.row)
     const sources = this.sourcesFor(page.map(row => row.id))
     return page.map(row => this.summary(row, sources))

@@ -9,8 +9,10 @@ export const seasonRulesetSchema=z.object({
   effectiveFrom:z.string().datetime(),effectiveUntil:z.string().datetime().nullable().default(null),status:z.enum(['active','announced','retired']),validated:z.boolean().default(false),sources:z.array(rulesSourceSchema).default([]),validationFixtures:z.array(z.string()).default([]),
   candidateCoverage:z.enum(['complete','partial','unknown']).default('unknown'),constraintsCoverage:z.enum(['complete','partial','unknown']).default('unknown'),
   upgradeTracks:z.array(z.object({id:z.string().min(1),name:z.string(),ranks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative(),cost:z.array(currencyCostSchema).nullable(),discountRequired:z.boolean().optional()})).min(1),
-    // Ranks past the crest ladder carry no crest cost; players reach them another way, such as an Ascendant upgrade
-    beyondRanks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative()})).optional()})).default([]),
+    // Ranks past the crest ladder carry no crest cost; `via` names how players reach one, and a rank without it is never offered
+    beyondRanks:z.array(z.object({rank:z.number().int().positive(),itemLevel:z.number().nonnegative(),via:z.enum(['venomstone','elevated']).nullable().optional()})).optional()})).default([]),
+  // Which items each route past the crest ladder applies to, reviewed against the content notes and observed top-player gear
+  ascension:z.object({venomstoneInventoryTypes:z.array(z.number().int().nonnegative()),elevatedEncounters:z.array(z.string().min(1)),elevatedSets:z.boolean()}).optional(),
   restrictions:z.array(z.object({group:z.string().min(1),maxEquipped:z.number().int().nonnegative()})).default([]),minimumGroups:z.array(z.object({group:z.string().min(1),minEquipped:z.number().int().nonnegative()})).default([]),
   rewardTables:z.array(z.object({activity:z.enum([...activitySchema.options,'crafting','world']),difficulty:z.string(),itemLevel:z.number().nonnegative(),sourceUrl:z.string().url()})).default([]),
 }).superRefine((rules,ctx)=>{
