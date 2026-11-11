@@ -22,7 +22,11 @@ async function planStats(character: Character, items: GearItem[]) {
 }
 
 /** The character sheet as it would read wearing the plan, from the synced stats and the plan's item, gem, and enchant changes */
-export function PlanStats({ character, items, disabled }: { character: Character; items: GearItem[]; disabled: boolean }) {
+export function PlanStats({ character, items, disabled, otherSpec = null }: {
+  character: Character; items: GearItem[]; disabled: boolean
+  /** The specialization the synced sheet was taken in, when the plan is for another one */
+  otherSpec?: string | null
+}) {
   const status = useGameData()
   const shape = items.map(item => [item.slot, item.itemId, item.itemLevel, item.enchant, item.gems.join('|')].join(':')).join(',')
   const plan = useQuery({
@@ -38,13 +42,15 @@ export function PlanStats({ character, items, disabled }: { character: Character
   const subtitle = plan.isError
     ? `Showing your synced sheet · ${errorMessage(plan.error)}`
     : !projected ? 'Working out the planned sheet…' : `With this plan, from ${character.stats.source}${character.stats.observedAt ? ` · ${new Date(character.stats.observedAt).toLocaleDateString()}` : ''}`
+  // Rating and stamina carry over between specializations, but mastery and main-stat scaling don't
+  const note = otherSpec ? ` · Based on your ${otherSpec} sheet, so mastery and main stat are rough for ${character.specName}` : ''
   return (
     <StatsSurface
       character={character}
       stats={projected?.stats}
       before={projected ? character.stats : undefined}
       heading="Planned stats"
-      subtitle={subtitle}
+      subtitle={subtitle + note}
       unknown={projected?.unknown}
       footer={<>
         {projected && plan.data?.skipped.length ? <p className="week-footnote">Not counted, because their effects aren't flat secondary stats: {[...new Set(plan.data.skipped)].join(', ')}</p> : null}

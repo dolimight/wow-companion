@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
 import { version as appVersion } from '../../package.json';
 import { appIconChoices, appIconCursor, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
@@ -85,7 +85,9 @@ import TargetCursor from "./components/TargetCursor";
 const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
-import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
+import { activePlan, addItemToPlan, gearMemory, hydrateActivePlans, planKey, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
+import { specializationName } from "../shared/specializations";
+import { PlanBar } from "./features/plan/PlanBar";
 import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
 import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
 import { PlanSources } from "./features/plan/PlanSources";
@@ -1599,31 +1601,47 @@ function OverviewPage({ character }: { character: Character }) {
 }
 function GearPage({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);
+  const settings = useSettings();
+  const [, refresh] = useReducer((count: number) => count + 1, 0);
+  useEffect(() => subscribeGearPlan(refresh), []);
+  useEffect(() => { if (settings.data) hydrateActivePlans(settings.data.activePlans); }, [settings.data]);
+  // The open plan can be for another specialization; the editor then plans as that specialization
+  const ref = activePlan(character, activity);
+  const planCharacter = useMemo(() => ref.specId === character.specId ? character : { ...character, specId: ref.specId, specName: specializationName(ref.specId, character.specName) }, [character, ref.specId]);
   return (
     <GearEditor
-      key={character.id + activity}
-      character={character}
+      key={`${character.id}:${activity}:${ref.specId}:${ref.plan}`}
+      character={planCharacter}
+      live={character}
       activity={activity}
+      plan={ref.plan}
     />
   );
 }
 function GearEditor({
   character,
+  live,
   activity,
+  plan,
 }: {
+  /** The character as the open plan's specialization */
   character: Character;
+  /** The character as last synced, for what they actually play */
+  live: Character;
   activity: Activity;
+  plan: string;
 }) {
-  const memoryKey = character.id + ":" + activity + ":" + character.specId;
+  const memoryKey = planKey(character.id, activity, character.specId, plan);
   const memory = gearMemory.get(memoryKey);
   const hydrated = useRef(false);
   const query = useQuery({
-    queryKey: ["gear-draft", character.id, activity, character.specId],
+    queryKey: ["gear-draft", character.id, activity, character.specId, plan],
     queryFn: () =>
       api.getGearDraft({
         characterId: character.id,
         activity,
         specId: character.specId,
+        plan,
       }),
   });
   const [items, setItems] = useState<GearItem[]>(memory?.items ?? []);
@@ -1822,6 +1840,7 @@ function GearEditor({
           </span>
         </div>
       </div>
+      <PlanBar character={live} activity={activity} current={{ specId: character.specId, plan }} currentName={name.trim() || "My upgrade plan"} currentItems={items} />
       <div className="gear-summary">
         <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
@@ -1887,7 +1906,7 @@ function GearEditor({
               embellishments={embellishmentRules.data ?? null}
               closedSlots={closedSlots}
             />
-            <PlanStats character={character} items={items} disabled={inspectorDirty} />
+            <PlanStats character={character} items={items} disabled={inspectorDirty} otherSpec={character.specId !== live.specId ? live.specName : null} />
             <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
             <div className="roster-footnote">
               <Info />
