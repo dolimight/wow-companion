@@ -50,6 +50,36 @@ async function fixture(options: { version?: string; disabled?: boolean; saved?: 
 }
 
 describe('desktop update lifecycle', () => {
+  it('downloads a found update on its own when the player allows it, and remembers the choice', async () => {
+    const f = await fixture()
+    expect(f.service.getState().autoDownload).toBe(false)
+    await f.service.setAutoDownload(true)
+    expect(f.writes.at(-1)).toEqual({ channel: 'stable', autoDownload: true })
+    const state = await f.service.check()
+    expect(f.counts.downloads).toBe(1)
+    expect(state.status).toBe('ready')
+    f.service.close()
+    const again = await fixture({ saved: { channel: 'nightly', autoDownload: true } })
+    expect(again.service.getState().autoDownload).toBe(true)
+    again.service.close()
+  })
+
+  it('waits for the player when automatic downloads are off, and starts one when they are turned on', async () => {
+    const f = await fixture()
+    expect((await f.service.check()).status).toBe('available')
+    expect(f.counts.downloads).toBe(0)
+    expect((await f.service.setAutoDownload(true)).status).toBe('ready')
+    expect(f.counts.downloads).toBe(1)
+    f.service.close()
+  })
+
+  it('keeps the download setting when the update track changes', async () => {
+    const f = await fixture({ saved: { channel: 'stable', autoDownload: true } })
+    await f.service.setChannel('nightly')
+    expect(f.writes.at(-1)).toEqual({ channel: 'nightly', autoDownload: true })
+    f.service.close()
+  })
+
   it('keeps the app usable when updater setup fails', async () => {
     const f = await fixture({ configureError: true })
     expect(f.service.getState().status).toBe('disabled')

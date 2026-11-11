@@ -9,14 +9,13 @@ import { useConnections } from "../connections/connections";
 import { ago } from "../sync/sync";
 import type { Character } from "../../../shared/domain";
 import "./realms.css";
+import { realmSlug } from "../../../shared/realm-alerts";
 
 type Report = Awaited<ReturnType<typeof api.realmStatus>>;
 type Realm = Extract<Report, { configured: true }>["realms"][number];
 type Health = "up" | "queue" | "down" | "unknown";
 
 const regionNames: Record<string, string> = { us: "Americas and Oceania", eu: "Europe", kr: "Korea", tw: "Taiwan" };
-/** Same rule as Blizzard's realm slugs, so a character's realm name finds its connected realm */
-const realmSlug = (realm: string) => realm.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const health = (realm: Realm): Health => !realm.up ? "down" : realm.queue ? "queue" : "up";
 const healthText: Record<Health, string> = { up: "Up", queue: "Queue", down: "Down", unknown: "Unknown" };
 

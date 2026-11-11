@@ -8,6 +8,7 @@ const bridge:NativeBridge={
   downloadUpdate:()=>ipcRenderer.invoke('companion:update-download'),
   installUpdate:()=>ipcRenderer.invoke('companion:update-install'),
   setUpdateChannel:(channel)=>ipcRenderer.invoke('companion:update-channel',channel),
+  setUpdateAutoDownload:(value)=>ipcRenderer.invoke('companion:update-auto-download',value),
   setUpdateBlockers:(blockers)=>ipcRenderer.invoke('companion:update-blockers',blockers),
   onUpdateState:(listener)=>{
     const receive=(_event:Electron.IpcRendererEvent,state:UpdateState)=>listener(state)

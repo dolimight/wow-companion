@@ -22,6 +22,8 @@ import {createModelCache} from './models/cache'
 import type { SecretStore } from './secrets'
 import { createSeasonWatch } from './season-watch'
 import type { Alert } from '../shared/alerts'
+import { realmChanges } from '../shared/realm-alerts'
+import { blizzardRegions, type BlizzardRegion } from './providers/blizzard'
 
 export function matchesToken(actual:unknown,expected:string){if(typeof actual!=='string')return false;const a=Buffer.from(actual),b=Buffer.from(expected);return a.length===b.length&&timingSafeEqual(a,b)}
 export async function startLocalService(options:{db:DatabaseClient;origins:string[];refreshCharacter:(id:string)=>Promise<import('../shared/domain').Character>;gameDataDir:string;gameDataWorker?:URL;progressionWorker?:URL;secrets:SecretStore;addonDir:string;assetsDir:string;autoSync?:boolean;onAlert?:(alert:Alert)=>void;onSettings?:(settings:import('../shared/domain').AppSettings)=>void}){
@@ -45,6 +47,24 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
     return result
   }
   const insights=createInsights({cacheDir:path.join(options.assetsDir,'cache'),blizzardApi:()=>connections.blizzardApi(),gameData})
+  // Realms the player has characters on are checked every minute; a change raises a desktop alert
+  const realmState=new Map<string,Map<number,boolean>>()
+  async function checkRealms(){
+    if(!await connections.blizzardConfigured())return
+    const characters=await db.call('listCharacters',false)
+    for(const region of new Set(characters.map(character=>character.region.toLowerCase()))){
+      if(!(blizzardRegions as readonly string[]).includes(region))continue
+      try{
+        const report=await insights.realmStatus(region as BlizzardRegion)
+        if(!report.configured)continue
+        const {alerts,next}=realmChanges(realmState.get(region)??null,region,report.realms,characters.map(character=>({...character,region:character.region.toLowerCase()})),report.checkedAt)
+        realmState.set(region,next)
+        for(const alert of alerts)options.onAlert?.(alert)
+      }catch{/* A failed check keeps the last known state, so the next one compares against it */}
+    }
+  }
+  const realmTimer=options.autoSync?setInterval(()=>void checkRealms(),60_000):undefined;realmTimer?.unref?.()
+  if(options.autoSync)void checkRealms()
   const evaluator=new ProgressionEvaluator(options.progressionWorker)
   const progression=createProgressionService({db,items:ids=>gameData.call('items',ids),installedBuild:()=>gameData.currentStatus.install?.version??null,metadataBuild:()=>gameData.currentStatus.indexedVersion,evaluator:input=>evaluator.evaluate(input)})
   const session=createSessionService({db,progression})
@@ -63,5 +83,5 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   void watch.observe()
   void connections.initialize().then(()=>{if(options.autoSync)void sync.run('startup')})
   let closed=false
-  return {connection:{url:'ws://127.0.0.1:'+address.port,token},router,changed,importText,setWatchPath,getSyncStatus:()=>status,gameData,connections,sync,simulations,session,models,async close(){if(closed)return;closed=true;clearInterval(watchTimer);watcher?.close();connections.cancelSignIn();await simulations.close();await evaluator.close();await gameData.close();handler.broadcastReconnectNotification();for(const ws of wss.clients)ws.terminate();await new Promise<void>(r=>wss.close(()=>r()));await new Promise<void>(r=>server.close(()=>r()));events.removeAllListeners()}}
+  return {connection:{url:'ws://127.0.0.1:'+address.port,token},router,changed,importText,setWatchPath,getSyncStatus:()=>status,gameData,connections,sync,simulations,session,models,async close(){if(closed)return;closed=true;clearInterval(watchTimer);if(realmTimer)clearInterval(realmTimer);watcher?.close();connections.cancelSignIn();await simulations.close();await evaluator.close();await gameData.close();handler.broadcastReconnectNotification();for(const ws of wss.clients)ws.terminate();await new Promise<void>(r=>wss.close(()=>r()));await new Promise<void>(r=>server.close(()=>r()));events.removeAllListeners()}}
 }

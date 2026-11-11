@@ -2,6 +2,8 @@ export type UpdateChannel = 'stable' | 'nightly'
 export type UpdateState = {
   currentVersion: string
   channel: UpdateChannel
+  /** Downloads a found update in the background so it only needs a restart */
+  autoDownload: boolean
   status: 'disabled' | 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'installing' | 'error'
   availableVersion: string | null
   progress: number | null
