@@ -1,6 +1,6 @@
 import { createTRPCClient, createWSClient, wsLink } from '@trpc/client'
 import type { AppRouter } from '../../main/rpc/router'
-import type { Activity, AddCharacterInput, AppSettings, CharacterPatch, GearDraft, Outfit } from '../../shared/domain'
+import type { Activity, AddCharacterInput, AppSettings, CharacterPatch, GearDraft, GearDraftInput, Outfit } from '../../shared/domain'
 import type { ConnectionInfo, NativeBridge } from '../../shared/bridge'
 import type { ItemSearch, ItemSearchCharacter } from '../../shared/gamedata'
 import type { AppearanceSlot } from '../../shared/domain'
@@ -22,8 +22,10 @@ export const api={
  updateCharacter:async(input:{id:string;patch:CharacterPatch})=>(await client()).updateCharacter.mutate(input),
  deleteCharacter:async(input:{id:string})=>(await client()).deleteCharacter.mutate(input),
  archiveCharacter:async(input:{id:string;archived:boolean})=>(await client()).archiveCharacter.mutate(input),
- getGearDraft:async(input:{characterId:string;activity:Activity;specId:number|null})=>(await client()).getGearDraft.query(input),
- saveGearDraft:async(input:GearDraft)=>(await client()).saveGearDraft.mutate(input),
+ getGearDraft:async(input:{characterId:string;activity:Activity;specId:number|null;plan?:string})=>(await client()).getGearDraft.query(input),
+ listGearDrafts:async(characterId:string)=>(await client()).listGearDrafts.query({characterId}),
+ deleteGearDraft:async(input:{characterId:string;activity:Activity;specId:number|null;plan:string})=>(await client()).deleteGearDraft.mutate(input),
+ saveGearDraft:async(input:GearDraftInput)=>(await client()).saveGearDraft.mutate(input),
  listOutfits:async(input:{characterId:string})=>(await client()).listOutfits.query(input),
  saveOutfit:async(input:Outfit)=>(await client()).saveOutfit.mutate(input),
  deleteOutfit:async(input:{id:string})=>(await client()).deleteOutfit.mutate(input),

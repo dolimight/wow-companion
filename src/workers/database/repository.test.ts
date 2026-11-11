@@ -30,6 +30,25 @@ describe('durable character boundaries',()=>{
     raw.prepare("UPDATE metadata SET value=? WHERE key='settings'").run(JSON.stringify(legacy));raw.close()
     expect(repo(file).getSettings()).toMatchObject({appIcon:'auto',theme:'dark'})
   })
+  it('keeps several plans per specialization apart, lists them, and deletes one without touching the rest',()=>{
+    const folder=mkdtempSync(join(tmpdir(),'wow-plans-'));folders.push(folder);const file=join(folder,'companion.db');const db=repo(file)
+    const c=db.addCharacter({name:'Doli',region:'us',realm:'Realm One',specId:250})
+    const base={characterId:c.id,activity:'mythicPlus' as const,rulesetId:'unknown',items:[],updatedAt:'2026-11-11T10:00:00.000Z'}
+    db.saveGearDraft({...base,id:'blood',specId:250,name:'Blood M+'})
+    db.saveGearDraft({...base,id:'frost',specId:251,name:'Frost M+',updatedAt:'2026-11-11T11:00:00.000Z'})
+    db.saveGearDraft({...base,id:'frost-alt',specId:251,plan:'p-1',name:'Frost alt',updatedAt:'2026-11-11T12:00:00.000Z'})
+    // A plan saved before plan IDs existed is still the main one under its original key
+    const raw=new Database(file)
+    expect((raw.prepare('SELECT key FROM gear_drafts WHERE payload LIKE ?').get('%"id":"blood"%') as {key:string}).key).toBe(JSON.stringify([c.id,250,'mythicPlus','unknown']))
+    raw.close()
+    expect(db.getGearDraft({characterId:c.id,specId:251,activity:'mythicPlus'})?.name).toBe('Frost M+')
+    expect(db.getGearDraft({characterId:c.id,specId:251,activity:'mythicPlus',plan:'p-1'})?.name).toBe('Frost alt')
+    expect(db.listGearDrafts(c.id).map(draft=>draft.name)).toEqual(['Frost alt','Frost M+','Blood M+'])
+    expect(db.deleteGearDraft({characterId:c.id,specId:251,activity:'mythicPlus',plan:'p-1'})).toEqual({deleted:true})
+    expect(db.listGearDrafts(c.id).map(draft=>draft.id)).toEqual(['frost','blood'])
+    expect(db.deleteGearDraft({characterId:c.id,specId:251,activity:'mythicPlus',plan:'p-1'})).toEqual({deleted:false})
+    db.close()
+  })
   it('loads and updates a legacy zero-specialization draft without losing or duplicating it',()=>{
     const folder=mkdtempSync(join(tmpdir(),'wow-legacy-spec-'));folders.push(folder);const file=join(folder,'companion.db');const db=repo(file)
     const c=db.addCharacter({name:'Astra',region:'us',realm:'Realm One',specId:0})
