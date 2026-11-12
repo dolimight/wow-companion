@@ -49,6 +49,11 @@ frame:SetScript("OnEvent", function(_, event, unit)
   queue()
 end)
 
+-- The settings page calls this after the switch changes, so turning it on summons without waiting for the next check
+function ns.petSettingChanged()
+  if enabled() then queue() end
+end
+
 function ns.petCommand(message)
   local command, choice = tostring(message or ""):lower():match("^%s*(%S*)%s*(%S*)")
   if command ~= "pet" then return false end

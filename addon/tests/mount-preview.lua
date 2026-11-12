@@ -533,4 +533,34 @@ test("clicked chat item links still preview without a hovered item", function()
   check(state.WoWCompanionMountPreview.model.display == 5555, "clicked chat link lost its preview")
 end)
 
+test("size and turn speed follow the settings and stay in range", function()
+  local saved = { settings = { previewSize = 400, previewSpin = 0 } }
+  local state = load(saved)
+  local tooltip = region("GameTooltip")
+  tooltip.rect = { 100, 600, 300, 120 }
+  state.callback(tooltip, { id = 100 })
+  local frame = state.WoWCompanionMountPreview
+  check(frame.width == 360 and frame.height == 360, "size not clamped to 360")
+  frame.scripts.OnUpdate(frame, 1)
+  check(frame.facing == 0, "a turn speed of zero still turned the model")
+  saved.settings.previewSize = 200
+  state.ns.previewSettingsChanged()
+  check(frame.width == 200 and frame.height == 200, "an open preview did not resize")
+end)
+
+test("a settings change closes a preview whose kind was turned off", function()
+  local saved = { settings = { previews = {} } }
+  local state = load(saved)
+  local tooltip = region("GameTooltip")
+  tooltip.rect = { 100, 600, 300, 120 }
+  state.callback(tooltip, { id = 100 })
+  local frame = state.WoWCompanionMountPreview
+  saved.settings.previews.pets = false
+  state.ns.previewSettingsChanged()
+  check(frame.shown, "turning pets off closed a mount preview")
+  saved.settings.previews.mounts = false
+  state.ns.previewSettingsChanged()
+  check(not frame.shown, "turning mounts off left the mount preview open")
+end)
+
 say(passed .. " tests passed")

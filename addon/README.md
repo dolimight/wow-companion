@@ -1,6 +1,6 @@
 # WOW Companion addon
 
-Copy this folder's `WoWCompanion.toc`, `WoWCompanion.lua`, `MountPreview.lua`, `OutfitPreview.lua`, and `AutoPet.lua` into `_retail_/Interface/AddOns/WoWCompanion`
+Copy this folder's `WoWCompanion.toc`, `WoWCompanion.lua`, `MountPreview.lua`, `OutfitPreview.lua`, `AutoPet.lua`, and `Settings.lua` into `_retail_/Interface/AddOns/WoWCompanion`
 
 Enable the addon, log into each character you want to track, and use `/wowcompanion` to copy a JSON export for the desktop app
 The popup can be copied without a reload
@@ -17,6 +17,19 @@ Appearance collection, exact transmog/customization coverage, raid and PvP ratin
 The interface marker targets Retail 12.1.5 and the implementation uses guarded contemporary equipment APIs
 Real client installation and gear-change verification are still required; this repository's automated tests validate desktop import behavior rather than execution inside WoW
 If the client reports the addon as out of date, verify its APIs against the current client before updating the interface marker
+
+## Settings
+
+Version 0.4.9 adds a settings page in the game's own options window: Options, AddOns, WOW Companion, or `/wowcompanion settings`
+- Companion: the favorite pet auto-summon switch
+- 3D previews: a switch for all previews, one for each kind (mounts, battle pets, appearance sets, gear, housing decor), a preview size slider (180 to 360, default 260), and a turn speed slider (still to 1.5, default 0.6)
+- Desktop app: buttons that open the JSON export and the outfit preview
+- Troubleshooting: a button that prints what the last preview found and any errors from the last capture
+
+The page and the `/wowcompanion` commands read and write the same saved settings, so a change in either shows in both
+Plain `/wowcompanion` still opens the export
+Clients without the add-on settings page keep every command and explain why the page is missing
+`addon/tests/settings.lua` checks the page against a mocked Settings API; the real page still needs an in-game Retail check
 
 ## Automatic favorite companion
 

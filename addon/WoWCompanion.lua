@@ -401,8 +401,8 @@ frame:SetScript("OnEvent",function(_,event,name)
   if event=="ITEM_UPGRADE_MASTER_SET_ITEM" or event=="ITEM_UPGRADE_MASTER_UPDATE" then captureUpgradeQuote() end
   if event=="ADDON_LOADED" then
     if name~="WoWCompanion" then return end
-    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.8",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
-    WoWCompanionDB.addonVersion="0.4.8"
+    if not WoWCompanionDB or WoWCompanionDB.schemaVersion~=1 then WoWCompanionDB={schemaVersion=1,addonVersion="0.4.9",sourceProfileId="local-"..tostring(GetServerTime()).."-"..tostring(math.random(100000,999999)),exportedAt=timestamp(),characters={}} end
+    WoWCompanionDB.addonVersion="0.4.9"
   elseif event=="PLAYER_LOGIN" then
     -- Ask the server for lockouts, vault, and keystone history so the next snapshot can include them
     if RequestRaidInfo then RequestRaidInfo() end
@@ -411,8 +411,10 @@ frame:SetScript("OnEvent",function(_,event,name)
   elseif event=="PLAYER_LOGOUT" then snapshot()
   elseif not pending then pending=true;C_Timer.After(0.5,function() pending=false;snapshot() end) end
 end)
+-- The settings page opens the same export popup
+if ns then ns.showExport=showExport end
 SLASH_WOWCOMPANION1="/wowcompanion"
 -- Pet automation and tooltip preview commands are handled by their own modules
-SlashCmdList.WOWCOMPANION=function(message) if ns and ns.petCommand and ns.petCommand(message) then return end if ns and ns.command and ns.command(message) then return end showExport() end
+SlashCmdList.WOWCOMPANION=function(message) if ns and ns.settingsCommand and ns.settingsCommand(message) then return end if ns and ns.petCommand and ns.petCommand(message) then return end if ns and ns.command and ns.command(message) then return end showExport() end
 
 
