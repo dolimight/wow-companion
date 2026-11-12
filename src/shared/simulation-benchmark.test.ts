@@ -21,6 +21,11 @@ describe('top player benchmark', () => {
     expect(benchmarkPlan(simulationCharacter(), top, 113).gear.find(item => item.slot === 'head')?.itemLevel).toBe(113)
     expect(benchmarkPlan(simulationCharacter(), top, 200).gear.find(item => item.slot === 'head')?.itemLevel).toBe(115)
   })
+  it("puts their slot's most used enchant and that item's own gems on their item", () => {
+    const top = topFixture()
+    top.slots.head = { ...top.slots.head!, enchants: [{ id: 7973, name: 'Swiftness', count: 8 }], items: [{ ...top.slots.head!.items[0]!, gems: [240890] }, ...top.slots.head!.items.slice(1)] }
+    expect(benchmarkPlan(simulationCharacter(), top).gear.find(item => item.slot === 'head')).toMatchObject({ enchantId: 7973, gemIds: [240890, 0, 0, 0] })
+  })
   it('skips talents you already use or that too few players share', () => {
     const character = simulationCharacter()
     expect(benchmarkPlan(character, topFixture({ builds: [{ loadout: character.talents!.loadout, count: 6, players: [] }] })).talents).toBeNull()

@@ -100,9 +100,10 @@ export function getItemCompatibility(item: ItemSummary, character: ItemSearchCha
     if (offhand && item.inventoryType === 17 && !titansGrip) return reject('Only Fury can use this two-hand weapon in the off hand')
   }
 
-  // ItemSpecOverride is authoritative over inferred primary-stat suitability
+  // ItemSpecOverride is authoritative over inferred primary-stat suitability. For trinkets it only decides who can
+  // loot one: any class can wear it, and tanks do wear damage trinkets for their effects, so it never hides one
   if (item.specIds == null) unknown.push('item specialization restrictions are unavailable')
-  else if (item.specIds.length) {
+  else if (item.specIds.length && item.inventoryType !== 12) {
     if (spec && !item.specIds.includes(character.specId!)) return reject('This item is intended for other specializations')
     if (!spec && playerClass && item.specIds.every(id => specs[id] && specs[id]!.classId !== playerClass.id)) return reject('This item is intended for other classes')
   }

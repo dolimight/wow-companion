@@ -790,7 +790,7 @@ export class GameDataEngine {
    * its SpellItemEnchantment ID (enchant scrolls name it in CraftingDataEnchantQuality, highest rank first), a gem its
    * item ID, and an embellishment reagent the bonus lists it puts on the item. Anything unknown comes back empty
    */
-  async enhancementIds(requests: Array<{ slot: AppearanceSlot; enchant: string | null; gems: string[]; embellishment: number | null }>): Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>> {
+  async enhancementIds(requests: Array<{ slot: AppearanceSlot; enchant: string | null; gems: string[]; embellishment: number | null; enchantItem?: number }>): Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>> {
     const db = this.ready()
     const ranks = await this.traitTable('CraftingDataEnchantQuality').catch(() => null)
     const enchantOf = new Map<number, number>()
@@ -798,17 +798,37 @@ export class GameDataEngine {
     const gems = new Map(this.enhancements('gem', null).map(option => [option.name.toLowerCase(), option.itemId]))
     const slotEnchants = new Map<AppearanceSlot, EnhancementOption[]>()
     const strip = (name: string) => name.replace(/^(Enchant|Enchanting)\s[^-]+-\s*/i, '').trim().toLowerCase()
-    return requests.slice(0, 40).map(request => {
+    // Armor kits and spellthreads aren't enchant scrolls, so CraftingDataEnchantQuality skips them; their use spell
+    // enchants the item instead (SpellEffect 53, the enchant ID in its first misc value). Read only when one is asked for
+    let spellEnchant: ((itemId: number) => number | null) | null = null
+    const viaSpell = async (itemId: number) => {
+      if (!spellEnchant) {
+        const [links, effects, spellEffects] = await Promise.all([this.traitTable('ItemXItemEffect'), this.traitTable('ItemEffect'), this.traitTable('SpellEffect')])
+        const enchantBySpell = new Map<number, number>()
+        for (const row of spellEffects.values()) {
+          const misc = row.EffectMiscValue
+          const id = Number(Array.isArray(misc) ? misc[0] : misc)
+          if (Number(row.Effect) === 53 && id > 0 && !Number(row.DifficultyID)) enchantBySpell.set(Number(row.SpellID), id)
+        }
+        const byItem = new Map<number, number>()
+        for (const link of links.values()) { const enchant = enchantBySpell.get(Number(effects.get(Number(link.ItemEffectID))?.SpellID)); if (enchant) byItem.set(Number(link.ItemID), enchant) }
+        spellEnchant = id => byItem.get(id) ?? null
+      }
+      return spellEnchant(itemId)
+    }
+    return Promise.all(requests.slice(0, 40).map(async request => {
       let enchantId: number | null = null
       const enchant = request.enchant?.trim()
-      if (enchant) {
+      // A scroll or kit named by its item, as top player data does
+      if (request.enchantItem) enchantId = enchantOf.get(request.enchantItem) ?? await viaSpell(request.enchantItem).catch(() => null)
+      else if (enchant) {
         const numbered = enchant.match(/^Enchant #(\d+)$/)
         if (numbered) enchantId = Number(numbered[1])
         else {
           const options = slotEnchants.get(request.slot) ?? this.enhancements('enchant', request.slot)
           slotEnchants.set(request.slot, options)
           const option = options.find(entry => entry.name.toLowerCase() === strip(enchant))
-          enchantId = option ? enchantOf.get(option.itemId) ?? null : null
+          enchantId = option ? enchantOf.get(option.itemId) ?? await viaSpell(option.itemId).catch(() => null) : null
           if (!enchantId) enchantId = (db.prepare('SELECT id FROM enchants WHERE lower(name) = ? ORDER BY id DESC').get(strip(enchant)) as { id: number } | undefined)?.id ?? null
         }
       }
@@ -816,7 +836,7 @@ export class GameDataEngine {
       let bonusIds: number[] = []
       if (request.embellishment) { try { bonusIds = JSON.parse((db.prepare('SELECT bonus_lists FROM embellishments WHERE item_id = ?').get(request.embellishment) as { bonus_lists: string } | undefined)?.bonus_lists ?? '[]') } catch { bonusIds = [] } }
       return { enchantId, gemIds, bonusIds }
-    })
+    }))
   }
 
   /** Decodes an icon once and keeps the PNG on disk */

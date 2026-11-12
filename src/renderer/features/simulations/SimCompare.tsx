@@ -146,7 +146,9 @@ export function SimCompare({ character, job, result }: { character: Character; j
     const topEmbellishment = share?.copy?.bonusIds ? embellishmentOf(rules.data ?? null, share.copy.bonusIds)?.name ?? null : null
     const myEmbellishment = item ? (item.embellishment?.name ?? embellishmentOf(rules.data ?? null, item.bonusIds)?.name ?? null) : null
     const enchantId = enchantIdOf(item)
-    const enchant = enchantId ? enchantNames.data?.[enchantId] ?? item?.enchant ?? `Enchant #${enchantId}` : item?.enchant ?? null
+    // The plan's own name (such as an armor kit) reads better than the enchant's internal one
+    const named = item?.enchant && !/^Enchant #\d+$/.test(item.enchant) ? item.enchant : null
+    const enchant = named ?? (enchantId ? enchantNames.data?.[enchantId] ?? item?.enchant ?? `Enchant #${enchantId}` : item?.enchant ?? null)
     const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share, enchant: tally?.enchants[0], gems: share?.gems ?? (tally?.gems[0] ? [tally.gems[0].id] : []), embellishment: topEmbellishment } : null
     const notes: Row['notes'] = []
     const gap = topRow?.level != null && item?.itemLevel != null ? Math.round(topRow.level - item.itemLevel) : 0

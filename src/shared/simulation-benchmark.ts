@@ -25,7 +25,7 @@ export function describedItem(current: GearItem, slot: GearItem['slot'], item: P
   return {
     ...current, inventoryType: item.inventoryType ?? current.inventoryType, classId: item.classId ?? current.classId, subclassId: item.subclassId ?? current.subclassId,
     slot, itemId: item.itemId, name: item.name, itemLevel: item.itemLevel === null ? null : Math.round(item.itemLevel), itemLink: null, bonusIds: [],
-    enchantId: current.enchantId ?? raw.enchantId ?? 0, gemIds: current.gemIds ?? raw.gemIds ?? [0, 0, 0, 0],
+    enchantId: item.enchantId ?? current.enchantId ?? raw.enchantId ?? 0, gemIds: item.gemIds ?? current.gemIds ?? raw.gemIds ?? [0, 0, 0, 0],
     variantCoverage: 'complete', stats: [], effects: [], appearanceId: null,
   }
 }
@@ -92,7 +92,10 @@ export function benchmarkPlan(character: Pick<Character, 'gear' | 'talents'>, to
       if (level === null) { skipped.push(`${group.label}: the item level top players wear is unknown`); return }
       const already = character.gear.some(item => group.slots.includes(item.slot) && item.itemId === pick.id && (item.itemLevel ?? 0) >= level)
       if (already) return
-      gear.push(describedItem(current, slot, { itemId: pick.id, name: pick.name, itemLevel: level }))
+      // Their item carries what they put on it: the slot's most used enchant and the gems most of them socket into
+      // that item. Without these it ran bare against your enchanted plan, so an identical item read as worse
+      const enchantId = tally.enchants[0]?.id
+      gear.push(describedItem(current, slot, { itemId: pick.id, name: pick.name, itemLevel: level, ...(enchantId ? { enchantId } : {}), ...(pick.gems ? { gemIds: [...pick.gems, 0, 0, 0, 0].slice(0, Math.max(4, pick.gems.length)) } : {}) }))
     })
   }
   const build = top.builds[0]
