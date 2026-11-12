@@ -6,7 +6,9 @@ import type { SimulationRequest, SimulationResult } from '../../shared/simulatio
 import { PROFILESET_LIMIT, requestScenario, simulationResultSchema } from '../../shared/simulation'
 
 export const RESULT_LIMIT = 100 * 1024 * 1024
-const LOG_LIMIT = 1024 * 1024
+// Only the last lines are kept, so this guards a runaway engine rather than memory; large profileset runs print a
+// few hundred kilobytes of warnings and rankings even without progress bars
+const LOG_LIMIT = 16 * 1024 * 1024
 const sampleSchema = z.object({ mean: z.number().finite().nonnegative(), mean_std_dev: z.number().finite().nonnegative().optional(), count: z.number().int().positive().optional() })
 // SimulationCraft's json2 report is version 2.x: each profileset carries its first metric inline and
 // any others under additional_metrics. Version 3.x lists every metric under metrics; both are accepted
@@ -31,7 +33,7 @@ export const REFERENCE_PROFILESET = 'companion_reference'
 /** Fixed engine arguments for a request; nothing here comes from profile text */
 export function simulationArguments(request: SimulationRequest): string[] {
   const scenario = requestScenario(request)
-  const args = ['input.simc', 'json2=result.json', 'report_details=0', 'item_db_source=local', `iterations=${request.options.iterations}`, `threads=${request.options.threads}`, `fight_style=${scenario.style}`, `max_time=${scenario.fightSeconds}`, 'vary_combat_length=0.2']
+  const args = ['input.simc', 'json2=result.json', 'report_details=0', 'report_progress=0', 'item_db_source=local', `iterations=${request.options.iterations}`, `threads=${request.options.threads}`, `fight_style=${scenario.style}`, `max_time=${scenario.fightSeconds}`, 'vary_combat_length=0.2']
   if (scenario.targets !== null) args.push(`desired_targets=${scenario.targets}`)
   if (request.mode === 'profileset') args.push(`profileset_metric=${request.damageTaken ? 'dps,dtps' : 'dps'}`)
   else args.push('single_actor_batch=1')
@@ -110,7 +112,7 @@ export function runSimulationProcess(options: { executable: string; directory: s
         child = options.launch ? options.launch(options.executable, args, options.directory) : spawn(options.executable, args, { cwd: options.directory, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
         child.once('error', error => finish(error))
         child.once('close', code => finish(failure || code !== 0 ? new Error(failure ?? `SimulationCraft stopped with code ${code}${tail ? ` — ${tail}` : ''}`) : undefined))
-        const output = (chunk: Buffer) => { bytes += chunk.length; tail = (tail + chunk.toString('utf8')).slice(-2000); if (bytes > LOG_LIMIT) stop('Simulation output exceeded 1 MiB') }
+        const output = (chunk: Buffer) => { bytes += chunk.length; tail = (tail + chunk.toString('utf8')).slice(-2000); if (bytes > LOG_LIMIT) stop('Simulation output exceeded 16 MiB') }
         child.stdout?.on('data', output); child.stderr?.on('data', output)
         timer = setTimeout(() => stop('Simulation exceeded its time limit'), options.timeoutMs ?? options.request.options.timeoutMinutes * 60_000)
         interval = setInterval(() => { void stat(path.join(options.directory, 'result.json')).then(info => { if (info.size > (options.resultLimit ?? RESULT_LIMIT)) stop('Simulation report exceeded its size limit') }).catch(() => {}) }, 250)

@@ -31,9 +31,12 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
   if (!plan || !baseline) return null
   const entries = result.values.slice(1).map((value, index) => ({ value, label: job.request.candidateLabels[index] ?? `Upgrade ${index + 1}`, index }))
   const whole = plan.whole === null ? entries[0] : entries[plan.whole]
-  const topIndex = plan.top?.index ?? null
+  // Newer runs rank each top player as they play, and the plan is read against the strongest of them
+  const best = (plan.roster?.players ?? []).map(player => ({ player, value: result.values[player.index + 1] })).filter(entry => entry.value).sort((a, b) => b.value!.mean - a.value!.mean)[0] ?? null
+  const topIndex = best ? best.player.index : plan.top?.index ?? null
   const topEntry = topIndex === null ? null : entries[topIndex] ?? null
-  const topAlone = new Set((plan.top?.singles ?? []).map(entry => entry.index))
+  const versusWho = best ? best.player.name : "top players' gear"
+  const topAlone = new Set<number | null>([...(plan.top?.singles ?? []).map(entry => entry.index), ...(plan.roster?.players ?? []).flatMap(player => [player.index, ...player.singles.map(entry => entry.index)])])
   const singles = entries.filter(entry => entry.index !== plan.whole && entry.index !== topIndex && !topAlone.has(entry.index)).map(entry => ({ ...entry, ...change(baseline, entry.value) })).sort((a, b) => b.comparison.difference - a.comparison.difference)
   if (!whole) return null
   const reading = topEntry ? benchmarkReading(whole.value, [{ kind: 'gear', value: topEntry.value }]) : null
@@ -46,14 +49,14 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
   const versus = topEntry ? compareSimulationValues(topEntry.value, whole.value) : null
   const versusValue = !versus || versus.verdict === 'unknown' ? 'Unknown' : versus.verdict === 'sidegrade' ? 'Even' : versus.difference > 0 ? 'Ahead' : 'Behind'
   const versusNote = !versus || !topEntry || versus.verdict === 'unknown' ? 'The engine did not report uncertainty, so the gap cannot be judged'
-    : versus.verdict === 'sidegrade' ? 'Your finished plan matches their gear within the uncertainty'
-    : `${versus.difference > 0 ? 'Your plan does' : 'Their gear does'} ${Math.abs(Math.round(versus.difference)).toLocaleString()} DPS more · ${(Math.abs(versus.difference) / topEntry.value.mean * 100).toFixed(1)}% ${versus.difference > 0 ? 'above' : 'below'} theirs`
+    : versus.verdict === 'sidegrade' ? `Your finished plan matches ${best ? best.player.name : 'their gear'} within the uncertainty`
+    : `${versus.difference > 0 ? 'Your plan does' : best ? `${best.player.name} does` : 'Their gear does'} ${Math.abs(Math.round(versus.difference)).toLocaleString()} DPS more · ${(Math.abs(versus.difference) / topEntry.value.mean * 100).toFixed(1)}% ${versus.difference > 0 ? 'above' : 'below'} theirs`
   const totalTile = <Tile label={plan.whole === null ? 'Against your current gear' : `Against your current gear · ${plan.swaps.length} upgrades`} value={measured ? `${signed(total.comparison.difference)} DPS` : total.comparison.verdict === 'sidegrade' ? 'About the same' : 'Unknown'}
     note={measured ? `${percent(Math.abs(total.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${total.comparison.difference > 0 ? 'more' : 'less'} damage than you do now${total.takenText ? ` · ${total.takenText}` : ''}` : undefined} tone={total.comparison.verdict === 'higher' ? 'up' : total.comparison.verdict === 'lower' ? 'down' : undefined} />
   return <div className="plan-summary">
     <div className="plan-tiles">
       {versus && <Card size="sm" className="plan-tile plan-verdict" data-tone={versusValue === 'Ahead' || versusValue === 'Even' ? 'up' : versusValue === 'Behind' ? 'down' : undefined}>
-        <span>Your finished plan against top players' gear</span><strong>{versusValue}</strong><small>{versusNote}</small>
+        <span>Your finished plan against {best ? `the strongest top player · ${versusWho}` : versusWho}</span><strong>{versusValue}</strong><small>{versusNote}</small>
         {reading && <span className="simulation-benchmark-meter" aria-label={`Your plan reaches ${Math.round(reading.share * 100)}% of their gear's damage`}><span style={{ width: `${Math.max(4, Math.min(100, Math.round(reading.share * 100)))}%` }} /></span>}
       </Card>}
       {totalTile}

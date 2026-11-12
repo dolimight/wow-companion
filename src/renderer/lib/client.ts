@@ -53,6 +53,7 @@ export const api={
  startSimulationPlan:async(input:{characterId:string;activity:Activity;planActivity?:Activity;plan?:string;scenarioId:SimulationScenarioId;targets?:number;fightSeconds?:number;threads?:number;timeoutMinutes?:number})=>(await client()).startSimulationPlan.mutate(input),
  startSimulationBenchmark:async(input:{characterId:string;activity:Activity;scenarioId:SimulationScenarioId;targets?:number;fightSeconds?:number;threads?:number;timeoutMinutes?:number})=>(await client()).startSimulationBenchmark.mutate(input),
  startSimulation:async(input:{characterId:string;activity:Activity;scenarioId:SimulationScenarioId;targets?:number;fightSeconds?:number;iterations?:number;threads?:number;timeoutMinutes?:number;comparePlan?:boolean})=>(await client()).startSimulation.mutate(input),
+ deleteSimulation:async(input:{characterId:string;jobId:string})=>(await client()).deleteSimulation.mutate(input),
  cancelSimulation:async(input:{characterId:string;jobId:string})=>(await client()).cancelSimulation.mutate(input),
  chooseSimulationExecutable:()=>native('chooseSimulationExecutable'),
  getModel:async(input:{characterId:string})=>(await client()).getModel.query(input),

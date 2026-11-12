@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { commonCopy, topRegionNames, type TopCopy, type TopCount, type TopPlayers, type TopRegion, type TopSlotGroup } from '../../shared/top-players'
+import { commonCopy, topRegionNames, type TopCopy, type TopCount, type TopPlayerItem, type TopPlayers, type TopRegion, type TopSlotGroup } from '../../shared/top-players'
+import type { GearSlot } from '../../shared/domain'
 
 const ORIGIN = 'https://raider.io'
 const MAX_BYTES = 4 * 1024 * 1024
@@ -47,7 +48,7 @@ const rosterSchema = z.object({
   loadout: z.string().max(400).nullable().optional(),
 })
 const runsSchema = z.object({ rankings: z.array(z.object({ score: z.number().optional(), run: z.object({ mythic_level: z.number().int(), dungeon: z.object({ name: z.string() }), roster: z.array(z.unknown()).default([]) }) })).default([]) })
-type Entrant = { name: string; realm: string; realmSlug: string; region: string; path: string; className: string; specName: string; score: number | null; keyLevel: number | null; dungeon: string | null; loadout: string | null }
+type Entrant = { name: string; realm: string; realmSlug: string; region: string; path: string; className: string; specName: string; score: number | null; keyLevel: number | null; dungeon: string | null; loadout: string | null; gear?: TopPlayerItem[] }
 const slug = (value: string) => value.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const rankedSchema = z.object({ rankings: z.object({ rankedCharacters: z.array(z.object({ score: z.number().optional(), runs: z.array(z.object({ mythicLevel: z.number().int() })).default([]), character: z.object({ name: z.string(), path: z.string(), class: z.object({ name: z.string() }), spec: z.object({ id: z.number().int(), name: z.string() }), realm: z.object({ name: z.string(), slug: z.string() }), region: z.object({ slug: z.string() }), talentLoadoutText: z.string().max(400).nullable().optional() }) })).default([]) }) })
 
@@ -64,8 +65,10 @@ async function rankedForSpec(season: SeasonInfo, input: { specId: number; specNa
   } catch (error) { if (signal?.aborted) throw error; return null }
 }
 
-const gearItemSchema = z.object({ item_id: z.number().int().positive(), name: z.string().optional(), item_level: z.number().optional(), bonuses: z.array(z.number().int().nonnegative()).max(128).optional(), gems: z.array(z.number().int()).optional(), gems_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional(), enchants_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional() }).passthrough()
-const gearSchema = z.object({ gear: z.object({ item_level_equipped: z.number().optional(), items: z.record(z.string(), z.unknown()).default({}) }).nullable().optional() })
+const gearItemSchema = z.object({ item_id: z.number().int().positive(), name: z.string().optional(), item_level: z.number().optional(), bonuses: z.array(z.number().int().nonnegative()).max(128).optional(), enchant: z.number().int().nonnegative().optional(), gems: z.array(z.number().int()).optional(), gems_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional(), enchants_detail: z.array(z.object({ id: z.number().int(), name: z.string().optional() })).optional() }).passthrough()
+const gearSchema = z.object({ gear: z.object({ item_level_equipped: z.number().optional(), items: z.record(z.string(), z.unknown()).default({}) }).nullable().optional(), talentLoadout: z.object({ loadout_text: z.string().max(400).nullable().optional() }).nullable().optional() })
+/** Raider.IO's slot keys as the app's gear slots */
+const playerSlots: Record<string, GearSlot> = { head: 'head', neck: 'neck', shoulder: 'shoulder', back: 'back', chest: 'chest', wrist: 'wrist', hands: 'hands', waist: 'waist', legs: 'legs', feet: 'feet', finger1: 'finger1', finger2: 'finger2', trinket1: 'trinket1', trinket2: 'trinket2', mainhand: 'mainHand', offhand: 'offHand' }
 const groups: Record<string, TopSlotGroup> = { head: 'head', neck: 'neck', shoulder: 'shoulder', back: 'back', chest: 'chest', wrist: 'wrist', hands: 'hands', waist: 'waist', legs: 'legs', feet: 'feet', finger1: 'rings', finger2: 'rings', trinket1: 'trinkets', trinket2: 'trinkets', mainhand: 'mainHand', offhand: 'offHand' }
 /** Strips WoW colour and quality markup such as |cnIQ4:…|r and |cffa335ee…|r */
 const plain = (name: string) => name.replace(/\|cn[^:|]*:|\|c[0-9a-fA-F]{8}|\|r|\|A:[^|]*\|a|\|T[^|]*\|t/g, '').trim()
@@ -147,11 +150,20 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
   let gearPlayers = 0
   const itemLevels: number[] = []
   for (let index = 0; index < sample.length; index += 4) {
-    const batch = await Promise.all(sample.slice(index, index + 4).map(player => getJson('/api/v1/characters/profile', { region: player.region, realm: player.realmSlug, name: player.name, fields: 'gear' }, signal).catch(() => null)))
-    for (const raw of batch) {
+    const players = sample.slice(index, index + 4)
+    const batch = await Promise.all(players.map(player => getJson('/api/v1/characters/profile', { region: player.region, realm: player.realmSlug, name: player.name, fields: 'gear,talents' }, signal).catch(() => null)))
+    for (const [position, raw] of batch.entries()) {
       const gear = gearSchema.safeParse(raw)
       if (!gear.success || !gear.data.gear) continue
       gearPlayers += 1
+      // Their whole setup, item by item, so each player can be simulated as they play
+      const player = players[position]!
+      player.gear = Object.entries(gear.data.gear.items).flatMap(([key, value]) => {
+        const slot = playerSlots[key], item = gearItemSchema.safeParse(value)
+        if (!slot || !item.success || !item.data.item_level) return []
+        return [{ slot, itemId: item.data.item_id, name: item.data.name ? plain(item.data.name) : `Item ${item.data.item_id}`, itemLevel: Math.round(item.data.item_level), bonusIds: item.data.bonuses ?? [], enchantId: item.data.enchant ?? 0, gemIds: (item.data.gems ?? []).filter(id => id > 0) }]
+      })
+      player.loadout ??= gear.data.talentLoadout?.loadout_text ?? null
       if (gear.data.gear.item_level_equipped) itemLevels.push(gear.data.gear.item_level_equipped)
       // A ring or trinket is counted once per player even when both slots hold the same item
       const seen = new Set<string>()
@@ -174,7 +186,7 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
     season, specId: input.specId, specName: input.specName, className: input.className, region: input.region, observedAt: new Date().toISOString(), runsScanned,
     source: ranked ? 'Raider.IO spec rankings' : 'Raider.IO top runs',
     population: ranked ? `Top ${players.length} ${input.specName} ${input.className} players by Mythic+ score in ${season.name}, ${topRegionNames[input.region]}` : `${players.length} ${input.specName} ${input.className} players found in the top ${runsScanned} Mythic+ runs of ${season.name}, ${topRegionNames[input.region]}`,
-    players: players.map(player => ({ name: player.name, realm: player.realm, region: player.region, score: player.score, keyLevel: player.keyLevel, dungeon: player.dungeon, url: `${ORIGIN}${player.path}`, loadout: player.loadout })),
+    players: players.map(player => ({ name: player.name, realm: player.realm, region: player.region, score: player.score, keyLevel: player.keyLevel, dungeon: player.dungeon, url: `${ORIGIN}${player.path}`, loadout: player.loadout, ...(player.gear ? { gear: player.gear } : {}) })),
     builds: [...builds.values()].sort((a, b) => b.count - a.count).slice(0, 5),
     gearPlayers, averageItemLevel: itemLevels.length ? Math.round(itemLevels.reduce((sum, value) => sum + value, 0) / itemLevels.length * 10) / 10 : null,
     slots: Object.fromEntries([...slotItems.entries()].map(([group, bucket]) => [group, { items: top(bucket.items, 4), enchants: top(bucket.enchants, 3), gems: top(bucket.gems, 4) }])),

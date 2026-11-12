@@ -1,11 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, Equal, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Equal, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
 import type { Character, GearItem, GearSlot } from '../../../shared/domain'
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
-import { topRegionNames, topSlotGroups, type TopCount, type TopPlayers, type TopRegion } from '../../../shared/top-players'
+import { topRegionNames, topSlotGroups, type TopPlayers, type TopRegion } from '../../../shared/top-players'
+import { Roster } from './Roster'
 import { embellishmentOf } from '../../../shared/item-enhancements'
 import { itemLinkVariant } from '../../../shared/item-link'
 import { talentDifferences, type TalentChoice } from '../../../shared/sim-compare'
@@ -16,7 +17,7 @@ import { GearSlotIcon } from '../../components/GearSlotIcon'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
 import { ItemIcon, useGameData } from '../items/items'
 import { Card } from '../../components/ui/card'
-import { Badge } from '../../components/ui/primitives'
+import { Badge, Button } from '../../components/ui/primitives'
 import { ItemHoverCard } from '../items/ItemHoverCard'
 import { talentDescription } from '../plan/PlanTalents'
 import './sim-compare.css'
@@ -43,7 +44,7 @@ const regionOf = (population: string): TopRegion => (Object.entries(topRegionNam
 type Row = {
   slot: GearSlot
   mine: Variant | undefined
-  top: { id: number; name: string; level: number | null; share: TopCount | undefined; enchant: TopCount | undefined; gems: number[]; embellishment: string | null } | null
+  top: { id: number; name: string; level: number | null; share: string | null; enchant: string | null; gems: number[]; embellishment: string | null } | null
   /** Who wins the slot: measured from each item simulated alone when the run has them, else read from item level */
   verdict: { winner: 'mine' | 'theirs' | 'even' | null; text: string; detail: string | null; measured: boolean }
   embellishment: string | null
@@ -62,8 +63,17 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const status = useGameData()
   const ready = status.data?.state === 'ready'
   const specId = character.specId
-  const population = plan?.top?.population ?? benchmark?.population ?? ''
-  const cap = plan?.top?.cap ?? benchmark?.cap ?? null
+  const roster = plan?.roster ?? null
+  const population = roster?.population ?? plan?.top?.population ?? benchmark?.population ?? ''
+  const cap = roster ? roster.cap : plan?.top?.cap ?? benchmark?.cap ?? null
+  const baselineValue = result.values[0]
+  type Value = Result['values'][number]
+  // Newer plan runs hold each top player's whole setup: rank them with the plan, and compare against the strongest
+  // unless you pick someone else
+  const ranked = (roster?.players ?? []).flatMap(player => { const value = result.values[player.index + 1]; return value ? [{ ...player, value }] : [] }).sort((a, b) => b.value.mean - a.value.mean)
+  const [chosen, setChosen] = useState<string | null>(null)
+  const opponent = ranked.find(player => player.name === chosen) ?? ranked[0] ?? null
+  const valueAt = (index: number | null): Value | undefined => index === null ? baselineValue : result.values[index + 1]
   const top = useQuery({ queryKey: ['top-players', specId, regionOf(population)], queryFn: () => api.topPlayers({ specId: specId!, specName: character.specName, className: character.className, region: regionOf(population) }), enabled: !!specId, staleTime: 30 * 60_000, retry: false })
   const tree = useQuery({ queryKey: ['talent-tree', specId], queryFn: () => api.talentTree(specId!), enabled: !!specId && !!status.data?.install, staleTime: Infinity })
   const rules = useQuery({ queryKey: ['embellishment-rules'], queryFn: () => api.embellishmentRules(), staleTime: Infinity })
@@ -72,7 +82,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const baseline = new Map(request.baseline.items.map(item => [item.slot, item]))
   const planned = plan ? request.candidates[plan.whole ?? 0] ?? [] : []
   const mine = new Map([...baseline, ...planned.map(item => [item.slot, item] as const)])
-  const topIndex = plan?.top?.index ?? (benchmark ? benchmark.kinds.indexOf('gear') : -1)
+  const topIndex = opponent ? opponent.index : plan?.top?.index ?? (benchmark ? benchmark.kinds.indexOf('gear') : -1)
   const topRun = topIndex >= 0 ? new Map((request.candidates[topIndex] ?? []).map(item => [item.slot, item])) : new Map<GearSlot, Variant>()
   // Rings and trinkets are a pair: when both sides wear the same item in opposite slots, line them up so it reads as a match
   const theirSlot = new Map<GearSlot, GearSlot>()
@@ -90,7 +100,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
   }, [job.id, top.data]) // eslint-disable-line react-hooks/exhaustive-deps
   const items = useQuery({ queryKey: ['items', ids], queryFn: () => api.getItems(ids), enabled: ready && ids.length > 0 })
   const itemMap = new Map((items.data ?? []).map(item => [item.id, item]))
-  const enchantIds = [...new Set([...mine.values()].flatMap(item => { const id = enchantIdOf(item); return id ? [id] : [] }))].sort((a, b) => a - b)
+  const enchantIds = [...new Set([...mine.values(), ...(opponent ? topRun.values() : [])].flatMap(item => { const id = enchantIdOf(item); return id ? [id] : [] }))].sort((a, b) => a - b)
   const enchantNames = useQuery({ queryKey: ['enchant-names', enchantIds], queryFn: () => api.enchantNames(enchantIds), enabled: ready && enchantIds.length > 0 })
   const enchantOptions = useQueries({ queries: [...ENCHANTABLE].map(slot => ({ queryKey: ['enhancements', 'enchant', slot], queryFn: () => api.enhancements({ kind: 'enchant', slot }), enabled: ready, staleTime: Infinity })) })
   const enchantIcon = (name: string | null | undefined) => {
@@ -99,23 +109,23 @@ export function SimCompare({ character, job, result }: { character: Character; j
     return null
   }
 
-  const baselineValue = result.values[0]
-  type Value = Result['values'][number]
   const singles = new Map<string, { difference: number; verdict: string; value: Value }>()
   const topSingleIndex = new Map((plan?.top?.singles ?? []).map(entry => [entry.index, entry.slot]))
-  const topSingles = new Map<string, Value>()
+  // A top item identical to the planned one, or to what you wear, shares that measurement, so the same value can be both
+  const topSingles = new Map<string, Value>(opponent ? opponent.singles.flatMap(entry => { const value = valueAt(entry.index); return value ? [[entry.slot, value] as const] : [] }) : [])
   if (plan && baselineValue) result.values.slice(1).forEach((value, index) => {
     if (index === plan.whole || index === plan.top?.index) return
     const topSlot = topSingleIndex.get(index)
-    // A top item identical to the planned one shares its measurement, so the same value can be both
-    if (topSlot) topSingles.set(topSlot, value)
+    if (topSlot && !opponent) topSingles.set(topSlot, value)
     const label = request.candidateLabels[index] ?? ''
     const slot = (Object.entries(gearSlotLabels) as Array<[GearSlot, string]>).find(([, name]) => label.startsWith(`${name}:`))?.[0]
     if (slot) { const comparison = compareSimulationValues(baselineValue, value); singles.set(slot, { difference: comparison.difference, verdict: comparison.verdict, value }) }
   })
 
   const data: TopPlayers | undefined = top.data
-  const measured = !!plan?.top?.singles?.length && !!baselineValue
+  const myEmbellishmentOf = (item: Variant | undefined) => item ? (item.embellishment?.name ?? embellishmentOf(rules.data ?? null, item.bonusIds)?.name ?? null) : null
+  const whole = plan ? valueAt(plan.whole ?? 0) : undefined
+  const measured = (!!opponent || !!plan?.top?.singles?.length) && !!baselineValue
   // Each side alone against the same reference: your planned item (or what you wear) and their item (or yours, when they match you)
   function verdictFor(slot: GearSlot, item: Variant | undefined, topRow: Row['top'], gap: number): Row['verdict'] {
     const sameItem = !!item?.itemId && topRow?.id === item.itemId
@@ -142,37 +152,46 @@ export function SimCompare({ character, job, result }: { character: Character; j
     const run = topRun.get(theirs(slot)) ?? (theirSlot.has(slot) ? mine.get(theirs(slot)) : undefined)
     if (!item && !run) return []
     const topItem = run ?? item
-    const share = topItem ? tally?.items.find(entry => entry.id === topItem.itemId) : undefined
-    const topEmbellishment = share?.copy?.bonusIds ? embellishmentOf(rules.data ?? null, share.copy.bonusIds)?.name ?? null : null
-    const myEmbellishment = item ? (item.embellishment?.name ?? embellishmentOf(rules.data ?? null, item.bonusIds)?.name ?? null) : null
+    const share = topItem && !opponent ? tally?.items.find(entry => entry.id === topItem.itemId) : undefined
+    // One player's item carries its own enchant, gems, and embellishment; the older tally reads the slot's most common
+    const topEmbellishment = opponent ? myEmbellishmentOf(topItem) : share?.copy?.bonusIds ? embellishmentOf(rules.data ?? null, share.copy.bonusIds)?.name ?? null : null
+    const theirEnchantId = opponent ? enchantIdOf(topItem) : null
+    const popular = tally?.enchants[0] && data && tally.enchants[0].count / Math.max(1, data.gearPlayers) >= 0.3 ? tally.enchants[0].name : null
+    const theirEnchant = opponent ? (theirEnchantId ? enchantNames.data?.[theirEnchantId] ?? `Enchant #${theirEnchantId}` : null) : popular
+    const theirGems = opponent ? gemIdsOf(topItem) : share?.gems ?? (tally?.gems[0] ? [tally.gems[0].id] : [])
+    const myEmbellishment = myEmbellishmentOf(item)
     const enchantId = enchantIdOf(item)
     // The plan's own name (such as an armor kit) reads better than the enchant's internal one
     const named = item?.enchant && !/^Enchant #\d+$/.test(item.enchant) ? item.enchant : null
     const enchant = named ?? (enchantId ? enchantNames.data?.[enchantId] ?? item?.enchant ?? `Enchant #${enchantId}` : item?.enchant ?? null)
-    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share, enchant: tally?.enchants[0], gems: share?.gems ?? (tally?.gems[0] ? [tally.gems[0].id] : []), embellishment: topEmbellishment } : null
+    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share: share && data ? `${share.count} of ${data.gearPlayers}` : null, enchant: theirEnchant, gems: theirGems, embellishment: topEmbellishment } : null
     const notes: Row['notes'] = []
     const gap = topRow?.level != null && item?.itemLevel != null ? Math.round(topRow.level - item.itemLevel) : 0
     if (item?.itemId && topRow && topRow.id !== item.itemId) notes.push({ text: 'Different item', icon: <Swords size={12} /> })
     // Without measured results the verdict already states the level gap
     if (measured && gap > 0) notes.push({ text: `They're ${gap} item levels higher`, tone: 'down', icon: <ArrowDown size={12} /> })
     else if (measured && gap < 0) notes.push({ text: `You're ${-gap} item levels higher`, tone: 'up', icon: <ArrowUp size={12} /> })
-    if (ENCHANTABLE.has(slot) && topRow?.enchant && data && topRow.enchant.count / Math.max(1, data.gearPlayers) >= 0.3) {
+    if (ENCHANTABLE.has(slot) && topRow?.enchant) {
       // An import that couldn't read enchants says so, which is not the same as having none
       if (!enchant) notes.push(item?.enchantCoverage === 'complete' ? { text: 'No enchant', tone: 'down', icon: <WandSparkles size={12} /> } : { text: 'Enchant unknown', icon: <WandSparkles size={12} /> })
-      else if (!/^Enchant #\d+$/.test(enchant) && !sameEnchant(enchant, topRow.enchant.name)) notes.push({ text: 'Other enchant', icon: <WandSparkles size={12} /> })
+      else if (opponent ? enchantId !== theirEnchantId : !/^Enchant #\d+$/.test(enchant) && !sameEnchant(enchant, topRow.enchant)) notes.push({ text: 'Other enchant', icon: <WandSparkles size={12} /> })
     }
     const myGems = gemIdsOf(item)
     // Their item's own gem count; older top-player results only know the slot's most used gem
-    const theirGems = share?.gems ? share.gems.length : 0
-    const fewer = theirGems - myGems.length
-    if (fewer > 0) notes.push(item?.gemsCoverage === 'complete' || item?.itemLink ? { text: myGems.length ? `${fewer} fewer ${fewer === 1 ? 'gem' : 'gems'}` : theirGems === 1 ? 'No gem' : `No gems · they have ${theirGems}`, tone: 'down', icon: <Gem size={12} /> } : { text: 'Gems unknown', icon: <Gem size={12} /> })
+    const theirCount = opponent || share?.gems ? theirGems.length : 0
+    const fewer = theirCount - myGems.length
+    if (fewer > 0) notes.push(item?.gemsCoverage === 'complete' || item?.itemLink ? { text: myGems.length ? `${fewer} fewer ${fewer === 1 ? 'gem' : 'gems'}` : theirCount === 1 ? 'No gem' : `No gems · they have ${theirCount}`, tone: 'down', icon: <Gem size={12} /> } : { text: 'Gems unknown', icon: <Gem size={12} /> })
     if (topEmbellishment && topEmbellishment !== myEmbellishment) notes.push({ text: myEmbellishment ? 'Other embellishment' : 'They embellish it', tone: myEmbellishment ? undefined : 'down', icon: <Sparkles size={12} /> })
-    else if (myEmbellishment && !topEmbellishment && data) notes.push({ text: 'Only you embellish it', icon: <Sparkles size={12} /> })
+    else if (myEmbellishment && !topEmbellishment && (data || opponent)) notes.push({ text: 'Only you embellish it', icon: <Sparkles size={12} /> })
     return [{ slot, mine: item, top: topRow, embellishment: myEmbellishment, enchant, gain: singles.get(slot) ?? null, notes, verdict: verdictFor(slot, item, topRow, gap) }]
   })
 
-  const talents = tree.data && data?.builds[0] ? talentDifferences(tree.data, character.talents?.loadout ?? null, data.builds[0].loadout) : null
-  const reasons = summarize(rows, talents, data?.builds[0]?.count ?? null, data?.gearPlayers ?? null)
+  // The plan's own build when it has one, against the build the compared player (or most top players) runs
+  const myLoadout = plan?.talents ?? character.talents?.loadout ?? null
+  const theirLoadout = opponent ? opponent.loadout : data?.builds[0]?.loadout ?? null
+  const talents = tree.data && theirLoadout ? talentDifferences(tree.data, myLoadout, theirLoadout) : null
+  const them = opponent ? opponent.name : 'Top players'
+  const reasons = summarize(rows, talents, opponent ? null : data?.builds[0]?.count ?? null, opponent ? 1 : data?.gearPlayers ?? null, opponent?.name ?? null)
   const subject = plan ? 'Your plan' : 'Your gear'
   const [show, setShow] = useState<'all' | 'theirs' | 'mine'>('all')
   const shown = rows.filter(row => show === 'all' || row.verdict.winner === show)
@@ -180,6 +199,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
 
   return (
     <section className="sim-compare" aria-label={`${subject} beside top players`}>
+      {ranked.length > 0 && whole && <Roster players={ranked} plan={whole} subject={subject} chosen={opponent?.name ?? null} onChoose={setChosen} />}
       <header className="sim-compare-head">
         <h4>Why {subject.toLowerCase()} {reasons.verdict}</h4>
         <Card size="sm" className="sim-reasons-card">
@@ -189,6 +209,16 @@ export function SimCompare({ character, job, result }: { character: Character; j
         </Card>
       </header>
       <div className="sim-compare-filter">
+        {opponent && ranked.length > 1 && (() => {
+          // Step through the players in rank order, wrapping at either end
+          const at = ranked.findIndex(player => player.name === opponent.name)
+          const step = (by: number) => setChosen(ranked[(at + by + ranked.length) % ranked.length]!.name)
+          return <div className="sim-compare-cycle" aria-label="Which top player to compare with">
+            <Button variant="quiet" onClick={() => step(-1)} aria-label="Previous player"><ChevronLeft size={15} /></Button>
+            <span><strong>{opponent.name}</strong><small className="muted">#{at + 1} of {ranked.length} · {Math.round(opponent.value.mean).toLocaleString()} DPS</small></span>
+            <Button variant="quiet" onClick={() => step(1)} aria-label="Next player"><ChevronRight size={15} /></Button>
+          </div>
+        })()}
         <div className="segments" aria-label="Which slots to show">
           <button aria-pressed={show === 'all'} onClick={() => setShow('all')}>All slots</button>
           <button aria-pressed={show === 'theirs'} onClick={() => setShow('theirs')}>Theirs better · {wins.theirs}</button>
@@ -198,7 +228,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
       </div>
       <Card size="sm" className="sim-compare-grid" role="table" aria-label="Slot by slot">
         <div className="sim-compare-row sim-compare-labels" role="row">
-          <span role="columnheader">Slot</span><span role="columnheader">{subject}</span><span role="columnheader">Top players</span><span role="columnheader">Difference</span>
+          <span role="columnheader">Slot</span><span role="columnheader">{subject}</span><span role="columnheader">{them}</span><span role="columnheader">Difference</span>
         </div>
         {!shown.length && <p className="muted small sim-compare-empty">No slots here</p>}
         {shown.map(row => (
@@ -210,8 +240,8 @@ export function SimCompare({ character, job, result }: { character: Character; j
                 enchant={row.enchant} enchantArt={enchantIcon(row.enchant)} gems={gemIdsOf(row.mine)} embellishment={row.embellishment} /> : <span className="muted">Empty</span>}
             </span>
             <span role="cell">
-              {row.top ? <Side itemId={row.top.id} name={row.top.name} level={row.top.level} items={itemMap} share={row.top.share && data ? `${row.top.share.count} of ${data.gearPlayers}` : null}
-                enchant={row.top.enchant?.name ?? null} enchantArt={enchantIcon(row.top.enchant?.name)} gems={row.top.gems} embellishment={row.top.embellishment} /> : <span className="muted">Unknown</span>}
+              {row.top ? <Side itemId={row.top.id} name={row.top.name} level={row.top.level} items={itemMap} share={row.top.share}
+                enchant={row.top.enchant} enchantArt={enchantIcon(row.top.enchant)} gems={row.top.gems} embellishment={row.top.embellishment} /> : <span className="muted">Unknown</span>}
             </span>
             <span role="cell" className="sim-notes">
               <span className="sim-verdict" data-winner={row.verdict.winner ?? undefined}><strong>{row.verdict.text}</strong>{row.verdict.detail && <small className="muted">{row.verdict.detail}</small>}</span>
@@ -221,9 +251,11 @@ export function SimCompare({ character, job, result }: { character: Character; j
         ))}
       </Card>
       {top.isPending && <LatticeLoader label="Reading what top players wear" pattern="ripple" showTimer={false} />}
-      {tree.data && talents && <TalentCompare tree={tree.data} diff={talents} players={data?.builds[0]?.count ?? null} total={data?.players.length ?? null} />}
-      {!character.talents?.loadout && <p className="muted small">Your talents aren't known yet, so they can't be compared · Log in with the addon or sync this character</p>}
-      <p className="muted small">{population}{cap ? ` · Their items are capped at item level ${cap}, the top regular upgrade rank` : plan?.top?.beyondCap ? ' · Your plan reaches past the top regular upgrade rank, so their items run at the highest level any of them wears' : ''}{data ? ` · Their enchant is the most used in the slot; their gems and embellishment are what most of them put in that item` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>
+      {tree.data && talents && <TalentCompare tree={tree.data} diff={talents} title={opponent ? `${opponent.name}'s build` : null} players={opponent ? null : data?.builds[0]?.count ?? null} total={opponent ? null : data?.players.length ?? null} />}
+      {opponent && !opponent.loadout && <p className="muted small">{opponent.name}'s talents weren't published, so their run used yours</p>}
+      {!myLoadout && <p className="muted small">Your talents aren't known yet, so they can't be compared · Log in with the addon or sync this character</p>}
+      {roster && <p className="muted small">{population} · Each player ran with their own items, enchants, gems, and talents on your character{cap ? ` · Their items are capped at item level ${cap}, the top regular upgrade rank` : roster.beyondCap ? ' · Your plan reaches past the top regular upgrade rank, so their items ran at the levels they wear' : ''}</p>}
+      {!roster && <p className="muted small">{population}{cap ? ` · Their items are capped at item level ${cap}, the top regular upgrade rank` : plan?.top?.beyondCap ? ' · Your plan reaches past the top regular upgrade rank, so their items run at the highest level any of them wears' : ''}{data ? ` · Their enchant is the most used in the slot; their gems and embellishment are what most of them put in that item` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>}
     </section>
   )
 }
@@ -252,13 +284,13 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
   )
 }
 
-function TalentCompare({ tree, diff, players, total }: { tree: TalentTree; diff: NonNullable<ReturnType<typeof talentDifferences>>; players: number | null; total: number | null }) {
+function TalentCompare({ tree, diff, title, players, total }: { tree: TalentTree; diff: NonNullable<ReturnType<typeof talentDifferences>>; title: string | null; players: number | null; total: number | null }) {
   const heroIcon = (name: string | null) => tree.subTrees.find(entry => entry.name === name)?.icon ?? null
   const sections: Array<[TalentChoice['section'], string]> = [['class', 'Class'], ['spec', 'Specialization'], ['hero', 'Hero']]
   const changes = diff.onlyMine.length + diff.onlyTheirs.length
   return (
     <div className="sim-talents">
-      <h4><Layers size={15} aria-hidden="true" />Talents{players != null && total != null ? ` · their most popular build, used by ${players} of ${total}` : ''}</h4>
+      <h4><Layers size={15} aria-hidden="true" />Talents{title ? ` · against ${title}` : players != null && total != null ? ` · their most popular build, used by ${players} of ${total}` : ''}</h4>
       <div className="sim-hero-row">
         <HeroBadge label="You" name={diff.hero.mine} icon={heroIcon(diff.hero.mine)} />
         <HeroBadge label="Them" name={diff.hero.theirs} icon={heroIcon(diff.hero.theirs)} />
@@ -302,7 +334,7 @@ function TalentChip({ tree, entry }: { tree: TalentTree; entry: TalentChoice }) 
 }
 
 type Reason = { text: string; tone?: 'up' | 'down'; icon: ReactNode }
-function summarize(rows: Row[], talents: ReturnType<typeof talentDifferences>, buildPlayers: number | null, gearPlayers: number | null) {
+function summarize(rows: Row[], talents: ReturnType<typeof talentDifferences>, buildPlayers: number | null, gearPlayers: number | null, person: string | null) {
   const list: Reason[] = []
   const mineWins = rows.filter(row => row.verdict.winner === 'mine').length, theirWins = rows.filter(row => row.verdict.winner === 'theirs').length
   const measuredRows = rows.some(row => row.verdict.measured)
@@ -326,9 +358,10 @@ function summarize(rows: Row[], talents: ReturnType<typeof talentDifferences>, b
   if (talents) {
     const changes = talents.onlyMine.length + talents.onlyTheirs.length
     const hero = talents.hero.mine !== talents.hero.theirs ? ` · you take ${talents.hero.mine ?? 'no hero tree'} and they take ${talents.hero.theirs ?? 'none'}` : ''
-    list.push({ text: changes || hero ? `${changes} talent choices differ from the build ${buildPlayers ?? 'most'} of them use${hero}` : 'Your talents match their most popular build', tone: changes || hero ? undefined : 'up', icon: <Layers size={14} /> })
+    list.push({ text: changes || hero ? `${changes} talent choices differ from ${person ? `${person}'s build` : `the build ${buildPlayers ?? 'most'} of them use`}${hero}` : person ? `Your talents match ${person}'s` : 'Your talents match their most popular build', tone: changes || hero ? undefined : 'up', icon: <Layers size={14} /> })
   }
   if (!list.length) list.push({ text: 'Your setup matches theirs slot for slot', tone: 'up', icon: <Equal size={14} /> })
-  const verdict = behind > ahead ? 'trails top players' : ahead > behind ? 'holds up against top players' : 'compares with top players'
+  const who = person ?? 'top players'
+  const verdict = behind > ahead ? `trails ${who}` : ahead > behind ? `holds up against ${who}` : `compares with ${who}`
   return { list, verdict }
 }

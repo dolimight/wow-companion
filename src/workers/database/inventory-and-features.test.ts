@@ -41,7 +41,12 @@ describe('inventory and feature persistence',()=>{
     expect(()=>db.saveFeatureState(a.id,'tonight',{bad:undefined})).toThrow('JSON')
     expect(()=>db.saveFeatureState(a.id,'tonight',{bad:NaN})).toThrow('JSON')
     expect(()=>db.saveFeatureState(a.id,'tonight','x'.repeat(1024*1024))).toThrow('1 MiB')
+    expect(()=>db.saveFeatureState(a.id,'simulation','x'.repeat(16*1024*1024))).toThrow('16 MiB')
     expect(db.getRevision()).toBe(before)
+  })
+  it('lets simulation history, which holds whole roster runs, grow past 1 MiB',()=>{
+    const db=open(),a=db.addCharacter({name:'A',realm:'One',region:'us'})
+    expect(()=>db.saveFeatureState(a.id,'simulation',{blob:'x'.repeat(2*1024*1024)})).not.toThrow()
   })
   it('reads old backups and rejects orphan/duplicate feature documents atomically',()=>{
     const db=open(),a=db.addCharacter({name:'A',realm:'One',region:'us'}),backup=db.exportBackup(),before=db.getRevision()

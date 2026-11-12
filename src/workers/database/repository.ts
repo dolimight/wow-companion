@@ -22,15 +22,18 @@ function refKey(ref: ProviderRef) {
 }
 const contentPreferenceEntrySchema=z.object({characterId:z.string(),activity:z.enum(['mythicPlus','raiding','pvp']),preferences:contentPreferencesSchema})
 const featureNamespaceSchema=z.string().regex(/^[a-z][a-z0-9-]{0,59}$/)
-function featureJson(value:unknown):string {
+/** Simulation history keeps up to 20 runs, and a run that ranks every top player holds a few hundred kilobytes */
+const featureLimit=(namespace:string)=>namespace==='simulation'?16*1024*1024:1024*1024
+function featureJson(value:unknown,namespace=''):string {
   const text=JSON.stringify(value,(_key,item)=>{
     if(typeof item==='undefined'||typeof item==='function'||typeof item==='symbol'||typeof item==='bigint'||(typeof item==='number'&&!Number.isFinite(item)))throw new Error('Feature state must contain only JSON values')
     return item
   })
-  if(!text||Buffer.byteLength(text,'utf8')>1024*1024)throw new Error('Feature state must be no larger than 1 MiB')
+  const limit=featureLimit(namespace)
+  if(!text||Buffer.byteLength(text,'utf8')>limit)throw new Error(`Feature state must be no larger than ${limit/1024/1024} MiB`)
   return text
 }
-const featureStateEntrySchema=z.object({characterId:z.string(),namespace:featureNamespaceSchema,value:z.unknown().refine(value=>{try{featureJson(value);return true}catch{return false}},'Feature state must be bounded JSON')})
+const featureStateEntrySchema=z.object({characterId:z.string(),namespace:featureNamespaceSchema,value:z.unknown()}).refine(entry=>{try{featureJson(entry.value,entry.namespace);return true}catch{return false}},'Feature state must be bounded JSON')
 const backupSchema = z.object({ version: z.literal(1), exportedAt: z.string().datetime(), characters: z.array(characterSchema).max(1000), drafts: z.array(gearDraftSchema).max(10000), outfits: z.array(outfitSchema).max(10000), settings: appSettingsSchema, contentPreferences:z.array(contentPreferenceEntrySchema).max(3000).default([]),featureStates:z.array(featureStateEntrySchema).max(10000).default([]) })
 /** Unavailable locations never replace their last real observation or acquire a newer timestamp */
 export function mergeInventoryObservations(previous:InventoryObservation[]|undefined,incoming:InventoryObservation[]|undefined):InventoryObservation[]|undefined {
@@ -305,7 +308,7 @@ export class DatabaseRepository {
     return row?JSON.parse(row.payload):null
   }
   saveFeatureState(characterId:string,namespace:string,value:unknown):unknown {
-    this.requireCharacter(characterId);featureNamespaceSchema.parse(namespace);const payload=featureJson(value)
+    this.requireCharacter(characterId);featureNamespaceSchema.parse(namespace);const payload=featureJson(value,namespace)
     this.sqlite.transaction(()=>{this.sqlite.prepare('INSERT INTO feature_states (character_id,namespace,payload) VALUES (?,?,?) ON CONFLICT(character_id,namespace) DO UPDATE SET payload = excluded.payload').run(characterId,namespace,payload);this.bump()})()
     return JSON.parse(payload)
   }
@@ -412,7 +415,7 @@ export class DatabaseRepository {
   exportBackup(): Backup { return {featureStates:(this.sqlite.prepare('SELECT character_id,namespace,payload FROM feature_states ORDER BY character_id,namespace').all() as {character_id:string;namespace:string;payload:string}[]).map(row=>({characterId:row.character_id,namespace:row.namespace,value:JSON.parse(row.payload)})),version:1,exportedAt:new Date().toISOString(),characters:this.listCharacters(true),drafts:this.db.select().from(schema.gearDraftsTable).all().map(row => gearDraftSchema.parse(JSON.parse(row.payload))),outfits:this.db.select().from(schema.outfitsTable).all().map(row => outfitSchema.parse(JSON.parse(row.payload))),settings:this.getSettings(),contentPreferences:(this.sqlite.prepare('SELECT payload FROM content_preferences ORDER BY key').all() as {payload:string}[]).map(row=>contentPreferenceEntrySchema.parse(JSON.parse(row.payload)))} }
   importBackup(input: unknown): {characters:number;revision:number} {
     const backup = validateBackup(input)
-    for(const entry of backup.featureStates)featureJson(entry.value)
+    for(const entry of backup.featureStates)featureJson(entry.value,entry.namespace)
     const ids = new Set(backup.characters.map(c => c.id)); if(ids.size !== backup.characters.length) throw new Error('Backup has duplicate character IDs')
     if(backup.characters.filter(c => c.isMain).length > 1) throw new Error('Backup has more than one main character')
     for(const entry of [...backup.drafts,...backup.outfits]) if(!ids.has(entry.characterId)) throw new Error('Backup contains an orphaned plan')
