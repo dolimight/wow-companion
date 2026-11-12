@@ -8,6 +8,7 @@ import { TonightKeys } from '../season/season'
 import { compareWithTop } from '../../../shared/top-compare'
 import type { TopPlayers } from '../../../shared/top-players'
 import './key-range.css'
+import { Card } from '../../components/ui/card'
 
 const levels = Array.from({ length: keyLevels.max - keyLevels.min + 1 }, (_, index) => keyLevels.min + index)
 const chips: Record<KeyVerdict, string> = { timed: 'In your range', reach: 'The game would hand you this key', stretch: 'One past what you earned', notyet: 'More than one past what you earned', nodata: 'No timed key to judge from' }
@@ -77,7 +78,7 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
 
   return (
     <div className="key-range">
-      <section className="surface key-question" aria-labelledby="key-question-label">
+      <Card as="section" className="key-question" aria-labelledby="key-question-label">
         <div>
           <div className="key-question-label" id="key-question-label">Is {character.name} ready for</div>
           <div className="key-stepper">
@@ -94,9 +95,9 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
             <Button disabled={refreshing} onClick={onRefresh}><RefreshCw size={15} />{refreshing ? 'Refreshing…' : 'Refresh public profile'}</Button>
           </div>
         </div>
-      </section>
+      </Card>
 
-      <section className="surface key-ladder-surface" aria-labelledby="key-ladder-title">
+      <Card as="section" className="key-ladder-surface" aria-labelledby="key-ladder-title">
         <div className="surface-heading"><h2 id="key-ladder-title">Your key range</h2><p>Select a level to check it</p></div>
         <div className="key-ladder" role="group" aria-label="Key levels">
           {levels.map(value => {
@@ -105,11 +106,11 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
           })}
         </div>
         <div className="key-legend">{(['timed', 'reach', 'stretch', 'notyet', 'nodata'] as const).map(verdict => <span key={verdict} className={`kv-${verdict}`}><i />{verdictLabels[verdict]}</span>)}</div>
-      </section>
+      </Card>
 
       <TonightKeys character={character} action={tonightLink(<>Plan tonight</>)} />
 
-      <section className="surface" aria-labelledby="key-checks-title">
+      <Card as="section" aria-labelledby="key-checks-title">
         <div className="surface-heading"><h2 id="key-checks-title">Checks for +{level}{focus ? ` ${focus.dungeon}` : ''}</h2></div>
         <div className="key-checks">
           <KeyCheck verdict={result.verdict} title="Your runs" value={best != null ? `best timed +${best}` : 'no timed key'}
@@ -139,9 +140,9 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
             <li>Gear, route, and group still decide a run; this reads your history, not a promise</li>
           </ul>
         </details>
-      </section>
+      </Card>
 
-      <section className="surface" aria-labelledby="key-dungeons-title">
+      <Card as="section" aria-labelledby="key-dungeons-title">
         <div className="surface-heading"><h2 id="key-dungeons-title">By dungeon</h2><p>Your season best per dungeon · select one to focus the checks</p></div>
         <div className="key-dungeons">
           {dungeons.map(dungeon => {
@@ -156,9 +157,9 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
             )
           })}
         </div>
-      </section>
+      </Card>
 
-      <section className="surface" aria-labelledby="key-next-title">
+      <Card as="section" aria-labelledby="key-next-title">
         <div className="surface-heading"><h2 id="key-next-title">What would move you up</h2><p>Toward +{level}</p></div>
         <div className="key-next">
           {low && low.timed && (
@@ -171,7 +172,7 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
             <div><div><h3>Review your missing enchants</h3><p>{missingEnchants.length === 1 ? 'One weapon or ring enchant is' : `${missingEnchants.length} weapon or ring enchants are`} empty in your imported gear</p></div>{gearPlanLink(<>Open gear plan</>)}</div>
           )}
         </div>
-      </section>
+      </Card>
 
       <div className="key-sources">
         {sources.map(source => <span key={source.source}>Season bests: {source.source}, {ago(source.observedAt)}</span>)}

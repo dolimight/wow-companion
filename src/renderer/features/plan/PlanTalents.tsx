@@ -15,6 +15,7 @@ import { ItemIcon } from "../items/ItemIcon";
 import { useGameData } from "../items/items";
 import "./plan-talents.css";
 import { LatticeLoader } from "../../components/motion/LatticeLoader";
+import { Card } from "../../components/ui/card";
 
 type Talents = NonNullable<GearDraft["talents"]>;
 const CELL = 34, STEP = 600, NODE = 28;
@@ -89,7 +90,7 @@ export function PlanTalents({ character, live, talents, onChange }: {
   }
 
   return (
-    <section className="surface plan-talents" aria-labelledby="plan-talents-heading">
+    <Card as="section" className="plan-talents" aria-labelledby="plan-talents-heading">
       <div className="plan-talents-heading">
         <ItemIcon icon={specIcon} size="medium" fallback={<Sparkles />} />
         <div>
@@ -129,7 +130,7 @@ export function PlanTalents({ character, live, talents, onChange }: {
                     onBuild={(next) => onChange({ loadout: encodeLoadout(tree.data!, next), source: talents?.source.endsWith("· edited") ? talents.source : `${talents?.source ?? "Built here"} · edited` })} />}
       {!ready && <p className="muted small">Talent names and icons come from your installed game</p>}
       {tree.data && <p className="muted small talent-hint">Hover a talent for details · click to learn it · right-click to remove a rank</p>}
-    </section>
+    </Card>
   );
 }
 

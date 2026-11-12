@@ -161,6 +161,7 @@ import "./navigation.css";
 import "./app-accent.css";
 import "./overview.css";
 import "./gear-polish.css";
+import { Card } from "./components/ui/card";
 
 const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, simulations: FlaskConical };
 const performanceViewIcons: Record<string, typeof Shield> = { standing: Trophy, keys: KeyRound, leaders: Crown, history: History, reports: FileText };
@@ -1071,7 +1072,7 @@ function RosterPage() {
       ) : roster.isError ? (
         <ErrorState error={roster.error} retry={() => void roster.refetch()} />
       ) : !active.length ? (
-        <div className="surface">
+        <Card >
           <EmptyState
             icon={Users}
             title="Bring your characters together"
@@ -1086,7 +1087,7 @@ function RosterPage() {
               Add character
             </Button>
           </EmptyState>
-        </div>
+        </Card>
       ) : (
         <div className="roster-layout">
           <section>
@@ -1447,7 +1448,7 @@ function OverviewPage({ character }: { character: Character }) {
   return (
     <>
       <div className="overview-layout">
-        <section className="surface character-surface">
+        <Card as="section" className="character-surface">
           <div className="surface-heading">
             <h2>Your character</h2>
             <span className="character-build" title={character.gameBuild ? `Build ${character.gameBuild}` : 'Build unknown'}><Badge>{character.gameBuild ? `Build ${character.gameBuild}` : "Build unknown"}</Badge></span>
@@ -1461,9 +1462,9 @@ function OverviewPage({ character }: { character: Character }) {
             <RefreshCw />
             {refresh.isPending ? "Refreshing…" : "Refresh public profile"}
           </Button>
-        </section>
+        </Card>
         <div className="progress-section">
-          <section className="surface overview-next-steps">
+          <Card as="section" className="overview-next-steps">
             <div className="surface-heading">
               <h2>Next steps</h2>
             </div>
@@ -1509,8 +1510,8 @@ function OverviewPage({ character }: { character: Character }) {
                 </CharacterLink>
               </div>
             </div>
-          </section>
-          <section className="surface overview-gear-gap">
+          </Card>
+          <Card as="section" className="overview-gear-gap">
             <div className="surface-heading">
               <h2>Gear gap</h2>
               <CharacterLink characterId={character.id} destination={{ section: "gear", view: "progress" }} className="button button-quiet">
@@ -1551,8 +1552,8 @@ function OverviewPage({ character }: { character: Character }) {
                 Your target is a planning goal, not a guaranteed drop or combat-performance estimate
               </p>
             )}
-          </section>
-          <section className="surface overview-standing">
+          </Card>
+          <Card as="section" className="overview-standing">
             <div className="surface-heading">
               <h2>{activityNames[activity]} standing</h2>
               <CharacterLink characterId={character.id} destination={{ section: "performance", view: "standing" }} className="button button-secondary">
@@ -1587,7 +1588,7 @@ function OverviewPage({ character }: { character: Character }) {
             <ExternalSource url={character.ratings[activity]?.sourceUrl}>
               Open source profile externally
             </ExternalSource>
-          </section>
+          </Card>
           <CharacterWeek
             character={character}
             action={
@@ -1924,7 +1925,7 @@ function GearEditor({
               </p>
             </div>
           </section>
-          <aside className="surface gear-inspector">
+          <Card as="aside" className="gear-inspector">
             <div className="gear-inspector-heading">
               <ItemIcon icon={planned?.icon} quality={planned?.quality} size="large" fallback={<GearSlotIcon slot={selected} />} />
               <div>
@@ -1969,7 +1970,7 @@ function GearEditor({
               <br />
               It does not equip items in WoW
             </p>
-          </aside>
+          </Card>
         </div>
       )}
       <ItemSearchDialog
@@ -2277,7 +2278,7 @@ function SettingsPage() {
           <section className="settings-section" aria-labelledby="appearance-heading">
             <h2 id="appearance-heading">Appearance</h2>
             <p>Choose your icon, theme, and motion preferences</p>
-            <div className="settings-section-body surface">
+            <Card className="settings-section-body">
               <div className="setting-row">
                 <div>
                   <h3>App icon</h3>
@@ -2326,12 +2327,12 @@ function SettingsPage() {
                   {settings.data?.reducedMotion ? "On" : "Off"}
                 </Toggle>
               </div>
-            </div>
+            </Card>
           </section>
           <section className="settings-section" aria-labelledby="alerts-heading">
             <h2 id="alerts-heading">Alerts</h2>
             <p>Desktop notifications about your characters, realms, and updates</p>
-            <div className="settings-section-body surface">
+            <Card className="settings-section-body">
               <div className="setting-row">
                 <div>
                   <h3>Desktop alerts</h3>
@@ -2375,12 +2376,12 @@ function SettingsPage() {
                   {settings.data?.keepInTray ?? false ? "On" : "Off"}
                 </Toggle>
               </div>
-            </div>
+            </Card>
           </section>
           <section className="settings-section" aria-labelledby="workspace-heading">
             <h2 id="workspace-heading">Workspace</h2>
             <p>Arrange the space around your characters</p>
-            <div className="settings-section-body surface">
+            <Card className="settings-section-body">
               <div className="setting-row">
                 <div>
                   <h3>Sidebar width</h3>
@@ -2400,12 +2401,12 @@ function SettingsPage() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           </section>
           <section className="settings-section" aria-labelledby="data-heading">
             <h2 id="data-heading">Local data</h2>
             <p>Your roster, plans, and imported assets stay in this workspace</p>
-            <div className="settings-section-body surface">
+            <Card className="settings-section-body">
               <div className="setting-row">
                 <div>
                   <h3>Local backup</h3>
@@ -2428,7 +2429,7 @@ function SettingsPage() {
                 Global ranking coverage, validated current item-level caps, and dynamic WoW
                 appearance assembly remain separate integrations
               </div>
-            </div>
+            </Card>
           </section>
         </>
       )}

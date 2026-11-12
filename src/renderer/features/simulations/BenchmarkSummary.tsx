@@ -1,3 +1,4 @@
+import { Card } from '../../components/ui/card'
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
 import { benchmarkLabels, benchmarkReading, type BenchmarkKind } from '../../../shared/simulation-benchmark'
@@ -24,15 +25,15 @@ export function BenchmarkSummary({ job, result }: { job: SimulationJob; result: 
   const advice = !biggest ? 'Neither the top players\' items nor their talents measurably beat yours here, so gains now come from play rather than setup'
     : biggest.kind === 'gear' ? `Most of the gap is items${levels.average !== null && levels.yours !== null ? ` · Top players average item level ${level(levels.average)} and yours is ${level(levels.yours)}` : ''}`
     : 'Most of the gap is talents · Try the popular build below before chasing items'
-  const tile = (row: (typeof rows)[number] | undefined, label: string) => row && <div className="plan-tile" data-tone={row.comparison.verdict === 'higher' ? 'up' : row.comparison.verdict === 'lower' ? 'down' : undefined}>
+  const tile = (row: (typeof rows)[number] | undefined, label: string) => row && <Card size="sm" className="plan-tile" data-tone={row.comparison.verdict === 'higher' ? 'up' : row.comparison.verdict === 'lower' ? 'down' : undefined}>
     <span>{label}</span>
     <strong>{row.comparison.verdict === 'unknown' ? 'Unknown' : row.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(row.comparison.difference)} DPS`}</strong>
     {row.comparison.verdict !== 'unknown' && row.comparison.verdict !== 'sidegrade' && <small>{percent(Math.abs(row.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} {row.comparison.difference > 0 ? 'more' : 'less'} damage than your current setup</small>}
-  </div>
+  </Card>
   // Three numbers, the same shape as a plan reading; each run's damage taken is in the results below
   return <div className="plan-summary">
     <div className="plan-tiles">
-      <div className="plan-tile"><span>Your setup against theirs</span><strong>{reading.matches ? 'Even' : `${Math.round(reading.share * 100)}%`}</strong><small>{advice}</small></div>
+      <Card size="sm" className="plan-tile"><span>Your setup against theirs</span><strong>{reading.matches ? 'Even' : `${Math.round(reading.share * 100)}%`}</strong><small>{advice}</small></Card>
       {tile(gear, "Their gear on you")}
       {tile(talents, "Their talents on you")}
     </div>

@@ -8,6 +8,7 @@ import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { syncUpdateBlockers } from '../../lib/update-safety'
 import './updates.css'
+import { Card } from '../../components/ui/card'
 
 const labels: Record<UpdateState['status'], string> = {
   disabled: 'Updates unavailable', idle: 'Ready to check', checking: 'Checking for updates…',
@@ -38,7 +39,7 @@ export function UpdateSettings() {
   return <section className="settings-section" aria-labelledby="updates-heading">
     <h2 id="updates-heading">Updates &amp; About</h2>
     <p>Stable releases for everyday use, Nightly for the latest changes</p>
-    <div className="settings-section-body surface updates-settings">
+    <Card className="settings-section-body updates-settings">
       <div className="updates-identity"><ArrowUpCircle size={21} aria-hidden="true" /><div><h3>WOW Companion</h3><p>{state ? `Version ${state.currentVersion}` : window.companion ? 'Loading installed version…' : 'Updates are available in the desktop app'}</p></div>{state && <Badge>{state.currentVersion.includes('-nightly.') ? 'Nightly build' : 'Stable build'}</Badge>}</div>
       <Field label="Update track"><AppSelect label="Update track" value={state?.channel ?? 'stable'} options={[{ value: 'stable', label: 'Stable' }, { value: 'nightly', label: 'Nightly' }]} disabled={disabled || locked || state?.status === 'ready'} onValueChange={channel => { setLater(false); void run(() => window.companion!.setUpdateChannel(channel as UpdateChannel)) }} /></Field>
       {state?.status === 'ready' && <p className="muted">Install the downloaded update before changing tracks</p>}
@@ -65,6 +66,6 @@ export function UpdateSettings() {
         <Button variant="quiet" onClick={() => void api.openExternal('https://github.com/dolimight/wow-companion/releases').catch(cause => setError(errorMessage(cause)))}><ExternalLink size={14} />Release history</Button>
       </div>
       {notes && <details className="updates-notes"><summary>What’s new{state?.availableVersion ? ` in ${state.availableVersion}` : ''}</summary><div>{notes.split('\n').map((line, index) => /^##\s/.test(line) ? <h4 key={index}>{line.replace(/^##\s+/, '')}</h4> : <p key={index}>{line.replace(/^[-*]\s+/, '• ').replace(/\*\*/g, '') || '\u00a0'}</p>)}</div>{state?.releaseUrl && <Button variant="quiet" onClick={() => void api.openExternal(state.releaseUrl!).catch(cause => setError(errorMessage(cause)))}>Read full release notes<ExternalLink size={13} /></Button>}</details>}
-    </div>
+    </Card>
   </section>
 }
