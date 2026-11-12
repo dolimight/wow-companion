@@ -185,6 +185,16 @@ describe('simulating a saved plan', () => {
     const other = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, topFixture({ specId: 251 }))
     expect(other.request.plan?.top).toBeNull()
   })
+  it('measures a top item once when the plan already puts that exact item in the slot', async () => {
+    const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3', 'companion_candidate_4'], [104_000, 102_000, 101_500, 106_000]))}));`)
+    await service.configureExecutable(process.execPath)
+    const stored = database.getCharacter(character.id)!
+    database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [{ ...stored.gear[0]!, itemId: 2000, name: 'Top helm', itemLevel: 112, itemLink: null }, { ...stored.gear[4]!, itemLevel: 115 }], updatedAt: '2026-10-29T12:00:00.000Z' })
+    const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, topFixture())
+    expect(job.request.candidateLabels).not.toContain('Top players · Head: Top helm at 112')
+    expect(job.request.plan?.top?.singles).toContainEqual({ slot: 'head', index: 1 })
+    await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
+  })
   it("runs the plan's own enchants, gems, embellishments, and talents, and picks the plan you have open", async () => {
     const lookups: unknown[] = []
     const { character, service, root, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3', 'companion_candidate_4'], [104_000, 102_000, 101_500, 101_000]))}));`, {

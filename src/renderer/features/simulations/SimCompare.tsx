@@ -107,7 +107,8 @@ export function SimCompare({ character, job, result }: { character: Character; j
   if (plan && baselineValue) result.values.slice(1).forEach((value, index) => {
     if (index === plan.whole || index === plan.top?.index) return
     const topSlot = topSingleIndex.get(index)
-    if (topSlot) { topSingles.set(topSlot, value); return }
+    // A top item identical to the planned one shares its measurement, so the same value can be both
+    if (topSlot) topSingles.set(topSlot, value)
     const label = request.candidateLabels[index] ?? ''
     const slot = (Object.entries(gearSlotLabels) as Array<[GearSlot, string]>).find(([, name]) => label.startsWith(`${name}:`))?.[0]
     if (slot) { const comparison = compareSimulationValues(baselineValue, value); singles.set(slot, { difference: comparison.difference, verdict: comparison.verdict, value }) }
@@ -120,7 +121,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
     const sameItem = !!item?.itemId && topRow?.id === item.itemId
     if (measured && baselineValue) {
       const mineValue = singles.get(slot)?.value ?? baselineValue, theirsValue = topSingles.get(theirs(slot)) ?? baselineValue
-      if (mineValue === baselineValue && theirsValue === baselineValue) return { winner: 'even', text: 'Same as theirs', detail: null, measured: true }
+      if (mineValue === theirsValue) return { winner: 'even', text: 'Same as theirs', detail: null, measured: true }
       const comparison = compareSimulationValues(theirsValue, mineValue)
       const detail = `Yours alone ${signed(mineValue.mean - baselineValue.mean)} · theirs alone ${signed(theirsValue.mean - baselineValue.mean)} DPS`
       if (comparison.verdict === 'higher') return { winner: 'mine', text: `Yours by ${Math.round(comparison.difference).toLocaleString()} DPS`, detail, measured: true }
