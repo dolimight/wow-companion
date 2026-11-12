@@ -11,6 +11,7 @@ import { runDesktopAcceptance } from './desktop-acceptance'
 import { EncryptedFileStore } from './secrets'
 import type { WindowState } from '../shared/bridge'
 import { updateNotice } from './updates/notices'
+import { alertRoute } from './alert-route'
 import { createUpdateService, type UpdatePreferences } from './updates/service'
 import { electronUpdaterAdapter } from './updates/electron'
 import { isUpdateChannel } from '../shared/updates'
@@ -68,7 +69,10 @@ async function main(){
   const showWindow=()=>{if(!window)return;if(window.isMinimized())window.restore();window.show();window.focus()}
   // Shown notices are held until dismissed, since a collected one loses its click handler
   const notices=new Set<Notification>()
-  const notify=(alert:{title:string;body:string})=>{
+  const notify=(alert:{title:string;body:string},options:{system?:boolean}={})=>{
+    const shown=window&&!window.isDestroyed()?{visible:window.isVisible(),minimized:window.isMinimized()}:null
+    // While the window is on screen the alert appears inside the app instead of as a system notification
+    if(alertRoute(shown,options)==='app'){window!.webContents.send('companion:alert',alert);return}
     const notice=new Notification({title:alert.title,body:alert.body,icon:windowIcon,silent:false})
     notices.add(notice)
     notice.on('click',()=>{notices.delete(notice);showWindow()})
@@ -148,7 +152,7 @@ async function main(){
   handle('companion:update-install',()=>updates.install())
   handle('companion:update-channel',(channel:unknown)=>{if(!isUpdateChannel(channel))throw new Error('Choose Stable or Nightly');return updates.setChannel(channel)})
   // A test notice is sent even in test profiles: the player asked for it, so only an unsupported system stops it
-  handle('companion:test-alert',()=>{if(!Notification.isSupported())throw new Error('This system doesn\'t support desktop notifications');notify({title:'WOW Companion alerts are on',body:'Click this notice to bring WOW Companion to the front'})})
+  handle('companion:test-alert',()=>{if(!Notification.isSupported())throw new Error('This system doesn\'t support desktop notifications');notify({title:'WOW Companion alerts are on',body:'Click this notice to bring WOW Companion to the front'},{system:true})})
   handle('companion:update-auto-download',(value:unknown)=>{if(typeof value!=='boolean')throw new Error('Invalid download setting');return updates.setAutoDownload(value)})
   handle('companion:update-blockers',(values:unknown)=>{if(!Array.isArray(values)||values.length>20||values.some(value=>typeof value!=='string'||value.length>160))throw new Error('Invalid pending work');updateBlockerAcknowledgedAt=Date.now();updates.setBlockers(values)})
   async function selectedFile(filters:Electron.FileFilter[],extra:Pick<Electron.OpenDialogOptions,'title'|'defaultPath'>={}){const result=await dialog.showOpenDialog(window!,{...extra,properties:['openFile'],filters});return result.canceled?null:result.filePaths[0]??null}
