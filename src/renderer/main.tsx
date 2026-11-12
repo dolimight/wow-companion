@@ -1,3 +1,5 @@
+// Must load before any schema so Zod never probes for eval under the strict CSP
+import './zod-config'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
