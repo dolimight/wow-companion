@@ -58,6 +58,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const ready = status.data?.state === 'ready'
   const specId = character.specId
   const population = plan?.top?.population ?? benchmark?.population ?? ''
+  const cap = plan?.top?.cap ?? benchmark?.cap ?? null
   const top = useQuery({ queryKey: ['top-players', specId, regionOf(population)], queryFn: () => api.topPlayers({ specId: specId!, specName: character.specName, className: character.className, region: regionOf(population) }), enabled: !!specId, staleTime: 30 * 60_000, retry: false })
   const tree = useQuery({ queryKey: ['talent-tree', specId], queryFn: () => api.talentTree(specId!), enabled: !!specId && !!status.data?.install, staleTime: Infinity })
   const rules = useQuery({ queryKey: ['embellishment-rules'], queryFn: () => api.embellishmentRules(), staleTime: Infinity })
@@ -162,7 +163,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
       {top.isPending && <LatticeLoader label="Reading what top players wear" pattern="ripple" showTimer={false} />}
       {tree.data && talents && <TalentCompare tree={tree.data} diff={talents} players={data?.builds[0]?.count ?? null} total={data?.players.length ?? null} />}
       {!character.talents?.loadout && <p className="muted small">Your talents aren't known yet, so they can't be compared · Log in with the addon or sync this character</p>}
-      <p className="muted small">{population}{data ? ` · Their enchants, gems, and embellishments are the most used in each slot` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>
+      <p className="muted small">{population}{cap ? ` · Their items are capped at item level ${cap}, the top regular upgrade rank` : ''}{data ? ` · Their enchants, gems, and embellishments are the most used in each slot` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>
     </section>
   )
 }
