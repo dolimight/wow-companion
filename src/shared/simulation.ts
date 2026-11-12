@@ -87,6 +87,26 @@ export const simulationPlanSchema = z.object({
     /** Each top-player item run on its own, so a slot can be read as your planned item against theirs */
     singles: z.array(z.object({ slot: z.string().max(20), index: z.number().int().nonnegative() })).max(16).default([]),
   }).nullable().default(null),
+  /** The plan's own talent build when it differs from yours, run with the whole plan */
+  talents: z.string().max(400).nullable().default(null),
+  /**
+   * Each sampled top player run as they play, their gear and talents on your character, so the plan can be ranked
+   * among them one by one. Replaces `top` on newer runs
+   */
+  roster: z.object({
+    population: z.string().max(400),
+    cap: z.number().nullable(),
+    beyondCap: z.boolean(),
+    players: z.array(z.object({
+      name: z.string().max(100), realm: z.string().max(100), url: z.string().max(400), score: z.number().nullable(),
+      /** Their talent build, when it was known and ran with their gear */
+      loadout: z.string().max(400).nullable(),
+      /** Index into the request candidates of their whole setup */
+      index: z.number().int().nonnegative(),
+      /** Each of their items alone; null means it is exactly what you wear now */
+      singles: z.array(z.object({ slot: z.string().max(20), index: z.number().int().nonnegative().nullable() })).max(16),
+    })).max(20),
+  }).nullable().default(null),
 })
 export type SimulationPlan = z.infer<typeof simulationPlanSchema>
 export const simulationProfileSchema = z.object({

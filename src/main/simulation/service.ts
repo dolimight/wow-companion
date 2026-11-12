@@ -1,6 +1,6 @@
 import { availableParallelism } from 'node:os'
 import path from 'node:path'
-import { mkdir, readdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import type { Character, GearItem } from '../../shared/domain'
 import type { DatabaseClient } from '../database'
@@ -11,10 +11,10 @@ import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
 import { ladderCeiling } from '../item-tracks'
-import { type PlannedItem, benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
+import { type PlannedItem, benchmarkLabels, benchmarkPlan, describedItem, gearSlotLabels, loadoutPattern, planSwaps } from '../../shared/simulation-benchmark'
 import { capTopLevels, type TopPlayers } from '../../shared/top-players'
-import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
-import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
+import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
+import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, slots as engineSlots, tankSpecs } from './profiles'
 import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
 
 type SimulationDatabase = Pick<DatabaseClient, 'call'>
@@ -152,16 +152,43 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     for (const [group, slot] of groups) slots[group] = { ...slot, enchants: slot.enchants.flatMap(enchant => { const id = byItem.get(enchant.id); return id ? [{ ...enchant, id }] : [] }) }
     return { ...top, slots }
   }
-  function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null, cap: number | null) {
-    if (!top || top.specId !== current.specId || !top.gearPlayers) return null
-    const { gear } = benchmarkPlan(current, top, cap)
-    if (!gear.length) return null
-    try { swapIn(current, gear) } catch { return null }
-    const entries = gear.map(item => ({ item, text: itemLine(item) }))
-    if (entries.some(entry => !entry.text.text || entry.text.reasons.length)) return null
-    const planned = swapIn(current, swaps)
-    const differences = benchmarkPlan({ ...current, gear: planned }, top, cap).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
-    return { entries: entries.map(entry => ({ item: entry.item, text: entry.text.text! })), differences }
+  /**
+   * Each sampled top player as they play: all their items and their talents on your character, then each of their
+   * items alone. Items several players share, or that match your plan or what you wear, are measured once. Players
+   * whose setup can't be described to the engine are left out, and the run stays inside the engine's profileset limit
+   */
+  function rosterRuns(current: Character, top: TopPlayers, sets: Array<{ label: string; entries: Array<{ item: GearItem; text: string }>; extra: string[] }>, shared: Map<string, number>, wearing: Set<string>) {
+    const players: NonNullable<NonNullable<SimulationRequest['plan']>['roster']>['players'] = []
+    const fallback = current.gear[0]
+    if (!fallback) return players
+    for (const player of top.players) {
+      if (!player.gear?.length || players.length >= 20) continue
+      const entries = player.gear.map(item => {
+        const base = current.gear.find(value => value.slot === item.slot) ?? fallback
+        const described = describedItem(base, item.slot, { itemId: item.itemId, name: item.name, itemLevel: item.itemLevel, bonusIds: item.bonusIds, enchantId: item.enchantId, gemIds: item.gemIds.length ? [...item.gemIds, 0, 0, 0, 0].slice(0, Math.max(4, item.gemIds.length)) : [0, 0, 0, 0] })
+        return { item: described, text: itemLine(described).text }
+      })
+      if (entries.some(entry => !entry.text)) continue
+      const described = entries as Array<{ item: GearItem; text: string }>
+      // Your off hand comes off beside their two-hander. Any other slot their profile lacks keeps yours, since a missing
+      // item there means Raider.IO didn't report it, not that they play without one
+      const twoHanded = player.gear.some(item => item.slot === 'mainHand') && !player.gear.some(item => item.slot === 'offHand')
+      const cleared = twoHanded && current.gear.some(item => item.slot === 'offHand') ? [`${engineSlots.offHand}=`] : []
+      const loadout = player.loadout && loadoutPattern.test(player.loadout) ? player.loadout : null
+      const fresh = described.filter(entry => !wearing.has(entry.text) && !shared.has(entry.text)).length
+      if (sets.length + 1 + fresh > PROFILESET_LIMIT) break
+      const index = sets.push({ label: `Top player · ${player.name}`, entries: described, extra: [...cleared, ...(loadout ? [`talents=${loadout}`] : [])] }) - 1
+      const singles = described.map(entry => {
+        if (wearing.has(entry.text)) return { slot: entry.item.slot, index: null }
+        const known = shared.get(entry.text)
+        if (known !== undefined) return { slot: entry.item.slot, index: known }
+        const single = sets.push({ label: `Top player item · ${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] }) - 1
+        shared.set(entry.text, single)
+        return { slot: entry.item.slot, index: single }
+      })
+      players.push({ name: player.name, realm: player.realm, url: player.url, score: player.score, loadout, index, singles })
+    }
+    return players
   }
   /** Checks shared by every job: engine, activity, role, and a complete matching baseline profile */
   async function prepare(start: { characterId: string; activity: SimulationStart['activity'] }) {
@@ -304,7 +331,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       // compared with the highest levels top players really wear; otherwise their items are capped there too
       const beyond = draft.items.some(item => item.itemLevel != null && ladderCeiling != null && item.itemLevel > ladderCeiling)
       const cap = beyond ? null : ladderCeiling
-      const topForRun = top ? capTopLevels(await withEnchantIds(top), cap) : null
+      const topForRun = top ? capTopLevels(top, cap) : null
       if (!swaps.length && !planTalents) throw new Error(skipped[0] ?? 'Your plan matches the gear and talents you already use')
       if (swaps.length) try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
@@ -316,21 +343,20 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] as string[] })),
         ...(planTalents ? [{ label: 'Plan talents', entries: [] as typeof described, extra: talentLine }] : []),
       ]
-      // Each planned item alone, by its profile line, before their sets join the list
-      const planSingle = new Map(described.map((entry, index) => [entry.text, index + (wholePlan ? 1 : 0)]))
-      const comparison = planTopComparison(prepared.current, swaps, topForRun, cap)
-      const topIndex = comparison ? sets.push({ label: benchmarkLabels.gear, entries: comparison.entries, extra: [] }) - 1 : null
-      // Each of their items alone too, measured from the same reference as each planned item alone. When their item is
-      // exactly what the plan puts in that slot, it shares the plan's measurement: running the same profile twice only
-      // measures noise, which once showed the same cloak beating itself by a thousand DPS
-      const topSingles = comparison ? comparison.entries.map(entry => ({ slot: entry.item.slot, index: planSingle.get(entry.text) ?? sets.push({ label: `Top players · ${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] }) - 1 })) : []
+      // Each planned item alone, by its profile line, so a top player's identical item shares its measurement:
+      // running the same profile twice only measures noise, which once showed the same cloak beating itself
+      const sharedSingle = new Map<string, number>(described.map((entry, index) => [entry.text, index + (wholePlan ? 1 : 0)]))
+      // What you wear now needs no run of its own; an item identical to it is measured as the reference
+      const wearing = new Set(prepared.current.gear.flatMap(item => { const text = itemLine(item).text; return text ? [text] : [] }))
+      const roster = topForRun && topForRun.specId === prepared.current.specId ? rosterRuns(prepared.current, topForRun, sets, sharedSingle, wearing) : []
       const lines = sets.flatMap((set, index) => [...set.entries.map(entry => entry.text), ...set.extra].map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
         name: draft.name, activity, whole: wholePlan ? 0 : null, skipped,
-        top: comparison && topForRun && topIndex !== null ? { index: topIndex, population: topForRun.population, players: topForRun.gearPlayers, differences: comparison.differences, cap, beyondCap: beyond, singles: topSingles } : null,
+        top: null, talents: planTalents,
+        roster: roster.length && topForRun ? { population: topForRun.population, cap, beyondCap: beyond, players: roster } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }
       const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })
@@ -372,6 +398,18 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const position = jobs.findIndex(value => value.id === jobId && value.characterId === characterId)
       if (position >= 0) { jobs.splice(position, 1); knownJobs.delete(jobId) }
       return job
+    },
+    /** Removes a finished, failed, or cancelled run and its engine files; a queued or running one must be cancelled first */
+    async deleteJob(characterId: string, jobId: string) {
+      if (!/^[0-9a-f-]{36}$/i.test(jobId)) throw new Error('The simulation job no longer exists')
+      await mutate(characterId, state => {
+        const job = state.jobs.find(value => value.id === jobId)
+        if (!job) throw new Error('The simulation job no longer exists')
+        if (job.state === 'queued' || job.state === 'running') throw new Error('Cancel this simulation before deleting it')
+        state.jobs = state.jobs.filter(value => value.id !== jobId)
+      })
+      knownJobs.delete(jobId)
+      await rm(path.join(options.artifactDir, jobId), { recursive: true, force: true }).catch(() => {})
     },
     async close() { closed = true; jobs.length = 0; active?.process.cancel(); await draining; await Promise.allSettled([...mutations.values()]) },
   }

@@ -60,8 +60,8 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
       try {
         const disk = JSON.parse(await readFile(topFile(key), 'utf8')) as TopPlayers
         const at = Date.parse(disk.observedAt)
-        // Results cached before levels or per-item gems were recorded are fetched again
-        const hasLevels = Object.values(disk.slots).every((slot) => slot?.items.every((item) => 'level' in item && 'gems' in item))
+        // Results cached before levels, per-item gems, or each player's own gear were recorded are fetched again
+        const hasLevels = Object.values(disk.slots).every((slot) => slot?.items.every((item) => 'level' in item && 'gems' in item)) && (!disk.gearPlayers || disk.players.some((player) => player.gear?.length))
         if (hasLevels && disk.specId === input.specId && disk.region === input.region && Number.isFinite(at) && Date.now() - at < TOP_TTL) { top.set(key, { value: disk, at }); return disk }
       } catch { /* No cached tally yet */ }
     }

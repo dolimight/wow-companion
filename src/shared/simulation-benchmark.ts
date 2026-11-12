@@ -24,7 +24,7 @@ export function describedItem(current: GearItem, slot: GearItem['slot'], item: P
   const raw = itemLinkVariant(current.itemLink)
   return {
     ...current, inventoryType: item.inventoryType ?? current.inventoryType, classId: item.classId ?? current.classId, subclassId: item.subclassId ?? current.subclassId,
-    slot, itemId: item.itemId, name: item.name, itemLevel: item.itemLevel === null ? null : Math.round(item.itemLevel), itemLink: null, bonusIds: [],
+    slot, itemId: item.itemId, name: item.name, itemLevel: item.itemLevel === null ? null : Math.round(item.itemLevel), itemLink: null, bonusIds: item.bonusIds ?? [],
     enchantId: item.enchantId ?? current.enchantId ?? raw.enchantId ?? 0, gemIds: item.gemIds ?? current.gemIds ?? raw.gemIds ?? [0, 0, 0, 0],
     variantCoverage: 'complete', stats: [], effects: [], appearanceId: null,
   }
@@ -64,7 +64,7 @@ export function planSwaps(character: Pick<Character, 'gear'>, planned: PlannedIt
   return { swaps, skipped }
 }
 
-const loadoutPattern = /^[A-Za-z0-9+/=]{1,400}$/
+export const loadoutPattern = /^[A-Za-z0-9+/=]{1,400}$/
 
 /**
  * Builds the top-player setup to simulate on your own character. Items are the most worn in each slot at the highest

@@ -21,6 +21,9 @@
 .sim-result:first-child { border-top: 0; padding-top: 4px; }
 .sim-result-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface2); color: var(--secondary); }
 .sim-result-text { display: grid; gap: 2px; min-width: 0; }
+.sim-result-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.sim-result-delete { color: var(--muted); }
+.sim-result-delete:hover { color: var(--red, #e5534b); }
 .sim-result-text strong { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sim-result-text small { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sim-result-failure { color: var(--amber); white-space: normal !important; }
@@ -38,7 +41,7 @@
 @media (max-width: 900px) {
   .sim-choices, .sim-settings .simulation-options { grid-template-columns: minmax(0, 1fr); }
   .sim-result { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .sim-result > .badge, .sim-result > .button { grid-column: 2 / -1; justify-self: start; }
+  .sim-result > .badge, .sim-result > .sim-result-actions { grid-column: 2 / -1; justify-self: start; }
 }
 .simulation-section .field { min-width: 0; }
 .simulation-section .muted { line-height: 1.65; }

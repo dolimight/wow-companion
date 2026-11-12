@@ -25,7 +25,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
     season: { slug: 'acceptance-season', name: 'Fictional acceptance season' },
     specId: 62, specName: 'Arcane', className: 'Mage', region: 'us', observedAt: new Date().toISOString(),
     runsScanned: 2, source: 'Fictional acceptance sample', population: 'Two fictional Arcane Mage players for desktop acceptance',
-    players: ['Acceptance leader one', 'Acceptance leader two'].map((name, index) => ({ name, realm: 'Acceptance Realm', region: 'us', score: 2500 + index * 100, keyLevel: 12, dungeon: 'Acceptance dungeon', url: `https://raider.io/characters/us/acceptance-realm/leader-${index}`, loadout: 'acceptance-fixture-loadout' })),
+    players: ['Acceptance leader one', 'Acceptance leader two'].map((name, index) => ({ name, realm: 'Acceptance Realm', region: 'us', score: 2500 + index * 100, keyLevel: 12, dungeon: 'Acceptance dungeon', url: `https://raider.io/characters/us/acceptance-realm/leader-${index}`, loadout: 'acceptance-fixture-loadout', gear: [{ slot: 'head' as const, itemId: 1002, name: 'Fictional acceptance headpiece', itemLevel: 290, bonusIds: [], enchantId: 0, gemIds: [2] }] })),
     builds: [{ loadout: 'acceptance-fixture-loadout', count: 2, players: ['Acceptance leader one', 'Acceptance leader two'] }],
     gearPlayers: 2, averageItemLevel: 290,
     slots: { head: { items: [{ id: 1002, name: 'Fictional acceptance headpiece', count: 2, level: 290, gems: [2] }], enchants: [{ id: 1, name: 'Fictional acceptance enchant', count: 1 }], gems: [{ id: 2, name: 'Fictional acceptance gem', count: 1 }] } },

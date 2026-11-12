@@ -39,6 +39,13 @@ export function commonCopy(copies: Iterable<TopCopy>): TopCopy | null {
   for (const copy of copies) if (!best || copy.count > best.count || (copy.count === best.count && copy.itemLevel > best.itemLevel)) best = copy
   return best
 }
+/** One item exactly as a sampled player wears it, enough to describe it to the engine */
+export type TopPlayerItem = { slot: GearSlot; itemId: number; name: string; itemLevel: number; bonusIds: number[]; enchantId: number; gemIds: number[] }
+export type TopPlayer = {
+  name: string; realm: string; region: string; score: number | null; keyLevel: number | null; dungeon: string | null; url: string; loadout: string | null
+  /** Their equipped items, for the players whose gear was sampled; missing in results cached before it was recorded */
+  gear?: TopPlayerItem[]
+}
 export type TopPlayers = {
   season: { slug: string; name: string }
   specId: number; specName: string; className: string; region: TopRegion
@@ -47,7 +54,7 @@ export type TopPlayers = {
   source: string
   /** Plain-language description of who was counted, shown with every number */
   population: string
-  players: Array<{ name: string; realm: string; region: string; score: number | null; keyLevel: number | null; dungeon: string | null; url: string; loadout: string | null }>
+  players: TopPlayer[]
   builds: Array<{ loadout: string; count: number; players: string[] }>
   gearPlayers: number
   averageItemLevel: number | null
@@ -69,5 +76,6 @@ export function capTopLevels(top: TopPlayers, cap: number | null): TopPlayers {
   })
   const slots: TopPlayers['slots'] = {}
   for (const [group, slot] of Object.entries(top.slots) as Array<[TopSlotGroup, NonNullable<TopPlayers['slots'][TopSlotGroup]>]>) slots[group] = { ...slot, items: slot.items.map(clamp) }
-  return { ...top, slots }
+  const players = top.players.map(player => player.gear ? { ...player, gear: player.gear.map(item => ({ ...item, itemLevel: Math.min(item.itemLevel, cap) })) } : player)
+  return { ...top, slots, players }
 }

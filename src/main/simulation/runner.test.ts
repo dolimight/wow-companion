@@ -46,7 +46,7 @@ describe('managed local simulation process', () => {
     const root = await directory()
     const bigReport = await launchScript(root, "await fs.writeFile('result.json','x'.repeat(2048));")
     await expect(runSimulationProcess({ executable: 'test', directory: path.join(root, 'report'), profile: 'fixture', request: simulationRequest(), launch: bigReport, resultLimit: 1024 }).promise).rejects.toThrow('size limit')
-    const bigLog = await launchScript(root, "process.stdout.write('x'.repeat(2*1024*1024));setInterval(()=>{},1000);")
+    const bigLog = await launchScript(root, "process.stdout.write('x'.repeat(17*1024*1024));setInterval(()=>{},1000);")
     await expect(runSimulationProcess({ executable: 'test', directory: path.join(root, 'log'), profile: 'fixture', request: simulationRequest(), launch: bigLog }).promise).rejects.toThrow('output exceeded')
   })
   it('rejects unsupported report adapters and a mismatched actor population', () => {

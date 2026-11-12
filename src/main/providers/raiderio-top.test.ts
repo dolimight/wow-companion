@@ -25,6 +25,16 @@ describe('top players gear', () => {
     // The gems socketed in this item by most players, one per socket, not the slot's most used gems overall
     expect(crown?.gems).toEqual([7])
   })
+  it("keeps each sampled player's own items and talents, so each can be simulated as they play", async () => {
+    const withTalents = { ...helm(334, [1, 3], [7, 8]), talentLoadout: { loadout_text: 'CBUILD' } }
+    const head = (withTalents.gear.items.head as Record<string, unknown>)
+    head.enchant = 7973
+    vi.stubGlobal('fetch', vi.fn(async (url: URL) => new Response(JSON.stringify(url.pathname === '/api/v1/characters/profile' && url.searchParams.get('name') === 'C' ? withTalents : respond(url)), { status: 200 })))
+    const result = await fetchTopPlayers({ specId: 250, specName: 'Blood', className: 'Death Knight', region: 'us' })
+    const c = result.players.find(entry => entry.name === 'C')
+    expect(c).toMatchObject({ loadout: 'CBUILD', gear: [{ slot: 'head', itemId: 42, name: 'Crown', itemLevel: 334, bonusIds: [1, 3], enchantId: 7973, gemIds: [7, 8] }] })
+    expect(result.players.find(entry => entry.name === 'A')?.gear?.[0]).toMatchObject({ enchantId: 0, gemIds: [7] })
+  })
   it('reports a level players actually wear, the higher on a tie, with the spread', () => {
     // Six at 344 and five at 341 averaged to 342, a level the weapon never drops at
     expect(wornLevels(new Map([[344, 6], [341, 5]]))).toEqual({ level: 344, levelRange: { min: 341, max: 344 } })

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, ClipboardList, Copy, Cpu, ExternalLink, FileCode2, FlaskConical, FolderOpen, Link2, LoaderCircle, Play, Settings2, Trophy, X } from 'lucide-react'
+import { ChevronRight, ClipboardList, Copy, Cpu, ExternalLink, FileCode2, FlaskConical, FolderOpen, Link2, LoaderCircle, Play, Settings2, Trash2, Trophy, X } from 'lucide-react'
 import { CallChip } from '../../components/motion/CallChip'
 import { activePlan } from '../../lib/plan-item'
 import { DamageHistory } from './DamageHistory'
@@ -9,6 +9,7 @@ import { compareSimulationValues, requestScenario, simulationScenarios, type Sim
 import { api } from '../../lib/client'
 import { Button, Badge, Field } from '../../components/ui/primitives'
 import { Card } from '../../components/ui/card'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog'
 import { AppSelect } from '../../components/AppSelect'
 import { errorMessage, notify } from '../../lib/notify'
 import { useUpdateBlocker } from '../../lib/update-safety'
@@ -37,6 +38,7 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
   const [notes, setNotes] = useState('')
   const [allJobs, setAllJobs] = useState(false)
   const [starting, setStarting] = useState<Kind | null>(null)
+  const [deleting, setDeleting] = useState<SimulationJob | null>(null)
   const workspace = useQuery({ queryKey: ['simulations', character.id], queryFn: () => api.simulationWorkspace({ characterId: character.id }), refetchInterval: query => query.state.data?.jobs.some(active) ? 1500 : false })
   // The plan open on the Plan tab for each activity, when it is for this specialization; otherwise the main plan
   const planIdFor = (value: Activity) => { const ref = activePlan(character, value); return ref.specId === character.specId ? ref.plan : 'main' }
@@ -120,7 +122,19 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
       <div className="simulation-heading"><h2>Results</h2>{finished.length > 0 && <span className="muted small">{finished.length} saved</span>}</div>
       {workspace.isPending ? <p role="status">Loading saved results…</p>
         : !finished.length ? <div className="simulation-empty"><FlaskConical size={25} /><p>No results yet</p><span className="muted">Each result keeps the exact gear, scenario, and engine it was run with</span></div>
-        : <ul className="sim-results">{shownJobs.map(job => <JobRow key={job.id} job={job} onOpen={onOpenJob && job.result ? () => onOpenJob(job.id) : undefined} />)}</ul>}
+        : <ul className="sim-results">{shownJobs.map(job => <JobRow key={job.id} job={job} onOpen={onOpenJob && job.result ? () => onOpenJob(job.id) : undefined} onDelete={job.state === 'queued' || job.state === 'running' ? undefined : () => setDeleting(job)} />)}</ul>}
+        <AlertDialog open={!!deleting} onOpenChange={open => { if (!open) setDeleting(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {deleting?.label ?? 'this simulation'}?</AlertDialogTitle>
+              <AlertDialogDescription>Its results and engine files are removed from this computer, and it leaves the damage history. This can't be undone</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep it</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={() => { const job = deleting; setDeleting(null); if (job) perform(() => api.deleteSimulation({ characterId: character.id, jobId: job.id }).then(() => notify('Simulation deleted'))) }}>Delete simulation</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       {finished.length > 5 && <Button variant="quiet" onClick={() => setAllJobs(value => !value)}>{allJobs ? 'Show the latest 5' : `Show all ${finished.length} results`}</Button>}
     </Card>
 
@@ -176,7 +190,7 @@ function staleLabel(reasons: string[]) {
   return 'Not current'
 }
 
-function JobRow({ job, onOpen }: { job: SimulationJob; onOpen?: () => void }) {
+function JobRow({ job, onOpen, onDelete }: { job: SimulationJob; onOpen?: () => void; onDelete?: () => void }) {
   const top = headline(job)
   const kind = kindOf(job)
   const Icon = kind === 'plan' ? ClipboardList : kind === 'top' ? Trophy : Play
@@ -187,7 +201,10 @@ function JobRow({ job, onOpen }: { job: SimulationJob; onOpen?: () => void }) {
     {top ? <span className="sim-result-value" data-tone={top.tone}><strong>{top.value}</strong><small className="muted">{top.note}</small></span>
       : <Badge tone={job.state === 'failed' ? 'amber' : 'neutral'}>{job.state === 'cancelled' ? 'Cancelled' : job.state === 'failed' ? 'Failed' : job.state}</Badge>}
     {job.result?.applicability && job.result.applicability !== 'current' && <span title={job.result.reasons.join(' · ') || undefined}><Badge tone="neutral">{staleLabel(job.result.reasons)}</Badge></span>}
-    {onOpen ? <Button variant="quiet" onClick={onOpen} aria-label={`Open details for ${job.label}`}>Details<ChevronRight size={14} /></Button> : <span />}
+    <span className="sim-result-actions">
+      {onOpen && <Button variant="quiet" onClick={onOpen} aria-label={`Open details for ${job.label}`}>Details<ChevronRight size={14} /></Button>}
+      {onDelete && <Button variant="quiet" className="sim-result-delete" onClick={onDelete} aria-label={`Delete ${job.label}`} title="Delete this simulation"><Trash2 size={14} /></Button>}
+    </span>
   </li>
 }
 

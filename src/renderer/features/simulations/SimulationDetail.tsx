@@ -83,7 +83,9 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   // The header's second number is what this run was for: your whole plan, the top players' setup, or the best option
   const plan = job.request.plan
   const wholePlan = plan ? entries.find(entry => entry.index === (plan.whole ?? 0)) ?? null : null
-  const topGear = plan?.top ? entries.find(entry => entry.index === plan.top!.index) ?? null : null
+  // The strongest top player run as they play, or on older runs the top players' most worn gear
+  const rosterIndexes = new Set((plan?.roster?.players ?? []).map(player => player.index))
+  const topGear = plan?.roster ? entries.find(entry => rosterIndexes.has(entry.index)) ?? null : plan?.top ? entries.find(entry => entry.index === plan.top!.index) ?? null : null
   // A plan run measured against top players answers one question first: is the finished plan as strong as their gear
   const versusTop = wholePlan && topGear ? compareSimulationValues(topGear.value, wholePlan.value) : null
   const headline = plan ? wholePlan : best
@@ -117,7 +119,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         {versusTop && wholePlan
           ? <div><span>Your finished plan</span><strong>{Math.round(wholePlan.value.mean).toLocaleString()}</strong><small>DPS{wholePlan.value.standardError != null ? ` · ±${Math.round(wholePlan.value.standardError * 1.96).toLocaleString()}` : ''}</small></div>
           : <div><span>Current gear</span><strong>{baseline ? Math.round(baseline.mean).toLocaleString() : '—'}</strong><small>DPS{baseline?.standardError != null ? ` · ±${Math.round(baseline.standardError * 1.96).toLocaleString()}` : ''}</small></div>}
-        {versusTop && topGear && versusTop.verdict !== 'unknown' ? <div className="sim-hero-best" data-verdict={versusTop.verdict}><span>Your plan against top players' gear</span><strong>{versusTop.verdict === 'sidegrade' ? 'Even' : `${signed(versusTop.difference)} DPS`}</strong><small>{versusTop.verdict === 'sidegrade' ? 'No measurable difference once your plan is done' : `${percent(Math.abs(versusTop.difference) / topGear.value.mean).replace(/^[+−]/, '')} ${versusTop.difference > 0 ? 'more' : 'less'} damage than their gear`}</small></div>
+        {versusTop && topGear && versusTop.verdict !== 'unknown' ? <div className="sim-hero-best" data-verdict={versusTop.verdict}><span>{plan?.roster && topGear ? `Your plan against ${topGear.label.replace(/^Top player · /, '')}` : "Your plan against top players' gear"}</span><strong>{versusTop.verdict === 'sidegrade' ? 'Even' : `${signed(versusTop.difference)} DPS`}</strong><small>{versusTop.verdict === 'sidegrade' ? 'No measurable difference once your plan is done' : `${percent(Math.abs(versusTop.difference) / topGear.value.mean).replace(/^[+−]/, '')} ${versusTop.difference > 0 ? 'more' : 'less'} damage than their gear`}</small></div>
         : headline && baseline && headline.comparison.verdict !== 'unknown' && <div className="sim-hero-best" data-verdict={headline.comparison.verdict}><span title={headlineLabel}>{headlineLabel}</span><strong>{headline.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(headline.comparison.difference)} DPS`}</strong><small>{headline.comparison.verdict === 'sidegrade' ? 'No measurable change from your current gear' : `${percent(Math.abs(headline.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${headline.comparison.difference > 0 ? 'more' : 'less'} damage than your current gear`}</small></div>}
       </div>
     </Card>
@@ -132,7 +134,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
       {(job.request.plan || job.request.benchmark) && <Card className="sim-panel" role="region" aria-label="Reading">
         {job.request.benchmark && <BenchmarkSummary job={job} result={result} />}
         {job.request.plan && <PlanSummary job={job} result={result} />}
-        {(job.request.plan?.top || job.request.benchmark) && <SimCompare character={character} job={job} result={result} />}
+        {(job.request.plan?.top || job.request.plan?.roster || job.request.benchmark) && <SimCompare character={character} job={job} result={result} />}
       </Card>}
 
       {entries.length > 0 && <Card className="sim-panel sim-results-panel" role="region" aria-label="Results">
