@@ -2,7 +2,7 @@ import { Worker } from 'node:worker_threads'
 import type { GameDataEngine } from './engine'
 import type { GameDataStatus } from '../../shared/gamedata'
 
-type Method = 'getStatus' | 'configure' | 'ensureIndex' | 'search' | 'searchPage' | 'item' | 'itemPower' | 'lootShare' | 'trackInfoFor' | 'effectsFor' | 'instances' | 'items' | 'enhancements' | 'embellishments' | 'talentTree' | 'specializations' | 'enchantSlots' | 'appearanceOptions' | 'enchantNames' | 'icon' | 'close'
+type Method = 'getStatus' | 'configure' | 'ensureIndex' | 'search' | 'searchPage' | 'item' | 'itemPower' | 'lootShare' | 'trackInfoFor' | 'effectsFor' | 'instances' | 'items' | 'enhancements' | 'embellishments' | 'talentTree' | 'specializations' | 'enchantSlots' | 'appearanceOptions' | 'enchantNames' | 'enhancementIds' | 'icon' | 'close'
 type Args<K extends Method> = Parameters<GameDataEngine[K]>
 type Result<K extends Method> = K extends 'configure' ? GameDataStatus : Awaited<ReturnType<GameDataEngine[K]>>
 

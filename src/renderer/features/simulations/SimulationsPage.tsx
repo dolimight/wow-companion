@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ClipboardList, Copy, Cpu, ExternalLink, FileCode2, FlaskConical, FolderOpen, Link2, LoaderCircle, Play, Settings2, Trophy, X } from 'lucide-react'
 import { CallChip } from '../../components/motion/CallChip'
+import { activePlan } from '../../lib/plan-item'
 import { DamageHistory } from './DamageHistory'
 import type { Activity, Character } from '../../../shared/domain'
 import { compareSimulationValues, requestScenario, simulationScenarios, type SimulationJob, type SimulationScenarioId } from '../../../shared/simulation'
@@ -37,7 +38,9 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
   const [allJobs, setAllJobs] = useState(false)
   const [starting, setStarting] = useState<Kind | null>(null)
   const workspace = useQuery({ queryKey: ['simulations', character.id], queryFn: () => api.simulationWorkspace({ characterId: character.id }), refetchInterval: query => query.state.data?.jobs.some(active) ? 1500 : false })
-  const plans = useQuery({ queryKey: ['gear-draft', character.id, 'simulation-plans', character.specId], queryFn: async () => { const [mythicPlus, raiding] = await Promise.all([api.getGearDraft({ characterId: character.id, activity: 'mythicPlus', specId: character.specId }), api.getGearDraft({ characterId: character.id, activity: 'raiding', specId: character.specId })]); return { mythicPlus, raiding } } })
+  // The plan open on the Plan tab for each activity, when it is for this specialization; otherwise the main plan
+  const planIdFor = (value: Activity) => { const ref = activePlan(character, value); return ref.specId === character.specId ? ref.plan : 'main' }
+  const plans = useQuery({ queryKey: ['gear-draft', character.id, 'simulation-plans', character.specId, planIdFor('mythicPlus'), planIdFor('raiding')], queryFn: async () => { const [mythicPlus, raiding] = await Promise.all([api.getGearDraft({ characterId: character.id, activity: 'mythicPlus', specId: character.specId, plan: planIdFor('mythicPlus') }), api.getGearDraft({ characterId: character.id, activity: 'raiding', specId: character.specId, plan: planIdFor('raiding') })]); return { mythicPlus, raiding } } })
   const profile = useQuery({ queryKey: ['simulation-profile', character.id, character.gearObservedAt, character.talents?.observedAt], queryFn: () => api.simulationProfile({ characterId: character.id }) })
   const mutation = useMutation({ mutationFn: (task: () => Promise<unknown>) => task(), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['simulations', character.id] }) }, onError: error => notify(errorMessage(error)) })
   const perform = (task: () => Promise<unknown>) => mutation.mutate(task)
@@ -96,7 +99,7 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
           <Card size="sm" className="sim-choice"><strong>Your gear</strong><p className="muted">Your current damage in this scenario</p>{runButton('gear', 'Run simulation', <Play size={14} />, () => launch('gear', () => api.startSimulation(base)), false, true)}</Card>
           <Card size="sm" className="sim-choice"><strong>Your plan</strong><p className="muted">{chosenPlan?.items.length ? 'The whole plan and each upgrade on its own, so you know which to get first' : `No ${planActivity === 'raiding' ? 'Raiding' : 'Mythic+'} plan saved yet · Save one on the Plan tab`}</p>
             <AppSelect label="Gear plan to simulate" value={planActivity} options={(['mythicPlus', 'raiding'] as const).map(value => { const draft = plans.data?.[value]; return { value, label: `${value === 'raiding' ? 'Raiding' : 'Mythic+'} · ${draft?.items.length ? `${draft.name} · ${draft.items.length} items` : 'Not saved yet'}` } })} onValueChange={value => setPlanActivity(value as Activity)} />
-            {runButton('plan', 'Simulate plan', <ClipboardList size={14} />, () => launch('plan', () => api.startSimulationPlan({ ...base, planActivity })), !chosenPlan?.items.length)}</Card>
+            {runButton('plan', 'Simulate plan', <ClipboardList size={14} />, () => launch('plan', () => api.startSimulationPlan({ ...base, planActivity, plan: planIdFor(planActivity) })), !chosenPlan?.items.length)}</Card>
           <Card size="sm" className="sim-choice"><strong>Top players</strong><p className="muted">The items and talents top {character.specName ?? ''} players use, on your character</p>{runButton('top', 'Compare with top players', <Trophy size={14} />, () => launch('top', () => api.startSimulationBenchmark(base)))}</Card>
         </div>
         {blocked && <p className="sim-blocked" role="status">{blocked}</p>}

@@ -30,24 +30,36 @@ export function describedItem(current: GearItem, slot: GearItem['slot'], item: P
   }
 }
 
+/** A planned item with the identifiers its planned enhancements resolved to; embellishment bonus lists go on top of the item's own */
+export type PlannedItem = GearItem & { embellishmentBonusIds?: number[] }
 export type PlanSwaps = { swaps: GearItem[]; skipped: string[] }
+const sameGems = (a: number[] | null | undefined, b: number[] | null | undefined) => (a ?? []).filter(Boolean).sort().join() === (b ?? []).filter(Boolean).sort().join()
 /**
  * The changes a saved plan makes to the gear you wear. A planned item with its own exact link is used as is; otherwise
- * it is described by id and level with your enchant and gems. Items you already wear at that level or higher are left alone
+ * it is described by id and level. Either way the plan's own enchant, gems, and embellishment win, and your equipped
+ * enchant and gems fill in only where the plan doesn't say. Items you already wear at that level or higher, with the same
+ * enhancements, are left alone
  */
-export function planSwaps(character: Pick<Character, 'gear'>, planned: GearItem[]): PlanSwaps {
+export function planSwaps(character: Pick<Character, 'gear'>, planned: PlannedItem[]): PlanSwaps {
   const swaps: GearItem[] = []
   const skipped: string[] = []
   for (const item of planned) {
     const label = gearSlotLabels[item.slot]
     if (!item.itemId) { skipped.push(`${label}: the planned item is unknown`); continue }
     const current = character.gear.find(value => value.slot === item.slot)
-    if (current?.itemId === item.itemId && (item.itemLevel === null || (current.itemLevel ?? 0) >= item.itemLevel)) continue
+    const added = item.embellishmentBonusIds ?? []
+    const currentRaw = itemLinkVariant(current?.itemLink)
+    const sameEnhancements = (item.enchantId == null || item.enchantId === (current?.enchantId ?? currentRaw.enchantId ?? 0))
+      && (item.gemIds == null || sameGems(item.gemIds, current?.gemIds ?? currentRaw.gemIds)) && !added.length
+    if (current?.itemId === item.itemId && (item.itemLevel === null || (current.itemLevel ?? 0) >= item.itemLevel) && sameEnhancements) continue
     if (item.itemLevel === null) { skipped.push(`${label}: the planned item level is unknown`); continue }
-    const exact = item.itemLink && itemLinkVariant(item.itemLink).bonusIds !== null
-    if (exact) { swaps.push(item); continue }
+    const { embellishmentBonusIds: _, ...gear } = item
+    const raw = itemLinkVariant(item.itemLink)
+    const exact = item.itemLink && raw.bonusIds !== null
+    if (exact) { swaps.push(added.length ? { ...gear, bonusIds: [...new Set([...(item.bonusIds ?? raw.bonusIds ?? []), ...added])] } : gear); continue }
     if (!current) { skipped.push(`${label}: nothing is equipped there to copy enchants and gems from`); continue }
-    swaps.push(describedItem(current, item.slot, item))
+    const described = describedItem(current, item.slot, gear)
+    swaps.push({ ...described, enchantId: item.enchantId ?? described.enchantId, gemIds: item.gemIds?.some(Boolean) ? item.gemIds : described.gemIds, bonusIds: added })
   }
   return { swaps, skipped }
 }
