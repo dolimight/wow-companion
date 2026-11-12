@@ -50,4 +50,15 @@ describe('plan swaps', () => {
     expect(swaps[2]!.itemLink).toBe(exact)
     expect(skipped).toEqual(['Cloak: the planned item level is unknown'])
   })
+  it('runs planned items above the cap at the cap, dropping the exact link that names the higher level', () => {
+    const character = simulationCharacter()
+    const exact = '|Hitem:3000::::::::90:250::55:1:6652::::::|h[Exact ring]|h'
+    const { swaps, capped } = planSwaps(character, [
+      { ...character.gear[0]!, itemId: 2000, name: 'Planned helm', itemLevel: 140, itemLink: null, bonusIds: null },
+      { ...character.gear[10]!, itemId: 3000, name: 'Exact ring', itemLevel: 145, itemLink: exact },
+      { ...character.gear[2]!, itemLevel: 130 },
+    ], 134)
+    expect(swaps.map(item => [item.slot, item.itemLevel, item.itemLink])).toEqual([['head', 134, null], ['finger1', 134, null], ['shoulder', 130, character.gear[2]!.itemLink]])
+    expect(capped).toEqual(['Head: Planned helm runs at item level 134, the top regular upgrade rank, instead of 140', 'Ring 1: Exact ring runs at item level 134, the top regular upgrade rank, instead of 145'])
+  })
 })

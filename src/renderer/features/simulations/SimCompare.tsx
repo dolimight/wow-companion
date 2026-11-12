@@ -148,7 +148,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
           <span role="columnheader">Slot</span><span role="columnheader">{subject}</span><span role="columnheader">Top players</span><span role="columnheader">Difference</span>
         </div>
         {rows.map(row => (
-          <div key={row.slot} className="sim-compare-row" role="row" data-differs={row.notes.some(note => note.tone === 'down') || undefined}>
+          <div key={row.slot} className="sim-compare-row" role="row">
             <span role="cell" className="sim-slot"><GearSlotIcon slot={row.slot} size={15} />{gearSlotLabels[row.slot]}</span>
             <span role="cell">
               {row.mine ? <Side itemId={row.mine.itemId} name={row.mine.name} level={row.mine.itemLevel} items={itemMap}

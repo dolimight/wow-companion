@@ -269,7 +269,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId })
       if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
       if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
-      const { swaps, skipped } = planSwaps(prepared.current, draft.items)
+      const { swaps, skipped, capped } = planSwaps(prepared.current, draft.items, ladderCeiling)
       if (!swaps.length) throw new Error(skipped[0] ?? 'Your plan matches the gear you already wear')
       try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
@@ -282,7 +282,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       if (!reference) throw new Error('No equipped item could be described to the engine')
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
-        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
+        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped: [...capped, ...skipped],
         top: comparison && top ? { index: sets.length - 1, population: top.population, players: top.gearPlayers, differences: comparison.differences, cap: ladderCeiling } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }

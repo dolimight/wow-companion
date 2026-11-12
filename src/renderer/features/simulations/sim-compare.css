@@ -14,7 +14,6 @@
 .sim-compare-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) minmax(0, 1fr) minmax(150px, 0.8fr); gap: 14px; align-items: start; padding: 9px 12px; border-top: 1px solid var(--line); font-size: 13px; }
 .sim-compare-row:first-child { border-top: 0; }
 .sim-compare-labels { padding-block: 8px; font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--muted); text-transform: uppercase; }
-.sim-compare-row[data-differs] { background: color-mix(in srgb, var(--sim-down, var(--amber)) 4%, transparent); }
 .sim-slot { display: inline-flex; align-items: center; gap: 7px; padding-top: 3px; color: var(--secondary); }
 
 .sim-side { display: grid; gap: 4px; min-width: 0; }

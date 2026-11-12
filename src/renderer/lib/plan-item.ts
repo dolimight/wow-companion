@@ -116,7 +116,7 @@ export function itemToGear(slot: GearSlot, item: ItemSummary, previous?: GearIte
     name: item.name,
     itemId: item.id,
     itemLevel,
-    ...(copy?.bonusIds ? { bonusIds: copy.bonusIds, variantCoverage: "partial" as const } : {}),
+    ...(copy?.bonusIds?.length ? { bonusIds: copy.bonusIds, variantCoverage: "partial" as const } : {}),
     levelSource: copy ? "observed" : itemLevel ? "estimated" : null,
     // A new target never inherits the previous item's enchant or gems; the player authors those goals explicitly
     enchant: null,

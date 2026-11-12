@@ -6,7 +6,8 @@ import type { GameDataClient } from './gamedata/client'
 import type { ItemDetail } from '../shared/gamedata'
 import { fetchAffixes, fetchTopPlayers, type WeeklyAffixes } from './providers/raiderio-top'
 import { weekStart } from '../shared/weekly'
-import type { TopPlayers, TopRegion } from '../shared/top-players'
+import { capTopLevels, type TopPlayers, type TopRegion } from '../shared/top-players'
+import { ladderCeiling } from './item-tracks'
 
 const TOP_TTL = 6 * 3_600_000
 const TOKEN_TTL = 20 * 60_000
@@ -42,7 +43,12 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
   const historyFile = path.join(options.cacheDir, 'token-history.json')
   const topFile = (key: string) => path.join(options.cacheDir, `top-players-${key}.json`)
 
+  /** Every consumer sees top players' items capped at the top regular upgrade rank */
   async function topPlayers(input: { specId: number; specName: string; className: string; region: TopRegion; force?: boolean }): Promise<TopPlayers> {
+    return capTopLevels(await rawTopPlayers(input), ladderCeiling)
+  }
+
+  async function rawTopPlayers(input: { specId: number; specName: string; className: string; region: TopRegion; force?: boolean }): Promise<TopPlayers> {
     const key = `${input.specId}-${input.region}`
     const cached = top.get(key)
     if (!input.force && cached && Date.now() - cached.at < TOP_TTL) return cached.value
