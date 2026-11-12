@@ -82,6 +82,8 @@ export const simulationPlanSchema = z.object({
     differences: z.array(z.object({ slot: z.string().max(20), plan: z.string().max(200), top: z.string().max(200), itemLevel: z.number() })).max(16),
     /** The item level top players' gear was capped at, the top of the regular upgrade ranks; absent on older runs */
     cap: z.number().nullable().default(null),
+    /** True when the plan reached past the top regular upgrade rank, so their items ran uncapped */
+    beyondCap: z.boolean().default(false),
   }).nullable().default(null),
 })
 export type SimulationPlan = z.infer<typeof simulationPlanSchema>

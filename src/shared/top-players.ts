@@ -51,3 +51,21 @@ export type TopPlayers = {
   averageItemLevel: number | null
   slots: Partial<Record<TopSlotGroup, { items: TopCount[]; enchants: TopCount[]; gems: TopCount[] }>>
 }
+
+/**
+ * Top players' items with levels capped at the top regular upgrade rank. Ascension levels above it are so rare that
+ * copying them into plans or comparisons would be unrealistic; a capped copy drops its bonus IDs, since those name
+ * the higher level
+ */
+export function capTopLevels(top: TopPlayers, cap: number | null): TopPlayers {
+  if (cap == null) return top
+  const clamp = (entry: TopCount): TopCount => ({
+    ...entry,
+    ...(entry.level != null ? { level: Math.min(entry.level, cap) } : {}),
+    ...(entry.levelRange ? { levelRange: { min: Math.min(entry.levelRange.min, cap), max: Math.min(entry.levelRange.max, cap) } } : {}),
+    ...(entry.copy && entry.copy.itemLevel > cap ? { copy: { itemLevel: cap, bonusIds: [], count: entry.copy.count } } : {}),
+  })
+  const slots: TopPlayers['slots'] = {}
+  for (const [group, slot] of Object.entries(top.slots) as Array<[TopSlotGroup, NonNullable<TopPlayers['slots'][TopSlotGroup]>]>) slots[group] = { ...slot, items: slot.items.map(clamp) }
+  return { ...top, slots }
+}

@@ -148,7 +148,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
           <span role="columnheader">Slot</span><span role="columnheader">{subject}</span><span role="columnheader">Top players</span><span role="columnheader">Difference</span>
         </div>
         {rows.map(row => (
-          <div key={row.slot} className="sim-compare-row" role="row" data-differs={row.notes.some(note => note.tone === 'down') || undefined}>
+          <div key={row.slot} className="sim-compare-row" role="row">
             <span role="cell" className="sim-slot"><GearSlotIcon slot={row.slot} size={15} />{gearSlotLabels[row.slot]}</span>
             <span role="cell">
               {row.mine ? <Side itemId={row.mine.itemId} name={row.mine.name} level={row.mine.itemLevel} items={itemMap}
@@ -168,7 +168,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
       {top.isPending && <LatticeLoader label="Reading what top players wear" pattern="ripple" showTimer={false} />}
       {tree.data && talents && <TalentCompare tree={tree.data} diff={talents} players={data?.builds[0]?.count ?? null} total={data?.players.length ?? null} />}
       {!character.talents?.loadout && <p className="muted small">Your talents aren't known yet, so they can't be compared · Log in with the addon or sync this character</p>}
-      <p className="muted small">{population}{cap ? ` · Their items are capped at item level ${cap}, the top regular upgrade rank` : ''}{data ? ` · Their enchants, gems, and embellishments are the most used in each slot` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>
+      <p className="muted small">{population}{cap ? ` · Their items are capped at item level ${cap}, the top regular upgrade rank` : plan?.top?.beyondCap ? ' · Your plan reaches past the top regular upgrade rank, so their items run at the highest level any of them wears' : ''}{data ? ` · Their enchants, gems, and embellishments are the most used in each slot` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>
     </section>
   )
 }
