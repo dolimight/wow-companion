@@ -66,7 +66,7 @@ import {
 } from "lucide-react";
 import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
-import { errorMessage, notify } from "./lib/notify";
+import { errorMessage, notify, showAlert } from "./lib/notify";
 import { Term } from "./components/Term";
 import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
@@ -650,6 +650,8 @@ function Shell() {
       }),
     [client],
   );
+  // Alerts that arrive while the window is open show here instead of as system notifications
+  useEffect(() => window.companion?.onAlert(showAlert), []);
   useEffect(() => {
     const media = matchMedia("(prefers-color-scheme: dark)");
     function apply() {
@@ -2333,7 +2335,7 @@ function SettingsPage() {
               <div className="setting-row">
                 <div>
                   <h3>Desktop alerts</h3>
-                  <p>A new season best, a Great Vault waiting after the weekly reset, your realms going down or coming back up, and new app updates</p>
+                  <p>A new season best, a Great Vault waiting after the weekly reset, your realms going down or coming back up, and new app updates. While the window is open they show inside the app; in the tray or minimized they arrive as system notifications</p>
                 </div>
                 <Toggle
                   type="button"
@@ -2350,7 +2352,7 @@ function SettingsPage() {
                 <div className="setting-row">
                   <div>
                     <h3>Try an alert</h3>
-                    <p>Sends a sample notification so you can see how alerts look and check that clicking one opens WOW Companion</p>
+                    <p>Sends a sample system notification, even with the window open, so you can see how alerts look and check that clicking one opens WOW Companion</p>
                   </div>
                   <Button onClick={() => void window.companion!.testAlert().then(() => notify("Sample alert sent")).catch((error) => notify(errorMessage(error)))}>
                     <Bell size={14} aria-hidden="true" />Send a test alert

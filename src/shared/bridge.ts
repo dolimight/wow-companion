@@ -29,6 +29,8 @@ export type NativeBridge = {
   toggleMaximizeWindow():Promise<void>
   /** Closing the window with unsaved work asks the page first; the page answers by closing for real or doing nothing */
   onCloseRequested(listener:()=>void):()=>void
+  /** Realm and update alerts that arrive while the window is on screen, shown inside the app */
+  onAlert(listener:(alert:{title:string;body:string})=>void):()=>void
   closeWindow():Promise<void>
   connection():Promise<ConnectionInfo>
   chooseImportFile():Promise<ImportReport|null>
