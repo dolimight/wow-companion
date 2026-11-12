@@ -16,6 +16,7 @@ import type { Activity, Character, CharacterStats, GearItem } from "../../../sha
 import { topRegionNames, topSlotGroups, type TopCount, type TopPlayers, type TopRegion } from "../../../shared/top-players";
 import type { ItemSummary } from "../../../shared/gamedata";
 import "./top-players.css";
+import { LatticeLoader } from "../../components/motion/LatticeLoader";
 
 async function copy(text: string, what: string) {
   try { await navigator.clipboard.writeText(text); notify(`${what} copied`); } catch { notify("Copy failed, select the text and copy it manually"); }
@@ -159,7 +160,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
       {(top.isError || (currentRefresh && refresh.isError)) && (
         <section className="surface"><p className="secondary small" role="alert">{errorMessage(currentRefresh && refresh.isError ? refresh.error : top.error)}</p></section>
       )}
-      {!data && top.isFetching && <section className="surface"><p className="secondary small">Collecting the top {character.specName} {character.className} players… this takes a few seconds the first time</p></section>}
+      {!data && top.isFetching && <section className="surface"><LatticeLoader label={`Collecting the top ${character.specName} ${character.className} players`} pattern="ripple" /><p className="muted small">This takes a few seconds the first time</p></section>}
       {data && (
         <>
           <div className="top-summary">

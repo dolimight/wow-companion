@@ -10,10 +10,10 @@ import { addSimulatedItemsToPlan, gearMemory, planHolds, planKey, subscribeGearP
 import { Badge, Button } from '../../components/ui/primitives'
 import { AppSelect } from '../../components/AppSelect'
 import { ItemIcon } from '../items/ItemIcon'
-import StarBorder from '../../components/StarBorder'
 import { ItemHoverCard } from '../items/ItemHoverCard'
 import { BenchmarkSummary } from './BenchmarkSummary'
 import { PlanSummary } from './PlanSummary'
+import { SimCompare } from './SimCompare'
 import './simulation-detail.css'
 
 type Result = NonNullable<SimulationJob['result']>
@@ -60,8 +60,6 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   const [view, setView] = useState<'ranked' | 'items'>('ranked')
   const [, refresh] = useReducer((count: number) => count + 1, 0)
 
-  // The star border stays off when the app is set to reduce motion
-  const motion = document.documentElement.dataset.reducedMotion !== 'true'
   useEffect(() => subscribeGearPlan(refresh), [])
   const queryClient = useQueryClient()
   const plans = useQuery({ queryKey: ['gear-draft', character.id, 'simulation-plans', character.specId], queryFn: async () => { const [mythicPlus, raiding] = await Promise.all([api.getGearDraft({ characterId: character.id, activity: 'mythicPlus', specId: character.specId }), api.getGearDraft({ characterId: character.id, activity: 'raiding', specId: character.specId })]); return { mythicPlus, raiding } } })
@@ -102,7 +100,6 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   }
 
   const Icon = kind.icon
-  const light = document.documentElement.dataset.theme === 'light'
   const header = <header className="sim-hero">
       <div className="sim-hero-main">
         <span className="sim-hero-eyebrow"><Icon size={14} />{kind.label}</span>
@@ -125,7 +122,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
     </header>
   return <div className="sim-detail">
     <Button variant="quiet" className="sim-detail-back" onClick={onBack}><ArrowLeft size={15} />All simulations</Button>
-    {motion ? <StarBorder as="div" className="sim-hero-frame" radius={16} thickness={1.5} stars={2} sparkle glow={0.8} duration={7} theme={light ? 'light' : 'dark'} color={light ? '#0065c7' : '#77b9ff'} trailColor={light ? '#8455b9' : '#ceb0f3'} backgroundColor="transparent" textColor="inherit" borderColor="var(--line)">{header}</StarBorder> : header}
+    {header}
 
     {job.failure && <p role="alert" className="error-surface">{job.failure.replace(/\.+$/, '')}</p>}
     {!result && !job.failure && <section className="surface sim-panel"><p className="muted">This simulation is {job.state} · Results appear here when it finishes</p></section>}
@@ -134,6 +131,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
       {(job.request.plan || job.request.benchmark) && <section className="surface sim-panel" aria-label="Reading">
         {job.request.benchmark && <BenchmarkSummary job={job} result={result} />}
         {job.request.plan && <PlanSummary job={job} result={result} />}
+        {(job.request.plan?.top || job.request.benchmark) && <SimCompare character={character} job={job} result={result} />}
       </section>}
 
       {entries.length > 0 && <section className="surface sim-panel sim-results-panel" aria-label="Results">
