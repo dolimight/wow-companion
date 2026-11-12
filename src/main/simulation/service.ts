@@ -10,6 +10,7 @@ import { asCompatibilityItem } from '../../shared/gear-set-validation'
 import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
+import { ladderCeiling } from '../item-tracks'
 import { benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
 import type { TopPlayers } from '../../shared/top-players'
 import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
@@ -125,13 +126,13 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
    */
   function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null) {
     if (!top || top.specId !== current.specId || !top.gearPlayers) return null
-    const { gear } = benchmarkPlan(current, top)
+    const { gear } = benchmarkPlan(current, top, ladderCeiling)
     if (!gear.length) return null
     try { swapIn(current, gear) } catch { return null }
     const entries = gear.map(item => ({ item, text: itemLine(item) }))
     if (entries.some(entry => !entry.text.text || entry.text.reasons.length)) return null
     const planned = swapIn(current, swaps)
-    const differences = benchmarkPlan({ ...current, gear: planned }, top).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
+    const differences = benchmarkPlan({ ...current, gear: planned }, top, ladderCeiling).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
     return { entries: entries.map(entry => ({ item: entry.item, text: entry.text.text! })), differences }
   }
   /** Checks shared by every job: engine, activity, role, and a complete matching baseline profile */
@@ -282,7 +283,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
         name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
-        top: comparison && top ? { index: sets.length - 1, population: top.population, players: top.gearPlayers, differences: comparison.differences } : null,
+        top: comparison && top ? { index: sets.length - 1, population: top.population, players: top.gearPlayers, differences: comparison.differences, cap: ladderCeiling } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }
       const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })
@@ -295,7 +296,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const prepared = await prepare(start)
       if (top.specId !== prepared.current.specId) throw new Error('The top players sampled are for another specialization')
       if (!top.gearPlayers) throw new Error('No top player gear was found for this specialization')
-      const plan = benchmarkPlan(prepared.current, top)
+      const plan = benchmarkPlan(prepared.current, top, ladderCeiling)
       if (!plan.kinds.length) throw new Error('You already wear the items and talents most top players use')
       try { swapIn(prepared.current, plan.gear) } catch (error) { throw new Error(`${benchmarkLabels.gear}: ${error instanceof Error ? error.message : 'this swap is not allowed'}`) }
       const gearLines = plan.gear.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${benchmarkLabels.gear}: ${line.reasons[0] ?? 'an item could not be described to the engine'}`); return line.text })
@@ -313,7 +314,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         kinds: plan.kinds, population: top.population, players: top.gearPlayers,
         itemLevel: { yours: prepared.current.itemLevel, average: top.averageItemLevel },
         swapped: plan.gear.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
-        talentPlayers: plan.talents ? top.builds[0]?.count ?? null : null, skipped: plan.skipped,
+        talentPlayers: plan.talents ? top.builds[0]?.count ?? null : null, skipped: plan.skipped, cap: ladderCeiling,
       }
       const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: plan.kinds.map(kind => benchmarkLabels[kind]), benchmark }, { talents: plan.talents })
       return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, 'Compared with top players')

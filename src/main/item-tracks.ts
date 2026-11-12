@@ -12,6 +12,12 @@ type Ruleset = { id: string; name: string; upgradeTracks: Track[]; ascension?: A
 
 const rulesets = (catalogJson as unknown as { rulesets: Ruleset[] }).rulesets
 
+/**
+ * The highest level reachable through regular crest upgrade ranks, such as Myth 6/6. Ascension levels past it
+ * are left out because only a tiny share of players ever reaches them
+ */
+export const ladderCeiling: number | null = rulesets.reduce<number | null>((best, ruleset) => ruleset.upgradeTracks.reduce<number | null>((top, track) => Math.max(top ?? 0, track.ranks.at(-1)?.itemLevel ?? 0), best), null)
+
 /** The current season's socket bonuses, or null when the catalog has none reviewed */
 export const socketRules: SocketRules | null = rulesets.find(ruleset => ruleset.sockets)?.sockets ?? null
 /** How many embellished items a character can wear and how to spot one, or null when none are reviewed */

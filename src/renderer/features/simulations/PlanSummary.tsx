@@ -72,7 +72,7 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
           </tr>
         })}</tbody>
       </table></div>}
-      <p className="muted small">{plan.top.population} · Their most worn items at the highest level any of them wears, run on your character with your enchants and gems</p>
+      <p className="muted small">{plan.top.population} · Their most worn items at the highest level any of them wears{plan.top.cap ? `, capped at item level ${plan.top.cap}` : ''}, run on your character with your enchants and gems</p>
     </section>}
     <details className="simulation-details">
       <summary>What was tested</summary>

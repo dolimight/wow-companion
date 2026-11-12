@@ -17,6 +17,9 @@ describe('top player benchmark', () => {
     const top = topFixture()
     top.slots.head!.items[0] = { ...top.slots.head!.items[0]!, level: 112, levelRange: { min: 109, max: 115 } }
     expect(benchmarkPlan(simulationCharacter(), top).gear.find(item => item.slot === 'head')?.itemLevel).toBe(115)
+    // Ascension levels past the regular upgrade ranks are capped, since few players ever reach them
+    expect(benchmarkPlan(simulationCharacter(), top, 113).gear.find(item => item.slot === 'head')?.itemLevel).toBe(113)
+    expect(benchmarkPlan(simulationCharacter(), top, 200).gear.find(item => item.slot === 'head')?.itemLevel).toBe(115)
   })
   it('skips talents you already use or that too few players share', () => {
     const character = simulationCharacter()
