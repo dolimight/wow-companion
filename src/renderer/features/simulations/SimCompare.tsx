@@ -295,15 +295,34 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
       <span className="sim-extras">
         {/* The enchant, like gems and the embellishment, opens its scroll's game tooltip on hover */}
         {enchant && (enchantArt
-          ? <ItemHoverCard itemId={enchantArt.itemId} enhancement={{ ...enchantArt, kind: 'enchant' }} name={enchant}><span className="sim-hover"><Badge><span className="sim-extra">{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge></span></ItemHoverCard>
+          ? <ItemHoverCard itemId={enchantArt.itemId} enhancement={{ ...enchantArt, kind: 'enchant' }} name={enchant}><span className="sim-hover" data-cursor-target=""><Badge><span className="sim-extra">{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge></span></ItemHoverCard>
           : <Badge><span className="sim-extra" title={enchant}><WandSparkles size={12} />{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge>)}
         {/* Each gem and the embellishment open their game tooltip on hover */}
-        {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover"><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
-        {embellishment && (embellishmentArt
-          ? <ItemHoverCard itemId={embellishmentArt.itemId} name={embellishment}><span className="sim-hover"><Badge tone="blue"><span className="sim-extra">{embellishmentArt.icon ? <img src={iconUrl(embellishmentArt.icon) ?? undefined} alt="" width={14} height={14} /> : <Sparkles size={12} />}{embellishment}</span></Badge></span></ItemHoverCard>
-          : <Badge tone="blue"><span className="sim-extra"><Sparkles size={12} />{embellishment}</span></Badge>)}
+        {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover" data-cursor-target=""><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
+        {embellishment && <EmbellishmentChip name={embellishment} art={embellishmentArt ?? null} itemId={itemId} level={level} />}
       </span>
     </div>
+  )
+}
+
+/**
+ * An embellishment chip whose hover shows what it does, worded for this item: values scale with item level, so the
+ * effect is read for the item it sits on
+ */
+function EmbellishmentChip({ name, art, itemId, level }: { name: string; art: { itemId: number; icon: number | null } | null; itemId: number | null; level: number | null }) {
+  const [open, setOpen] = useState(false)
+  const details = useQuery({ queryKey: ['embellishments', itemId, level], queryFn: () => api.embellishments({ itemId, itemLevel: level }), enabled: open && !!art, staleTime: Infinity })
+  const option = details.data?.find(entry => entry.name === name)
+  const chip = <Badge tone="blue"><span className="sim-extra">{art?.icon ? <img src={iconUrl(art.icon) ?? undefined} alt="" width={14} height={14} /> : <Sparkles size={12} />}{name}</span></Badge>
+  if (!art) return chip
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-hover" data-cursor-target="" aria-label={`${name} effect`}>{chip}</PopoverTrigger>
+      <PopoverContent side="top" className="talent-popover">
+        <div className="talent-detail-head"><ItemIcon icon={art.icon} size="medium" fallback={<Sparkles />} /><div><strong>{name}</strong><small>{option?.limit ?? 'Embellishment'}</small></div></div>
+        {option ? <p>{option.effect || 'The game files describe no effect for it'}</p> : <p className="muted">{details.isError ? 'The effect could not be read' : 'Reading the effect'}</p>}
+      </PopoverContent>
+    </Popover>
   )
 }
 
