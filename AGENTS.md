@@ -8,6 +8,7 @@
 - Preserve punctuation inside multi-sentence copy, code, URLs, and file paths
 - Always use the integrated Electron title bar with native platform window controls
 - Use shadcn Base UI Select and Toggle controls instead of native select elements or checkbox inputs
+- Add icons or images wherever possible: game icons for items, gems, enchants, specializations, talents, and hero trees in every list, picker, chip, and card, sourced from the player's installed game files
 - Never push directly to main, even for small changes or repository maintenance
 - Work on a feature branch and submit a pull request; merge only through the required GitHub checks with no administrative bypass
 - Author all standalone maintenance and release scripts and their tests in TypeScript; WoW addon sources and addon tests remain Lua because the game requires it

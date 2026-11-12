@@ -88,6 +88,7 @@ import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./
 import { activePlan, addItemToPlan, gearMemory, hydrateActivePlans, planKey, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
 import { specializationName } from "../shared/specializations";
 import { PlanBar } from "./features/plan/PlanBar";
+import { PlanTalents } from "./features/plan/PlanTalents";
 import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
 import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
 import { PlanSources } from "./features/plan/PlanSources";
@@ -144,6 +145,7 @@ import {
   Sheet,
 } from "./components/ui/primitives";
 import type {
+  GearDraft,
   Activity,
   ActivityRating,
   AddCharacterInput,
@@ -1707,8 +1709,10 @@ function GearEditor({
     slotForm.reset(slotValues(current), { keepDefaultValues: true });
   }, [selected, current]);
   // The plan saves itself; the shared helper marks it clean and offers Undo in a toast
+  const [talents, setTalents] = useState<GearDraft["talents"]>(null);
+  useEffect(() => { if (query.isSuccess) setTalents(query.data?.talents ?? null); }, [query.isSuccess, query.data?.talents?.loadout]);
   const save = useMutation({
-    mutationFn: (draft: { items: GearItem[]; name: string; statWeights?: StatWeights }) => persistPlan(planOwner(character, activity), draft),
+    mutationFn: (draft: { items: GearItem[]; name: string; statWeights?: StatWeights; talents?: GearDraft["talents"] }) => persistPlan(planOwner(character, activity), draft),
     onError: (e) => notify(errorMessage(e)),
   });
   const unsaved = dirty || inspectorDirty;
@@ -1906,6 +1910,8 @@ function GearEditor({
               embellishments={embellishmentRules.data ?? null}
               closedSlots={closedSlots}
             />
+            <PlanTalents character={character} live={live} talents={talents ?? null}
+              onChange={(next) => { setTalents(next); const planned = inspectorDirty ? updateItem(true) : items; if (planned) save.mutate({ items: planned, name, statWeights, talents: next }); }} />
             <PlanStats character={character} items={items} disabled={inspectorDirty} otherSpec={character.specId !== live.specId ? live.specName : null} />
             <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
             <div className="roster-footnote">

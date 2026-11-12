@@ -124,6 +124,8 @@ export function createRouter(s:RouterServices){return t.router({
   })),
   getItems:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('items',input.ids))),
   enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable()})).query(({input})=>run(()=>s.gameData.call('enhancements',input.kind,input.slot))),
+  talentTree:p.input(z.object({specId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('talentTree',input.specId))),
+  specializations:p.query(()=>run(()=>s.gameData.call('specializations'))),
   embellishments:p.input(z.object({itemId:z.number().int().positive().nullable(),itemLevel:z.number().int().min(1).max(2000).nullable()})).query(({input})=>run(()=>s.gameData.call('embellishments',input.itemId,input.itemLevel))),
   appearanceOptions:p.input(z.object({slot:appearanceSlotSchema,text:z.string().max(100),armor:z.enum(armorTypes).nullable()})).query(({input})=>run(()=>s.gameData.call('appearanceOptions',input.slot,input.text,input.armor))),
   enchantNames:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('enchantNames',input.ids))),
