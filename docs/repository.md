@@ -65,3 +65,9 @@ AGENTS.md is the single source of repository instructions
 Codex reads it directly; CLAUDE.md, GEMINI.md, .cursor/rules/project.mdc, and .github/copilot-instructions.md point other assistants to the same guidance
 No build, test, or release command requires an AI provider, model, subscription, MCP server, or agent-specific skill
 The TypeScript scripts and standard npm commands are the same for human and assistant use
+
+## Optional assistant tooling
+
+`.mcp.json` registers the shadcn MCP server (`npx shadcn mcp`, using the pinned `shadcn` package) for browsing and adding registry components
+`.claude/skills` and `.agents/skills` hold the official shadcn skills (`shadcn`, `migrate-radix-to-base`), tracked in `skills-lock.json`; refresh them with `npx skills update -p`
+None of these are needed to build, test, or release the app
