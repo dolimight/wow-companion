@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, Equal, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Equal, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
 import type { Character, GearItem, GearSlot } from '../../../shared/domain'
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
@@ -17,7 +17,7 @@ import { GearSlotIcon } from '../../components/GearSlotIcon'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
 import { ItemIcon, useGameData } from '../items/items'
 import { Card } from '../../components/ui/card'
-import { Badge } from '../../components/ui/primitives'
+import { Badge, Button } from '../../components/ui/primitives'
 import { ItemHoverCard } from '../items/ItemHoverCard'
 import { talentDescription } from '../plan/PlanTalents'
 import './sim-compare.css'
@@ -209,6 +209,16 @@ export function SimCompare({ character, job, result }: { character: Character; j
         </Card>
       </header>
       <div className="sim-compare-filter">
+        {opponent && ranked.length > 1 && (() => {
+          // Step through the players in rank order, wrapping at either end
+          const at = ranked.findIndex(player => player.name === opponent.name)
+          const step = (by: number) => setChosen(ranked[(at + by + ranked.length) % ranked.length]!.name)
+          return <div className="sim-compare-cycle" aria-label="Which top player to compare with">
+            <Button variant="quiet" onClick={() => step(-1)} aria-label="Previous player"><ChevronLeft size={15} /></Button>
+            <span><strong>{opponent.name}</strong><small className="muted">#{at + 1} of {ranked.length} · {Math.round(opponent.value.mean).toLocaleString()} DPS</small></span>
+            <Button variant="quiet" onClick={() => step(1)} aria-label="Next player"><ChevronRight size={15} /></Button>
+          </div>
+        })()}
         <div className="segments" aria-label="Which slots to show">
           <button aria-pressed={show === 'all'} onClick={() => setShow('all')}>All slots</button>
           <button aria-pressed={show === 'theirs'} onClick={() => setShow('theirs')}>Theirs better · {wins.theirs}</button>
