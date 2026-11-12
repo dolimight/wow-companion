@@ -218,6 +218,13 @@ async function main(){
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}))
   window.webContents.on('will-navigate',(event,url)=>{if(!origins.includes(rendererOrigin(url)??''))event.preventDefault()})
   window.webContents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false))
+  // Dev pages come from Vite, so they get the release CSP too and eval fails in dev exactly as it does in a release build.
+  // The only additions are what Vite itself needs: its inline React refresh preamble and its hot-reload socket
+  if(devUrl){
+    const origin=new URL(devUrl).origin
+    const devCsp=CSP.replace("script-src 'self'","script-src 'self' 'unsafe-inline'").replace("connect-src 'self'",`connect-src 'self' ${origin.replace(/^http/,'ws')}`)
+    window.webContents.session.webRequest.onHeadersReceived({urls:[origin+'/*']},(details,callback)=>callback({responseHeaders:{...details.responseHeaders,'Content-Security-Policy':[devCsp]}}))
+  }
   window.once('ready-to-show',()=>{rememberedWindow.restore();if(!process.env.WOW_COMPANION_HEADLESS)window?.show();void splash?.close();splash=null})
   window.on('closed',()=>{window=null})
   // Page titles name the app; a development window says so, so it is never mistaken for the installed one

@@ -3,6 +3,7 @@
  * (RandPropPoints, CombatRatingsMultByILvl, StaminaMultByILvl, and the armour tables). The formulas follow
  * SimulationCraft's item database and are checked against Blizzard's equipment data and Wowhead tooltips
  */
+import { arithmetic } from './arithmetic'
 
 export type RatingColumns = { armor: number; weapon: number; trinket: number; jewelry: number }
 export type ScalingLevel = {
@@ -142,7 +143,7 @@ export function effectText(spellId: number, spells: Map<number, SpellData>, item
   text = text.replace(/\$\{([^}]*)\}(\.\d)?/g, (_match, expression: string) => {
     const filled = expression.replace(/\$(\d*)([smMwWodut])(\d?)/g, (_token, id: string, kind: string, index: string) => (value(Number(id), kind, Number(index || 1)) ?? 'NaN').replace(/,/g, ''))
     if (!/^[\d.+\-*/() ]+$/.test(filled)) { complete = false; return '?' }
-    const result = Function(`"use strict";return (${filled})`)() as number
+    const result = arithmetic(filled)
     return Number.isFinite(result) ? number(Math.round(result)) : (complete = false, '?')
   })
   text = text.replace(/\$(\d*)([smMwWodut])(\d?)/g, (_match, id: string, kind: string, index: string) => {
