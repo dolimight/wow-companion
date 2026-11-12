@@ -14,14 +14,14 @@ const databases: DatabaseRepository[] = []
 const directories: string[] = []
 const services: ReturnType<typeof createSimulationService>[] = []
 afterEach(async () => { for (const service of services.splice(0)) await service.close(); for (const db of databases.splice(0)) db.close(); for (const directory of directories.splice(0)) { if (!path.resolve(directory).startsWith(path.join(tmpdir(), 'wow-simulation-service-'))) throw new Error('Unexpected test directory'); await rm(directory, { recursive: true, force: true }) } })
-async function fixture(body?: string) {
+async function fixture(body?: string, extra: Partial<Parameters<typeof createSimulationService>[0]> = {}) {
   const root = await mkdtemp(path.join(tmpdir(), 'wow-simulation-service-')); directories.push(root)
   const database = new DatabaseRepository(':memory:'); databases.push(database)
   const character = database.addCharacter(simulationCharacter())
   const bridge = { call: async (method: keyof DatabaseRepository, ...args: unknown[]) => (database[method] as (...args: unknown[]) => unknown).apply(database, args) } as Pick<DatabaseClient, 'call'>
   const file = path.join(root, 'engine-fixture.mjs')
   await writeFile(file, `import fs from 'node:fs/promises'; ${body ?? `await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(simulationJson())}));`}`)
-  const service = createSimulationService({ db: bridge, artifactDir: path.join(root, 'artifacts'), execution: { launch: (_executable, args, cwd) => spawn(process.execPath, [file, ...args], { cwd, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }) } }); services.push(service)
+  const service = createSimulationService({ db: bridge, artifactDir: path.join(root, 'artifacts'), ...extra, execution: { launch: (_executable, args, cwd) => spawn(process.execPath, [file, ...args], { cwd, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }) } }); services.push(service)
   return { database, character, service, bridge, root }
 }
 async function until<T>(read: () => Promise<T>, predicate: (value: T) => boolean): Promise<T> { const deadline = Date.now() + 4000; let value = await read(); while (!predicate(value)) { if (Date.now() > deadline) throw new Error('Fixture job did not settle'); await new Promise(resolve => setTimeout(resolve, 20)); value = await read() } return value }
@@ -184,6 +184,27 @@ describe('simulating a saved plan', () => {
     expect(input.match(/^profileset\."companion_candidate_4"\+=.*$/gm)).toEqual(['profileset."companion_candidate_4"+=head=,id=2000,ilevel=112', 'profileset."companion_candidate_4"+=finger1=,id=2010,ilevel=111'])
     const other = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, topFixture({ specId: 251 }))
     expect(other.request.plan?.top).toBeNull()
+  })
+  it("runs the plan's own enchants, gems, embellishments, and talents, and picks the plan you have open", async () => {
+    const lookups: unknown[] = []
+    const { character, service, root, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3', 'companion_candidate_4'], [104_000, 102_000, 101_500, 101_000]))}));`, {
+      enhancementIds: async requests => { lookups.push(requests); return requests.map(request => ({ enchantId: request.enchant === 'Amani Mastery' ? 7965 : null, gemIds: request.gems.map(gem => gem === 'Flawless Deadly Peridot' ? 240890 : 0), bonusIds: request.embellishment === 9001 ? [12345] : [] })) },
+    })
+    await service.configureExecutable(process.execPath)
+    const stored = database.getCharacter(character.id)!
+    const ring = stored.gear.find(item => item.slot === 'finger1')!
+    database.saveGearDraft({ id: 'other', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', plan: 'alt', name: 'Alt plan', talents: { loadout: 'PLAN123+talents', source: 'Built here' },
+      items: [{ ...stored.gear[0]!, itemId: 2000, name: 'Planned helm', itemLevel: 120, itemLink: null, gems: ['Flawless Deadly Peridot'], embellishment: { name: 'Woven Dusk', itemId: 9001, limit: 'Embellished' } }, { ...ring, enchant: 'Amani Mastery' }], updatedAt: '2026-10-29T12:00:00.000Z' })
+    const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100, plan: 'alt' })
+    expect(job.label).toBe('Plan · Alt plan')
+    expect(job.request.candidateLabels).toEqual(['Whole plan', 'Head: Planned helm at 120', `Ring 1: ${ring.name} at ${ring.itemLevel}`, 'Plan talents'])
+    await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
+    const input = await readFile(path.join(root, 'artifacts', job.id, 'input.simc'), 'utf8')
+    expect(input).toMatch(/profileset\."companion_candidate_1"\+=talents=PLAN123\+talents/)
+    expect(input).toMatch(/profileset\."companion_candidate_2"\+=head=,id=2000,ilevel=120,bonus_id=12345(,enchant_id=\d+)?,gem_id=240890/)
+    expect(input).toMatch(/profileset\."companion_candidate_3"\+=finger1=,id=\d+,ilevel=\d+.*enchant_id=7965/)
+    expect(input.match(/^profileset\."companion_candidate_4"\+=.*$/gm)).toEqual(['profileset."companion_candidate_4"+=talents=PLAN123+talents'])
+    expect(lookups).toHaveLength(1)
   })
   it('caps top players at Myth 6/6 unless the plan itself reaches past it, then uses the highest levels they wear', async () => {
     const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3', 'companion_candidate_4'], [104_000, 102_000, 101_500, 106_000]))}));`)

@@ -11,7 +11,7 @@ import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
 import { ladderCeiling } from '../item-tracks'
-import { benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
+import { type PlannedItem, benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
 import { capTopLevels, type TopPlayers } from '../../shared/top-players'
 import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
 import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
@@ -39,7 +39,8 @@ export async function engineFolder(configured: string | null, roots: string[]) {
   }
   return undefined
 }
-export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
+export type EnhancementLookup = (requests: Array<{ slot: GearItem['slot']; enchant: string | null; gems: string[]; embellishment: number | null }>) => Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>>
+export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
   let closed = false
@@ -124,6 +125,20 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
    * The top players' most worn items on your character, for reading a plan against them, plus the slots where the plan
    * falls short of what they wear. Null when no usable sample exists or their set cannot be described to the engine
    */
+  /** Plans keep enchants, gems, and embellishments by name; the engine needs their game identifiers */
+  async function resolveEnhancements(items: GearItem[]): Promise<PlannedItem[]> {
+    const resolved = options.enhancementIds ? await options.enhancementIds(items.map(item => ({ slot: item.slot, enchant: item.enchant, gems: item.gems, embellishment: item.embellishment?.itemId ?? null }))).catch(() => null) : null
+    if (!resolved) return items
+    return items.map((item, index) => {
+      const found = resolved[index]
+      if (!found) return item
+      // A named enchant the game files don't know keeps the item's own; a plan that says "no enchant" runs without one
+      const enchantId = item.enchant ? found.enchantId ?? item.enchantId ?? null : item.enchantCoverage === 'complete' ? 0 : item.enchantId ?? null
+      const gemIds = item.gems.length ? item.gems.map((_, slot) => found.gemIds[slot] || item.gemIds?.filter(Boolean)[slot] || 0) : item.gemIds ?? null
+      return { ...item, enchantId, gemIds, embellishmentBonusIds: found.bonusIds }
+    })
+  }
+
   function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null, cap: number | null) {
     if (!top || top.specId !== current.specId || !top.gearPlayers) return null
     const { gear } = benchmarkPlan(current, top, cap)
@@ -266,28 +281,36 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const start = simulationPlanStartSchema.parse(input)
       const prepared = await prepare(start)
       const activity = start.planActivity ?? start.activity
-      const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId })
+      const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId, plan: start.plan ?? 'main' })
       if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
       if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
-      const { swaps, skipped } = planSwaps(prepared.current, draft.items)
+      const { swaps, skipped } = planSwaps(prepared.current, await resolveEnhancements(draft.items))
+      // The plan's own talent build runs with the whole plan and on its own, when it differs from yours
+      const planTalents = draft.talents?.loadout && /^[A-Za-z0-9+/=]{1,400}$/.test(draft.talents.loadout) && draft.talents.loadout !== prepared.current.talents?.loadout ? draft.talents.loadout : null
       // Planned levels run as chosen. A plan that reaches past the top regular rank, such as an ascension level, is
       // compared with the highest levels top players really wear; otherwise their items are capped there too
       const beyond = draft.items.some(item => item.itemLevel != null && ladderCeiling != null && item.itemLevel > ladderCeiling)
       const cap = beyond ? null : ladderCeiling
       const topForRun = top ? capTopLevels(top, cap) : null
-      if (!swaps.length) throw new Error(skipped[0] ?? 'Your plan matches the gear you already wear')
-      try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
+      if (!swaps.length && !planTalents) throw new Error(skipped[0] ?? 'Your plan matches the gear and talents you already use')
+      if (swaps.length) try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
       // The whole plan first, then each upgrade alone, all measured against the same unchanged reference
-      const sets = [...(described.length > 1 ? [{ label: 'Whole plan', entries: described }] : []), ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry] }))]
+      const talentLine = planTalents ? [`talents=${planTalents}`] : []
+      const wholePlan = described.length + talentLine.length > 1
+      const sets: Array<{ label: string; entries: typeof described; extra: string[] }> = [
+        ...(wholePlan ? [{ label: 'Whole plan', entries: described, extra: talentLine }] : []),
+        ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] as string[] })),
+        ...(planTalents ? [{ label: 'Plan talents', entries: [] as typeof described, extra: talentLine }] : []),
+      ]
       const comparison = planTopComparison(prepared.current, swaps, topForRun, cap)
-      if (comparison) sets.push({ label: benchmarkLabels.gear, entries: comparison.entries })
-      const lines = sets.flatMap((set, index) => set.entries.map(entry => `profileset."companion_candidate_${index + 1}"+=${entry.text}`))
+      if (comparison) sets.push({ label: benchmarkLabels.gear, entries: comparison.entries, extra: [] })
+      const lines = sets.flatMap((set, index) => [...set.entries.map(entry => entry.text), ...set.extra].map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
-        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
+        name: draft.name, activity, whole: wholePlan ? 0 : null, skipped,
         top: comparison && topForRun ? { index: sets.length - 1, population: topForRun.population, players: topForRun.gearPlayers, differences: comparison.differences, cap, beyondCap: beyond } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }

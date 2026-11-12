@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { activitySchema, gearItemSchema } from './domain'
+import { activitySchema, gearItemSchema, planIdSchema } from './domain'
 import { gearBaselineSchema, itemVariantSchema } from './gear-variants'
 import { evaluationContextSchema, evidenceRefSchema } from './evidence'
 
@@ -65,7 +65,7 @@ export const simulationBenchmarkSchema = z.object({
 })
 export type SimulationBenchmark = z.infer<typeof simulationBenchmarkSchema>
 /** A saved gear plan run as a whole and one planned upgrade at a time */
-export const simulationPlanStartSchema = simulationStartSchema.omit({ comparePlan: true }).extend({ planActivity: activitySchema.optional() })
+export const simulationPlanStartSchema = simulationStartSchema.omit({ comparePlan: true }).extend({ planActivity: activitySchema.optional(), plan: planIdSchema.optional() })
 export type SimulationPlanStart = z.input<typeof simulationPlanStartSchema>
 export const simulationPlanSchema = z.object({
   name: z.string().max(100), activity: activitySchema,

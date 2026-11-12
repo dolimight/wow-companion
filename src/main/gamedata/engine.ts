@@ -28,7 +28,7 @@ export async function replaceFile(from: string, to: string, attempts = 20, delay
   }
 }
 
-export const INDEX_VERSION = 6
+export const INDEX_VERSION = 7
 /** Game tables that are plain text rather than client databases, by file ID in the community listfile */
 const GAME_TABLES = { combatRatings: 1391670, stamina: 1980632, socketCost: 1391643 }
 
@@ -220,7 +220,7 @@ export class GameDataEngine {
         CREATE TABLE appearances (modified_id INTEGER PRIMARY KEY, item_id INTEGER NOT NULL, appearance_id INTEGER NOT NULL, modifier INTEGER NOT NULL, icon INTEGER);
         CREATE TABLE sources (item_id INTEGER NOT NULL, encounter TEXT NOT NULL, instance TEXT NOT NULL, kind TEXT NOT NULL, season INTEGER NOT NULL);
         CREATE TABLE enchants (id INTEGER PRIMARY KEY, name TEXT NOT NULL, icon INTEGER);
-        CREATE TABLE embellishments (item_id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, icon INTEGER, description TEXT NOT NULL, applies TEXT, limit_name TEXT NOT NULL);`)
+        CREATE TABLE embellishments (item_id INTEGER PRIMARY KEY, name TEXT NOT NULL, quality INTEGER NOT NULL, icon INTEGER, description TEXT NOT NULL, applies TEXT, limit_name TEXT NOT NULL, bonus_lists TEXT NOT NULL DEFAULT '[]');`)
       const insertItem = db.prepare('INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
       const insertAppearance = db.prepare('INSERT OR IGNORE INTO appearances VALUES (?,?,?,?,?)')
       const insertSource = db.prepare('INSERT INTO sources VALUES (?,?,?,?,?)')
@@ -255,8 +255,8 @@ export class GameDataEngine {
           for (const spell of effects.spells.values()) insertSpell.run(spell.id, JSON.stringify(spell))
         }
         if (embellished) {
-          const insertEmbellishment = db.prepare('INSERT INTO embellishments VALUES (?,?,?,?,?,?,?)')
-          for (const entry of embellished) insertEmbellishment.run(entry.itemId, entry.name, entry.quality, entry.icon, entry.description, entry.applies, entry.limit)
+          const insertEmbellishment = db.prepare('INSERT INTO embellishments VALUES (?,?,?,?,?,?,?,?)')
+          for (const entry of embellished) insertEmbellishment.run(entry.itemId, entry.name, entry.quality, entry.icon, entry.description, entry.applies, entry.limit, JSON.stringify(entry.bonusLists))
         }
         for (const [id, row] of enchants) {
           const name = cleanGameText(String(row.Name_lang ?? ''), row.EffectPointsMin as number[] | undefined)
@@ -399,7 +399,7 @@ export class GameDataEngine {
     const nodes = await this.table(casc, 'ItemBonusTreeNode', ['ParentItemBonusTreeID', 'ChildItemBonusListID'])
     const lists = new Map<number, number[]>()
     for (const node of nodes.values()) { const tree = Number(node.ParentItemBonusTreeID); lists.set(tree, [...(lists.get(tree) ?? []), Number(node.ChildItemBonusListID)]) }
-    const found: Array<{ itemId: number; name: string; quality: number; icon: number | null; description: string; applies: string | null; limit: string; expansion: number }> = []
+    const found: Array<{ itemId: number; name: string; quality: number; icon: number | null; description: string; applies: string | null; limit: string; expansion: number; bonusLists: number[] }> = []
     for (const [id, row] of sparse) {
       const reagent = reagents.get(Number(row.ModifiedCraftingReagentItemID ?? 0))
       const base = items.get(id)
@@ -410,7 +410,8 @@ export class GameDataEngine {
       const category = String(categories.get(Number(reagent.ModifiedCraftingCategoryID))?.Description_lang ?? '')
       // "Midnight recipes for most unembellished armor." names the gear a reagent goes on
       const applies = category.match(/recipes for (?:most )?(?:unembellished )?(.+?)\.?$/i)?.[1] ?? (category.replace(/\.$/, '') || null)
-      found.push({ itemId: id, name: cleanGameText(String(row.Display_lang ?? '')), quality: Number(row.OverallQualityID ?? 1), icon: (base?.IconFileDataID as number) || null, description, applies, limit, expansion: Number(row.ExpansionID ?? 0) })
+      // The reagent's bonus lists are what an embellished item carries, so a simulation can add them to the item
+      found.push({ itemId: id, name: cleanGameText(String(row.Display_lang ?? '')), quality: Number(row.OverallQualityID ?? 1), icon: (base?.IconFileDataID as number) || null, description, applies, limit, expansion: Number(row.ExpansionID ?? 0), bonusLists: lists.get(Number(reagent.ItemBonusTreeID)) ?? [] })
     }
     const newest = Math.max(0, ...found.map(entry => entry.expansion))
     const byName = new Map<string, (typeof found)[number]>()
@@ -781,6 +782,40 @@ export class GameDataEngine {
       spells.set(-1, { id: -1, name: row.name, description: row.description, durationMs: null, maxStacks: null, effects: [] })
       const effect = level ? effectText(-1, spells, block, level) : { text: row.description.replace(/\$@spelldesc\d+/g, ''), complete: false }
       return { itemId: row.item_id, name: row.name, quality: row.quality, icon: row.icon, applies: row.applies, limit: row.limit_name, effect: cleanGameText(effect.text).replace(/Unique-Equipped:[^.]*\.?/gi, ' ').replace(/\.(?=[A-Z])/g, '. ').replace(/\s+/g, ' ').trim(), complete: effect.complete }
+    })
+  }
+
+  /**
+   * The game identifiers SimulationCraft needs for a plan's enhancements, which plans store by name: an enchant becomes
+   * its SpellItemEnchantment ID (enchant scrolls name it in CraftingDataEnchantQuality, highest rank first), a gem its
+   * item ID, and an embellishment reagent the bonus lists it puts on the item. Anything unknown comes back empty
+   */
+  async enhancementIds(requests: Array<{ slot: AppearanceSlot; enchant: string | null; gems: string[]; embellishment: number | null }>): Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>> {
+    const db = this.ready()
+    const ranks = await this.traitTable('CraftingDataEnchantQuality').catch(() => null)
+    const enchantOf = new Map<number, number>()
+    for (const row of ranks?.values() ?? []) enchantOf.set(Number(row.ItemID), Number(row.SpellItemEnchantmentID))
+    const gems = new Map(this.enhancements('gem', null).map(option => [option.name.toLowerCase(), option.itemId]))
+    const slotEnchants = new Map<AppearanceSlot, EnhancementOption[]>()
+    const strip = (name: string) => name.replace(/^(Enchant|Enchanting)\s[^-]+-\s*/i, '').trim().toLowerCase()
+    return requests.slice(0, 40).map(request => {
+      let enchantId: number | null = null
+      const enchant = request.enchant?.trim()
+      if (enchant) {
+        const numbered = enchant.match(/^Enchant #(\d+)$/)
+        if (numbered) enchantId = Number(numbered[1])
+        else {
+          const options = slotEnchants.get(request.slot) ?? this.enhancements('enchant', request.slot)
+          slotEnchants.set(request.slot, options)
+          const option = options.find(entry => entry.name.toLowerCase() === strip(enchant))
+          enchantId = option ? enchantOf.get(option.itemId) ?? null : null
+          if (!enchantId) enchantId = (db.prepare('SELECT id FROM enchants WHERE lower(name) = ? ORDER BY id DESC').get(strip(enchant)) as { id: number } | undefined)?.id ?? null
+        }
+      }
+      const gemIds = request.gems.slice(0, 4).map(gem => { const numbered = gem.match(/^Gem #(\d+)$/); return numbered ? Number(numbered[1]) : gems.get(gem.trim().toLowerCase()) ?? 0 })
+      let bonusIds: number[] = []
+      if (request.embellishment) { try { bonusIds = JSON.parse((db.prepare('SELECT bonus_lists FROM embellishments WHERE item_id = ?').get(request.embellishment) as { bonus_lists: string } | undefined)?.bonus_lists ?? '[]') } catch { bonusIds = [] } }
+      return { enchantId, gemIds, bonusIds }
     })
   }
 
