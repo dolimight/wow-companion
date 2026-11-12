@@ -30,6 +30,11 @@ const bridge:NativeBridge={
     ipcRenderer.on('companion:close-requested',receive)
     return ()=>ipcRenderer.removeListener('companion:close-requested',receive)
   },
+  onAlert:(listener)=>{
+    const receive=(_event:Electron.IpcRendererEvent,alert:{title:string;body:string})=>listener(alert)
+    ipcRenderer.on('companion:alert',receive)
+    return ()=>ipcRenderer.removeListener('companion:alert',receive)
+  },
   closeWindow:()=>ipcRenderer.invoke('companion:window-close'),
   connection:()=>ipcRenderer.invoke('companion:connection'),
   chooseImportFile:()=>ipcRenderer.invoke('companion:import-file'),
