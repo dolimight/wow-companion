@@ -29,6 +29,8 @@ export type TopCount = {
   levelRange?: { min: number; max: number }
   /** The most worn copy, preferring the higher level on a tie; missing in results cached before it was recorded */
   copy?: TopCopy | null
+  /** For items, the gems most players socket into this item, one per socket; missing in results cached before it was recorded */
+  gems?: number[]
 }
 
 /** The copy most players wear, with the higher level winning a tie */

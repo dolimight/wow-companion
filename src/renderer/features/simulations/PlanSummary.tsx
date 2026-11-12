@@ -33,7 +33,8 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
   const whole = plan.whole === null ? entries[0] : entries[plan.whole]
   const topIndex = plan.top?.index ?? null
   const topEntry = topIndex === null ? null : entries[topIndex] ?? null
-  const singles = entries.filter(entry => entry.index !== plan.whole && entry.index !== topIndex).map(entry => ({ ...entry, ...change(baseline, entry.value) })).sort((a, b) => b.comparison.difference - a.comparison.difference)
+  const topAlone = new Set((plan.top?.singles ?? []).map(entry => entry.index))
+  const singles = entries.filter(entry => entry.index !== plan.whole && entry.index !== topIndex && !topAlone.has(entry.index)).map(entry => ({ ...entry, ...change(baseline, entry.value) })).sort((a, b) => b.comparison.difference - a.comparison.difference)
   if (!whole) return null
   const reading = topEntry ? benchmarkReading(whole.value, [{ kind: 'gear', value: topEntry.value }]) : null
   const topGain = topEntry ? compareSimulationValues(whole.value, topEntry.value) : null

@@ -3,8 +3,8 @@ import { fetchTopPlayers, wornLevels } from './raiderio-top'
 import { commonCopy } from '../../shared/top-players'
 
 const player = (name: string) => ({ score: 3500, runs: [{ mythicLevel: 20 }], character: { name, path: `/characters/us/realm/${name}`, class: { name: 'Death Knight' }, spec: { id: 250, name: 'Blood' }, realm: { name: 'Realm', slug: 'realm' }, region: { slug: 'us' }, talentLoadoutText: null } })
-const helm = (level: number, bonuses: number[]) => ({ gear: { item_level_equipped: level, items: { head: { item_id: 42, name: 'Crown', item_level: level, bonuses } } } })
-const profiles: Record<string, unknown> = { A: helm(342, [2, 1]), B: helm(342, [1, 2]), C: helm(334, [1, 3]) }
+const helm = (level: number, bonuses: number[], gems: number[] = []) => ({ gear: { item_level_equipped: level, items: { head: { item_id: 42, name: 'Crown', item_level: level, bonuses, gems } } } })
+const profiles: Record<string, unknown> = { A: helm(342, [2, 1], [7]), B: helm(342, [1, 2], [7]), C: helm(334, [1, 3], [7, 8]) }
 
 function respond(url: URL) {
   if (url.pathname === '/api/v1/mythic-plus/static-data') return { seasons: [{ slug: 'season-test', name: 'Test Season', is_main_season: true, starts: { us: '2026-01-01T00:00:00Z' } }] }
@@ -22,6 +22,8 @@ describe('top players gear', () => {
     const crown = result.slots.head?.items[0]
     // The most worn level, never an average between ranks that no copy of the item has
     expect(crown).toMatchObject({ id: 42, count: 3, level: 342, levelRange: { min: 334, max: 342 }, copy: { itemLevel: 342, bonusIds: [1, 2], count: 2 } })
+    // The gems socketed in this item by most players, one per socket, not the slot's most used gems overall
+    expect(crown?.gems).toEqual([7])
   })
   it('reports a level players actually wear, the higher on a tie, with the spread', () => {
     // Six at 344 and five at 341 averaged to 342, a level the weapon never drops at
