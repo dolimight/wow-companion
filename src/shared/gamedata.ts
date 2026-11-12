@@ -58,7 +58,7 @@ export type ItemPower = { itemLevel: number; armor: number | null; stats: ItemPo
 export type ItemLootShare = { encounter: string; instance: string; kind: ItemSource['kind']; total: number; forCharacter: number | null }
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
 /** A crafting reagent that embellishes an item; `effect` is filled for the planned item's level, `complete` false when some values are unknown */
-export type EmbellishmentOption = EnhancementOption & { applies: string | null; limit: string; effect: string; complete: boolean }
+export type EmbellishmentOption = EnhancementOption & { applies: string | null; limit: string; effect: string; complete: boolean; bonusLists?: number[] }
 export type ItemSearchPage = { items: Array<ItemSummary & { maxLevel?: ItemTracks['max'] | null; effects?: ItemPowerEffect[] }>; nextOffset: number | null }
 export type AppearanceOption = { appearanceId: number; modifiedAppearanceId: number; itemId: number; itemName: string; quality: number; icon: number | null }
 

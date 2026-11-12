@@ -761,7 +761,7 @@ export class GameDataEngine {
   embellishments(itemId: number | null, itemLevel: number | null): EmbellishmentOption[] {
     const db = this.ready()
     if (this.indexVersion !== INDEX_VERSION) return []
-    const rows = db.prepare('SELECT * FROM embellishments ORDER BY name').all() as Array<{ item_id: number; name: string; quality: number; icon: number | null; description: string; applies: string | null; limit_name: string }>
+    const rows = db.prepare('SELECT * FROM embellishments ORDER BY name').all() as Array<{ item_id: number; name: string; quality: number; icon: number | null; description: string; applies: string | null; limit_name: string; bonus_lists?: string }>
     const item = itemId ? db.prepare('SELECT * FROM items WHERE id = ?').get(itemId) as ItemRow | undefined : undefined
     const scalingRow = itemLevel ? db.prepare('SELECT data FROM scaling WHERE item_level = ?').get(Math.round(itemLevel)) as { data: string } | undefined : undefined
     const level = scalingRow ? JSON.parse(scalingRow.data) as ScalingLevel : null
@@ -781,7 +781,7 @@ export class GameDataEngine {
       // The reagent's own text is read like a spell description so its tokens fill in the same way
       spells.set(-1, { id: -1, name: row.name, description: row.description, durationMs: null, maxStacks: null, effects: [] })
       const effect = level ? effectText(-1, spells, block, level) : { text: row.description.replace(/\$@spelldesc\d+/g, ''), complete: false }
-      return { itemId: row.item_id, name: row.name, quality: row.quality, icon: row.icon, applies: row.applies, limit: row.limit_name, effect: cleanGameText(effect.text).replace(/Unique-Equipped:[^.]*\.?/gi, ' ').replace(/\.(?=[A-Z])/g, '. ').replace(/\s+/g, ' ').trim(), complete: effect.complete }
+      return { itemId: row.item_id, name: row.name, quality: row.quality, icon: row.icon, applies: row.applies, limit: row.limit_name, bonusLists: (() => { try { return JSON.parse(row.bonus_lists ?? '[]') as number[] } catch { return [] } })(), effect: cleanGameText(effect.text).replace(/Unique-Equipped:[^.]*\.?/gi, ' ').replace(/\.(?=[A-Z])/g, '. ').replace(/\s+/g, ' ').trim(), complete: effect.complete }
     })
   }
 
