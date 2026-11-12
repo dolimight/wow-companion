@@ -42,7 +42,9 @@ describe('character and specialization equipment checks',()=>{
   it('honors explicit overrides and only infers primary-stat suitability when absent',()=>{
     const trinket={...armor(null),inventoryType:12,subclassId:0,primaryStats:['agility' as const],specIds:[250]}
     expect(getItemCompatibility(trinket,character('Death Knight',250)).compatible).toBe(true)
-    expect(getItemCompatibility(trinket,character('Death Knight',251)).compatible).toBe(false)
+    // A trinket's specialization list only governs loot, so a Blood trinket still fits Frost
+    expect(getItemCompatibility(trinket,character('Death Knight',251)).compatible).toBe(true)
+    expect(getItemCompatibility({...armor('plate'),specIds:[250]},character('Death Knight',251)).compatible).toBe(false)
     expect(getItemCompatibility({...trinket,specIds:[]},character('Death Knight',250)).compatible).toBe(false)
   })
 })

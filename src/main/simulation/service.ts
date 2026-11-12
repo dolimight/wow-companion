@@ -39,7 +39,7 @@ export async function engineFolder(configured: string | null, roots: string[]) {
   }
   return undefined
 }
-export type EnhancementLookup = (requests: Array<{ slot: GearItem['slot']; enchant: string | null; gems: string[]; embellishment: number | null }>) => Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>>
+export type EnhancementLookup = (requests: Array<{ slot: GearItem['slot']; enchant: string | null; gems: string[]; embellishment: number | null; enchantItem?: number }>) => Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>>
 export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
@@ -139,6 +139,19 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     })
   }
 
+  /**
+   * Raider.IO names a slot's enchant by the scroll or kit item applied, while the engine needs the enchant itself.
+   * Each slot keeps only the enchants that resolve; without game data their items run unenchanted, as before
+   */
+  async function withEnchantIds(top: TopPlayers): Promise<TopPlayers> {
+    const groups = Object.entries(top.slots) as Array<[keyof TopPlayers['slots'], NonNullable<TopPlayers['slots'][keyof TopPlayers['slots']]>]>
+    const wanted = [...new Set(groups.flatMap(([, slot]) => slot.enchants.map(enchant => enchant.id)))].slice(0, 40)
+    const resolved = wanted.length && options.enhancementIds ? await options.enhancementIds(wanted.map(id => ({ slot: 'head', enchant: null, gems: [], embellishment: null, enchantItem: id }))).catch(() => null) : null
+    const byItem = new Map(wanted.map((id, index) => [id, resolved?.[index]?.enchantId ?? null]))
+    const slots: TopPlayers['slots'] = {}
+    for (const [group, slot] of groups) slots[group] = { ...slot, enchants: slot.enchants.flatMap(enchant => { const id = byItem.get(enchant.id); return id ? [{ ...enchant, id }] : [] }) }
+    return { ...top, slots }
+  }
   function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null, cap: number | null) {
     if (!top || top.specId !== current.specId || !top.gearPlayers) return null
     const { gear } = benchmarkPlan(current, top, cap)
@@ -291,7 +304,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       // compared with the highest levels top players really wear; otherwise their items are capped there too
       const beyond = draft.items.some(item => item.itemLevel != null && ladderCeiling != null && item.itemLevel > ladderCeiling)
       const cap = beyond ? null : ladderCeiling
-      const topForRun = top ? capTopLevels(top, cap) : null
+      const topForRun = top ? capTopLevels(await withEnchantIds(top), cap) : null
       if (!swaps.length && !planTalents) throw new Error(skipped[0] ?? 'Your plan matches the gear and talents you already use')
       if (swaps.length) try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
@@ -330,7 +343,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const prepared = await prepare(start)
       if (top.specId !== prepared.current.specId) throw new Error('The top players sampled are for another specialization')
       if (!top.gearPlayers) throw new Error('No top player gear was found for this specialization')
-      const plan = benchmarkPlan(prepared.current, top, ladderCeiling)
+      const plan = benchmarkPlan(prepared.current, await withEnchantIds(top), ladderCeiling)
       if (!plan.kinds.length) throw new Error('You already wear the items and talents most top players use')
       try { swapIn(prepared.current, plan.gear) } catch (error) { throw new Error(`${benchmarkLabels.gear}: ${error instanceof Error ? error.message : 'this swap is not allowed'}`) }
       const gearLines = plan.gear.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${benchmarkLabels.gear}: ${line.reasons[0] ?? 'an item could not be described to the engine'}`); return line.text })
