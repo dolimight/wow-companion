@@ -52,7 +52,6 @@ export function Roster({ players, plan, subject, chosen, onChoose }: { players: 
               <span className="sim-roster-dps">{Math.round(player.value.mean).toLocaleString()}<small> DPS</small></span>
               <span className="sim-roster-gap">
                 <Badge tone={tone}>{gap.verdict === 'unknown' ? 'Unknown' : gap.verdict === 'sidegrade' ? 'Even with yours' : `${signed(gap.difference)} vs yours`}</Badge>
-                {selected && <Badge tone="blue">Comparing</Badge>}
                 <button type="button" className="sim-roster-link" aria-label={`Open ${player.name} on Raider.IO`} onClick={() => void api.openExternal(player.url).catch(error => notify(errorMessage(error)))}><ExternalLink size={13} /></button>
               </span>
             </div>
