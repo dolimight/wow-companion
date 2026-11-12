@@ -12,7 +12,7 @@ import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
 import { ladderCeiling } from '../item-tracks'
 import { benchmarkLabels, benchmarkPlan, gearSlotLabels, planSwaps } from '../../shared/simulation-benchmark'
-import type { TopPlayers } from '../../shared/top-players'
+import { capTopLevels, type TopPlayers } from '../../shared/top-players'
 import { classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
 import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, tankSpecs } from './profiles'
 import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
@@ -124,15 +124,15 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
    * The top players' most worn items on your character, for reading a plan against them, plus the slots where the plan
    * falls short of what they wear. Null when no usable sample exists or their set cannot be described to the engine
    */
-  function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null) {
+  function planTopComparison(current: Character, swaps: GearItem[], top: TopPlayers | null, cap: number | null) {
     if (!top || top.specId !== current.specId || !top.gearPlayers) return null
-    const { gear } = benchmarkPlan(current, top, ladderCeiling)
+    const { gear } = benchmarkPlan(current, top, cap)
     if (!gear.length) return null
     try { swapIn(current, gear) } catch { return null }
     const entries = gear.map(item => ({ item, text: itemLine(item) }))
     if (entries.some(entry => !entry.text.text || entry.text.reasons.length)) return null
     const planned = swapIn(current, swaps)
-    const differences = benchmarkPlan({ ...current, gear: planned }, top, ladderCeiling).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
+    const differences = benchmarkPlan({ ...current, gear: planned }, top, cap).gear.map(item => ({ slot: item.slot, plan: planned.find(value => value.slot === item.slot)?.name ?? 'Empty', top: item.name, itemLevel: item.itemLevel ?? 0 }))
     return { entries: entries.map(entry => ({ item: entry.item, text: entry.text.text! })), differences }
   }
   /** Checks shared by every job: engine, activity, role, and a complete matching baseline profile */
@@ -269,21 +269,26 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId })
       if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
       if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
-      const { swaps, skipped, capped } = planSwaps(prepared.current, draft.items, ladderCeiling)
+      const { swaps, skipped } = planSwaps(prepared.current, draft.items)
+      // Planned levels run as chosen. A plan that reaches past the top regular rank, such as an ascension level, is
+      // compared with the highest levels top players really wear; otherwise their items are capped there too
+      const beyond = draft.items.some(item => item.itemLevel != null && ladderCeiling != null && item.itemLevel > ladderCeiling)
+      const cap = beyond ? null : ladderCeiling
+      const topForRun = top ? capTopLevels(top, cap) : null
       if (!swaps.length) throw new Error(skipped[0] ?? 'Your plan matches the gear you already wear')
       try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
       // The whole plan first, then each upgrade alone, all measured against the same unchanged reference
       const sets = [...(described.length > 1 ? [{ label: 'Whole plan', entries: described }] : []), ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry] }))]
-      const comparison = planTopComparison(prepared.current, swaps, top)
+      const comparison = planTopComparison(prepared.current, swaps, topForRun, cap)
       if (comparison) sets.push({ label: benchmarkLabels.gear, entries: comparison.entries })
       const lines = sets.flatMap((set, index) => set.entries.map(entry => `profileset."companion_candidate_${index + 1}"+=${entry.text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
-        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped: [...capped, ...skipped],
-        top: comparison && top ? { index: sets.length - 1, population: top.population, players: top.gearPlayers, differences: comparison.differences, cap: ladderCeiling } : null,
+        name: draft.name, activity, whole: described.length > 1 ? 0 : null, skipped,
+        top: comparison && topForRun ? { index: sets.length - 1, population: topForRun.population, players: topForRun.gearPlayers, differences: comparison.differences, cap, beyondCap: beyond } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }
       const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })

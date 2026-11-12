@@ -30,36 +30,26 @@ export function describedItem(current: GearItem, slot: GearItem['slot'], item: P
   }
 }
 
-export type PlanSwaps = { swaps: GearItem[]; skipped: string[]; capped: string[] }
+export type PlanSwaps = { swaps: GearItem[]; skipped: string[] }
 /**
  * The changes a saved plan makes to the gear you wear. A planned item with its own exact link is used as is; otherwise
- * it is described by id and level with your enchant and gems. Items you already wear at that level or higher are left alone.
- * Planned levels above `cap`, the top regular upgrade rank, run at the cap: ascension levels above it are too rare to plan on
+ * it is described by id and level with your enchant and gems. Items you already wear at that level or higher are left alone
  */
-export function planSwaps(character: Pick<Character, 'gear'>, planned: GearItem[], cap: number | null = null): PlanSwaps {
+export function planSwaps(character: Pick<Character, 'gear'>, planned: GearItem[]): PlanSwaps {
   const swaps: GearItem[] = []
   const skipped: string[] = []
-  const capped: string[] = []
-  for (const original of planned) {
-    const label = gearSlotLabels[original.slot]
-    const over = cap !== null && original.itemLevel !== null && original.itemLevel > cap
-    // A capped item drops its link and bonus IDs, which name the higher level, and keeps its own enchant and gems
-    const item: GearItem = over ? { ...original, itemLevel: cap, itemLink: null, bonusIds: [] } : original
-    if (over) capped.push(`${label}: ${item.name} runs at item level ${cap}, the top regular upgrade rank, instead of ${original.itemLevel}`)
+  for (const item of planned) {
+    const label = gearSlotLabels[item.slot]
     if (!item.itemId) { skipped.push(`${label}: the planned item is unknown`); continue }
     const current = character.gear.find(value => value.slot === item.slot)
     if (current?.itemId === item.itemId && (item.itemLevel === null || (current.itemLevel ?? 0) >= item.itemLevel)) continue
     if (item.itemLevel === null) { skipped.push(`${label}: the planned item level is unknown`); continue }
     const exact = item.itemLink && itemLinkVariant(item.itemLink).bonusIds !== null
     if (exact) { swaps.push(item); continue }
-    if (!current) {
-      if (over) { swaps.push(item); continue }
-      skipped.push(`${label}: nothing is equipped there to copy enchants and gems from`); continue
-    }
-    const described = describedItem(current, item.slot, item)
-    swaps.push(over ? { ...described, enchantId: original.enchantId ?? itemLinkVariant(original.itemLink).enchantId ?? described.enchantId, gemIds: original.gemIds ?? itemLinkVariant(original.itemLink).gemIds ?? described.gemIds } : described)
+    if (!current) { skipped.push(`${label}: nothing is equipped there to copy enchants and gems from`); continue }
+    swaps.push(describedItem(current, item.slot, item))
   }
-  return { swaps, skipped, capped }
+  return { swaps, skipped }
 }
 
 const loadoutPattern = /^[A-Za-z0-9+/=]{1,400}$/

@@ -43,9 +43,13 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
   const historyFile = path.join(options.cacheDir, 'token-history.json')
   const topFile = (key: string) => path.join(options.cacheDir, `top-players-${key}.json`)
 
-  /** Every consumer sees top players' items capped at the top regular upgrade rank */
-  async function topPlayers(input: { specId: number; specName: string; className: string; region: TopRegion; force?: boolean }): Promise<TopPlayers> {
-    return capTopLevels(await rawTopPlayers(input), ladderCeiling)
+  /**
+   * Top players' items capped at the top regular upgrade rank, which is what every screen shows. A plan simulation asks
+   * for the uncapped levels, since a plan that reaches past the cap is compared with what top players really wear
+   */
+  async function topPlayers(input: { specId: number; specName: string; className: string; region: TopRegion; force?: boolean; uncapped?: boolean }): Promise<TopPlayers> {
+    const value = await rawTopPlayers(input)
+    return input.uncapped ? value : capTopLevels(value, ladderCeiling)
   }
 
   async function rawTopPlayers(input: { specId: number; specName: string; className: string; region: TopRegion; force?: boolean }): Promise<TopPlayers> {
