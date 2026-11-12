@@ -278,7 +278,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
 
 function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellishment, embellishmentArt, share }: {
   itemId: number | null; name: string; level: number | null; items: Map<number, import('../../../shared/gamedata').ItemSummary>
-  enchant: string | null; enchantArt: { icon: number | null; quality: number } | null; gems: number[]; embellishment: string | null
+  enchant: string | null; enchantArt: { itemId: number; icon: number | null; quality: number; name: string } | null; gems: number[]; embellishment: string | null
   embellishmentArt?: { itemId: number; icon: number | null } | null; share?: string | null
 }) {
   const info = itemId ? items.get(itemId) : undefined
@@ -293,7 +293,10 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
         </span>
       </ItemHoverCard>
       <span className="sim-extras">
-        {enchant && <Badge><span className="sim-extra" title={enchant}>{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge>}
+        {/* The enchant, like gems and the embellishment, opens its scroll's game tooltip on hover */}
+        {enchant && (enchantArt
+          ? <ItemHoverCard itemId={enchantArt.itemId} enhancement={{ ...enchantArt, kind: 'enchant' }} name={enchant}><span className="sim-hover"><Badge><span className="sim-extra">{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge></span></ItemHoverCard>
+          : <Badge><span className="sim-extra" title={enchant}><WandSparkles size={12} />{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge>)}
         {/* Each gem and the embellishment open their game tooltip on hover */}
         {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover"><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
         {embellishment && (embellishmentArt
