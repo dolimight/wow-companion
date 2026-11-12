@@ -1,6 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ClipboardList, Copy, Cpu, ExternalLink, FileCode2, FlaskConical, FolderOpen, Link2, LoaderCircle, Play, Settings2, Trophy, X } from 'lucide-react'
+import { CallChip } from '../../components/motion/CallChip'
+import { DamageHistory } from './DamageHistory'
 import type { Activity, Character } from '../../../shared/domain'
 import { compareSimulationValues, requestScenario, simulationScenarios, type SimulationJob, type SimulationScenarioId } from '../../../shared/simulation'
 import { api } from '../../lib/client'
@@ -42,6 +44,22 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
   useUpdateBlocker(text !== null && text !== exported?.text && text !== savedProfileText, 'Save your simulation profile before restarting')
   const data = workspace.data
   const running = data?.jobs.find(active) ?? null
+  // A run that just finished stays on screen for a moment so its chip can settle green or shake red
+  const [justFinished, setJustFinished] = useState<SimulationJob | null>(null)
+  const lastRunning = useRef<string | null>(null)
+  useEffect(() => {
+    if (running) { lastRunning.current = running.id; setJustFinished(null); return }
+    const id = lastRunning.current
+    if (!id) return
+    const job = data?.jobs.find(entry => entry.id === id)
+    if (!job || active(job)) return
+    lastRunning.current = null
+    if (job.state !== 'completed' && job.state !== 'failed') return
+    setJustFinished(job)
+    const timer = setTimeout(() => setJustFinished(null), 4000)
+    return () => clearTimeout(timer)
+  }, [running?.id, data]) // eslint-disable-line react-hooks/exhaustive-deps
+  const expectedMs = typicalDuration(data?.jobs ?? [], running ?? justFinished)
   // Only one simulation at a time: every run waits until the current one finishes
   const busy = starting !== null || running !== null || mutation.isPending
   const ready = !!data?.configured && exported?.coverage === 'complete' && activity !== 'pvp'
@@ -90,7 +108,9 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
         </details>
     </section>
 
-    {running && <RunningJob job={running} disabled={mutation.isPending} onCancel={() => perform(() => api.cancelSimulation({ characterId: character.id, jobId: running.id }))} />}
+    {(running ?? justFinished) && <RunningJob job={(running ?? justFinished)!} expectedMs={expectedMs} disabled={mutation.isPending || !running} onCancel={() => running && perform(() => api.cancelSimulation({ characterId: character.id, jobId: running.id }))} />}
+
+    {data && <DamageHistory jobs={data.jobs} scenario={scenario} />}
 
     <section className="surface simulation-section" aria-label="Simulation jobs">
       <div className="simulation-heading"><h2>Results</h2>{finished.length > 0 && <span className="muted small">{finished.length} saved</span>}</div>
@@ -167,14 +187,20 @@ function JobRow({ job, onOpen }: { job: SimulationJob; onOpen?: () => void }) {
   </li>
 }
 
-function RunningJob({ job, disabled, onCancel }: { job: SimulationJob; disabled: boolean; onCancel: () => void }) {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer) }, [])
-  const since = job.startedAt ? Math.max(0, Math.floor((now - Date.parse(job.startedAt)) / 1000)) : null
-  const elapsed = since == null ? null : `${Math.floor(since / 60)}:${String(since % 60).padStart(2, '0')}`
-  return <section className="surface simulation-section sim-running" aria-label="Running simulation" role="status">
-    <LoaderCircle size={18} className="spin" aria-hidden="true" />
-    <span className="sim-result-text"><strong>{job.state === 'queued' ? 'Waiting to start' : 'Running'} · {job.label}</strong><small className="muted">{scenarioLine(job)} · {job.request.options.iterations.toLocaleString()} iterations{elapsed ? ` · ${elapsed} elapsed` : ''}</small></span>
-    <Button disabled={disabled} onClick={onCancel}><X size={14} />Cancel</Button>
+/** How long runs of this kind usually take here, from the last few finished ones; a first run guesses a minute */
+function typicalDuration(jobs: SimulationJob[], current: SimulationJob | null) {
+  const kind = current ? kindOf(current) : null
+  const spans = jobs.filter(job => job.state === 'completed' && job.startedAt && job.finishedAt && (!kind || kindOf(job) === kind))
+    .map(job => Date.parse(job.finishedAt!) - Date.parse(job.startedAt!)).filter(ms => ms > 0).slice(0, 5).sort((a, b) => a - b)
+  return spans.length ? spans[Math.floor(spans.length / 2)]! : 60_000
+}
+
+function RunningJob({ job, expectedMs, disabled, onCancel }: { job: SimulationJob; expectedMs: number; disabled: boolean; onCancel: () => void }) {
+  const status = job.state === 'completed' ? 'done' : job.state === 'failed' ? 'error' : job.state === 'queued' ? 'idle' : 'running'
+  const words = job.state === 'completed' ? 'Finished' : job.state === 'failed' ? 'Failed' : job.state === 'queued' ? 'Waiting to start' : 'Running'
+  return <section className="surface simulation-section sim-running" aria-label="Running simulation">
+    <CallChip icon={<Cpu size={14} />} name="SimulationCraft" argument={job.label} status={status} expectedMs={expectedMs} startedAt={job.startedAt ? Date.parse(job.startedAt) : null} />
+    <span className="sim-result-text"><strong>{words}</strong><small className="muted">{scenarioLine(job)} · {job.request.options.iterations.toLocaleString()} iterations{status === 'running' ? ` · usually about ${Math.max(1, Math.round(expectedMs / 1000))} s` : ''}</small></span>
+    {status === 'running' || status === 'idle' ? <Button disabled={disabled} onClick={onCancel}><X size={14} />Cancel</Button> : <span />}
   </section>
 }

@@ -2,9 +2,7 @@
   container-type: inline-size;
   padding: 20px;
   border-radius: 12px;
-  background:
-    radial-gradient(ellipse 46% 62% at 50% 44%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 72%),
-    var(--surface);
+  background: var(--surface);
 }
 .character-panel-doll {
   display: grid;

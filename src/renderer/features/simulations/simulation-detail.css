@@ -35,8 +35,8 @@
 .sim-chart-zero { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); opacity: .6; }
 .sim-chart-bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; background: var(--muted); transition: width .5s cubic-bezier(.2, .8, .2, 1), left .5s cubic-bezier(.2, .8, .2, 1); }
 .sim-chart-spread { position: absolute; top: 50%; height: 2px; margin-top: -1px; background: var(--ink); opacity: .35; border-radius: 1px; }
-.sim-chart li[data-verdict="higher"] .sim-chart-bar { background: linear-gradient(90deg, color-mix(in srgb, var(--sim-up) 55%, transparent), var(--sim-up)); }
-.sim-chart li[data-verdict="lower"] .sim-chart-bar { background: linear-gradient(270deg, color-mix(in srgb, var(--sim-down) 55%, transparent), var(--sim-down)); }
+.sim-chart li[data-verdict="higher"] .sim-chart-bar { background: var(--sim-up); }
+.sim-chart li[data-verdict="lower"] .sim-chart-bar { background: var(--sim-down); }
 .sim-chart-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .sim-chart li[data-verdict="higher"] .sim-chart-value { color: var(--sim-up); }
 .sim-chart li[data-verdict="lower"] .sim-chart-value { color: var(--sim-down); }
@@ -93,8 +93,6 @@
 :root[data-reduced-motion="true"] .sim-card:hover { transform: none; }
 
 /* A star of light runs around the header; the frame leaves the edge clear so the trail shows */
-.sim-hero-frame { display: block; padding: 1.5px; font-weight: inherit; line-height: inherit; text-align: inherit; }
-.sim-hero-frame > .sim-hero { border-color: transparent; border-radius: 14.5px; }
 /* The star light bleeds past the header; clip it so the page never scrolls sideways */
 .sim-detail { overflow-x: clip; overflow-clip-margin: 40px; }
 
@@ -129,8 +127,3 @@
 .plan-verdict > strong { font-size: 30px; }
 .plan-verdict .simulation-benchmark-meter { margin: 6px 0 0; }
 .plan-tiles .plan-tile:last-child:not(:first-child) > strong { font-size: 18px; }
-.plan-compare { display: grid; gap: 10px; }
-.plan-compare h4 { margin: 0; font-size: 14px; font-weight: 600; }
-.plan-compare-table th[scope="row"] { font-weight: 500; color: var(--secondary); white-space: nowrap; }
-.plan-compare-table td { font-size: 13px; }
-.plan-compare-table td:last-child { color: var(--ink); font-weight: 550; }

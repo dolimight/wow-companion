@@ -732,7 +732,7 @@ textarea::placeholder {
 }
 .portrait-preview.empty-portrait {
   height: 190px;
-  background: radial-gradient(ellipse, var(--accent-soft), transparent 70%);
+  background: var(--accent-soft);
   border-radius: 10px;
 }
 .portrait-preview .avatar {

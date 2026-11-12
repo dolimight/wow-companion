@@ -14,6 +14,7 @@ import { errorMessage, notify } from "../../lib/notify";
 import { ItemIcon } from "../items/ItemIcon";
 import { useGameData } from "../items/items";
 import "./plan-talents.css";
+import { LatticeLoader } from "../../components/motion/LatticeLoader";
 
 type Talents = NonNullable<GearDraft["talents"]>;
 const CELL = 34, STEP = 600, NODE = 28;
@@ -120,7 +121,7 @@ export function PlanTalents({ character, live, talents, onChange }: {
       </div>
 
       {!specId ? <p className="muted">The plan's specialization is unknown, so no talent tree can be shown</p>
-        : tree.isPending ? <p className="muted" role="status">Reading talents from your game files…</p>
+        : tree.isPending ? <LatticeLoader label="Reading talents from your game files" pattern="spiral" />
           : tree.isError ? <p className="error" role="alert">{errorMessage(tree.error)}</p>
             : !tree.data ? <p className="muted">This specialization has no talent tree in your game files</p>
               : build && "error" in build ? <p className="error" role="alert">{build.error}</p>
@@ -135,7 +136,7 @@ export function PlanTalents({ character, live, talents, onChange }: {
 // Talent spells don't scale with items, so only fixed values fill in; anything else stays marked unknown
 const noItem: ItemStatBlock = { statTypes: [], alloc: [], socketShare: [], inventoryType: 0, classId: 0, subclassId: 0, quality: 4 };
 const noLevel: ScalingLevel = { itemLevel: 0, epic: [], superior: [], good: [], damageReplace: 0, damageSecondary: 0, rating: null, stamina: null, armorTotal: null, armorQuality: null, shield: null, socketCost: null };
-function describe(tree: TalentTree, spellId: number) {
+export function talentDescription(tree: TalentTree, spellId: number) {
   if (!spellId || !tree.spells[spellId]) return null;
   const spells = new Map(Object.entries(tree.spells).map(([id, spell]) => [Number(id), spell]));
   return effectText(spellId, spells, noItem, noLevel).text || null;
@@ -244,7 +245,7 @@ function TalentButton({ node, tree, build, onBuild, style }: { node: TalentNode;
                   <small>{node.granted ? "Learned automatically" : active ? `Rank ${pick!.ranks} of ${entry.maxRanks}` : entry.maxRanks > 1 ? `${entry.maxRanks} ranks` : "1 rank"}</small>
                 </div>
               </div>
-              {describe(tree, entry.spellId) && <p>{describe(tree, entry.spellId)}</p>}
+              {talentDescription(tree, entry.spellId) && <p>{talentDescription(tree, entry.spellId)}</p>}
               {choice && !node.granted && (active
                 ? <span className="talent-detail-state">Chosen</span>
                 : <Button disabled={!!reason} onClick={() => onBuild(learn(tree, build, node.id, index))}>{pick ? "Switch to this" : "Choose this"}</Button>)}

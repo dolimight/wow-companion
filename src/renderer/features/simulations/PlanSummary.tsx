@@ -1,6 +1,6 @@
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
-import { benchmarkReading, gearSlotLabels, type GearSlotName } from '../../../shared/simulation-benchmark'
+import { benchmarkReading } from '../../../shared/simulation-benchmark'
 
 type Result = NonNullable<SimulationJob['result']>
 type Value = Result['values'][number]
@@ -46,7 +46,6 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
   const versusNote = !versus || !topEntry || versus.verdict === 'unknown' ? 'The engine did not report uncertainty, so the gap cannot be judged'
     : versus.verdict === 'sidegrade' ? 'Your finished plan matches their gear within the uncertainty'
     : `${versus.difference > 0 ? 'Your plan does' : 'Their gear does'} ${Math.abs(Math.round(versus.difference)).toLocaleString()} DPS more · ${(Math.abs(versus.difference) / topEntry.value.mean * 100).toFixed(1)}% ${versus.difference > 0 ? 'above' : 'below'} theirs`
-  const planLevels = new Map(plan.swaps.map(item => [item.slot, item]))
   const totalTile = <Tile label={plan.whole === null ? 'Against your current gear' : `Against your current gear · ${plan.swaps.length} upgrades`} value={measured ? `${signed(total.comparison.difference)} DPS` : total.comparison.verdict === 'sidegrade' ? 'About the same' : 'Unknown'}
     note={measured ? `${percent(Math.abs(total.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${total.comparison.difference > 0 ? 'more' : 'less'} damage than you do now${total.takenText ? ` · ${total.takenText}` : ''}` : undefined} tone={total.comparison.verdict === 'higher' ? 'up' : total.comparison.verdict === 'lower' ? 'down' : undefined} />
   return <div className="plan-summary">
@@ -59,21 +58,6 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
       {first && <Tile label="Get this first" value={itemOnly(first.label)} note={`${signed(first.comparison.difference)} DPS on its own`} tone="up" />}
     </div>
     {losses.length > 0 && <p className="plan-warning">{losses.length === 1 ? `${itemOnly(losses[0]!.label)} is worse than what you wear now` : `${losses.length} planned items are worse than what you wear now`} · They are at the bottom of the results</p>}
-    {plan.top && <section className="plan-compare" aria-label="Your plan beside top players' gear">
-      <h4>{plan.top.differences.length ? `Where top players' gear differs from your plan · ${plan.top.differences.length} ${plan.top.differences.length === 1 ? 'slot' : 'slots'}` : 'Your plan matches the top players’ items slot for slot'}</h4>
-      {plan.top.differences.length > 0 && <div className="table-wrap"><table className="data-table plan-compare-table">
-        <thead><tr><th scope="col">Slot</th><th scope="col">Your plan</th><th scope="col">Top players</th></tr></thead>
-        <tbody>{plan.top.differences.map(item => {
-          const mine = planLevels.get(item.slot)
-          return <tr key={item.slot}>
-            <th scope="row">{gearSlotLabels[item.slot as GearSlotName] ?? item.slot}</th>
-            <td>{item.plan}{mine && mine.to === item.plan ? <small className="muted"> · {mine.itemLevel}</small> : null}</td>
-            <td>{item.top}<small className="muted"> · {item.itemLevel}</small>{item.plan === item.top && <small className="muted"> · same item, higher level</small>}</td>
-          </tr>
-        })}</tbody>
-      </table></div>}
-      <p className="muted small">{plan.top.population} · Their most worn items at the highest level any of them wears{plan.top.cap ? `, capped at item level ${plan.top.cap}` : ''}, run on your character with your enchants and gems</p>
-    </section>}
     <details className="simulation-details">
       <summary>What was tested</summary>
       <ul>

@@ -1,0 +1,270 @@
+import { useMemo, type ReactNode } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { ArrowDown, ArrowUp, Equal, Gem, Layers, Sparkles, Swords, WandSparkles } from 'lucide-react'
+import type { Character, GearItem, GearSlot } from '../../../shared/domain'
+import type { SimulationJob } from '../../../shared/simulation'
+import { compareSimulationValues } from '../../../shared/simulation'
+import { gearSlotLabels } from '../../../shared/simulation-benchmark'
+import { topRegionNames, topSlotGroups, type TopCount, type TopPlayers, type TopRegion } from '../../../shared/top-players'
+import { embellishmentOf } from '../../../shared/item-enhancements'
+import { itemLinkVariant } from '../../../shared/item-link'
+import { talentDifferences, type TalentChoice } from '../../../shared/sim-compare'
+import type { TalentTree } from '../../../shared/talents'
+import { api } from '../../lib/client'
+import { iconUrl } from '../../lib/assets'
+import { GearSlotIcon } from '../../components/GearSlotIcon'
+import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
+import { ItemIcon, useGameData } from '../items/items'
+import { ItemHoverCard } from '../items/ItemHoverCard'
+import { talentDescription } from '../plan/PlanTalents'
+import './sim-compare.css'
+import { LatticeLoader } from '../../components/motion/LatticeLoader'
+
+type Result = NonNullable<SimulationJob['result']>
+type Variant = SimulationJob['request']['baseline']['items'][number]
+const ORDER: GearSlot[] = ['head', 'neck', 'shoulder', 'back', 'chest', 'wrist', 'hands', 'waist', 'legs', 'feet', 'finger1', 'finger2', 'trinket1', 'trinket2', 'mainHand', 'offHand']
+const ENCHANTABLE = new Set<GearSlot>(['head', 'shoulder', 'back', 'chest', 'wrist', 'legs', 'feet', 'finger1', 'finger2', 'mainHand', 'offHand'])
+const signed = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(Math.round(value)).toLocaleString()}`
+/** Enchant names from the game, from Raider.IO, and on enchanting recipes differ in prefix, so they are compared by their core */
+const core = (name: string | null | undefined) => (name ?? '').toLowerCase().replace(/^enchant (\w+ )+- /, '').replace(/\s*\(.*\)$/, '').replace(/[^a-z0-9 ]/g, '').trim()
+const sameEnchant = (a: string | null | undefined, b: string | null | undefined) => !!core(a) && !!core(b) && (core(a) === core(b) || core(a).includes(core(b)) || core(b).includes(core(a)))
+/** Gems from the item's own fields, else from its item link, which is all an imported baseline may carry */
+const gemIdsOf = (item: Pick<GearItem, 'gemIds' | 'gems' | 'itemLink'> | undefined) => {
+  if (!item) return []
+  const own = item.gemIds?.filter(id => id > 0) ?? item.gems.flatMap(gem => { const match = gem.match(/^Gem #(\d+)$/); return match ? [Number(match[1])] : [] })
+  return own.length ? own : (itemLinkVariant(item.itemLink).gemIds ?? []).filter(id => id > 0)
+}
+const enchantIdOf = (item: Pick<GearItem, 'enchantId' | 'itemLink'> | undefined) => item ? item.enchantId || itemLinkVariant(item.itemLink).enchantId || null : null
+const regionOf = (population: string): TopRegion => (Object.entries(topRegionNames).find(([, name]) => population.includes(name))?.[0] as TopRegion | undefined) ?? 'us'
+
+type Row = {
+  slot: GearSlot
+  mine: Variant | undefined
+  top: { id: number; name: string; level: number | null; share: TopCount | undefined; enchant: TopCount | undefined; gems: TopCount[]; embellishment: string | null } | null
+  embellishment: string | null
+  enchant: string | null
+  gain: { difference: number; verdict: string } | null
+  notes: Array<{ text: string; tone?: 'up' | 'down'; icon: ReactNode }>
+}
+
+/**
+ * Why a plan (or your current gear) beats or trails top players: each slot side by side with item level, enchant,
+ * gems, and embellishment, then the talent choices that differ, with the reasons gathered at the top
+ */
+export function SimCompare({ character, job, result }: { character: Character; job: SimulationJob; result: Result }) {
+  const request = job.request
+  const plan = request.plan, benchmark = request.benchmark
+  const status = useGameData()
+  const ready = status.data?.state === 'ready'
+  const specId = character.specId
+  const population = plan?.top?.population ?? benchmark?.population ?? ''
+  const top = useQuery({ queryKey: ['top-players', specId, regionOf(population)], queryFn: () => api.topPlayers({ specId: specId!, specName: character.specName, className: character.className, region: regionOf(population) }), enabled: !!specId, staleTime: 30 * 60_000, retry: false })
+  const tree = useQuery({ queryKey: ['talent-tree', specId], queryFn: () => api.talentTree(specId!), enabled: !!specId && !!status.data?.install, staleTime: Infinity })
+  const rules = useQuery({ queryKey: ['embellishment-rules'], queryFn: () => api.embellishmentRules(), staleTime: Infinity })
+
+  // What was simulated: the plan's items over the gear you wore then, and the top players' items in their own run
+  const baseline = new Map(request.baseline.items.map(item => [item.slot, item]))
+  const planned = plan ? request.candidates[plan.whole ?? 0] ?? [] : []
+  const mine = new Map([...baseline, ...planned.map(item => [item.slot, item] as const)])
+  const topIndex = plan?.top?.index ?? (benchmark ? benchmark.kinds.indexOf('gear') : -1)
+  const topRun = topIndex >= 0 ? new Map((request.candidates[topIndex] ?? []).map(item => [item.slot, item])) : new Map<GearSlot, Variant>()
+
+  const ids = useMemo(() => {
+    const all = [...mine.values(), ...topRun.values()].flatMap(item => [item.itemId ?? 0, ...gemIdsOf(item)])
+    for (const slot of Object.values(top.data?.slots ?? {})) for (const gem of slot?.gems.slice(0, 2) ?? []) all.push(gem.id)
+    return [...new Set(all.filter(id => id > 0))].sort((a, b) => a - b).slice(0, 200)
+  }, [job.id, top.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  const items = useQuery({ queryKey: ['items', ids], queryFn: () => api.getItems(ids), enabled: ready && ids.length > 0 })
+  const itemMap = new Map((items.data ?? []).map(item => [item.id, item]))
+  const enchantIds = [...new Set([...mine.values()].flatMap(item => { const id = enchantIdOf(item); return id ? [id] : [] }))].sort((a, b) => a - b)
+  const enchantNames = useQuery({ queryKey: ['enchant-names', enchantIds], queryFn: () => api.enchantNames(enchantIds), enabled: ready && enchantIds.length > 0 })
+  const enchantOptions = useQueries({ queries: [...ENCHANTABLE].map(slot => ({ queryKey: ['enhancements', 'enchant', slot], queryFn: () => api.enhancements({ kind: 'enchant', slot }), enabled: ready, staleTime: Infinity })) })
+  const enchantIcon = (name: string | null | undefined) => {
+    if (!name) return null
+    for (const query of enchantOptions) for (const option of query.data ?? []) if (sameEnchant(option.name, name)) return option
+    return null
+  }
+
+  const baselineValue = result.values[0]
+  const singles = new Map<string, { difference: number; verdict: string }>()
+  if (plan && baselineValue) result.values.slice(1).forEach((value, index) => {
+    if (index === plan.whole || index === plan.top?.index) return
+    const label = request.candidateLabels[index] ?? ''
+    const slot = (Object.entries(gearSlotLabels) as Array<[GearSlot, string]>).find(([, name]) => label.startsWith(`${name}:`))?.[0]
+    if (slot) { const comparison = compareSimulationValues(baselineValue, value); singles.set(slot, { difference: comparison.difference, verdict: comparison.verdict }) }
+  })
+
+  const data: TopPlayers | undefined = top.data
+  const rows: Row[] = ORDER.flatMap(slot => {
+    const item = mine.get(slot)
+    const group = topSlotGroups.find(entry => entry.slots.includes(slot))
+    const tally = group ? data?.slots[group.group] : undefined
+    const run = topRun.get(slot)
+    if (!item && !run) return []
+    const topItem = run ?? item
+    const share = topItem ? tally?.items.find(entry => entry.id === topItem.itemId) : undefined
+    const topEmbellishment = share?.copy?.bonusIds ? embellishmentOf(rules.data ?? null, share.copy.bonusIds)?.name ?? null : null
+    const myEmbellishment = item ? (item.embellishment?.name ?? embellishmentOf(rules.data ?? null, item.bonusIds)?.name ?? null) : null
+    const enchantId = enchantIdOf(item)
+    const enchant = enchantId ? enchantNames.data?.[enchantId] ?? item?.enchant ?? `Enchant #${enchantId}` : item?.enchant ?? null
+    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share, enchant: tally?.enchants[0], gems: tally?.gems.slice(0, 2) ?? [], embellishment: topEmbellishment } : null
+    const notes: Row['notes'] = []
+    const gap = topRow?.level != null && item?.itemLevel != null ? Math.round(topRow.level - item.itemLevel) : 0
+    if (item?.itemId && topRow && topRow.id !== item.itemId) notes.push({ text: 'Different item', icon: <Swords size={12} /> })
+    if (gap > 0) notes.push({ text: `They're ${gap} item levels higher`, tone: 'down', icon: <ArrowDown size={12} /> })
+    else if (gap < 0) notes.push({ text: `You're ${-gap} item levels higher`, tone: 'up', icon: <ArrowUp size={12} /> })
+    if (ENCHANTABLE.has(slot) && topRow?.enchant && data && topRow.enchant.count / Math.max(1, data.gearPlayers) >= 0.3) {
+      // An import that couldn't read enchants says so, which is not the same as having none
+      if (!enchant) notes.push(item?.enchantCoverage === 'complete' ? { text: 'No enchant', tone: 'down', icon: <WandSparkles size={12} /> } : { text: 'Enchant unknown', icon: <WandSparkles size={12} /> })
+      else if (!/^Enchant #\d+$/.test(enchant) && !sameEnchant(enchant, topRow.enchant.name)) notes.push({ text: 'Other enchant', icon: <WandSparkles size={12} /> })
+    }
+    const myGems = gemIdsOf(item)
+    if (topRow?.gems[0] && data && topRow.gems[0].count / Math.max(1, data.gearPlayers) >= 0.3 && !myGems.length) notes.push(item?.gemsCoverage === 'complete' || item?.itemLink ? { text: 'No gem', tone: 'down', icon: <Gem size={12} /> } : { text: 'Gems unknown', icon: <Gem size={12} /> })
+    if (topEmbellishment && topEmbellishment !== myEmbellishment) notes.push({ text: myEmbellishment ? 'Other embellishment' : 'They embellish it', tone: myEmbellishment ? undefined : 'down', icon: <Sparkles size={12} /> })
+    else if (myEmbellishment && !topEmbellishment && data) notes.push({ text: 'Only you embellish it', icon: <Sparkles size={12} /> })
+    return [{ slot, mine: item, top: topRow, embellishment: myEmbellishment, enchant, gain: singles.get(slot) ?? null, notes }]
+  })
+
+  const talents = tree.data && data?.builds[0] ? talentDifferences(tree.data, character.talents?.loadout ?? null, data.builds[0].loadout) : null
+  const reasons = summarize(rows, talents, data?.builds[0]?.count ?? null, data?.gearPlayers ?? null)
+  const subject = plan ? 'Your plan' : 'Your gear'
+
+  return (
+    <section className="sim-compare" aria-label={`${subject} beside top players`}>
+      <header className="sim-compare-head">
+        <h4>Why {subject.toLowerCase()} {reasons.verdict}</h4>
+        <ul className="sim-reasons">
+          {reasons.list.map(reason => <li key={reason.text} data-tone={reason.tone}>{reason.icon}<span>{reason.text}</span></li>)}
+        </ul>
+      </header>
+      <div className="sim-compare-grid" role="table" aria-label="Slot by slot">
+        <div className="sim-compare-row sim-compare-labels" role="row">
+          <span role="columnheader">Slot</span><span role="columnheader">{subject}</span><span role="columnheader">Top players</span><span role="columnheader">Difference</span>
+        </div>
+        {rows.map(row => (
+          <div key={row.slot} className="sim-compare-row" role="row" data-differs={row.notes.some(note => note.tone === 'down') || undefined}>
+            <span role="cell" className="sim-slot"><GearSlotIcon slot={row.slot} size={15} />{gearSlotLabels[row.slot]}</span>
+            <span role="cell">
+              {row.mine ? <Side itemId={row.mine.itemId} name={row.mine.name} level={row.mine.itemLevel} items={itemMap}
+                enchant={row.enchant} enchantArt={enchantIcon(row.enchant)} gems={gemIdsOf(row.mine)} embellishment={row.embellishment} /> : <span className="muted">Empty</span>}
+            </span>
+            <span role="cell">
+              {row.top ? <Side itemId={row.top.id} name={row.top.name} level={row.top.level} items={itemMap} share={row.top.share && data ? `${row.top.share.count} of ${data.gearPlayers}` : null}
+                enchant={row.top.enchant?.name ?? null} enchantArt={enchantIcon(row.top.enchant?.name)} gems={row.top.gems.map(gem => gem.id)} embellishment={row.top.embellishment} /> : <span className="muted">Unknown</span>}
+            </span>
+            <span role="cell" className="sim-notes">
+              {row.notes.length ? row.notes.map(note => <span key={note.text} className="sim-note" data-tone={note.tone}>{note.icon}{note.text}</span>) : <span className="sim-note" data-tone="up"><Equal size={12} />Same</span>}
+              {row.gain && row.gain.verdict !== 'unknown' && <span className="sim-note sim-gain" data-tone={row.gain.verdict === 'higher' ? 'up' : row.gain.verdict === 'lower' ? 'down' : undefined}>{row.gain.verdict === 'sidegrade' ? 'No measurable change alone' : `${signed(row.gain.difference)} DPS alone`}</span>}
+            </span>
+          </div>
+        ))}
+      </div>
+      {top.isPending && <LatticeLoader label="Reading what top players wear" pattern="ripple" showTimer={false} />}
+      {tree.data && talents && <TalentCompare tree={tree.data} diff={talents} players={data?.builds[0]?.count ?? null} total={data?.players.length ?? null} />}
+      {!character.talents?.loadout && <p className="muted small">Your talents aren't known yet, so they can't be compared · Log in with the addon or sync this character</p>}
+      <p className="muted small">{population}{data ? ` · Their enchants, gems, and embellishments are the most used in each slot` : ''} · The simulation runs their items with your enchants and gems, so those differences are not in the damage numbers above</p>
+    </section>
+  )
+}
+
+function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellishment, share }: {
+  itemId: number | null; name: string; level: number | null; items: Map<number, import('../../../shared/gamedata').ItemSummary>
+  enchant: string | null; enchantArt: { icon: number | null; quality: number } | null; gems: number[]; embellishment: string | null; share?: string | null
+}) {
+  const info = itemId ? items.get(itemId) : undefined
+  return (
+    <div className="sim-side">
+      <ItemHoverCard itemId={itemId} item={info} name={name}>
+        <span className="sim-item">
+          <ItemIcon icon={info?.icon} quality={info?.quality ?? 4} size="small" />
+          <span className={`quality-text-${info?.quality ?? 4}`}>{info?.name ?? name}</span>
+          {level != null && <b>{Math.round(level)}</b>}
+          {share && <small className="muted">{share}</small>}
+        </span>
+      </ItemHoverCard>
+      <span className="sim-extras">
+        {enchant && <span className="sim-extra" title={enchant}>{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span>}
+        {gems.map((id, index) => { const gem = items.get(id); return <span key={`${id}-${index}`} className="sim-extra" title={gem?.name}>{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span> })}
+        {embellishment && <span className="sim-extra sim-embellishment"><Sparkles size={12} />{embellishment}</span>}
+      </span>
+    </div>
+  )
+}
+
+function TalentCompare({ tree, diff, players, total }: { tree: TalentTree; diff: NonNullable<ReturnType<typeof talentDifferences>>; players: number | null; total: number | null }) {
+  const heroIcon = (name: string | null) => tree.subTrees.find(entry => entry.name === name)?.icon ?? null
+  const sections: Array<[TalentChoice['section'], string]> = [['class', 'Class'], ['spec', 'Specialization'], ['hero', 'Hero']]
+  const changes = diff.onlyMine.length + diff.onlyTheirs.length
+  return (
+    <div className="sim-talents">
+      <h4><Layers size={15} aria-hidden="true" />Talents{players != null && total != null ? ` · their most popular build, used by ${players} of ${total}` : ''}</h4>
+      <div className="sim-hero-row">
+        <HeroBadge label="You" name={diff.hero.mine} icon={heroIcon(diff.hero.mine)} />
+        <HeroBadge label="Them" name={diff.hero.theirs} icon={heroIcon(diff.hero.theirs)} />
+        <span className="muted small">{diff.hero.mine === diff.hero.theirs ? 'Same hero tree' : 'Different hero trees · their hero talents aren\'t listed one by one'} · {diff.shared} talents in common{changes ? ` · ${changes} differ` : ' · nothing else differs'}</span>
+      </div>
+      {changes > 0 && <div className="sim-talent-columns">
+        {([['Only you take', diff.onlyMine], ['Only they take', diff.onlyTheirs]] as const).map(([title, list]) => (
+          <div key={title}>
+            <strong>{title}</strong>
+            {sections.map(([section, name]) => {
+              const entries = list.filter(entry => entry.section === section)
+              return entries.length ? <div key={section} className="sim-talent-group"><small>{name}</small>{entries.map(entry => <TalentChip key={`${entry.nodeId}-${entry.name}`} tree={tree} entry={entry} />)}</div> : null
+            })}
+            {!list.length && <span className="muted small">Nothing</span>}
+          </div>
+        ))}
+      </div>}
+    </div>
+  )
+}
+
+function HeroBadge({ label, name, icon }: { label: string; name: string | null; icon: number | null }) {
+  return <span className="sim-hero-badge"><small>{label}</small><ItemIcon icon={icon} size="small" fallback={<Sparkles />} /><strong>{name ?? 'Unknown'}</strong></span>
+}
+
+function TalentChip({ tree, entry }: { tree: TalentTree; entry: TalentChoice }) {
+  const text = talentDescription(tree, entry.spellId)
+  return (
+    <Popover>
+      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-talent" aria-label={entry.name}>
+        <ItemIcon icon={entry.icon} size="small" fallback={<Sparkles />} />
+        <span>{entry.name}</span>
+        {entry.maxRanks > 1 && <small>{entry.ranks}/{entry.maxRanks}</small>}
+      </PopoverTrigger>
+      <PopoverContent side="top" className="talent-popover">
+        <div className="talent-detail-head"><ItemIcon icon={entry.icon} size="medium" fallback={<Sparkles />} /><div><strong>{entry.name}</strong><small>{entry.maxRanks > 1 ? `Rank ${entry.ranks} of ${entry.maxRanks}` : '1 rank'}</small></div></div>
+        {text && <p>{text}</p>}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+type Reason = { text: string; tone?: 'up' | 'down'; icon: ReactNode }
+function summarize(rows: Row[], talents: ReturnType<typeof talentDifferences>, buildPlayers: number | null, gearPlayers: number | null) {
+  const list: Reason[] = []
+  let behind = 0, ahead = 0
+  const higher = rows.filter(row => row.top?.level != null && row.mine?.itemLevel != null && row.top.level > row.mine.itemLevel)
+  const lower = rows.filter(row => row.top?.level != null && row.mine?.itemLevel != null && row.top.level < row.mine.itemLevel)
+  const levels = (list: Row[]) => list.reduce((sum, row) => sum + Math.abs((row.top!.level ?? 0) - (row.mine!.itemLevel ?? 0)), 0) / Math.max(1, list.length)
+  if (higher.length) { behind++; list.push({ text: `Their items are higher in ${higher.length} ${higher.length === 1 ? 'slot' : 'slots'}, by ${Math.round(levels(higher))} item levels on average`, tone: 'down', icon: <ArrowDown size={14} /> }) }
+  if (lower.length) { ahead++; list.push({ text: `Yours are higher in ${lower.length} ${lower.length === 1 ? 'slot' : 'slots'}, by ${Math.round(levels(lower))} item levels on average`, tone: 'up', icon: <ArrowUp size={14} /> }) }
+  const different = rows.filter(row => row.notes.some(note => note.text === 'Different item')).length
+  if (different) list.push({ text: `${different} ${different === 1 ? 'slot uses' : 'slots use'} a different item`, icon: <Swords size={14} /> })
+  const missingEnchants = rows.filter(row => row.notes.some(note => note.text === 'No enchant')).length
+  const otherEnchants = rows.filter(row => row.notes.some(note => note.text === 'Other enchant')).length
+  const unknownEnchants = rows.filter(row => row.notes.some(note => note.text === 'Enchant unknown')).length
+  if (missingEnchants || otherEnchants || unknownEnchants) { behind += missingEnchants ? 1 : 0; list.push({ text: [missingEnchants && `${missingEnchants} enchant${missingEnchants === 1 ? '' : 's'} missing`, otherEnchants && `${otherEnchants} different from theirs`, unknownEnchants && `${unknownEnchants} of your enchants weren't recorded in this run's snapshot`].filter(Boolean).join(' · '), tone: missingEnchants ? 'down' : undefined, icon: <WandSparkles size={14} /> }) }
+  const missingGems = rows.filter(row => row.notes.some(note => note.text === 'No gem')).length
+  if (missingGems) { behind++; list.push({ text: `${missingGems} ${missingGems === 1 ? 'slot has' : 'slots have'} no gem where most of them socket one`, tone: 'down', icon: <Gem size={14} /> }) }
+  const mineEmb = rows.flatMap(row => row.embellishment ? [row.embellishment] : []), theirEmb = gearPlayers ? rows.flatMap(row => row.top?.embellishment ? [row.top.embellishment] : []) : []
+  if (gearPlayers && (mineEmb.length || theirEmb.length)) list.push({ text: `Embellishments · you have ${mineEmb.length || 'none'} · they have ${theirEmb.length || 'none'}${theirEmb.length ? ` (${rows.filter(row => row.top?.embellishment).map(row => gearSlotLabels[row.slot].toLowerCase()).join(', ')})` : ''}`, tone: theirEmb.length > mineEmb.length ? 'down' : undefined, icon: <Sparkles size={14} /> })
+  if (talents) {
+    const changes = talents.onlyMine.length + talents.onlyTheirs.length
+    const hero = talents.hero.mine !== talents.hero.theirs ? ` · you take ${talents.hero.mine ?? 'no hero tree'} and they take ${talents.hero.theirs ?? 'none'}` : ''
+    list.push({ text: changes || hero ? `${changes} talent choices differ from the build ${buildPlayers ?? 'most'} of them use${hero}` : 'Your talents match their most popular build', tone: changes || hero ? undefined : 'up', icon: <Layers size={14} /> })
+  }
+  if (!list.length) list.push({ text: 'Your setup matches theirs slot for slot', tone: 'up', icon: <Equal size={14} /> })
+  const verdict = behind > ahead ? 'trails top players' : ahead > behind ? 'holds up against top players' : 'compares with top players'
+  return { list, verdict }
+}
