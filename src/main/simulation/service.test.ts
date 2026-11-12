@@ -177,8 +177,8 @@ describe('simulating a saved plan', () => {
     const stored = database.getCharacter(character.id)!
     database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [{ ...stored.gear[0]!, itemId: 2000, name: 'Planned helm', itemLevel: 120, itemLink: null }, { ...stored.gear[4]!, itemLevel: 115 }], updatedAt: '2026-10-29T12:00:00.000Z' })
     const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, topFixture())
-    expect(job.request.candidateLabels).toEqual(['Whole plan', 'Head: Planned helm at 120', `Chest: ${stored.gear[4]!.name} at 115`, "Top players' gear"])
-    expect(job.request.plan?.top).toMatchObject({ index: 3, players: 10, differences: [{ slot: 'finger1', top: 'Top ring', itemLevel: 111 }] })
+    expect(job.request.candidateLabels).toEqual(['Whole plan', 'Head: Planned helm at 120', `Chest: ${stored.gear[4]!.name} at 115`, "Top players' gear", 'Top players · Head: Top helm at 112', 'Top players · Ring 1: Top ring at 111'])
+    expect(job.request.plan?.top).toMatchObject({ index: 3, players: 10, differences: [{ slot: 'finger1', top: 'Top ring', itemLevel: 111 }], singles: [{ slot: 'head', index: 4 }, { slot: 'finger1', index: 5 }] })
     await until(() => service.list(character.id), workspace => workspace.jobs[0]?.state === 'completed' || workspace.jobs[0]?.state === 'failed')
     const input = await readFile(path.join(root, 'artifacts', job.id, 'input.simc'), 'utf8')
     expect(input.match(/^profileset\."companion_candidate_4"\+=.*$/gm)).toEqual(['profileset."companion_candidate_4"+=head=,id=2000,ilevel=112', 'profileset."companion_candidate_4"+=finger1=,id=2010,ilevel=111'])

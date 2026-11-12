@@ -84,6 +84,8 @@ export const simulationPlanSchema = z.object({
     cap: z.number().nullable().default(null),
     /** True when the plan reached past the top regular upgrade rank, so their items ran uncapped */
     beyondCap: z.boolean().default(false),
+    /** Each top-player item run on its own, so a slot can be read as your planned item against theirs */
+    singles: z.array(z.object({ slot: z.string().max(20), index: z.number().int().nonnegative() })).max(16).default([]),
   }).nullable().default(null),
 })
 export type SimulationPlan = z.infer<typeof simulationPlanSchema>

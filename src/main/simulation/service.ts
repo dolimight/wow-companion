@@ -304,14 +304,16 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         ...(planTalents ? [{ label: 'Plan talents', entries: [] as typeof described, extra: talentLine }] : []),
       ]
       const comparison = planTopComparison(prepared.current, swaps, topForRun, cap)
-      if (comparison) sets.push({ label: benchmarkLabels.gear, entries: comparison.entries, extra: [] })
+      const topIndex = comparison ? sets.push({ label: benchmarkLabels.gear, entries: comparison.entries, extra: [] }) - 1 : null
+      // Each of their items alone too, measured from the same reference as each planned item alone
+      const topSingles = comparison ? comparison.entries.map(entry => ({ slot: entry.item.slot, index: sets.push({ label: `Top players · ${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] }) - 1 })) : []
       const lines = sets.flatMap((set, index) => [...set.entries.map(entry => entry.text), ...set.extra].map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
       lines.unshift(`profileset."${REFERENCE_PROFILESET}"+=${reference}`)
       const plan = {
         name: draft.name, activity, whole: wholePlan ? 0 : null, skipped,
-        top: comparison && topForRun ? { index: sets.length - 1, population: topForRun.population, players: topForRun.gearPlayers, differences: comparison.differences, cap, beyondCap: beyond } : null,
+        top: comparison && topForRun && topIndex !== null ? { index: topIndex, population: topForRun.population, players: topForRun.gearPlayers, differences: comparison.differences, cap, beyondCap: beyond, singles: topSingles } : null,
         swaps: swaps.map(item => ({ slot: item.slot, from: prepared.current.gear.find(value => value.slot === item.slot)?.name ?? 'Empty', to: item.name, itemLevel: item.itemLevel ?? 0 })),
       }
       const job = request(prepared, start, sets.map(set => set.entries.map(entry => toItemVariant(entry.item))), { mode: 'profileset', candidateLabels: sets.map(set => set.label), plan })

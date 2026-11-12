@@ -82,12 +82,20 @@ export function wornLevels(levels: Map<number, number> | undefined): { level: nu
   const all = entries.map(([value]) => value)
   return { level, levelRange: { min: Math.min(...all), max: Math.max(...all) } }
 }
-type Tallied = { id: number; name: string; count: number; levels?: Map<number, number>; copies?: Map<string, TopCopy> }
-function tally(map: Map<number, Tallied>, entry: { id: number; name: string }, level?: number | null, bonusIds?: number[] | null) {
+/** The gem set most players put in an item, the larger set winning a tie */
+function commonGems(sets: Map<string, number>): number[] {
+  let best: [string, number] | null = null
+  for (const entry of sets) if (!best || entry[1] > best[1] || (entry[1] === best[1] && entry[0].split('/').length > best[0].split('/').length)) best = entry
+  return best?.[0] ? best[0].split('/').map(Number).filter(Boolean) : []
+}
+type Tallied = { id: number; name: string; count: number; levels?: Map<number, number>; copies?: Map<string, TopCopy>; gemSets?: Map<string, number> }
+function tally(map: Map<number, Tallied>, entry: { id: number; name: string }, level?: number | null, bonusIds?: number[] | null, gems?: number[] | null) {
   const current = map.get(entry.id)
   const target = current ?? map.set(entry.id, { ...entry, count: 0 }).get(entry.id)!
   target.count += 1
   if (level) { target.levels ??= new Map(); target.levels.set(level, (target.levels.get(level) ?? 0) + 1) }
+  // The gems on this one item, so a slot shows as many gems as the item has sockets
+  if (gems) { const key = gems.join('/'); target.gemSets ??= new Map(); target.gemSets.set(key, (target.gemSets.get(key) ?? 0) + 1) }
   if (level && bonusIds) {
     const sorted = [...bonusIds].sort((a, b) => a - b)
     const key = `${level}:${sorted.join('/')}`
@@ -154,14 +162,14 @@ export async function fetchTopPlayers(input: { specId: number; specName: string;
         const bucket = slotItems.get(group) ?? { items: new Map(), enchants: new Map(), gems: new Map() }
         slotItems.set(group, bucket)
         const mark = (kind: string, id: number) => { const key = `${group}:${kind}:${id}`; if (seen.has(key)) return false; seen.add(key); return true }
-        if (mark('item', item.data.item_id)) tally(bucket.items, { id: item.data.item_id, name: item.data.name ? plain(item.data.name) : `Item ${item.data.item_id}` }, item.data.item_level, item.data.bonuses)
-        for (const enchant of item.data.enchants_detail ?? []) if (mark('enchant', enchant.id)) tally(bucket.enchants, { id: enchant.id, name: enchantName(enchant.name ?? `Enchant ${enchant.id}`) })
         const gems = item.data.gems_detail ?? (item.data.gems ?? []).map(id => ({ id, name: undefined }))
+        if (mark('item', item.data.item_id)) tally(bucket.items, { id: item.data.item_id, name: item.data.name ? plain(item.data.name) : `Item ${item.data.item_id}` }, item.data.item_level, item.data.bonuses, gems.map(gem => gem.id).filter(id => id > 0))
+        for (const enchant of item.data.enchants_detail ?? []) if (mark('enchant', enchant.id)) tally(bucket.enchants, { id: enchant.id, name: enchantName(enchant.name ?? `Enchant ${enchant.id}`) })
         for (const gem of gems) if (mark('gem', gem.id)) tally(bucket.gems, { id: gem.id, name: gem.name ? plain(gem.name) : `Gem ${gem.id}` })
       }
     }
   }
-  const top = (map: Map<number, Tallied>, limit: number): TopCount[] => [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit).map(({ levels, copies, ...entry }) => ({ ...entry, ...wornLevels(levels), ...(copies ? { copy: commonCopy(copies.values()) } : {}) }))
+  const top = (map: Map<number, Tallied>, limit: number): TopCount[] => [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit).map(({ levels, copies, gemSets, ...entry }) => ({ ...entry, ...wornLevels(levels), ...(copies ? { copy: commonCopy(copies.values()) } : {}), ...(gemSets ? { gems: commonGems(gemSets) } : {}) }))
   return {
     season, specId: input.specId, specName: input.specName, className: input.className, region: input.region, observedAt: new Date().toISOString(), runsScanned,
     source: ranked ? 'Raider.IO spec rankings' : 'Raider.IO top runs',
