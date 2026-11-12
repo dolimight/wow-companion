@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { addItemToPlan, addSimulatedItemsToPlan, undoPlan, authoredGoals, gearMemory, itemToGear, pickPlanSlot, planKey, stagePlanItem } from './plan-item'
 
-import { characterSchema } from '../../shared/domain'
+import { characterSchema, gearDraftSchema } from '../../shared/domain'
 
 import { api } from './client'
 
@@ -168,7 +168,7 @@ describe('shared plan staging policy', () => {
     expect(staged?.dirty).toBe(false)
     expect(vi.mocked(api.saveGearDraft).mock.calls[0]?.[0].items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
 
-    expect(staged?.items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
+    expect(staged?.items.find((entry: GearItem) => entry.slot === 'head')?.itemId).toBe(42)
 
   })
 
@@ -204,7 +204,7 @@ describe('shared plan staging policy', () => {
 
     expect(conflict.status).toBe('conflict')
 
-    expect(gearMemory.get(key)?.items.find(entry => entry.slot === 'head')?.itemId).toBe(42)
+    expect(gearMemory.get(key)?.items.find((entry: GearItem) => entry.slot === 'head')?.itemId).toBe(42)
 
     if (conflict.status === 'conflict') expect(authoredGoals(conflict.current)).toEqual(['Item level 720', 'Enchant: Old enchant', 'Gems: Old gem'])
 
@@ -244,8 +244,8 @@ describe('shared plan staging policy', () => {
 describe('adding simulated items to a plan', () => {
   const owner = characterSchema.parse({ id: 'c1', name: 'Tester', realm: 'Realm', region: 'us', className: 'Death Knight', specId: 250, specName: 'Blood', level: 90, gear: [gear('head', 1), gear('neck', 2)] })
   it('saves a plan without unsaved edits right away, keeping its id and other slots', async () => {
-    vi.mocked(api.getGearDraft).mockResolvedValue({ id: 'draft', characterId: 'c1', specId: 250, activity: 'raiding', rulesetId: 'r', name: 'Raid plan', items: [gear('head', 1), gear('neck', 2)], updatedAt: '2026-11-01T00:00:00.000Z' })
-    vi.mocked(api.saveGearDraft).mockImplementation(async draft => draft)
+    vi.mocked(api.getGearDraft).mockResolvedValue({ id: 'draft', characterId: 'c1', specId: 250, activity: 'raiding', rulesetId: 'r', plan: 'main', name: 'Raid plan', items: [gear('head', 1), gear('neck', 2)], updatedAt: '2026-11-01T00:00:00.000Z' })
+    vi.mocked(api.saveGearDraft).mockImplementation(async draft => gearDraftSchema.parse(draft))
     const outcome = await addSimulatedItemsToPlan({ character: owner, activity: 'raiding', items: [{ ...gear('head', 99), itemLevel: 740, enchant: 'Copied enchant' }] })
     expect(outcome).toEqual({ saved: true, slots: ['head'] })
     const saved = vi.mocked(api.saveGearDraft).mock.calls[0]![0]
@@ -254,9 +254,9 @@ describe('adding simulated items to a plan', () => {
     expect(gearMemory.get(planKey('c1', 'raiding', 250))?.dirty).toBe(false)
   })
   it('saves alongside edits still waiting to save, and Undo puts back the plan as it was', async () => {
-    const before = { id: 'draft', characterId: 'c1', specId: 250, activity: 'mythicPlus' as const, rulesetId: 'r', name: 'Raid plan', items: [gear('head', 1)], updatedAt: '2026-11-01T00:00:00.000Z' }
+    const before = { id: 'draft', characterId: 'c1', specId: 250, activity: 'mythicPlus' as const, rulesetId: 'r', plan: 'main', name: 'Raid plan', items: [gear('head', 1)], updatedAt: '2026-11-01T00:00:00.000Z' }
     vi.mocked(api.getGearDraft).mockResolvedValue(before)
-    vi.mocked(api.saveGearDraft).mockImplementation(async draft => draft)
+    vi.mocked(api.saveGearDraft).mockImplementation(async draft => gearDraftSchema.parse(draft))
     gearMemory.set(planKey('c1', 'mythicPlus', 250), { items: [gear('head', 5)], name: 'Edited', dirty: true })
     const outcome = await addSimulatedItemsToPlan({ character: owner, activity: 'mythicPlus', items: [gear('neck', 77)] })
     expect(outcome.saved).toBe(true)
@@ -266,7 +266,7 @@ describe('adding simulated items to a plan', () => {
     expect(gearMemory.get(planKey('c1', 'mythicPlus', 250))).toMatchObject({ dirty: false, items: [{ slot: 'head', itemId: 1 }] })
   })
   it('undoes a first save back to the gear the character wears', async () => {
-    vi.mocked(api.saveGearDraft).mockImplementation(async draft => draft)
+    vi.mocked(api.saveGearDraft).mockImplementation(async draft => gearDraftSchema.parse(draft))
     await undoPlan({ characterId: 'c1', activity: 'mythicPlus', specId: 250, gear: [gear('head', 9)] }, null)
     expect(vi.mocked(api.saveGearDraft).mock.calls.at(-1)?.[0]).toMatchObject({ name: 'My upgrade plan', items: [{ slot: 'head', itemId: 9 }] })
   })

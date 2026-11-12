@@ -121,13 +121,20 @@ export const characterPatchSchema = z.object({ favorite: characterSchema.shape.f
 export type CharacterPatch = z.infer<typeof characterPatchSchema>
 export const statWeightsSchema = z.object({ crit: z.number().finite().min(0).max(10), haste: z.number().finite().min(0).max(10), mastery: z.number().finite().min(0).max(10), versatility: z.number().finite().min(0).max(10) })
 export type StatWeights = z.infer<typeof statWeightsSchema>
-export const gearDraftSchema = z.object({ id: z.string(), characterId: z.string(), specId: z.number().int().nullable(), activity: activitySchema, rulesetId: z.string().default('unknown'), name: z.string().max(100), items: z.array(gearItemSchema).max(40), statWeights: statWeightsSchema.optional(), updatedAt: z.string().datetime() })
+/** `plan` tells apart several plans for one specialization and activity; the first is always `main` */
+export const planIdSchema = z.string().min(1).max(64).regex(/^[a-z0-9-]+$/)
+export const gearDraftSchema = z.object({ id: z.string(), characterId: z.string(), specId: z.number().int().nullable(), activity: activitySchema, rulesetId: z.string().default('unknown'), plan: planIdSchema.default('main'), name: z.string().max(100),
+  /** The plan's talent build as the game's export string, and where it came from */
+  talents: z.object({ loadout: z.string().min(1).max(400), source: z.string().max(120) }).nullable().optional(), items: z.array(gearItemSchema).max(40), statWeights: statWeightsSchema.optional(), updatedAt: z.string().datetime() })
 export type GearDraft = z.infer<typeof gearDraftSchema>
+export type GearDraftInput = z.input<typeof gearDraftSchema>
 export const appearanceRefSchema = z.object({ appearanceId: z.number().int().positive().nullable(), modifiedAppearanceId: z.number().int().positive().nullable().default(null), itemId: z.number().int().positive().nullable().default(null), variantKey: z.string().nullable().default(null), source: z.string().max(100) })
 export type AppearanceRef = z.infer<typeof appearanceRefSchema>
 export const outfitSchema = z.object({ id: z.string(), characterId: z.string(), name: z.string().min(1).max(100), slots: z.partialRecord(appearanceSlotSchema, appearanceRefSchema), hiddenSlots: z.array(appearanceSlotSchema).default([]), illusionIds: z.object({ mainHand: z.number().int().positive().optional(), offHand: z.number().int().positive().optional() }).default({}), acquisitionTargets:z.array(z.object({slot:appearanceSlotSchema,note:z.string().max(500),sourceUrl:z.string().url().refine(value=>new URL(value).protocol==='https:').nullable().default(null)})).max(40).default([]), templateId: z.string().nullable().default(null), updatedAt: z.string().datetime() })
 export type Outfit = z.infer<typeof outfitSchema>
-export const appSettingsSchema = z.object({ appIcon: appIconSchema.default('auto'), theme: z.enum(['system', 'light', 'dark']).default('system'), lastCharacterId: z.string().nullable().default(null), tonightAnchorCharacterId: z.string().nullable().default(null), activity: activitySchema.default('mythicPlus'), characterActivities: z.record(z.string(),activitySchema).default({}), addonPath: z.string().nullable().default(null), reducedMotion: z.boolean().default(false), sidebarWidth: z.number().int().min(220).max(360).default(240), wowInstallPath: z.string().max(1000).nullable().default(null), setupDismissed: z.boolean().default(false), desktopAlerts: z.boolean().default(true), keepInTray: z.boolean().default(false) })
+export const appSettingsSchema = z.object({ appIcon: appIconSchema.default('auto'), theme: z.enum(['system', 'light', 'dark']).default('system'), lastCharacterId: z.string().nullable().default(null), tonightAnchorCharacterId: z.string().nullable().default(null), activity: activitySchema.default('mythicPlus'), characterActivities: z.record(z.string(),activitySchema).default({}), addonPath: z.string().nullable().default(null), reducedMotion: z.boolean().default(false), sidebarWidth: z.number().int().min(220).max(360).default(240), wowInstallPath: z.string().max(1000).nullable().default(null), setupDismissed: z.boolean().default(false), desktopAlerts: z.boolean().default(true), keepInTray: z.boolean().default(false),
+  // The plan each character last opened per activity, as `characterId:activity`
+  activePlans: z.record(z.string(), z.object({ specId: z.number().int().nullable(), plan: z.string().min(1).max(64) })).default({}) })
 export type AppSettings = z.infer<typeof appSettingsSchema>
 export const appSettingsPatchSchema = z.object({
   appIcon: appSettingsSchema.shape.appIcon.removeDefault().optional(),
@@ -142,6 +149,7 @@ export const appSettingsPatchSchema = z.object({
   setupDismissed: appSettingsSchema.shape.setupDismissed.removeDefault().optional(),
   desktopAlerts: appSettingsSchema.shape.desktopAlerts.removeDefault().optional(),
   keepInTray: appSettingsSchema.shape.keepInTray.removeDefault().optional(),
+  activePlans: appSettingsSchema.shape.activePlans.removeDefault().optional(),
 })
 export type ImportReport = { imported: string[]; unchanged: string[]; errors: Array<{ recordKey: string; reason: string }>; revision: number }
 export type CharacterChanged = { characterId: string; revision: number }

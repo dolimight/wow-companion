@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
 import { version as appVersion } from '../../package.json';
 import { appIconChoices, appIconCursor, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
@@ -72,8 +72,9 @@ import { ItemHoverCard } from "./features/items/ItemHoverCard";
 import { GearSlotIcon } from "./components/GearSlotIcon";
 import { EnhancementRecommendations } from "./features/plan/EnhancementRecommendations";
 import { equalWeights } from "../shared/enhancement-recommendations";
-import { itemSockets, socketLabel, type ItemSockets } from "../shared/sockets";
-import { embellishmentCounts, embellishmentOf, enchantable, type EmbellishmentRules } from "../shared/item-enhancements";
+import { itemSockets } from "../shared/sockets";
+import { embellishmentOf, enchantable } from "../shared/item-enhancements";
+import { offHandUse } from "../shared/item-compatibility";
 import { trackLevelOptions } from "../shared/gamedata";
 import { Input } from "./components/ui/input";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
@@ -84,7 +85,10 @@ import TargetCursor from "./components/TargetCursor";
 const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
-import { addItemToPlan, gearMemory, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
+import { activePlan, addItemToPlan, gearMemory, hydrateActivePlans, planKey, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
+import { specializationName } from "../shared/specializations";
+import { PlanBar } from "./features/plan/PlanBar";
+import { PlanTalents } from "./features/plan/PlanTalents";
 import { clearRenamedPlanIdentity } from "./lib/gear-plan-match";
 import { CharacterPanel, type PlanIssue } from "./features/plan/CharacterPanel";
 import { PlanSources } from "./features/plan/PlanSources";
@@ -141,6 +145,7 @@ import {
   Sheet,
 } from "./components/ui/primitives";
 import type {
+  GearDraft,
   Activity,
   ActivityRating,
   AddCharacterInput,
@@ -1598,31 +1603,47 @@ function OverviewPage({ character }: { character: Character }) {
 }
 function GearPage({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);
+  const settings = useSettings();
+  const [, refresh] = useReducer((count: number) => count + 1, 0);
+  useEffect(() => subscribeGearPlan(refresh), []);
+  useEffect(() => { if (settings.data) hydrateActivePlans(settings.data.activePlans); }, [settings.data]);
+  // The open plan can be for another specialization; the editor then plans as that specialization
+  const ref = activePlan(character, activity);
+  const planCharacter = useMemo(() => ref.specId === character.specId ? character : { ...character, specId: ref.specId, specName: specializationName(ref.specId, character.specName) }, [character, ref.specId]);
   return (
     <GearEditor
-      key={character.id + activity}
-      character={character}
+      key={`${character.id}:${activity}:${ref.specId}:${ref.plan}`}
+      character={planCharacter}
+      live={character}
       activity={activity}
+      plan={ref.plan}
     />
   );
 }
 function GearEditor({
   character,
+  live,
   activity,
+  plan,
 }: {
+  /** The character as the open plan's specialization */
   character: Character;
+  /** The character as last synced, for what they actually play */
+  live: Character;
   activity: Activity;
+  plan: string;
 }) {
-  const memoryKey = character.id + ":" + activity + ":" + character.specId;
+  const memoryKey = planKey(character.id, activity, character.specId, plan);
   const memory = gearMemory.get(memoryKey);
   const hydrated = useRef(false);
   const query = useQuery({
-    queryKey: ["gear-draft", character.id, activity, character.specId],
+    queryKey: ["gear-draft", character.id, activity, character.specId, plan],
     queryFn: () =>
       api.getGearDraft({
         characterId: character.id,
         activity,
         specId: character.specId,
+        plan,
       }),
   });
   const [items, setItems] = useState<GearItem[]>(memory?.items ?? []);
@@ -1688,8 +1709,10 @@ function GearEditor({
     slotForm.reset(slotValues(current), { keepDefaultValues: true });
   }, [selected, current]);
   // The plan saves itself; the shared helper marks it clean and offers Undo in a toast
+  const [talents, setTalents] = useState<GearDraft["talents"]>(null);
+  useEffect(() => { if (query.isSuccess) setTalents(query.data?.talents ?? null); }, [query.isSuccess, query.data?.talents?.loadout]);
   const save = useMutation({
-    mutationFn: (draft: { items: GearItem[]; name: string; statWeights?: StatWeights }) => persistPlan(planOwner(character, activity), draft),
+    mutationFn: (draft: { items: GearItem[]; name: string; statWeights?: StatWeights; talents?: GearDraft["talents"] }) => persistPlan(planOwner(character, activity), draft),
     onError: (e) => notify(errorMessage(e)),
   });
   const unsaved = dirty || inspectorDirty;
@@ -1752,9 +1775,15 @@ function GearEditor({
     if (!quiet) notify("Slot updated in your draft");
     return nextItems;
   }
-  const planIssues: PlanIssue[] = allSlots.flatMap((slot) => {
+  // What this specialization can fill: the off hand closes for two-hand-only specs and beside a two-hand weapon
+  const plannedMain = items.find((item) => item.slot === "mainHand");
+  const mainInfo = plannedMain?.itemId ? itemMap.get(plannedMain.itemId) : undefined;
+  const offHand = offHandUse(character.specId, character.specName, mainInfo ?? (plannedMain?.inventoryType != null ? { inventoryType: plannedMain.inventoryType, subclassId: plannedMain.subclassId } : null));
+  const closedSlots: Partial<Record<GearSlot, string>> = offHand.allowed ? {} : { offHand: offHand.reason };
+  const planIssues: PlanIssue[] = allSlots.flatMap((slot): PlanIssue[] => {
     const item = items.find((i) => i.slot === slot);
     if (!item) return [];
+    if (closedSlots[slot]) return [{ slot, kind: "slot" as const, reason: closedSlots[slot]!, item: item.name }];
     const sockets = socketsOf(item), room = sockets ? sockets.sockets + sockets.addable : null;
     return [
       ...(room != null && item.gems.length > room ? [{ slot, kind: "gems" as const, extra: item.gems.length - room, room }] : []),
@@ -1769,8 +1798,10 @@ function GearEditor({
     const nextItems = base.map((item) => {
       const own = fixes.filter((issue) => issue.slot === item.slot);
       if (!own.length) return item;
+      // A slot the specialization can't fill loses its item entirely
+      if (own.some((issue) => issue.kind === "slot")) return null;
       return own.reduce<GearItem>((next, issue) => issue.kind === "gems" ? { ...next, gems: next.gems.slice(0, issue.room), gemsCoverage: "complete" } : { ...next, enchant: null, enchantCoverage: "complete" }, item);
-    });
+    }).filter((item): item is GearItem => item != null);
     const shown = nextItems.find((item) => item.slot === selected);
     if (fixes.some((issue) => issue.slot === selected) && shown) {
       displayedItem.current = { slot: selected, item: shown };
@@ -1813,6 +1844,7 @@ function GearEditor({
           </span>
         </div>
       </div>
+      <PlanBar character={live} activity={activity} current={{ specId: character.specId, plan }} currentName={name.trim() || "My upgrade plan"} currentItems={items} />
       <div className="gear-summary">
         <Metrics character={character} planned={draftLevel} activity={activity} />
       </div>
@@ -1875,9 +1907,12 @@ function GearEditor({
                     : null,
                 };
               }}
-              footer={<PlanEnhancementTotals items={items} slots={allSlots} canEnchant={canEnchant} socketsOf={socketsOf} embellishments={embellishmentRules.data ?? null} />}
+              embellishments={embellishmentRules.data ?? null}
+              closedSlots={closedSlots}
             />
-            <PlanStats character={character} items={items} disabled={inspectorDirty} />
+            <PlanTalents character={character} live={live} talents={talents ?? null}
+              onChange={(next) => { setTalents(next); const planned = inspectorDirty ? updateItem(true) : items; if (planned) save.mutate({ items: planned, name, statWeights, talents: next }); }} />
+            <PlanStats character={character} items={items} disabled={inspectorDirty} otherSpec={character.specId !== live.specId ? live.specName : null} />
             <PlanSources items={items} gear={character.gear} itemMap={itemMap} slotNames={slotNames} onSelect={selectSlot} />
             <div className="roster-footnote">
               <Info />
@@ -1895,10 +1930,11 @@ function GearEditor({
                 <p>Current gear · {equipped?.name ?? "Not imported"}</p>
               </div>
             </div>
-            <Button onClick={() => setSlotSearch(true)} aria-label="Search items for this slot">
+            <Button onClick={() => setSlotSearch(true)} aria-label="Search items for this slot" disabled={!!closedSlots[selected] && !current}>
               <Search />
               Search items for this slot
             </Button>
+            {closedSlots[selected] && <small className="muted">{closedSlots[selected]}</small>}
             <Field label="Planned item name">
               {/* The name always comes from the picked item, so a renamed row never disagrees with its item */}
               <Input value={itemName} readOnly aria-readonly="true" placeholder="Pick one with Search items for this slot" />
@@ -1951,34 +1987,6 @@ function GearEditor({
         }}
       />
     </>
-  );
-}
-/** Enchants, gems, and embellishments across the whole plan, against what its items can hold */
-function PlanEnhancementTotals({ items, slots, canEnchant, socketsOf, embellishments }: {
-  items: GearItem[];
-  slots: GearSlot[];
-  canEnchant: (gear: GearItem | undefined, slot: GearSlot) => boolean | null;
-  socketsOf: (gear: GearItem | undefined) => ItemSockets | null;
-  embellishments: EmbellishmentRules | null;
-}) {
-  const bySlot = new Map(items.map((item) => [item.slot, item]));
-  const enchantSlots = slots.filter((slot) => canEnchant(bySlot.get(slot), slot));
-  const enchanted = enchantSlots.filter((slot) => bySlot.get(slot)?.enchant).length;
-  const sockets = items.reduce((sum, item) => sum + (socketsOf(item)?.sockets ?? 0), 0);
-  const gems = items.reduce((sum, item) => sum + item.gems.length, 0);
-  const counts = embellishmentCounts(embellishments, items).filter((category) => category.name === "Embellished" || category.count > 0);
-  const known = slots.some((slot) => canEnchant(bySlot.get(slot), slot) !== null);
-  return (
-    <div className="plan-enhancement-totals" role="status">
-      {known && <span title={`Enchantable this season: ${enchantSlots.map((slot) => slotNames[slot]).join(", ")}`}>Enchants {enchanted} of {enchantSlots.length}</span>}
-      {sockets > 0 && <span>Gems {gems} of {sockets} sockets</span>}
-      {counts.map((category) => (
-        <span key={category.name} className={category.over ? "error" : undefined}>
-          {category.name === "Embellished" ? "Embellishments" : category.name} {category.count} of {category.limit}{category.over ? ` · ${category.over} too many` : ""}
-        </span>
-      ))}
-      {counts.length > 0 && <small className="muted">Embellishments go on crafted gear · counted from your picks and each item's bonus IDs</small>}
-    </div>
   );
 }
 /** The slot fields as text, the way the inspector edits them */

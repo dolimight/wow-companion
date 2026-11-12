@@ -3,7 +3,7 @@ import { observable } from '@trpc/server/observable'
 import { EventEmitter } from 'node:events'
 import { Effect } from 'effect'
 import { z } from 'zod'
-import { addCharacterSchema, appSettingsPatchSchema, characterPatchSchema, activitySchema, gearDraftSchema, outfitSchema } from '../../shared/domain'
+import { addCharacterSchema, appSettingsPatchSchema, characterPatchSchema, activitySchema, gearDraftSchema, outfitSchema, planIdSchema } from '../../shared/domain'
 import type { DatabaseClient } from '../database'
 import type { GameDataClient } from '../gamedata/client'
 import type { Connections } from '../connections/service'
@@ -55,7 +55,9 @@ export function createRouter(s:RouterServices){return t.router({
   updateCharacter:p.input(idSchema.extend({patch:characterPatchSchema})).mutation(async({input})=>{const c=await run(()=>s.db.call('updateCharacter',input.id,input.patch));await s.changed(c.id);return c}),
   deleteCharacter:p.input(idSchema).mutation(async({input})=>{const result=await run(()=>s.db.call('deleteCharacter',input.id));await s.connections.forgetRenders(input.id);await s.changed();return result}),
   archiveCharacter:p.input(idSchema.extend({archived:z.boolean()})).mutation(async({input})=>{await run(()=>s.db.call(input.archived?'archiveCharacter':'restoreCharacter',input.id));await s.changed(input.id)}),
-  getGearDraft:p.input(characterIdSchema.extend({activity:activitySchema,specId:z.number().int().nullable(),rulesetId:z.string().optional()})).query(({input})=>run(()=>s.db.call('getGearDraft',input))),
+  getGearDraft:p.input(characterIdSchema.extend({activity:activitySchema,specId:z.number().int().nullable(),rulesetId:z.string().optional(),plan:planIdSchema.optional()})).query(({input})=>run(()=>s.db.call('getGearDraft',input))),
+  listGearDrafts:p.input(characterIdSchema).query(({input})=>run(()=>s.db.call('listGearDrafts',input.characterId))),
+  deleteGearDraft:p.input(characterIdSchema.extend({activity:activitySchema,specId:z.number().int().nullable(),rulesetId:z.string().optional(),plan:planIdSchema})).mutation(async({input})=>{const result=await run(()=>s.db.call('deleteGearDraft',input));await s.changed(input.characterId);return result}),
   saveGearDraft:p.input(gearDraftSchema).mutation(async({input})=>{const draft=await run(()=>s.db.call('saveGearDraft',input));await s.changed(input.characterId);return draft}),
   listOutfits:p.input(characterIdSchema).query(({input})=>run(()=>s.db.call('listOutfits',input.characterId))),
   saveOutfit:p.input(outfitSchema).mutation(async({input})=>{const outfit=await run(()=>s.db.call('saveOutfit',input));await s.changed(input.characterId);return outfit}),
@@ -122,6 +124,8 @@ export function createRouter(s:RouterServices){return t.router({
   })),
   getItems:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('items',input.ids))),
   enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable()})).query(({input})=>run(()=>s.gameData.call('enhancements',input.kind,input.slot))),
+  talentTree:p.input(z.object({specId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('talentTree',input.specId))),
+  specializations:p.query(()=>run(()=>s.gameData.call('specializations'))),
   embellishments:p.input(z.object({itemId:z.number().int().positive().nullable(),itemLevel:z.number().int().min(1).max(2000).nullable()})).query(({input})=>run(()=>s.gameData.call('embellishments',input.itemId,input.itemLevel))),
   appearanceOptions:p.input(z.object({slot:appearanceSlotSchema,text:z.string().max(100),armor:z.enum(armorTypes).nullable()})).query(({input})=>run(()=>s.gameData.call('appearanceOptions',input.slot,input.text,input.armor))),
   enchantNames:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('enchantNames',input.ids))),

@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { eq } from 'drizzle-orm'
 import { createHash, randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { addonEnvelopeSchema, addonRecordSchema, addCharacterSchema, appSettingsSchema, characterPatchSchema, characterSchema, gearDraftSchema, outfitSchema, ratingSchema, seasonRunsSnapshotSchema, type SeasonRunsSnapshot, type ActivityRating, type AddCharacterInput, type AppSettings, type Character, type CharacterPatch, type GearDraft, type ImportReport, type Outfit, type ProviderRef, type Activity } from '../../shared/domain'
+import { addonEnvelopeSchema, addonRecordSchema, addCharacterSchema, appSettingsSchema, characterPatchSchema, characterSchema, gearDraftSchema, outfitSchema, ratingSchema, seasonRunsSnapshotSchema, type SeasonRunsSnapshot, type ActivityRating, type AddCharacterInput, type AppSettings, type Character, type CharacterPatch, type GearDraft, type GearDraftInput, type ImportReport, type Outfit, type ProviderRef, type Activity } from '../../shared/domain'
 import * as schema from './schema'
 import { statsSchema, specializationIdSchema, type AddonCharacterRecord, type InventoryObservation } from '../../shared/domain'
 import { contentPreferencesSchema, defaultContentPreferences, type ContentPreferences } from '../../shared/season-rules'
@@ -90,6 +90,8 @@ export const blizzardSnapshotSchema = z.object({
 export type BlizzardSnapshot = z.input<typeof blizzardSnapshotSchema>
 export function validateBackup(input: unknown): Backup { return backupSchema.parse(input) }
 
+/** The first plan keeps the original key, so plans saved before plan IDs existed are found unchanged */
+const draftKey = (characterId:string,specId:number|null,activity:Activity,rulesetId:string,plan:string) => JSON.stringify(plan === 'main' ? [characterId,specId,activity,rulesetId] : [characterId,specId,activity,rulesetId,plan])
 export class DatabaseRepository {
   private sqlite: Database.Database
   private db: ReturnType<typeof drizzle<typeof schema>>
@@ -248,10 +250,10 @@ export class DatabaseRepository {
     if(extras.talents&&newer(extras.talents,character.talents))updated.talents=extras.talents
     return updated
   }
-  saveGearDraft(input: GearDraft): GearDraft {
+  saveGearDraft(input: GearDraftInput): GearDraft {
     const draft = gearDraftSchema.parse({...input,specId:specializationIdSchema.parse(input.specId)})
     this.requireCharacter(draft.characterId)
-    const key = JSON.stringify([draft.characterId,draft.specId,draft.activity,draft.rulesetId])
+    const key = draftKey(draft.characterId,draft.specId,draft.activity,draft.rulesetId,draft.plan)
     this.sqlite.transaction(() => {
       this.db.insert(schema.gearDraftsTable).values({key,characterId:draft.characterId,payload:JSON.stringify(draft)}).onConflictDoUpdate({target:schema.gearDraftsTable.key,set:{payload:JSON.stringify(draft)}}).run()
       if (draft.specId === null) {
@@ -263,11 +265,20 @@ export class DatabaseRepository {
     })()
     return draft
   }
-  getGearDraft(context: {characterId:string;specId:number|null;activity:Activity;rulesetId?:string}): GearDraft | null {
+  getGearDraft(context: {characterId:string;specId:number|null;activity:Activity;rulesetId?:string;plan?:string}): GearDraft | null {
     const specId = specializationIdSchema.parse(context.specId)
-    const find = (id:number|null) => this.db.select().from(schema.gearDraftsTable).where(eq(schema.gearDraftsTable.key,JSON.stringify([context.characterId,id,context.activity,context.rulesetId ?? 'unknown']))).get()
+    const find = (id:number|null) => this.db.select().from(schema.gearDraftsTable).where(eq(schema.gearDraftsTable.key,draftKey(context.characterId,id,context.activity,context.rulesetId ?? 'unknown',context.plan ?? 'main'))).get()
     const row = find(specId) ?? (specId === null ? find(0) : undefined)
     return row ? {...gearDraftSchema.parse(JSON.parse(row.payload)),specId} : null
+  }
+  /** Every saved plan for a character, newest first */
+  listGearDrafts(characterId: string): GearDraft[] {
+    return this.db.select().from(schema.gearDraftsTable).where(eq(schema.gearDraftsTable.characterId,characterId)).all().map(row => gearDraftSchema.parse(JSON.parse(row.payload))).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt))
+  }
+  deleteGearDraft(context: {characterId:string;specId:number|null;activity:Activity;rulesetId?:string;plan:string}) {
+    const key = draftKey(context.characterId,specializationIdSchema.parse(context.specId),context.activity,context.rulesetId ?? 'unknown',context.plan)
+    const deleted = this.sqlite.transaction(() => { const result = this.sqlite.prepare('DELETE FROM gear_drafts WHERE key = ? AND character_id = ?').run(key,context.characterId); this.bump(); return result.changes > 0 })()
+    return { deleted }
   }
   saveOutfit(input: z.input<typeof outfitSchema>): Outfit { const outfit = outfitSchema.parse(input); this.requireCharacter(outfit.characterId); const existing = this.db.select().from(schema.outfitsTable).where(eq(schema.outfitsTable.id,outfit.id)).get(); if(existing && existing.characterId !== outfit.characterId) throw new Error('Outfit belongs to another character'); this.sqlite.transaction(() => { this.db.insert(schema.outfitsTable).values({id:outfit.id,characterId:outfit.characterId,payload:JSON.stringify(outfit)}).onConflictDoUpdate({target:schema.outfitsTable.id,set:{payload:JSON.stringify(outfit)}}).run();this.bump() })();return outfit }
   listOutfits(characterId: string): Outfit[] { return this.db.select().from(schema.outfitsTable).where(eq(schema.outfitsTable.characterId,characterId)).all().map(row => outfitSchema.parse(JSON.parse(row.payload))) }

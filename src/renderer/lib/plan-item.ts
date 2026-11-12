@@ -13,8 +13,29 @@ export const gearMemory = new Map<string, { items: GearItem[]; name: string; dir
 
 const listeners = new Set<() => void>()
 
-export function planKey(characterId: string, activity: Activity, specId: number | null) {
-  return `${characterId}:${activity}:${specId}`
+export function planKey(characterId: string, activity: Activity, specId: number | null, plan = "main") {
+  return `${characterId}:${activity}:${specId}${plan === "main" ? "" : `:${plan}`}`
+}
+
+/** Which plan is open for a character and activity: its specialization and plan ID */
+export type PlanRef = { specId: number | null; plan: string }
+const activePlans = new Map<string, PlanRef>()
+const refKey = (characterId: string, activity: Activity) => `${characterId}:${activity}`
+/** Loads the remembered open plans once settings arrive; choices made since then win */
+export function hydrateActivePlans(saved: Record<string, PlanRef>) {
+  let changed = false
+  for (const [key, ref] of Object.entries(saved)) if (!activePlans.has(key)) { activePlans.set(key, ref); changed = true }
+  if (changed) publish()
+}
+/** The open plan; a character starts on the main plan for the specialization they play */
+export function activePlan(character: Pick<Character, "id" | "specId">, activity: Activity): PlanRef {
+  return activePlans.get(refKey(character.id, activity)) ?? { specId: character.specId, plan: "main" }
+}
+/** Opens another plan everywhere plans show, and remembers it for next time */
+export async function setActivePlan(characterId: string, activity: Activity, ref: PlanRef) {
+  activePlans.set(refKey(characterId, activity), ref)
+  publish()
+  await api.saveSettings({ activePlans: Object.fromEntries(activePlans) })
 }
 
 export function subscribeGearPlan(listener: () => void) {
@@ -36,18 +57,21 @@ export function usePlanQueryClient() {
 }
 
 /** Whose plan it is, plus the gear they wear, which Undo returns to when the plan had never been saved */
-export const planOwner = (character: Character, activity: Activity): PlanOwner => ({ characterId: character.id, activity, specId: character.specId, gear: character.gear })
-export type PlanOwner = { characterId: string; activity: Activity; specId: number | null; gear: GearItem[] }
+export const planOwner = (character: Character, activity: Activity): PlanOwner => { const ref = activePlan(character, activity); return { characterId: character.id, activity, specId: ref.specId, plan: ref.plan, gear: character.gear } }
+export type PlanOwner = { characterId: string; activity: Activity; specId: number | null; plan?: string; gear: GearItem[] }
 let savedToast: string | null = null
 
 /**
  * Saves a plan and offers to undo it. Undo puts back the plan as it was before this save; a plan that was never
  * saved goes back to the gear the character wears. Memory is only marked clean when no newer edit arrived meanwhile
  */
-export async function savePlan(owner: PlanOwner, next: { items: GearItem[]; name: string; statWeights?: StatWeights }, options: { undo?: boolean; message?: string; replace?: boolean } = {}): Promise<GearDraft> {
-  const key = planKey(owner.characterId, owner.activity, owner.specId)
-  const before = await api.getGearDraft({ characterId: owner.characterId, activity: owner.activity, specId: owner.specId })
-  const saved = await api.saveGearDraft({ id: before?.id ?? crypto.randomUUID(), characterId: owner.characterId, specId: owner.specId, activity: owner.activity, rulesetId: before?.rulesetId ?? "unknown", name: next.name.trim() || "My upgrade plan", items: next.items, statWeights: next.statWeights, updatedAt: new Date().toISOString() })
+export async function savePlan(owner: PlanOwner, next: { items: GearItem[]; name: string; statWeights?: StatWeights; talents?: GearDraft["talents"] }, options: { undo?: boolean; message?: string; replace?: boolean } = {}): Promise<GearDraft> {
+  const plan = owner.plan ?? "main"
+  const key = planKey(owner.characterId, owner.activity, owner.specId, plan)
+  const before = await api.getGearDraft({ characterId: owner.characterId, activity: owner.activity, specId: owner.specId, plan })
+  const saved = await api.saveGearDraft({ id: before?.id ?? crypto.randomUUID(), characterId: owner.characterId, specId: owner.specId, activity: owner.activity, rulesetId: before?.rulesetId ?? "unknown", plan, name: next.name.trim() || "My upgrade plan", items: next.items, statWeights: next.statWeights,
+    // Item edits never carry talents, so a save keeps the build the plan already has
+    talents: next.talents !== undefined ? next.talents : before?.talents ?? null, updatedAt: new Date().toISOString() })
   const current = gearMemory.get(key)
   if (options.replace || !current || (current.items === next.items && current.name === next.name)) // The saved list keeps its identity, so an open planner does not reset fields the player is still typing in
     gearMemory.set(key, { items: next.items, name: next.name, statWeights: next.statWeights, dirty: false })
@@ -119,15 +143,17 @@ export async function addItemToPlan(input: {
     const recorded = await api.getItem(item.id).catch(() => null)
     if (recorded) item = recorded
   }
-  const context = {className:input.character.className,specId:input.character.specId,level:input.character.level}
+  const ref = activePlan(input.character, input.activity)
+  const context = {className:input.character.className,specId:ref.specId,level:input.character.level}
   if (!getItemCompatibility(item,context).compatible) return null
-  const key = planKey(input.character.id, input.activity, input.character.specId)
+  const key = planKey(input.character.id, input.activity, ref.specId, ref.plan)
   let memory = gearMemory.get(key)
   if (!memory) {
     const draft = await api.getGearDraft({
       characterId: input.character.id,
       activity: input.activity,
-      specId: input.character.specId,
+      specId: ref.specId,
+      plan: ref.plan,
     })
     memory = {
       items: draft?.items ?? input.character.gear.map((item) => ({ ...item })),
@@ -156,13 +182,14 @@ export async function addItemToPlan(input: {
 
 /** Item IDs already on this character's plan, including edits not saved yet; updates when something is added */
 export function usePlanItemIds(character: Character, activity: Activity) {
-  const draft = useQuery({
-    queryKey: ["gear-draft", character.id, activity, character.specId],
-    queryFn: () => api.getGearDraft({ characterId: character.id, activity, specId: character.specId }),
-  })
   const [, refresh] = useReducer((count: number) => count + 1, 0)
   useEffect(() => subscribeGearPlan(refresh), [])
-  const items = gearMemory.get(planKey(character.id, activity, character.specId))?.items ?? draft.data?.items ?? character.gear
+  const ref = activePlan(character, activity)
+  const draft = useQuery({
+    queryKey: ["gear-draft", character.id, activity, ref.specId, ref.plan],
+    queryFn: () => api.getGearDraft({ characterId: character.id, activity, specId: ref.specId, plan: ref.plan }),
+  })
+  const items = gearMemory.get(planKey(character.id, activity, ref.specId, ref.plan))?.items ?? draft.data?.items ?? character.gear
   return new Set(items.flatMap((item) => (item.itemId ? [item.itemId] : [])))
 }
 
@@ -201,7 +228,8 @@ export async function stagePlanItem(input: {
   replace?: boolean
   copy?: ObservedCopy | null
 }): Promise<StageResult> {
-  const context = { className: input.character.className, specId: input.character.specId, level: input.character.level }
+  const ref = activePlan(input.character, input.activity)
+  const context = { className: input.character.className, specId: ref.specId, level: input.character.level }
   let summary = input.item
   if (summary && (summary.classId == null || summary.subclassId == null || summary.allowableClassMask == null || summary.specIds == null || summary.primaryStats == null)) {
     const recorded = await api.getItem(summary.id).catch(() => null)
@@ -211,10 +239,10 @@ export async function stagePlanItem(input: {
   const fixedSlot = input.preferredSlot ?? input.exact?.slot
   const compatible = (slot: GearSlot) => !summary || getItemCompatibility(summary, context, { slot }).compatible
   if (summary && !getItemCompatibility(summary, context).compatible) return { status: "incompatible" }
-  const key = planKey(input.character.id, input.activity, input.character.specId)
+  const key = planKey(input.character.id, input.activity, ref.specId, ref.plan)
   let memory = gearMemory.get(key)
   if (!memory) {
-    const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: input.character.specId })
+    const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: ref.specId, plan: ref.plan })
     memory = { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", statWeights: draft?.statWeights, dirty: false }
   }
   const candidates = (fixedSlot ? [fixedSlot] : input.slots?.length ? input.slots : gearSlotSchema.options).filter(compatible)
@@ -235,8 +263,9 @@ export async function stagePlanItem(input: {
 
 /** Puts simulated items onto the plan and saves it, like every other plan change */
 export async function addSimulatedItemsToPlan(input: { character: Character; activity: Activity; items: GearItem[]; message?: string }): Promise<{ saved: boolean; slots: GearSlot[] }> {
-  const key = planKey(input.character.id, input.activity, input.character.specId)
-  const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: input.character.specId })
+  const ref = activePlan(input.character, input.activity)
+  const key = planKey(input.character.id, input.activity, ref.specId, ref.plan)
+  const draft = await api.getGearDraft({ characterId: input.character.id, activity: input.activity, specId: ref.specId, plan: ref.plan })
   const memory = gearMemory.get(key) ?? { items: draft?.items ?? input.character.gear.map((item) => ({ ...item })), name: draft?.name ?? "My upgrade plan", statWeights: draft?.statWeights, dirty: false }
   const slots = input.items.map((item) => item.slot)
   const items = [...memory.items.filter((item) => !slots.includes(item.slot)), ...input.items.map((item) => stagedFromExact(item, item.slot))]

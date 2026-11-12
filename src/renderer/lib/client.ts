@@ -1,6 +1,6 @@
 import { createTRPCClient, createWSClient, wsLink } from '@trpc/client'
 import type { AppRouter } from '../../main/rpc/router'
-import type { Activity, AddCharacterInput, AppSettings, CharacterPatch, GearDraft, Outfit } from '../../shared/domain'
+import type { Activity, AddCharacterInput, AppSettings, CharacterPatch, GearDraft, GearDraftInput, Outfit } from '../../shared/domain'
 import type { ConnectionInfo, NativeBridge } from '../../shared/bridge'
 import type { ItemSearch, ItemSearchCharacter } from '../../shared/gamedata'
 import type { AppearanceSlot } from '../../shared/domain'
@@ -22,8 +22,10 @@ export const api={
  updateCharacter:async(input:{id:string;patch:CharacterPatch})=>(await client()).updateCharacter.mutate(input),
  deleteCharacter:async(input:{id:string})=>(await client()).deleteCharacter.mutate(input),
  archiveCharacter:async(input:{id:string;archived:boolean})=>(await client()).archiveCharacter.mutate(input),
- getGearDraft:async(input:{characterId:string;activity:Activity;specId:number|null})=>(await client()).getGearDraft.query(input),
- saveGearDraft:async(input:GearDraft)=>(await client()).saveGearDraft.mutate(input),
+ getGearDraft:async(input:{characterId:string;activity:Activity;specId:number|null;plan?:string})=>(await client()).getGearDraft.query(input),
+ listGearDrafts:async(characterId:string)=>(await client()).listGearDrafts.query({characterId}),
+ deleteGearDraft:async(input:{characterId:string;activity:Activity;specId:number|null;plan:string})=>(await client()).deleteGearDraft.mutate(input),
+ saveGearDraft:async(input:GearDraftInput)=>(await client()).saveGearDraft.mutate(input),
  listOutfits:async(input:{characterId:string})=>(await client()).listOutfits.query(input),
  saveOutfit:async(input:Outfit)=>(await client()).saveOutfit.mutate(input),
  deleteOutfit:async(input:{id:string})=>(await client()).deleteOutfit.mutate(input),
@@ -74,6 +76,8 @@ export const api={
  enchantSlots:async()=>(await client()).enchantSlots.query(),
  itemPower:async(input:{id:number;itemLevel?:number|null;character?:ItemSearchCharacter|null})=>(await client()).itemPower.query(input),
  enhancements:async(input:{kind:'enchant'|'gem';slot:AppearanceSlot|null})=>(await client()).enhancements.query(input),
+ talentTree:async(specId:number)=>(await client()).talentTree.query({specId}),
+ specializations:async()=>(await client()).specializations.query(),
  embellishments:async(input:{itemId:number|null;itemLevel:number|null})=>(await client()).embellishments.query(input),
  appearanceOptions:async(input:{slot:AppearanceSlot;text:string;armor:ArmorType|null})=>(await client()).appearanceOptions.query(input),
  enchantNames:async(ids:number[])=>(await client()).enchantNames.query({ids}),
