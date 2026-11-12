@@ -8,6 +8,7 @@ import { Badge, Button, Field, Sheet } from "../../components/ui/primitives";
 import { api, type BlizzardRegion } from "../../lib/client";
 import { errorMessage, notify } from "../../lib/notify";
 import "./connections.css";
+import { Card } from "../../components/ui/card";
 
 export const regionOptions = [
   { value: "us", label: "Americas and Oceania" },
@@ -55,7 +56,7 @@ export function ConnectionsSection() {
     <section className="settings-section" aria-labelledby="connections-heading">
       <h2 id="connections-heading">Connections</h2>
       <p>Where WOW Companion gets your characters, gear, and item details</p>
-      <div className="settings-section-body surface">
+      <Card className="settings-section-body">
         <div className="setting-row">
           <div>
             <h3>World of Warcraft</h3>
@@ -112,7 +113,7 @@ export function ConnectionsSection() {
           </div>
         </div>
         {data && !data.blizzard.persistent && <div className="help-box">This development session keeps keys in memory only. The desktop app protects saved keys with your operating system</div>}
-      </div>
+      </Card>
       <BlizzardKeySheet open={keyOpen} onOpenChange={setKeyOpen} redirectUri={data?.redirectUri ?? ""} />
       <BattlenetImportSheet open={importOpen} onOpenChange={setImportOpen} />
     </section>

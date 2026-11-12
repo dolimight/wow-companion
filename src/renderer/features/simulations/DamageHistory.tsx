@@ -1,5 +1,6 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '../../components/ui/chart'
+import { Card } from '../../components/ui/card'
 import { simulationScenarios, type SimulationJob, type SimulationScenarioId } from '../../../shared/simulation'
 
 const config = {
@@ -27,7 +28,7 @@ export function DamageHistory({ jobs, scenario }: { jobs: SimulationJob[]; scena
   const floor = Math.max(0, Math.floor(low / step) * step - step), ceiling = Math.ceil(high / step) * step + step
   const ticks = Array.from({ length: Math.round((ceiling - floor) / step) + 1 }, (_, index) => floor + index * step)
   return (
-    <section className="surface simulation-section" aria-label="Damage over time">
+    <Card className="simulation-section" role="region" aria-label="Damage over time">
       <div className="simulation-heading"><h2>Damage over time</h2><span className="muted small">{simulationScenarios[scenario].label} · {points.length} runs</span></div>
       <ChartContainer config={config} className="aspect-auto h-[220px] w-full">
         <AreaChart data={points} margin={{ left: 4, right: 12, top: 8 }}>
@@ -41,6 +42,6 @@ export function DamageHistory({ jobs, scenario }: { jobs: SimulationJob[]; scena
         </AreaChart>
       </ChartContainer>
       <p className="muted small">Each point is one saved run · Your gear is what you wore then; the best result is the strongest setup that run tested</p>
-    </section>
+    </Card>
   )
 }

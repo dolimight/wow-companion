@@ -3,12 +3,11 @@
 .sim-detail h2, .sim-detail h3, .sim-detail p { margin: 0; }
 .sim-detail-back { justify-self: start; }
 
-.sim-hero { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: flex-end; padding: 28px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); isolation: isolate; }
+.sim-hero { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: flex-end; flex-direction: row; padding: 28px; isolation: isolate; }
 .sim-hero-main { display: grid; gap: 10px; min-width: 0; flex: 1 1 320px; }
 .sim-hero-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 .sim-hero h2 { font-size: 28px; letter-spacing: -.03em; line-height: 1.15; overflow-wrap: anywhere; }
 .sim-hero-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.sim-hero-chips span { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--line); color: var(--secondary); backdrop-filter: blur(8px); }
 .sim-hero-stats { display: flex; gap: 28px; flex-wrap: wrap; }
 .sim-hero-stats > div { display: grid; gap: 2px; min-width: 0; }
 .sim-hero-stats span { font-size: 12px; color: var(--muted); }
@@ -43,12 +42,11 @@
 .sim-chart li[data-verdict="sidegrade"] .sim-chart-value { color: var(--muted); }
 
 /* Item by item */
-.sim-toolbar { position: sticky; top: 0; z-index: 2; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter: blur(14px); }
+.sim-toolbar { position: sticky; top: 0; z-index: 2; padding: 4px 0 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
 .sim-toolbar-plan { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sim-toolbar-plan > span { font-size: 12px; color: var(--muted); }
 .sim-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr)); gap: 14px; align-items: start; }
-.sim-card { position: relative; display: grid; gap: 12px; align-content: start; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); min-width: 0; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-.sim-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -18px color-mix(in srgb, var(--ink) 45%, transparent); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.sim-card { position: relative; display: grid; gap: 12px; align-content: start; padding: 18px; min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .sim-card, .sim-chart-bar { transition: none; } .sim-card:hover { transform: none; } }
 .sim-card > header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .sim-card-rank { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; font-size: 12px; font-weight: 700; background: var(--surface2); color: var(--secondary); font-variant-numeric: tabular-nums; }
@@ -99,7 +97,7 @@
 /* Plan reading: three numbers first, details folded below */
 .plan-summary { display: grid; gap: 14px; }
 .plan-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
-.plan-tile { display: grid; gap: 4px; align-content: start; padding: 16px 18px; border-radius: 12px; background: var(--surface2); min-width: 0; }
+.plan-tile { display: grid; gap: 4px; align-content: start; padding: 16px 18px; min-width: 0; }
 .plan-tile > span { font-size: 12px; color: var(--muted); }
 .plan-tile > strong { font-size: 26px; line-height: 1.15; letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .plan-tile > small { font-size: 12px; color: var(--secondary); line-height: 1.5; }

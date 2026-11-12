@@ -16,6 +16,7 @@ import { Toggle } from "../../components/ui/toggle";
 import { api } from "../../lib/client";
 import { errorMessage, notify } from "../../lib/notify";
 import "./progression.css";
+import { Card } from "../../components/ui/card";
 
 type ViewKey = "equipped" | "ownedUpgrade" | "contentScoped" | "legalMaximum" | "affordable";
 const viewIcons = { equipped: Shield, ownedUpgrade: TrendingUp, contentScoped: SlidersHorizontal, legalMaximum: Trophy, affordable: Coins };
@@ -439,10 +440,10 @@ export function ProgressionPage({
         />
       </div>
       {query.isError ? (
-        <div className="surface progression-error" role="alert">
+        <Card className="progression-error" role="alert">
           <p>{sentence(errorMessage(query.error))}</p>
           <Button onClick={() => void query.refetch()}>Try again</Button>
-        </div>
+        </Card>
       ) : query.isPending ? (
         <div className="loading-surface" role="status">
           Checking progression and seasonal rules…
@@ -483,7 +484,7 @@ export function ProgressionPage({
             </div>
           )}
           {result.seasonReference&&<CrestBudget character={character} tracks={result.seasonReference.tracks} />}
-          {result.seasonReference&&<details className="surface progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.length?track.ranks[1].cost.map((cost,index)=><span key={cost.currencyId}>{index?' + ':''}<CurrencyLabel id={cost.currencyId} amount={cost.amount} /></span>):'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></details>}
+          {result.seasonReference&&<Card as="details" className="progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.length?track.ranks[1].cost.map((cost,index)=><span key={cost.currencyId}>{index?' + ':''}<CurrencyLabel id={cost.currencyId} amount={cost.amount} /></span>):'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></Card>}
           <div className="progression-layout">
             <section className="progression-slots" aria-label="Per-slot progression">
               <div className="surface-heading">
@@ -580,7 +581,7 @@ export function ProgressionPage({
               </div>
             </section>
             <aside className="progression-settings">
-              <section className="surface">
+              <Card as="section" >
                 <h2 className="gear-section-title"><SlidersHorizontal size={17} aria-hidden="true" />Your content</h2>
                 <p className="secondary small">
                   These choices affect your content ceiling, keeping the season legal maximum
@@ -685,8 +686,8 @@ export function ProgressionPage({
                 >
                   <Save size={14} aria-hidden="true" />{save.isPending ? "Saving…" : "Save content preferences"}
                 </Button>
-              </section>
-              <section className="surface">
+              </Card>
+              <Card as="section" >
                 <h2 className="gear-section-title"><Target size={17} aria-hidden="true" />Personal target</h2>
                 <p className="secondary small">
                   A planning goal, separate from a validated season ceiling
@@ -714,9 +715,9 @@ export function ProgressionPage({
                 >
                   Save target
                 </Button>
-              </section>
+              </Card>
               {view.costs.length > 0 && (
-                <section className="surface">
+                <Card as="section" >
                   <h2>Currency budget</h2>
                   <dl className="progression-budget">
                     {view.costs.map((cost) => (
@@ -731,7 +732,7 @@ export function ProgressionPage({
                       </div>
                     ))}
                   </dl>
-                </section>
+                </Card>
               )}
             </aside>
           </div>

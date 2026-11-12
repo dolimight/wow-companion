@@ -851,11 +851,6 @@ textarea::placeholder {
   text-align: center;
   font-size: 13px;
 }
-.surface {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 22px;
-}
 .surface-heading {
   display: flex;
   align-items: center;
@@ -1740,7 +1735,7 @@ input[type="checkbox"] {
   }
   .button,
   .appearance-choice,
-  .surface,
+  [data-slot="card"],
   .selected-pane,
   .plan-controls,
   .character-panel,

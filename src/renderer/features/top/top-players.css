@@ -6,7 +6,7 @@
 .performance-top-heading { align-items: flex-start; gap: 20px; }
 .performance-top-heading > div:first-child { min-width: 0; }
 .performance-top-heading p { max-width: 75ch; line-height: 1.6; }
-.top-summary + .surface, .top-gear, .top-gear + .surface { margin-bottom: 24px; }
+.top-summary + [data-slot="card"], .top-gear, .top-gear + [data-slot="card"] { margin-bottom: 24px; }
 .top-heading-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .top-heading-actions .app-select-trigger { min-width: 150px; }
 

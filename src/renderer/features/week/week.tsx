@@ -12,6 +12,7 @@ import { diminishing, drBrackets } from "../../../shared/diminishing";
 import { hasResetSchedule, nextDailyReset, nextWeeklyReset, vaultTracks, weeklyLockouts, weeklyRuns, type VaultTrack } from "../../../shared/weekly";
 import { AffixesSurface, AltReadiness, VaultPlan } from "../season/season";
 import "./week.css";
+import { Card } from "../../components/ui/card";
 
 export function useNow(intervalMs = 30_000) {
   const [now, setNow] = useState(() => Date.now());
@@ -41,7 +42,7 @@ export function ResetTimes({ regions }: { regions: string[] }) {
   const known = [...new Set(regions.map((region) => region.toLowerCase()))].filter(hasResetSchedule);
   const list = known.length ? known : ["us"];
   return (
-    <section className="surface">
+    <Card as="section" >
       <div className="surface-heading">
         <h2>Resets</h2>
         <CalendarClock size={16} className="secondary" aria-hidden />
@@ -68,7 +69,7 @@ export function ResetTimes({ regions }: { regions: string[] }) {
         })}
       </div>
       <p className="week-footnote">Times are shown in your computer's time zone</p>
-    </section>
+    </Card>
   );
 }
 
@@ -123,7 +124,7 @@ export function CharacterWeek({ character, action }: { character: Character; act
   const summary = sourceSummary(tracks);
   const sources = [...new Set(tracks.flatMap((track) => (track.source ? [track.source] : [])))];
   return (
-    <section className="surface">
+    <Card as="section" >
       <div className="surface-heading">
         <div>
           <h2><Term term="great vault">Great Vault</Term> this week</h2>
@@ -172,7 +173,7 @@ export function CharacterWeek({ character, action }: { character: Character; act
         </div>
       )}
       {action}
-    </section>
+    </Card>
   );
 }
 
@@ -202,7 +203,7 @@ export function TokenSurface() {
   const week = data?.history.filter((point) => Date.parse(point.at) >= Date.now() - 7 * 86_400_000) ?? [];
   const change = week.length > 1 ? week.at(-1)!.gold - week[0]!.gold : null;
   return (
-    <section className="surface">
+    <Card as="section" >
       <div className="surface-heading">
         <h2><Term term="wow token">WoW Token</Term></h2>
         <Coins size={16} className="secondary" aria-hidden />
@@ -227,7 +228,7 @@ export function TokenSurface() {
           <p className="week-footnote">{region.toUpperCase()} price from Blizzard · updated {new Date(data.updatedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}{week.length < 2 ? " · history builds while the app is open" : ""}</p>
         </>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -258,7 +259,7 @@ export function StatsSurface({ character, stats: shownStats, before, heading = "
   if (!stats) return null;
   const highest = Math.max(1, ...statRows.map((row) => stats[row.key] ?? 0));
   return (
-    <section className="surface">
+    <Card as="section" >
       <div className="surface-heading">
         <div>
           <h2>{heading}</h2>
@@ -308,7 +309,7 @@ export function StatsSurface({ character, stats: shownStats, before, heading = "
         ))}
       </ul>
       {footer ?? <p className="week-footnote">The hard cap from gear rating is {drBrackets.at(-1)!.to}%. Position is worked out from the percentages on your character sheet for critical strike, haste, and versatility, so it is an estimate until the game reports the rating part</p>}
-    </section>
+    </Card>
   );
 }
 
