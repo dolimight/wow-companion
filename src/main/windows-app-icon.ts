@@ -45,10 +45,11 @@ export function refreshPinnedShellItems(directory: string, files: string[], run:
 }
 
 export function taskbarDetails(executable: string, icon: string, developmentApp?: string): AppDetailsOptions {
+  const identity = appIdentity(!developmentApp)
   return {
-    appId: windowsAppId, appIconPath: icon, appIconIndex: 0,
+    appId: identity.appId, appIconPath: icon, appIconIndex: 0,
     relaunchCommand: `"${executable}"${developmentApp ? ` "${developmentApp}"` : ''}`,
-    relaunchDisplayName: 'WOW Companion',
+    relaunchDisplayName: identity.displayName,
   }
 }
 
@@ -79,4 +80,47 @@ export async function updatePinnedAppIcons(directory: string, executable: string
   // Even a link that is already correct can be on screen with a stale icon, so Explorer is told about every pin of this app
   if (matched.length) await onMatched?.(matched)
   return updated
+}
+
+/**
+ * Who the app is to the system. Development runs get their own name, data folder, Windows ID, and notification
+ * activator, so they never share a database or single-instance lock with the installed app, and never register
+ * electron.exe as the activator for the installed app's notifications
+ */
+export function appIdentity(packaged: boolean) {
+  return packaged
+    ? { appId: windowsAppId, activator: '{9E1838B3-D189-4651-AF88-03B4767F6514}', displayName: 'WOW Companion', dataFolder: 'wow-companion' }
+    : { appId: `${windowsAppId}.dev`, activator: '{D3633270-7051-46F8-9CC3-A54E0B712F10}', displayName: 'WOW Companion Dev', dataFolder: 'wow-companion-dev' }
+}
+export type AppIdentity = ReturnType<typeof appIdentity>
+
+type RegistryRunner = (file: string, args: string[], options: { timeout: number; windowsHide: boolean }, callback: (error: Error | null) => void) => unknown
+/**
+ * Names the toast identity in the per-user registry, so Windows shows the app's name and icon on its notifications
+ * and routes a click, even from Action Center after a restart, to the activator class. Without it Windows can fall
+ * back to a cached Electron identity. Best effort: a failed write leaves the shortcut-based name in place
+ */
+export async function registerToastIdentity(identity: AppIdentity, icon: string, launch: string, run: RegistryRunner = execFile as RegistryRunner) {
+  const key = `HKCU\\Software\\Classes\\AppUserModelId\\${identity.appId}`
+  // Electron registers the activator only while it runs; this lets a click start the app when it's closed
+  const server = `HKCU\\Software\\Classes\\CLSID\\${identity.activator}\\LocalServer32`
+  const writes: Array<[string, string | null, string]> = [[key, 'DisplayName', identity.displayName], [key, 'IconUri', icon], [key, 'CustomActivator', identity.activator], [server, null, launch]]
+  const results = await Promise.all(writes.map(([target, name, data]) => new Promise<boolean>(resolve => {
+    run('reg.exe', ['add', target, ...(name ? ['/v', name] : ['/ve']), '/t', 'REG_SZ', '/d', data, '/f'], { timeout: 10_000, windowsHide: true }, error => resolve(!error))
+  })))
+  return results.every(Boolean)
+}
+
+/**
+ * Points the installed Start Menu shortcut at the app's fixed notification activator. Windows routes a toast click
+ * through this shortcut, and the installer's copy names whatever class Electron picked on an earlier run, which can
+ * start a stray copy instead of focusing the open one. Only this executable's link with this app ID is touched
+ */
+export function alignShortcutActivator(file: string, executable: string, identity: AppIdentity, shell: ShortcutShell) {
+  let link: ShortcutDetails
+  try { link = shell.readShortcutLink(file) } catch { return false }
+  if (!samePath(link.target, executable) || link.appUserModelId !== identity.appId) return false
+  const wanted = identity.activator.replace(/[{}]/g, '').toLowerCase()
+  if ((link.toastActivatorClsid ?? '').replace(/[{}]/g, '').toLowerCase() === wanted) return false
+  return shell.writeShortcutLink(file, 'update', { target: link.target, toastActivatorClsid: identity.activator })
 }

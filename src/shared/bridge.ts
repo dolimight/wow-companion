@@ -18,6 +18,8 @@ export type NativeBridge = {
   installUpdate():Promise<UpdateState>
   setUpdateChannel(channel:UpdateChannel):Promise<UpdateState>
   setUpdateAutoDownload(value:boolean):Promise<UpdateState>
+  /** Sends a sample desktop notice so the player can see how alerts look and that clicking one opens the app */
+  testAlert():Promise<void>
   setUpdateBlockers(blockers:string[]):Promise<void>
   onUpdateState(listener:(state:UpdateState)=>void):()=>void
   windowState():Promise<WindowState>

@@ -1,19 +1,17 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Check, CircleAlert, Gem, Sparkles, WandSparkles, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, CircleAlert, Sparkles, WandSparkles, X } from "lucide-react";
 import type { Character, GearItem, GearSlot } from "../../../shared/domain";
 import type { ItemSummary } from "../../../shared/gamedata";
 import { socketLabel, type ItemSockets } from "../../../shared/sockets";
 import { GearSlotIcon } from "../../components/GearSlotIcon";
-import { Toggle } from "../../components/ui/toggle";
 import { Button } from "../../components/ui/primitives";
-import { api } from "../../lib/client";
 import { assetUrl } from "../../lib/assets";
 import { trimmedFigure } from "../../lib/portrait";
 import { isPlannedItemEquipped } from "../../lib/gear-plan-match";
 import { ItemHoverCard } from "../items/ItemHoverCard";
 import { ItemIcon } from "../items/ItemIcon";
-import { useGameData } from "../items/items";
+import type { EmbellishmentRules } from "../../../shared/item-enhancements";
+import { EnhancementSlots } from "./EnhancementSlots";
 import "./character-panel.css";
 
 /** The in-game character panel's arrangement: armor down the left, jewelry and trinkets down the right, weapons under the character */
@@ -31,17 +29,19 @@ type SlotFacts = {
 /** Plan contents the item or slot can't hold */
 export type PlanIssue =
   | { slot: GearSlot; kind: "gems"; extra: number; room: number }
-  | { slot: GearSlot; kind: "enchant"; enchant: string };
+  | { slot: GearSlot; kind: "enchant"; enchant: string }
+  | { slot: GearSlot; kind: "slot"; reason: string; item: string };
 
 function issueText(issue: PlanIssue, slotName: string) {
   switch (issue.kind) {
     case "gems": return issue.room ? `${slotName} holds ${issue.room} gem${issue.room === 1 ? "" : "s"} · ${issue.extra} extra` : `${slotName} has no sockets · ${issue.extra} gem${issue.extra === 1 ? "" : "s"} planned`;
     case "enchant": return `${slotName} can't be enchanted · ${issue.enchant}`;
+    case "slot": return `${issue.item} can't go in the ${slotName.toLowerCase()} · ${issue.reason}`;
     default: { const unhandled: never = issue; return unhandled; }
   }
 }
 
-export function CharacterPanel({ character, items, selected, onSelect, itemMap, slotNames, facts, plannedLevel, issues, onRemoveInvalid, footer }: {
+export function CharacterPanel({ character, items, selected, onSelect, itemMap, slotNames, facts, plannedLevel, issues, onRemoveInvalid, embellishments, closedSlots, footer }: {
   issues: PlanIssue[];
   onRemoveInvalid: (slot: GearSlot | null) => void;
   character: Character;
@@ -52,33 +52,39 @@ export function CharacterPanel({ character, items, selected, onSelect, itemMap, 
   slotNames: Record<GearSlot, string>;
   facts: (slot: GearSlot, item: GearItem | undefined) => SlotFacts;
   plannedLevel: number | null;
+  embellishments: EmbellishmentRules | null;
+  /** Slots this specialization can't fill, with the reason shown in place of an item */
+  closedSlots: Partial<Record<GearSlot, string>>;
   footer?: ReactNode;
 }) {
-  const [gemFocus, setGemFocus] = useState<string | null>(null);
-  const mainHand = items.find((item) => item.slot === "mainHand");
-  const twoHanded = !!mainHand?.itemId && itemMap.get(mainHand.itemId)?.inventoryType === 17;
-  const ordered = [...leftSlots, ...rightSlots, ...weaponSlots].flatMap((slot) => items.filter((item) => item.slot === slot));
-  const gems = [...ordered.flatMap((item) => item.gems).reduce((counts, gem) => counts.set(gem, (counts.get(gem) ?? 0) + 1), new Map<string, number>())];
-  const focus = gemFocus && gems.some(([gem]) => gem === gemFocus) ? gemFocus : null;
+  const panel = useRef<HTMLElement>(null);
+  const [pulse, setPulse] = useState<{ slot: GearSlot; at: number } | null>(null);
+  useEffect(() => { if (!pulse) return; const timer = window.setTimeout(() => setPulse(null), 1500); return () => clearTimeout(timer); }, [pulse]);
+  const order = [...leftSlots, ...rightSlots, ...weaponSlots];
+  // Selects the slot and points at its tile, so a gap found in the slot list leads straight to the gear it belongs to
+  const pick = (slot: GearSlot) => {
+    onSelect(slot);
+    setPulse({ slot, at: Date.now() });
+    requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>(`[data-gear-slot="${slot}"]`)?.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+  };
   const tile = (slot: GearSlot, side: "left" | "right") => {
     const planned = items.find((item) => item.slot === slot);
     return (
-      <SlotTile key={slot} slot={slot} side={side} name={slotNames[slot]} selected={slot === selected} onSelect={onSelect}
+      <SlotTile key={slot} pulse={pulse?.slot === slot ? pulse.at : null} slot={slot} side={side} name={slotNames[slot]} selected={slot === selected} onSelect={onSelect}
         planned={planned} observed={character.gear.find((item) => item.slot === slot)} itemMap={itemMap} facts={facts}
-        emptyNote={slot === "offHand" && twoHanded ? "Two-handed weapon equipped" : undefined}
-        gemFocus={focus} issues={issues.filter((issue) => issue.slot === slot)} />
+        closed={closedSlots[slot]}
+        issues={issues.filter((issue) => issue.slot === slot)} />
     );
   };
   return (
-    <section className="character-panel" aria-label={`${character.name}'s planned gear`} data-gem-focus={focus ? true : undefined}
-      onKeyDown={(event) => { if (event.key === "Escape" && focus) { event.stopPropagation(); setGemFocus(null); } }}>
+    <section ref={panel} className="character-panel" aria-label={`${character.name}'s planned gear`}>
       <div className="character-panel-doll">
         <div className="character-panel-column" data-side="left">{leftSlots.map((slot) => tile(slot, "left"))}</div>
         <PanelStage character={character} plannedLevel={plannedLevel} />
         <div className="character-panel-column" data-side="right">{rightSlots.map((slot) => tile(slot, "right"))}</div>
       </div>
       <div className="character-panel-weapons">{weaponSlots.map((slot) => tile(slot, slot === "mainHand" ? "right" : "left"))}</div>
-      {(footer || gems.length > 0 || issues.length > 0) && (
+      {(footer || items.length > 0 || issues.length > 0) && (
         <footer className="character-panel-footer">
           {issues.length > 0 && (
             <div className="character-panel-issues" role="group" aria-label="Plan problems">
@@ -96,34 +102,11 @@ export function CharacterPanel({ character, items, selected, onSelect, itemMap, 
               </ul>
             </div>
           )}
-          {gems.length > 0 && <GemBar gems={gems} focus={focus} onFocus={setGemFocus} />}
+          {items.length > 0 && <EnhancementSlots items={items} order={order} slotNames={slotNames} itemMap={itemMap} facts={facts} embellishments={embellishments} onPick={pick} />}
           {footer}
         </footer>
       )}
     </section>
-  );
-}
-
-/** Every planned gem once, with how many sockets hold it; pressing one points at those slots */
-function GemBar({ gems, focus, onFocus }: { gems: Array<[string, number]>; focus: string | null; onFocus: (gem: string | null) => void }) {
-  const status = useGameData();
-  const options = useQuery({ queryKey: ["enhancements", "gem", null], queryFn: () => api.enhancements({ kind: "gem", slot: null }), enabled: status.data?.state === "ready" });
-  const byName = new Map((options.data ?? []).map((option) => [option.name, option]));
-  return (
-    <div className="character-panel-gems" role="group" aria-label="Planned gems">
-      {gems.map(([gem, count]) => {
-        const option = byName.get(gem);
-        return (
-          <Toggle key={gem} variant="outline" size="sm" className="character-panel-gem" pressed={focus === gem}
-            onPressedChange={(pressed) => onFocus(pressed ? gem : null)}
-            aria-label={`${gem}, ${count} socket${count === 1 ? "" : "s"} · show where`}>
-            <ItemIcon icon={option?.icon} quality={option?.quality} size="small" fallback={<Gem />} />
-            <span className={`quality-text-${option?.quality ?? 1}`}>{gem}</span>
-            {count > 1 && <span className="character-panel-gem-count">×{count}</span>}
-          </Toggle>
-        );
-      })}
-    </div>
   );
 }
 
@@ -169,11 +152,13 @@ function PanelStage({ character, plannedLevel }: { character: Character; planned
   );
 }
 
-function SlotTile({ slot, side, name, selected, onSelect, planned, observed, itemMap, facts, emptyNote, gemFocus, issues }: {
+function SlotTile({ pulse, slot, side, name, selected, onSelect, planned, observed, itemMap, facts, closed, issues }: {
+  /** When set, the tile briefly points itself out; a new value restarts it */
+  pulse: number | null;
   slot: GearSlot;
   issues: PlanIssue[];
-  emptyNote?: string;
-  gemFocus: string | null;
+  /** Why this specialization can't fill the slot; a closed slot with nothing planned can't be picked */
+  closed?: string;
   side: "left" | "right";
   name: string;
   selected: boolean;
@@ -192,17 +177,26 @@ function SlotTile({ slot, side, name, selected, onSelect, planned, observed, ite
   const gems = planned?.gems.length ?? 0;
   const room = sockets ? sockets.sockets + sockets.addable : 0;
   const pips = Math.max(room, gems);
-  const gemMatch = gemFocus ? (planned?.gems.includes(gemFocus) ? "match" : "other") : undefined;
   const badEnchant = issues.some((issue) => issue.kind === "enchant");
   const showEnchant = enchantable !== false || badEnchant;
+  // Nothing can go here for this specialization, so the slot says why instead of offering a pick
+  if (closed && !planned) return (
+    <div className="panel-slot" data-side={side} data-gear-slot={slot} data-closed="">
+      <span className="panel-slot-icon"><ItemIcon icon={null} size="large" fallback={<GearSlotIcon slot={slot} />} /></span>
+      <div className="panel-slot-text">
+        <span className="panel-slot-name panel-slot-empty">{name}</span>
+        <span className="panel-slot-closed">{closed}</span>
+      </div>
+    </div>
+  );
   return (
     <div
       className="panel-slot"
       data-side={side}
       data-gear-slot={slot}
-      data-gem-match={gemMatch}
       data-invalid={issues.length > 0 || undefined}
       data-selected={selected || undefined}
+      data-pulse={pulse != null || undefined}
       data-target-equipped={equipped || undefined}
       role="button"
       tabIndex={0}
@@ -224,7 +218,7 @@ function SlotTile({ slot, side, name, selected, onSelect, planned, observed, ite
       <div className="panel-slot-text">
         <span className={planned ? `panel-slot-name quality-text-${quality}` : "panel-slot-name panel-slot-empty"}>{planned?.name ?? name}</span>
         <span className="panel-slot-level">
-          {planned?.itemLevel != null ? <strong>{Math.round(planned.itemLevel)}</strong> : <span className="muted">{planned ? "Level unknown" : emptyNote ?? "Nothing planned"}</span>}
+          {planned?.itemLevel != null ? <strong>{Math.round(planned.itemLevel)}</strong> : <span className="muted">{planned ? "Level unknown" : "Nothing planned"}</span>}
           {delta ? <span className="panel-slot-delta" data-sign={delta > 0 ? "up" : "down"}>{delta > 0 ? "+" : "−"}{Math.abs(delta)}</span> : null}
           {equipped && (delta && delta > 0 ? <span className="muted">Upgrade</span> : <span className="panel-slot-match"><Check aria-hidden="true" />Equipped</span>)}
           {planned?.levelSource === "estimated" && <span className="muted">Estimate</span>}
@@ -233,7 +227,7 @@ function SlotTile({ slot, side, name, selected, onSelect, planned, observed, ite
           <span className="panel-slot-enhancements">
             {showEnchant && <span className="panel-slot-enchant" data-state={badEnchant ? "invalid" : planned.enchant ? "set" : "missing"} title={badEnchant ? `${name} can't be enchanted` : planned.enchant ?? (planned.enchantCoverage === "complete" ? "No enchant planned" : "Enchant unknown")}><WandSparkles aria-hidden="true" />{planned.enchant ?? (planned.enchantCoverage === "complete" ? "No enchant" : "Enchant unknown")}</span>}
             {pips > 0 && <span className="panel-slot-gems" role="img" title={[gemSummary(planned, sockets), ...planned.gems].join("\n")} aria-label={[gemSummary(planned, sockets), ...planned.gems].join(", ")}>
-              {Array.from({ length: pips }, (_, index) => <i key={index} data-state={sockets && index >= room ? "extra" : index < gems ? "set" : index < (sockets?.sockets ?? 0) ? "empty" : "addable"} data-focused={gemFocus != null && planned.gems[index] === gemFocus || undefined} />)}
+              {Array.from({ length: pips }, (_, index) => <i key={index} data-state={sockets && index >= room ? "extra" : index < gems ? "set" : index < (sockets?.sockets ?? 0) ? "empty" : "addable"} />)}
             </span>}
           </span>
         )}
@@ -241,7 +235,7 @@ function SlotTile({ slot, side, name, selected, onSelect, planned, observed, ite
           <ItemHoverCard itemId={observed.itemId} item={now} gear={observed}>
             <span className="panel-slot-now">Now <span className={`quality-text-${now?.quality ?? 1}`}>{observed.name}</span>{observed.itemLevel != null ? ` · ${Math.round(observed.itemLevel)}` : ""}</span>
           </ItemHoverCard>
-        ) : !emptyNote && <span className="panel-slot-now">Nothing imported</span>}
+        ) : <span className="panel-slot-now">Nothing imported</span>}
         {outstanding && <span className="panel-slot-outstanding">{outstanding}</span>}
       </div>
     </div>
