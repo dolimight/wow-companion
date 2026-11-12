@@ -1,17 +1,32 @@
 import * as React from "react"
 import { cn } from "cn"
 
+/** Elements a card may render as, so sections, articles, and disclosures keep their meaning */
+type CardElement = "div" | "section" | "article" | "aside" | "header" | "footer" | "details" | "form" | "li" | "nav"
+
+/**
+ * App adaptation: top-level cards are flat (no ring or border) and cards nested in a card get a 1px border. Cards use
+ * the app's 12px corners and 22px padding, and lay out their
+ * children normally. Cards built from CardHeader / CardContent / CardFooter keep shadcn's spacing
+ */
 function Card({
   className,
   size = "default",
+  as: Tag = "div",
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: Omit<React.AllHTMLAttributes<HTMLElement>, "size" | "as"> & { size?: "default" | "sm"; as?: CardElement; ref?: React.Ref<HTMLElement> }) {
+  const Element = Tag as React.ElementType
   return (
-    <div
+    <Element
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card min-w-0 rounded-xl bg-card text-card-foreground p-[22px] data-[size=sm]:p-4 [--card-spacing:--spacing(4)] data-[size=sm]:[--card-spacing:--spacing(3)]",
+        // A card inside another card gets a hairline border so it stands apart; top-level cards stay flat
+        "in-data-[slot=card]:border in-data-[slot=card]:border-(--line)",
+        "has-data-[slot=card-header]:flex has-data-[slot=card-header]:flex-col has-data-[slot=card-header]:gap-(--card-spacing) has-data-[slot=card-header]:px-0 has-data-[slot=card-header]:py-(--card-spacing)",
+        "has-data-[slot=card-content]:flex has-data-[slot=card-content]:flex-col has-data-[slot=card-content]:gap-(--card-spacing) has-data-[slot=card-content]:px-0 has-data-[slot=card-content]:py-(--card-spacing)",
+        "has-data-[slot=card-footer]:pb-0",
         className
       )}
       {...props}

@@ -15,6 +15,7 @@ import { vaultTracks, weeklyRuns } from "../../../shared/weekly";
 import type { SeasonRuleset } from "../../../shared/season-rules";
 import type { TimelinePoint } from "../../../shared/timeline";
 import "./season.css";
+import { Card } from "../../components/ui/card";
 
 const affixRegions = ["us", "eu", "kr", "tw"] as const;
 type AffixRegion = (typeof affixRegions)[number];
@@ -44,7 +45,7 @@ export function AffixList({ region }: { region: string }) {
 
 export function AffixesSurface({ region }: { region: string }) {
   return (
-    <section className="surface">
+    <Card as="section" >
       <div className="surface-heading">
         <div>
           <h2>This week's <Term term="affix">affixes</Term></h2>
@@ -53,7 +54,7 @@ export function AffixesSurface({ region }: { region: string }) {
         <Sparkles size={16} className="secondary" aria-hidden />
       </div>
       <AffixList region={region} />
-    </section>
+    </Card>
   );
 }
 
@@ -62,7 +63,7 @@ export function TonightKeys({ character, action }: { character: Character; actio
   const { dungeons } = useMemo(() => seasonDungeons(character), [character]);
   const picks = useMemo(() => tonightKeys(dungeons), [dungeons]);
   return (
-    <section className="surface" aria-labelledby="tonight-keys-title">
+    <Card as="section" aria-labelledby="tonight-keys-title">
       <div className="surface-heading">
         <div>
           <h2 id="tonight-keys-title">Keys to run tonight</h2>
@@ -88,7 +89,7 @@ export function TonightKeys({ character, action }: { character: Character; actio
           <AffixList region={character.region} />
         </div>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -117,7 +118,7 @@ export function CrestBudget({ character, tracks }: { character: Character; track
   if (!plan.steps.length && !plan.totals.length) return null;
   const affordable = new Set(plan.affordable.map((step) => step.slot));
   return (
-    <section className="surface crest-budget" aria-labelledby="crest-title">
+    <Card as="section" className="crest-budget" aria-labelledby="crest-title">
       <div className="surface-heading">
         <div>
           <h2 id="crest-title"><Term term="crest">Crest</Term> budget</h2>
@@ -128,13 +129,13 @@ export function CrestBudget({ character, tracks }: { character: Character; track
       {plan.totals.length > 0 && (
         <dl className="crest-totals">
           {plan.totals.map((total) => (
-            <div key={total.currencyId}>
+            <Card size="sm" key={total.currencyId}>
               <dt><CurrencyLabel id={total.currencyId} /></dt>
               <dd>
                 <strong>{total.balance == null ? "Unknown" : total.balance.toLocaleString()}</strong> held
                 <small>{total.full ? `${total.next.toLocaleString()} for every next rank · ${total.full.toLocaleString()} to finish every track` : "None of your equipped gear upgrades with these"}</small>
               </dd>
-            </div>
+            </Card>
           ))}
         </dl>
       )}
@@ -153,7 +154,7 @@ export function CrestBudget({ character, tracks }: { character: Character; track
         ))}
       </ol>
       <p className="week-footnote">Ranked by item levels per crest. Base prices from the season rules; a rank you've reached before on that slot can cost less in game{plan.unknownSlots.length ? ` · ${plan.unknownSlots.length} item${plan.unknownSlots.length === 1 ? " has" : "s have"} no known upgrade track` : ""}</p>
-    </section>
+    </Card>
   );
 }
 
@@ -192,7 +193,7 @@ export function SeasonTimeline({ character }: { character: Character }) {
   const season = character.ratings.mythicPlus?.seasonId ?? null;
   const points = (timeline.data?.points ?? []).filter((point) => season == null || point.season == null || point.season === season);
   return (
-    <section className="surface season-timeline" aria-labelledby="timeline-title">
+    <Card as="section" className="season-timeline" aria-labelledby="timeline-title">
       <div className="surface-heading">
         <div>
           <h2 id="timeline-title">Season timeline</h2>
@@ -207,7 +208,7 @@ export function SeasonTimeline({ character }: { character: Character }) {
         </div>
       )}
       {points.length < 2 && <div className="unknown-note"><CircleHelp /><p>The timeline starts with this version of the app and grows as your characters sync, so earlier history isn't shown</p></div>}
-    </section>
+    </Card>
   );
 }
 
@@ -220,7 +221,7 @@ export function AltReadiness({ characters, identity, now }: { characters: Charac
     return comforts.length ? Math.max(...comforts) : 10;
   });
   return (
-    <section className="surface alt-readiness" aria-labelledby="alt-title">
+    <Card as="section" className="alt-readiness" aria-labelledby="alt-title">
       <div className="surface-heading">
         <div>
           <h2 id="alt-title">Alts at a key level</h2>
@@ -253,6 +254,6 @@ export function AltReadiness({ characters, identity, now }: { characters: Charac
         </table>
         {!rows.length && <div className="inline-empty">Add a character to compare alts</div>}
       </div>
-    </section>
+    </Card>
   );
 }

@@ -17,6 +17,7 @@ import { topRegionNames, topSlotGroups, type TopCount, type TopPlayers, type Top
 import type { ItemSummary } from "../../../shared/gamedata";
 import "./top-players.css";
 import { LatticeLoader } from "../../components/motion/LatticeLoader";
+import { Card } from "../../components/ui/card";
 
 async function copy(text: string, what: string) {
   try { await navigator.clipboard.writeText(text); notify(`${what} copied`); } catch { notify("Copy failed, select the text and copy it manually"); }
@@ -145,12 +146,12 @@ export function TopPlayersPage({ character }: { character: Character }) {
     return (
       <>
         <PageHeading character={character} />
-        <section className="surface">
+        <Card as="section" >
           <div className="unknown-note">
             <CircleHelp />
             <p>{character.demo ? "Demo characters can't be compared with real players" : "Refresh this character first so its class and specialization are known"}</p>
           </div>
-        </section>
+        </Card>
       </>
     );
   return (
@@ -158,9 +159,9 @@ export function TopPlayersPage({ character }: { character: Character }) {
       {stageDialog}
       <PageHeading character={character} data={data} region={region} onRegionChange={setRegion} refreshing={top.isFetching || (currentRefresh && refresh.isPending)} onRefresh={() => refresh.mutate({ specId: character.specId!, specName: character.specName, className: character.className, region })} />
       {(top.isError || (currentRefresh && refresh.isError)) && (
-        <section className="surface"><p className="secondary small" role="alert">{errorMessage(currentRefresh && refresh.isError ? refresh.error : top.error)}</p></section>
+        <Card as="section" ><p className="secondary small" role="alert">{errorMessage(currentRefresh && refresh.isError ? refresh.error : top.error)}</p></Card>
       )}
-      {!data && top.isFetching && <section className="surface"><LatticeLoader label={`Collecting the top ${character.specName} ${character.className} players`} pattern="ripple" /><p className="muted small">This takes a few seconds the first time</p></section>}
+      {!data && top.isFetching && <Card as="section" ><LatticeLoader label={`Collecting the top ${character.specName} ${character.className} players`} pattern="ripple" /><p className="muted small">This takes a few seconds the first time</p></Card>}
       {data && (
         <>
           <div className="top-summary">
@@ -169,7 +170,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
             <div><small>Your item level</small><strong data-unknown={character.itemLevel == null || undefined}>{character.itemLevel?.toFixed(1) ?? "Unknown"}</strong></div>
           </div>
           <BuildsSurface data={data} character={character} />
-          <section className="surface top-gear">
+          <Card as="section" className="top-gear">
             <div className="surface-heading">
               <div>
                 <h2 className="performance-section-title"><Shield size={18} aria-hidden="true" />Gear top players wear</h2>
@@ -263,8 +264,8 @@ export function TopPlayersPage({ character }: { character: Character }) {
                 </tbody>
               </table>
             </div>
-          </section>
-          <section className="surface">
+          </Card>
+          <Card as="section" >
             <div className="surface-heading">
               <h2 className="performance-section-title"><Users size={18} aria-hidden="true" />Players compared</h2>
             </div>
@@ -277,7 +278,7 @@ export function TopPlayersPage({ character }: { character: Character }) {
                 </li>
               ))}
             </ol>
-          </section>
+          </Card>
         </>
       )}
     </>
@@ -309,7 +310,7 @@ function BuildsSurface({ data, character }: { data: TopPlayers; character: Chara
   const individual = data.players.flatMap((player, index) => player.loadout && !shared.some((build) => build.loadout === player.loadout) ? [{ loadout: player.loadout, count: 1, players: [player.name], title: `#${index + 1} ${player.name}`, detail: `${player.realm} · ${player.region.toUpperCase()}${player.score != null ? ` · score ${Math.round(player.score).toLocaleString()}` : ""}` }] : []);
   const listed = [...shared, ...individual].slice(0, 6);
   return (
-    <section className="surface">
+    <Card as="section" >
       <div className="surface-heading">
         <div>
           <h2 className="performance-section-title"><Sparkles size={18} aria-hidden="true" />Talent builds</h2>
@@ -333,6 +334,6 @@ function BuildsSurface({ data, character }: { data: TopPlayers; character: Chara
       ) : (
         <p className="secondary small">These players' talents aren't public right now</p>
       )}
-    </section>
+    </Card>
   );
 }

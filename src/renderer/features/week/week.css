@@ -70,7 +70,7 @@
 }
 .week-link { margin-top: 18px; }
 .week-expanded > td { padding: 0 0 12px; }
-.week-expanded .surface { margin: 0; }
+.week-expanded [data-slot="card"] { margin: 0; }
 .week-expanded-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .stat-bar:has(.stat-change) { grid-template-columns: 110px minmax(0, 1fr) 52px 52px; }
 .stat-change { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }

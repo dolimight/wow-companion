@@ -16,9 +16,9 @@
 .progression-item-name { line-height: 1.5; }
 .progression-table tbody th, .progression-table td { padding-block: 16px; }
 .progression-gap[data-positive] { color: var(--accent); font-weight: 600; }
-.progression-settings > .surface { padding: 20px; }
+.progression-settings > [data-slot="card"] { padding: 20px; }
 .progression-settings .gear-section-title { font-size: 17px; margin-bottom: 10px; }
-.progression-settings > .surface > .button-primary { width: 100%; justify-content: center; }
+.progression-settings > [data-slot="card"] > .button-primary { width: 100%; justify-content: center; }
 .progression-settings legend { color: var(--ink); }
 .progression-notice { gap: 10px; padding: 16px 20px; }
 .progression-notice .button { flex: none; align-self: center; }
@@ -32,7 +32,7 @@
 .planner-layout { gap: 24px; }
 .planner-workspace { display: grid; align-content: start; gap: 20px; min-width: 0; }
 .planner-workspace > * { margin-top: 0; margin-bottom: 0; }
-.planner-workspace > .surface { padding: 20px; }
+.planner-workspace > [data-slot="card"] { padding: 20px; }
 .plan-controls { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(280px, 1.2fr); align-items: start; gap: 20px; padding: 20px; border-radius: 12px; background: var(--surface); }
 .plan-controls .goal-editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; margin: 0; }
 .plan-controls .goal-editor .field input { max-width: none; }
