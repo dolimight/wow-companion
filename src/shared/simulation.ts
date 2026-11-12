@@ -60,6 +60,8 @@ export const simulationBenchmarkSchema = z.object({
   swapped: z.array(z.object({ slot: z.string().max(20), from: z.string().max(200), to: z.string().max(200), itemLevel: z.number() })).max(16),
   talentPlayers: z.number().int().nonnegative().nullable(),
   skipped: z.array(z.string().max(200)).max(20),
+  /** The item level top players' gear was capped at, the top of the regular upgrade ranks; absent on older runs */
+  cap: z.number().nullable().default(null),
 })
 export type SimulationBenchmark = z.infer<typeof simulationBenchmarkSchema>
 /** A saved gear plan run as a whole and one planned upgrade at a time */
@@ -78,6 +80,8 @@ export const simulationPlanSchema = z.object({
     population: z.string().max(400), players: z.number().int().nonnegative(),
     /** Slots where the plan does not reach what top players wear */
     differences: z.array(z.object({ slot: z.string().max(20), plan: z.string().max(200), top: z.string().max(200), itemLevel: z.number() })).max(16),
+    /** The item level top players' gear was capped at, the top of the regular upgrade ranks; absent on older runs */
+    cap: z.number().nullable().default(null),
   }).nullable().default(null),
 })
 export type SimulationPlan = z.infer<typeof simulationPlanSchema>
