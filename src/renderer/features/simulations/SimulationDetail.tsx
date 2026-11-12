@@ -8,6 +8,7 @@ import { api } from '../../lib/client'
 import { errorMessage, notify } from '../../lib/notify'
 import { addSimulatedItemsToPlan, gearMemory, planHolds, planKey, subscribeGearPlan } from '../../lib/plan-item'
 import { Badge, Button } from '../../components/ui/primitives'
+import { Card } from '../../components/ui/card'
 import { AppSelect } from '../../components/AppSelect'
 import { ItemIcon } from '../items/ItemIcon'
 import { ItemHoverCard } from '../items/ItemHoverCard'
@@ -100,16 +101,16 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
   }
 
   const Icon = kind.icon
-  const header = <header className="sim-hero">
+  const header = <Card className="sim-hero" role="banner">
       <div className="sim-hero-main">
         <span className="sim-hero-eyebrow"><Icon size={14} />{kind.label}</span>
         <h2>{job.label}</h2>
         <div className="sim-hero-chips">
-          <span>{simulationScenarios[job.request.scenarioId].label}</span>
-          {scenario.targets && scenario.targets > 1 ? <span>{scenario.targets} targets</span> : null}
-          <span>{Math.round(scenario.fightSeconds / 60 * 10) / 10} min fight</span>
-          <span>{job.request.options.iterations.toLocaleString()} iterations</span>
-          <span>{new Date(job.createdAt).toLocaleString()}</span>
+          <Badge>{simulationScenarios[job.request.scenarioId].label}</Badge>
+          {scenario.targets && scenario.targets > 1 ? <Badge>{scenario.targets} targets</Badge> : null}
+          <Badge>{Math.round(scenario.fightSeconds / 60 * 10) / 10} min fight</Badge>
+          <Badge>{job.request.options.iterations.toLocaleString()} iterations</Badge>
+          <Badge>{new Date(job.createdAt).toLocaleString()}</Badge>
         </div>
       </div>
       <div className="sim-hero-stats">
@@ -119,22 +120,22 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
         {versusTop && topGear && versusTop.verdict !== 'unknown' ? <div className="sim-hero-best" data-verdict={versusTop.verdict}><span>Your plan against top players' gear</span><strong>{versusTop.verdict === 'sidegrade' ? 'Even' : `${signed(versusTop.difference)} DPS`}</strong><small>{versusTop.verdict === 'sidegrade' ? 'No measurable difference once your plan is done' : `${percent(Math.abs(versusTop.difference) / topGear.value.mean).replace(/^[+−]/, '')} ${versusTop.difference > 0 ? 'more' : 'less'} damage than their gear`}</small></div>
         : headline && baseline && headline.comparison.verdict !== 'unknown' && <div className="sim-hero-best" data-verdict={headline.comparison.verdict}><span title={headlineLabel}>{headlineLabel}</span><strong>{headline.comparison.verdict === 'sidegrade' ? 'About the same' : `${signed(headline.comparison.difference)} DPS`}</strong><small>{headline.comparison.verdict === 'sidegrade' ? 'No measurable change from your current gear' : `${percent(Math.abs(headline.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${headline.comparison.difference > 0 ? 'more' : 'less'} damage than your current gear`}</small></div>}
       </div>
-    </header>
+    </Card>
   return <div className="sim-detail">
     <Button variant="quiet" className="sim-detail-back" onClick={onBack}><ArrowLeft size={15} />All simulations</Button>
     {header}
 
     {job.failure && <p role="alert" className="error-surface">{job.failure.replace(/\.+$/, '')}</p>}
-    {!result && !job.failure && <section className="surface sim-panel"><p className="muted">This simulation is {job.state} · Results appear here when it finishes</p></section>}
+    {!result && !job.failure && <Card className="sim-panel"><p className="muted">This simulation is {job.state} · Results appear here when it finishes</p></Card>}
 
     {result && baseline && <>
-      {(job.request.plan || job.request.benchmark) && <section className="surface sim-panel" aria-label="Reading">
+      {(job.request.plan || job.request.benchmark) && <Card className="sim-panel" role="region" aria-label="Reading">
         {job.request.benchmark && <BenchmarkSummary job={job} result={result} />}
         {job.request.plan && <PlanSummary job={job} result={result} />}
         {(job.request.plan?.top || job.request.benchmark) && <SimCompare character={character} job={job} result={result} />}
-      </section>}
+      </Card>}
 
-      {entries.length > 0 && <section className="surface sim-panel sim-results-panel" aria-label="Results">
+      {entries.length > 0 && <Card className="sim-panel sim-results-panel" role="region" aria-label="Results">
         <div className="sim-panel-heading sim-toolbar">
           <div><h3>Results</h3><p className="muted">{view === 'ranked' ? 'Change from your current gear · The thin line marks the 95% uncertainty' : 'What each result changes, and what it is worth'}</p></div>
           <div className="sim-toolbar-plan">
@@ -165,7 +166,7 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
           {shown.map((entry, rank) => {
             const inPlan = planHolds(current, entry.items)
             const taken = takenText(baseline, entry.value)
-            return <article className="sim-card" key={entry.value.name} data-verdict={entry.comparison.verdict}>
+            return <Card size="sm" className="sim-card" key={entry.value.name} data-verdict={entry.comparison.verdict}>
               <header>
                 <span className="sim-card-rank">{rank + 1}</span>
                 <strong className="sim-card-title">{entry.label}</strong>
@@ -189,23 +190,23 @@ export function SimulationDetail({ character, activity, job, onBack }: { charact
                 {inPlan ? <span className="sim-card-inplan"><Check size={14} />In your {activityName(planActivity)} plan</span>
                   : <Button variant={entry.comparison.verdict === 'higher' ? 'primary' : undefined} onClick={() => void add(entry.items, entry.items.length === 1 ? entry.items[0]!.name : `${entry.items.length} items`)}><Plus size={14} />{entry.items.length === 1 ? 'Add to plan' : `Add ${entry.items.length} items to plan`}</Button>}
               </footer>}
-            </article>
+            </Card>
           })}
         </div>
         {entries.length > PAGE && <Button variant="quiet" onClick={() => setAll(value => !value)}>{all ? `Show the top ${PAGE}` : `Show all ${entries.length} results`}</Button>}
         </>}
-      </section>}
+      </Card>}
 
-      {!entries.length && <section className="surface sim-panel" aria-label="Your gear">
+      {!entries.length && <Card className="sim-panel" role="region" aria-label="Your gear">
         <div className="sim-panel-heading"><div><h3>Your simulated gear</h3><p className="muted">This run measured your current gear only</p></div></div>
         <ul className="sim-gear">{[...before.values()].map(item => <li key={item.slot}><span className="sim-swap-slot">{gearSlotLabels[item.slot]}</span><Piece item={item} icon={item.itemId ? icons.get(item.itemId) : undefined} /></li>)}</ul>
-      </section>}
+      </Card>}
 
-      <details className="surface sim-panel sim-meta">
+      <Card className="sim-panel"><details className="sim-meta">
         <summary><span>About this result</span><Badge tone={result.applicability === 'current' ? 'green' : 'neutral'}>{result.applicability === 'current' ? 'Applies to your current gear' : result.reasons.length ? `${result.reasons.length === 1 ? 'One thing has' : `${result.reasons.length} things have`} changed since` : 'Historical result'}</Badge></summary>
         <p className="muted">SimulationCraft {result.engine.version} · Modeled damage of your character playing without mistakes · Compare with other runs of your own character, not with damage meters</p>
         {result.reasons.length > 0 && <ul className="muted">{result.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}
-      </details>
+      </details></Card>
     </>}
   </div>
 }

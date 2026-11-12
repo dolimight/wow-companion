@@ -8,6 +8,7 @@
 - Preserve punctuation inside multi-sentence copy, code, URLs, and file paths
 - Always use the integrated Electron title bar with native platform window controls
 - Use shadcn Base UI Select and Toggle controls instead of native select elements or checkbox inputs
+- Build every card with the shadcn Card component and every chip with Badge; never hand-style card borders, rings, corner radii, or backgrounds, so cards look the same everywhere
 - Add icons or images wherever possible: game icons for items, gems, enchants, specializations, talents, and hero trees in every list, picker, chip, and card, sourced from the player's installed game files
 - Never push directly to main, even for small changes or repository maintenance
 - Work on a feature branch and submit a pull request; merge only through the required GitHub checks with no administrative bypass

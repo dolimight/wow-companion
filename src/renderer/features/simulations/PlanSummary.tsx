@@ -1,3 +1,4 @@
+import { Card } from '../../components/ui/card'
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
 import { benchmarkReading } from '../../../shared/simulation-benchmark'
@@ -17,7 +18,7 @@ function change(baseline: Value, value: Value) {
 }
 
 function Tile({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: 'up' | 'down' }) {
-  return <div className="plan-tile" data-tone={tone}><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</div>
+  return <Card size="sm" className="plan-tile" data-tone={tone}><span>{label}</span><strong>{value}</strong>{note && <small>{note}</small>}</Card>
 }
 
 /**
@@ -50,10 +51,10 @@ export function PlanSummary({ job, result }: { job: SimulationJob; result: Resul
     note={measured ? `${percent(Math.abs(total.comparison.difference) / baseline.mean).replace(/^[+−]/, '')} ${total.comparison.difference > 0 ? 'more' : 'less'} damage than you do now${total.takenText ? ` · ${total.takenText}` : ''}` : undefined} tone={total.comparison.verdict === 'higher' ? 'up' : total.comparison.verdict === 'lower' ? 'down' : undefined} />
   return <div className="plan-summary">
     <div className="plan-tiles">
-      {versus && <div className="plan-tile plan-verdict" data-tone={versusValue === 'Ahead' || versusValue === 'Even' ? 'up' : versusValue === 'Behind' ? 'down' : undefined}>
+      {versus && <Card size="sm" className="plan-tile plan-verdict" data-tone={versusValue === 'Ahead' || versusValue === 'Even' ? 'up' : versusValue === 'Behind' ? 'down' : undefined}>
         <span>Your finished plan against top players' gear</span><strong>{versusValue}</strong><small>{versusNote}</small>
         {reading && <span className="simulation-benchmark-meter" aria-label={`Your plan reaches ${Math.round(reading.share * 100)}% of their gear's damage`}><span style={{ width: `${Math.max(4, Math.min(100, Math.round(reading.share * 100)))}%` }} /></span>}
-      </div>}
+      </Card>}
       {totalTile}
       {first && <Tile label="Get this first" value={itemOnly(first.label)} note={`${signed(first.comparison.difference)} DPS on its own`} tone="up" />}
     </div>

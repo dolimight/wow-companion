@@ -15,6 +15,8 @@ import { iconUrl } from '../../lib/assets'
 import { GearSlotIcon } from '../../components/GearSlotIcon'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
 import { ItemIcon, useGameData } from '../items/items'
+import { Card } from '../../components/ui/card'
+import { Badge } from '../../components/ui/primitives'
 import { ItemHoverCard } from '../items/ItemHoverCard'
 import { talentDescription } from '../plan/PlanTalents'
 import './sim-compare.css'
@@ -35,6 +37,7 @@ const gemIdsOf = (item: Pick<GearItem, 'gemIds' | 'gems' | 'itemLink'> | undefin
   return own.length ? own : (itemLinkVariant(item.itemLink).gemIds ?? []).filter(id => id > 0)
 }
 const enchantIdOf = (item: Pick<GearItem, 'enchantId' | 'itemLink'> | undefined) => item ? item.enchantId || itemLinkVariant(item.itemLink).enchantId || null : null
+const toneOf = (tone: 'up' | 'down' | undefined) => tone === 'up' ? 'green' as const : tone === 'down' ? 'amber' as const : 'neutral' as const
 const regionOf = (population: string): TopRegion => (Object.entries(topRegionNames).find(([, name]) => population.includes(name))?.[0] as TopRegion | undefined) ?? 'us'
 
 type Row = {
@@ -134,11 +137,13 @@ export function SimCompare({ character, job, result }: { character: Character; j
     <section className="sim-compare" aria-label={`${subject} beside top players`}>
       <header className="sim-compare-head">
         <h4>Why {subject.toLowerCase()} {reasons.verdict}</h4>
-        <ul className="sim-reasons">
-          {reasons.list.map(reason => <li key={reason.text} data-tone={reason.tone}>{reason.icon}<span>{reason.text}</span></li>)}
-        </ul>
+        <Card size="sm" className="sim-reasons-card">
+          <ul className="sim-reasons">
+            {reasons.list.map(reason => <li key={reason.text} data-tone={reason.tone}>{reason.icon}<span>{reason.text}</span></li>)}
+          </ul>
+        </Card>
       </header>
-      <div className="sim-compare-grid" role="table" aria-label="Slot by slot">
+      <Card size="sm" className="sim-compare-grid" role="table" aria-label="Slot by slot">
         <div className="sim-compare-row sim-compare-labels" role="row">
           <span role="columnheader">Slot</span><span role="columnheader">{subject}</span><span role="columnheader">Top players</span><span role="columnheader">Difference</span>
         </div>
@@ -154,12 +159,12 @@ export function SimCompare({ character, job, result }: { character: Character; j
                 enchant={row.top.enchant?.name ?? null} enchantArt={enchantIcon(row.top.enchant?.name)} gems={row.top.gems.map(gem => gem.id)} embellishment={row.top.embellishment} /> : <span className="muted">Unknown</span>}
             </span>
             <span role="cell" className="sim-notes">
-              {row.notes.length ? row.notes.map(note => <span key={note.text} className="sim-note" data-tone={note.tone}>{note.icon}{note.text}</span>) : <span className="sim-note" data-tone="up"><Equal size={12} />Same</span>}
-              {row.gain && row.gain.verdict !== 'unknown' && <span className="sim-note sim-gain" data-tone={row.gain.verdict === 'higher' ? 'up' : row.gain.verdict === 'lower' ? 'down' : undefined}>{row.gain.verdict === 'sidegrade' ? 'No measurable change alone' : `${signed(row.gain.difference)} DPS alone`}</span>}
+              {row.notes.length ? row.notes.map(note => <Badge key={note.text} tone={toneOf(note.tone)}>{note.icon}{note.text}</Badge>) : <Badge tone="green"><Equal size={12} />Same</Badge>}
+              {row.gain && row.gain.verdict !== 'unknown' && <Badge tone={row.gain.verdict === 'higher' ? 'green' : row.gain.verdict === 'lower' ? 'amber' : 'neutral'}><strong className="sim-gain">{row.gain.verdict === 'sidegrade' ? 'No measurable change alone' : `${signed(row.gain.difference)} DPS alone`}</strong></Badge>}
             </span>
           </div>
         ))}
-      </div>
+      </Card>
       {top.isPending && <LatticeLoader label="Reading what top players wear" pattern="ripple" showTimer={false} />}
       {tree.data && talents && <TalentCompare tree={tree.data} diff={talents} players={data?.builds[0]?.count ?? null} total={data?.players.length ?? null} />}
       {!character.talents?.loadout && <p className="muted small">Your talents aren't known yet, so they can't be compared · Log in with the addon or sync this character</p>}
@@ -184,9 +189,9 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
         </span>
       </ItemHoverCard>
       <span className="sim-extras">
-        {enchant && <span className="sim-extra" title={enchant}>{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span>}
-        {gems.map((id, index) => { const gem = items.get(id); return <span key={`${id}-${index}`} className="sim-extra" title={gem?.name}>{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span> })}
-        {embellishment && <span className="sim-extra sim-embellishment"><Sparkles size={12} />{embellishment}</span>}
+        {enchant && <Badge><span className="sim-extra" title={enchant}>{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge>}
+        {gems.map((id, index) => { const gem = items.get(id); return <Badge key={`${id}-${index}`}><span className="sim-extra" title={gem?.name}>{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge> })}
+        {embellishment && <Badge tone="blue"><span className="sim-extra"><Sparkles size={12} />{embellishment}</span></Badge>}
       </span>
     </div>
   )
@@ -206,14 +211,14 @@ function TalentCompare({ tree, diff, players, total }: { tree: TalentTree; diff:
       </div>
       {changes > 0 && <div className="sim-talent-columns">
         {([['Only you take', diff.onlyMine], ['Only they take', diff.onlyTheirs]] as const).map(([title, list]) => (
-          <div key={title}>
+          <Card size="sm" key={title} className="sim-talent-column">
             <strong>{title}</strong>
             {sections.map(([section, name]) => {
               const entries = list.filter(entry => entry.section === section)
               return entries.length ? <div key={section} className="sim-talent-group"><small>{name}</small>{entries.map(entry => <TalentChip key={`${entry.nodeId}-${entry.name}`} tree={tree} entry={entry} />)}</div> : null
             })}
             {!list.length && <span className="muted small">Nothing</span>}
-          </div>
+          </Card>
         ))}
       </div>}
     </div>
@@ -221,7 +226,7 @@ function TalentCompare({ tree, diff, players, total }: { tree: TalentTree; diff:
 }
 
 function HeroBadge({ label, name, icon }: { label: string; name: string | null; icon: number | null }) {
-  return <span className="sim-hero-badge"><small>{label}</small><ItemIcon icon={icon} size="small" fallback={<Sparkles />} /><strong>{name ?? 'Unknown'}</strong></span>
+  return <Card size="sm" className="sim-hero-badge"><small>{label}</small><ItemIcon icon={icon} size="small" fallback={<Sparkles />} /><strong>{name ?? 'Unknown'}</strong></Card>
 }
 
 function TalentChip({ tree, entry }: { tree: TalentTree; entry: TalentChoice }) {

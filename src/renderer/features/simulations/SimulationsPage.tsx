@@ -7,6 +7,7 @@ import type { Activity, Character } from '../../../shared/domain'
 import { compareSimulationValues, requestScenario, simulationScenarios, type SimulationJob, type SimulationScenarioId } from '../../../shared/simulation'
 import { api } from '../../lib/client'
 import { Button, Badge, Field } from '../../components/ui/primitives'
+import { Card } from '../../components/ui/card'
 import { AppSelect } from '../../components/AppSelect'
 import { errorMessage, notify } from '../../lib/notify'
 import { useUpdateBlocker } from '../../lib/update-safety'
@@ -84,7 +85,7 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
     <div className="page-heading"><div><h2>Simulations</h2><p>See how your gear, your plan, and top players' setups compare on your own character</p></div></div>
     {(workspace.isError || profile.isError) && <p role="alert" className="error-surface">{errorMessage(workspace.error ?? profile.error)}</p>}
 
-    <section className="surface simulation-section sim-run" aria-label="Run a simulation">
+    <Card className="simulation-section sim-run" role="region" aria-label="Run a simulation">
       <div className="simulation-heading">
         <h2>Run a simulation</h2>
         <span className="sim-engine"><Cpu size={14} aria-hidden="true" />{data?.configured ? data.executableName : 'No engine chosen'}<Button variant="quiet" disabled={busy} onClick={() => perform(() => api.chooseSimulationExecutable())}><FolderOpen size={14} />{data?.configured ? 'Change' : 'Choose engine'}</Button></span>
@@ -92,11 +93,11 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
       {!data?.configured && <p className="sim-blocked" role="status">Choose your installed SimulationCraft executable to run simulations on this computer</p>}
         <Field label="Scenario"><AppSelect label="Simulation scenario" value={scenario} options={Object.entries(simulationScenarios).map(([value, preset]) => ({ value, label: `${preset.label} · ${preset.description}` }))} onValueChange={value => setScenario(value as SimulationScenarioId)} /></Field>
         <div className="sim-choices">
-          <div className="sim-choice"><strong>Your gear</strong><p className="muted">Your current damage in this scenario</p>{runButton('gear', 'Run simulation', <Play size={14} />, () => launch('gear', () => api.startSimulation(base)), false, true)}</div>
-          <div className="sim-choice"><strong>Your plan</strong><p className="muted">{chosenPlan?.items.length ? 'The whole plan and each upgrade on its own, so you know which to get first' : `No ${planActivity === 'raiding' ? 'Raiding' : 'Mythic+'} plan saved yet · Save one on the Plan tab`}</p>
+          <Card size="sm" className="sim-choice"><strong>Your gear</strong><p className="muted">Your current damage in this scenario</p>{runButton('gear', 'Run simulation', <Play size={14} />, () => launch('gear', () => api.startSimulation(base)), false, true)}</Card>
+          <Card size="sm" className="sim-choice"><strong>Your plan</strong><p className="muted">{chosenPlan?.items.length ? 'The whole plan and each upgrade on its own, so you know which to get first' : `No ${planActivity === 'raiding' ? 'Raiding' : 'Mythic+'} plan saved yet · Save one on the Plan tab`}</p>
             <AppSelect label="Gear plan to simulate" value={planActivity} options={(['mythicPlus', 'raiding'] as const).map(value => { const draft = plans.data?.[value]; return { value, label: `${value === 'raiding' ? 'Raiding' : 'Mythic+'} · ${draft?.items.length ? `${draft.name} · ${draft.items.length} items` : 'Not saved yet'}` } })} onValueChange={value => setPlanActivity(value as Activity)} />
-            {runButton('plan', 'Simulate plan', <ClipboardList size={14} />, () => launch('plan', () => api.startSimulationPlan({ ...base, planActivity })), !chosenPlan?.items.length)}</div>
-          <div className="sim-choice"><strong>Top players</strong><p className="muted">The items and talents top {character.specName ?? ''} players use, on your character</p>{runButton('top', 'Compare with top players', <Trophy size={14} />, () => launch('top', () => api.startSimulationBenchmark(base)))}</div>
+            {runButton('plan', 'Simulate plan', <ClipboardList size={14} />, () => launch('plan', () => api.startSimulationPlan({ ...base, planActivity })), !chosenPlan?.items.length)}</Card>
+          <Card size="sm" className="sim-choice"><strong>Top players</strong><p className="muted">The items and talents top {character.specName ?? ''} players use, on your character</p>{runButton('top', 'Compare with top players', <Trophy size={14} />, () => launch('top', () => api.startSimulationBenchmark(base)))}</Card>
         </div>
         {blocked && <p className="sim-blocked" role="status">{blocked}</p>}
         <details className="simulation-details sim-settings"><summary><Settings2 size={14} aria-hidden="true" />Settings · {threads} threads · {timeoutMinutes} minute limit</summary>
@@ -106,37 +107,37 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
           </div>
           <p className="muted">Simulated damage models your character playing without mistakes · Compare it with your own runs, not with damage meters or logs · It does not measure healing, tank survival, or PvP</p>
         </details>
-    </section>
+    </Card>
 
     {(running ?? justFinished) && <RunningJob job={(running ?? justFinished)!} expectedMs={expectedMs} disabled={mutation.isPending || !running} onCancel={() => running && perform(() => api.cancelSimulation({ characterId: character.id, jobId: running.id }))} />}
 
     {data && <DamageHistory jobs={data.jobs} scenario={scenario} />}
 
-    <section className="surface simulation-section" aria-label="Simulation jobs">
+    <Card className="simulation-section" role="region" aria-label="Simulation jobs">
       <div className="simulation-heading"><h2>Results</h2>{finished.length > 0 && <span className="muted small">{finished.length} saved</span>}</div>
       {workspace.isPending ? <p role="status">Loading saved results…</p>
         : !finished.length ? <div className="simulation-empty"><FlaskConical size={25} /><p>No results yet</p><span className="muted">Each result keeps the exact gear, scenario, and engine it was run with</span></div>
         : <ul className="sim-results">{shownJobs.map(job => <JobRow key={job.id} job={job} onOpen={onOpenJob && job.result ? () => onOpenJob(job.id) : undefined} />)}</ul>}
       {finished.length > 5 && <Button variant="quiet" onClick={() => setAllJobs(value => !value)}>{allJobs ? 'Show the latest 5' : `Show all ${finished.length} results`}</Button>}
-    </section>
+    </Card>
 
-    <details className="surface simulation-section sim-disclosure" aria-label="Simulation profile" open={exported?.coverage === 'partial' || undefined}>
+    <Card className="simulation-section"><details className="sim-disclosure" aria-label="Simulation profile" open={exported?.coverage === 'partial' || undefined}>
       <summary><FileCode2 size={15} aria-hidden="true" /><span>SimulationCraft profile</span><Badge tone={exported?.coverage === 'complete' ? 'green' : 'amber'}>{exported?.coverage === 'complete' ? 'Complete profile' : 'Partial profile'}</Badge>{data?.profile && <small className="muted">Saved import: {data.profile.matchesCurrent ? 'matches the recorded baseline' : 'does not match the recorded baseline'}</small>}</summary>
       <p className="muted">{character.name} · {character.specName} · Build {character.gameBuild ?? 'unknown'} · Export your observed gear and talents, or import a supported single-character /simc profile</p>
       <Field label="SimulationCraft profile"><textarea className="simulation-profile" aria-label="SimulationCraft profile" spellCheck={false} value={text ?? exported?.text ?? ''} onChange={event => setText(event.target.value)} maxLength={1_048_576} /></Field>
       <div className="simulation-actions"><Button disabled={!exported} onClick={() => void navigator.clipboard.writeText(text ?? exported?.text ?? '').then(() => notify('Profile copied')).catch(error => notify(errorMessage(error)))}><Copy size={14} />Copy profile</Button><Button disabled={mutation.isPending || !text?.trim()} onClick={() => perform(async () => { const imported = await api.importSimulationProfile({ characterId: character.id, text: text! }); setSavedProfileText(text!); notify(imported.matchesCurrent ? 'Profile saved for this baseline' : 'Profile saved with a baseline mismatch') })}>Save imported profile</Button><Button variant="quiet" disabled={mutation.isPending} onClick={() => perform(async () => { await api.clearSimulationProfile({ characterId: character.id }); setText(null); await profile.refetch() })}>Use current export</Button></div>
       {exported?.reasons.length ? <details className="simulation-details"><summary>{exported.reasons.length} fields need attention before local execution</summary><ul>{exported.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></details> : null}
       {data?.profile && <p className="muted">Saved {new Date(data.profile.createdAt).toLocaleString()}</p>}
-    </details>
+    </details></Card>
 
-    <details className="surface simulation-section sim-disclosure" aria-label="External simulation reports">
+    <Card className="simulation-section"><details className="sim-disclosure" aria-label="External simulation reports">
       <summary><Link2 size={15} aria-hidden="true" /><span>Saved reports</span>{data?.reports.length ? <small className="muted">{data.reports.length} saved</small> : <small className="muted">Bookmark Raidbots or SimulationCraft links</small>}</summary>
       <p className="muted">Links are bookmarks with your notes, not imported results</p>
       <Field label="Report URL"><input aria-label="Simulation report URL" type="url" placeholder="https://www.raidbots.com/simbot/report/…" value={reportUrl} maxLength={2048} onChange={event => setReportUrl(event.target.value)} /></Field>
       <Field label="Notes"><textarea aria-label="Simulation report notes" value={notes} maxLength={4000} onChange={event => setNotes(event.target.value)} rows={2} /></Field>
       <Button disabled={mutation.isPending || !reportUrl.trim()} onClick={() => perform(async () => { await api.saveSimulationReport({ characterId: character.id, url: reportUrl, notes }); setReportUrl(''); setNotes('') })}>Save report</Button>
       {data?.reports.map(report => <div className="simulation-report" key={report.id}><div><strong>{new URL(report.url).hostname}</strong><p>{report.notes || 'No notes'}</p><small className="muted">{report.baselineHash === data.baselineHash ? 'Saved against this baseline' : 'Saved against an older baseline'} · {new Date(report.createdAt).toLocaleString()}</small></div><Button variant="quiet" aria-label="Open saved simulation report" onClick={() => void api.openExternal(report.url).catch(error => notify(errorMessage(error)))}><ExternalLink size={15} /></Button></div>)}
-    </details>
+    </details></Card>
   </div>
 }
 
@@ -198,9 +199,9 @@ function typicalDuration(jobs: SimulationJob[], current: SimulationJob | null) {
 function RunningJob({ job, expectedMs, disabled, onCancel }: { job: SimulationJob; expectedMs: number; disabled: boolean; onCancel: () => void }) {
   const status = job.state === 'completed' ? 'done' : job.state === 'failed' ? 'error' : job.state === 'queued' ? 'idle' : 'running'
   const words = job.state === 'completed' ? 'Finished' : job.state === 'failed' ? 'Failed' : job.state === 'queued' ? 'Waiting to start' : 'Running'
-  return <section className="surface simulation-section sim-running" aria-label="Running simulation">
+  return <Card className="simulation-section sim-running" role="region" aria-label="Running simulation">
     <CallChip icon={<Cpu size={14} />} name="SimulationCraft" argument={job.label} status={status} expectedMs={expectedMs} startedAt={job.startedAt ? Date.parse(job.startedAt) : null} />
     <span className="sim-result-text"><strong>{words}</strong><small className="muted">{scenarioLine(job)} · {job.request.options.iterations.toLocaleString()} iterations{status === 'running' ? ` · usually about ${Math.max(1, Math.round(expectedMs / 1000))} s` : ''}</small></span>
     {status === 'running' || status === 'idle' ? <Button disabled={disabled} onClick={onCancel}><X size={14} />Cancel</Button> : <span />}
-  </section>
+  </Card>
 }
