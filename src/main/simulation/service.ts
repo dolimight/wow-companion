@@ -303,10 +303,14 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
         ...described.map(entry => ({ label: `${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] as string[] })),
         ...(planTalents ? [{ label: 'Plan talents', entries: [] as typeof described, extra: talentLine }] : []),
       ]
+      // Each planned item alone, by its profile line, before their sets join the list
+      const planSingle = new Map(described.map((entry, index) => [entry.text, index + (wholePlan ? 1 : 0)]))
       const comparison = planTopComparison(prepared.current, swaps, topForRun, cap)
       const topIndex = comparison ? sets.push({ label: benchmarkLabels.gear, entries: comparison.entries, extra: [] }) - 1 : null
-      // Each of their items alone too, measured from the same reference as each planned item alone
-      const topSingles = comparison ? comparison.entries.map(entry => ({ slot: entry.item.slot, index: sets.push({ label: `Top players · ${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] }) - 1 })) : []
+      // Each of their items alone too, measured from the same reference as each planned item alone. When their item is
+      // exactly what the plan puts in that slot, it shares the plan's measurement: running the same profile twice only
+      // measures noise, which once showed the same cloak beating itself by a thousand DPS
+      const topSingles = comparison ? comparison.entries.map(entry => ({ slot: entry.item.slot, index: planSingle.get(entry.text) ?? sets.push({ label: `Top players · ${gearSlotLabels[entry.item.slot]}: ${entry.item.name} at ${entry.item.itemLevel}`, entries: [entry], extra: [] }) - 1 })) : []
       const lines = sets.flatMap((set, index) => [...set.entries.map(entry => entry.text), ...set.extra].map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
