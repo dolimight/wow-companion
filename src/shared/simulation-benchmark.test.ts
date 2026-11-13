@@ -61,4 +61,10 @@ describe('plan swaps', () => {
     const { swaps } = planSwaps(character, [{ ...head, itemLevel: (head.itemLevel ?? 0) + 10, itemLink: null, bonusIds: [], embellishmentBonusIds: [12384] }], () => [111, 222])
     expect(swaps[0]?.bonusIds).toEqual([111, 222, 12384])
   })
+  it('adds a planned variant such as Venomcursed on top of the copy', () => {
+    const character = simulationCharacter()
+    const head = character.gear.find(item => item.slot === 'head')!
+    const { swaps } = planSwaps(character, [{ ...head, itemLevel: (head.itemLevel ?? 0) + 10, itemLink: null, bonusIds: [], variantBonusIds: [13708] }], () => [111])
+    expect(swaps[0]?.bonusIds).toEqual([111, 13708])
+  })
 })
