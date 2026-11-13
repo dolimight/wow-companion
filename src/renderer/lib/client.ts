@@ -76,6 +76,7 @@ export const api={
  embellishmentRules:async()=>(await client()).embellishmentRules.query(),
  enchantSlots:async()=>(await client()).enchantSlots.query(),
  itemPower:async(input:{id:number;itemLevel?:number|null;character?:ItemSearchCharacter|null})=>(await client()).itemPower.query(input),
+ bonusInfo:async(ids:number[])=>(await client()).bonusInfo.query({ids}),
  enhancements:async(input:{kind:'enchant'|'gem';slot:AppearanceSlot|null;runeforging?:boolean})=>(await client()).enhancements.query(input),
  talentTree:async(specId:number)=>(await client()).talentTree.query({specId}),
  specializations:async()=>(await client()).specializations.query(),

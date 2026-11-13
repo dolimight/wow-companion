@@ -124,6 +124,7 @@ export function createRouter(s:RouterServices){return t.router({
     return {tracks,power,loot,level,basis:input.itemLevel?'picked' as const:tracks?(tracks.max.assumed?'season' as const:'track' as const):'base' as const}
   })),
   getItems:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('items',input.ids))),
+  bonusInfo:p.input(z.object({ids:z.array(z.number().int().positive()).max(400)})).query(({input})=>run(()=>s.gameData.call('bonusInfo',input.ids))),
   // A Death Knight's weapons also take runeforges, which aren't enchant items
   enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable(),runeforging:z.boolean().optional()})).query(({input})=>run(async()=>{
     const options=await s.gameData.call('enhancements',input.kind,input.slot)

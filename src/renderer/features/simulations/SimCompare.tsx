@@ -2,6 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Equal, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
 import type { Character, GearItem, GearSlot } from '../../../shared/domain'
+import type { BonusInfo } from '../../../shared/gamedata'
+type ItemVariant = NonNullable<BonusInfo['variant']>
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
@@ -43,7 +45,9 @@ const regionOf = (population: string): TopRegion => (Object.entries(topRegionNam
 type Row = {
   slot: GearSlot
   mine: Variant | undefined
-  top: { id: number; name: string; level: number | null; share: string | null; enchant: string | null; gems: number[]; embellishment: string | null } | null
+  top: { id: number; name: string; level: number | null; share: string | null; enchant: string | null; gems: number[]; embellishment: string | null; variants: ItemVariant[] } | null
+  /** Named variants of your copy, such as Venomcursed, that add an effect of their own */
+  variants: ItemVariant[]
   /** Who wins the slot: measured from each item simulated alone when the run has them, else read from item level */
   verdict: { winner: 'mine' | 'theirs' | 'even' | null; text: string; detail: string | null; measured: boolean; identical?: boolean }
   embellishment: string | null
@@ -131,6 +135,10 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const generic = new Set([8960, 13555])
   const reagentOf = (bonusIds: number[] | null | undefined) => bonusIds?.length ? (reagents.data ?? []).find(option => option.bonusLists?.some(id => !generic.has(id) && bonusIds.includes(id))) ?? null : null
   const myEmbellishmentOf = (item: Variant | undefined) => item ? (item.embellishment?.name ?? reagentOf(item.bonusIds)?.name ?? embellishmentOf(rules.data ?? null, item.bonusIds)?.name ?? null) : null
+  // Named variants such as Venomcursed add an effect the item's name doesn't show
+  const bonusIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => item.bonusIds ?? []))].sort((a, b) => a - b)
+  const bonuses = useQuery({ queryKey: ['bonus-info', bonusIds], queryFn: () => api.bonusInfo(bonusIds), enabled: ready && bonusIds.length > 0, staleTime: Infinity, placeholderData: keepPreviousData })
+  const variantsOf = (item: Variant | undefined): ItemVariant[] => (item?.bonusIds ?? []).flatMap(id => { const variant = bonuses.data?.[id]?.variant; return variant ? [variant] : [] })
   const embellishmentArt = (name: string | null) => name ? (reagents.data ?? []).find(option => option.name === name) ?? null : null
   const whole = plan ? valueAt(plan.whole ?? 0) : undefined
   const measured = (!!opponent || !!plan?.top?.singles?.length) && !!baselineValue
@@ -174,7 +182,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
     // The plan's own name (such as an armor kit) reads better than the enchant's internal one
     const named = item?.enchant && !/^Enchant #\d+$/.test(item.enchant) ? item.enchant : null
     const enchant = named ?? (enchantId ? enchantNames.data?.[enchantId] ?? item?.enchant ?? `Enchant #${enchantId}` : item?.enchant ?? null)
-    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share: share && data ? `${share.count} of ${data.gearPlayers}` : null, enchant: theirEnchant, gems: theirGems, embellishment: topEmbellishment } : null
+    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share: share && data ? `${share.count} of ${data.gearPlayers}` : null, enchant: theirEnchant, gems: theirGems, embellishment: topEmbellishment, variants: opponent ? variantsOf(topItem) : [] } : null
     const notes: Row['notes'] = []
     const gap = topRow?.level != null && item?.itemLevel != null ? Math.round(topRow.level - item.itemLevel) : 0
     if (item?.itemId && topRow && topRow.id !== item.itemId) notes.push({ text: 'Different item', icon: <Swords size={12} /> })
@@ -193,11 +201,13 @@ export function SimCompare({ character, job, result }: { character: Character; j
     if (fewer > 0) notes.push(item?.gemsCoverage === 'complete' || item?.itemLink ? { text: myGems.length ? `${fewer} fewer ${fewer === 1 ? 'gem' : 'gems'}` : theirCount === 1 ? 'No gem' : `No gems · they have ${theirCount}`, tone: 'down', icon: <Gem size={12} /> } : { text: 'Gems unknown', icon: <Gem size={12} /> })
     if (topEmbellishment && topEmbellishment !== myEmbellishment) notes.push({ text: myEmbellishment ? 'Other embellishment' : 'They embellish it', tone: myEmbellishment ? undefined : 'down', icon: <Sparkles size={12} /> })
     else if (myEmbellishment && !topEmbellishment && (data || opponent)) notes.push({ text: 'Only you embellish it', icon: <Sparkles size={12} /> })
-    // The same item at the same level with the same enchant, gems, and embellishment
+    const myVariants = variantsOf(item).map(variant => variant.name).sort().join(), theirVariants = (topRow?.variants ?? []).map(variant => variant.name).sort().join()
+    if (topRow && theirVariants !== myVariants) notes.push(theirVariants ? { text: `Theirs is ${topRow.variants.map(variant => variant.name).join(' and ')}`, tone: 'down', icon: <Sparkles size={12} /> } : { text: 'Only yours is a variant', icon: <Sparkles size={12} /> })
+    // The same item at the same level with the same enchant, gems, embellishment, and variant
     const sameGems = [...myGems].sort().join() === [...theirGems].sort().join()
     const sameEnchant_ = opponent ? (enchantId ?? 0) === (theirEnchantId ?? 0) : !enchant === !topRow?.enchant && (!enchant || sameEnchant(enchant, topRow?.enchant))
-    const identical = !!item?.itemId && topRow?.id === item.itemId && gap === 0 && sameGems && sameEnchant_ && (myEmbellishment ?? null) === (topEmbellishment ?? null)
-    return [{ slot, mine: item, top: topRow, embellishment: myEmbellishment, enchant, gain: singles.get(slot) ?? null, notes, verdict: verdictFor(slot, item, topRow, gap, identical) }]
+    const identical = !!item?.itemId && topRow?.id === item.itemId && gap === 0 && sameGems && sameEnchant_ && (myEmbellishment ?? null) === (topEmbellishment ?? null) && myVariants === theirVariants
+    return [{ slot, mine: item, top: topRow, variants: variantsOf(item), embellishment: myEmbellishment, enchant, gain: singles.get(slot) ?? null, notes, verdict: verdictFor(slot, item, topRow, gap, identical) }]
   })
 
   // The plan's own build when it has one, against the build the compared player (or most top players) runs
@@ -254,11 +264,11 @@ export function SimCompare({ character, job, result }: { character: Character; j
               <Badge tone={row.verdict.winner === 'mine' ? 'green' : row.verdict.winner === 'theirs' ? 'amber' : 'neutral'}>{row.verdict.winner === 'mine' ? <><Trophy size={12} />Yours</> : row.verdict.winner === 'theirs' ? <><ArrowDown size={12} />Theirs</> : row.verdict.winner === 'even' ? <><Equal size={12} />{row.verdict.identical ? 'Equal' : 'Close'}</> : <>Unclear</>}</Badge></span>
             <span role="cell">
               {row.mine ? <Side itemId={row.mine.itemId} name={row.mine.name} level={row.mine.itemLevel} items={itemMap}
-                enchant={row.enchant} enchantArt={enchantIcon(row.enchant)} gems={gemIdsOf(row.mine)} embellishment={row.embellishment} embellishmentArt={embellishmentArt(row.embellishment)} /> : <span className="muted">Empty</span>}
+                enchant={row.enchant} enchantArt={enchantIcon(row.enchant)} gems={gemIdsOf(row.mine)} embellishment={row.embellishment} embellishmentArt={embellishmentArt(row.embellishment)} variants={row.variants} /> : <span className="muted">Empty</span>}
             </span>
             <span role="cell">
               {row.top ? <Side itemId={row.top.id} name={row.top.name} level={row.top.level} items={itemMap} share={row.top.share}
-                enchant={row.top.enchant} enchantArt={enchantIcon(row.top.enchant)} gems={row.top.gems} embellishment={row.top.embellishment} embellishmentArt={embellishmentArt(row.top.embellishment)} /> : <span className="muted">Unknown</span>}
+                enchant={row.top.enchant} enchantArt={enchantIcon(row.top.enchant)} gems={row.top.gems} embellishment={row.top.embellishment} embellishmentArt={embellishmentArt(row.top.embellishment)} variants={row.top.variants} /> : <span className="muted">Unknown</span>}
             </span>
             <span role="cell" className="sim-notes">
               <span className="sim-verdict" data-winner={row.verdict.winner ?? undefined}><strong>{row.verdict.text}</strong>{row.verdict.detail && <small className="muted">{row.verdict.detail}</small>}</span>
@@ -277,10 +287,10 @@ export function SimCompare({ character, job, result }: { character: Character; j
   )
 }
 
-function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellishment, embellishmentArt, share }: {
+function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellishment, embellishmentArt, share, variants = [] }: {
   itemId: number | null; name: string; level: number | null; items: Map<number, import('../../../shared/gamedata').ItemSummary>
   enchant: string | null; enchantArt: { itemId: number; icon: number | null; quality: number; name: string } | null; gems: number[]; embellishment: string | null
-  embellishmentArt?: { itemId: number; icon: number | null } | null; share?: string | null
+  embellishmentArt?: { itemId: number; icon: number | null } | null; share?: string | null; variants?: ItemVariant[]
 }) {
   const info = itemId ? items.get(itemId) : undefined
   return (
@@ -301,8 +311,24 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
         {/* Each gem and the embellishment open their game tooltip on hover */}
         {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover" data-cursor-target=""><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
         {embellishment && <EmbellishmentChip name={embellishment} art={embellishmentArt ?? null} itemId={itemId} level={level} />}
+        {variants.map(variant => <VariantChip key={variant.name} variant={variant} />)}
       </span>
     </div>
+  )
+}
+
+/** A named variant of an item, such as Venomcursed, whose hover shows the effect it adds */
+function VariantChip({ variant }: { variant: ItemVariant }) {
+  return (
+    <Popover>
+      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-hover" data-cursor-target="" aria-label={`${variant.name} effect`}>
+        <Badge tone="amber"><span className="sim-extra">{variant.icon ? <img src={iconUrl(variant.icon) ?? undefined} alt="" width={14} height={14} /> : <Sparkles size={12} />}{variant.name}</span></Badge>
+      </PopoverTrigger>
+      <PopoverContent side="top" className="talent-popover">
+        <div className="talent-detail-head"><ItemIcon icon={variant.icon} size="medium" fallback={<Sparkles />} /><div><strong>{variant.name}</strong><small>Item variant</small></div></div>
+        <p>{variant.effect || 'The game files describe no effect for it'}</p>
+      </PopoverContent>
+    </Popover>
   )
 }
 
