@@ -95,6 +95,7 @@ import { PlanSources } from "./features/plan/PlanSources";
 import { PlanStats } from "./features/plan/PlanStats";
 import { EmbellishmentSelect } from "./features/plan/EmbellishmentSelect";
 import { VariantToggle } from "./features/plan/VariantToggle";
+import { CatalystSelect } from "./features/plan/CatalystSelect";
 import { CharacterWeek, StatsSurface, WeekPage } from "./features/week/week";
 import { ComparisonPage, type ComparisonView } from "./features/comparisons/ComparisonPage";
 import { KeyRangePage } from "./features/key-range/KeyRangePage";
@@ -1733,7 +1734,7 @@ function GearEditor({
   const draftLevel = values.length === 16 ? values.reduce((a, b) => a + b, 0) / 16 : null;
   const planned = current?.itemId ? itemMap.get(current.itemId) : undefined;
   /** Slot edits go straight into the local draft; the list it returns is what Save plan persists */
-  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string; itemLevel?: string; embellishment?: GearItem["embellishment"]; variantBonusIds?: number[] }): GearItem[] | null {
+  function updateItem(quiet = false, enhancement?: { enchant?: string; gems?: string; itemLevel?: string; embellishment?: GearItem["embellishment"]; variantBonusIds?: number[]; catalyzedFrom?: GearItem["catalyzedFrom"] }): GearItem[] | null {
     // The form's latest values, which can be newer than this render's
     const { itemLevel, enchant, gems } = slotForm.state.values;
     const enchantEdited = enchant !== slotValues(current).enchant, gemsEdited = gems !== slotValues(current).gems;
@@ -1768,6 +1769,7 @@ function GearEditor({
       gems: plannedGems,
       embellishment: enhancement?.embellishment !== undefined ? enhancement.embellishment : current?.embellishment ?? null,
       variantBonusIds: enhancement?.variantBonusIds ?? current?.variantBonusIds,
+      catalyzedFrom: enhancement?.catalyzedFrom !== undefined ? enhancement.catalyzedFrom : current?.catalyzedFrom,
       appearanceId: current?.appearanceId ?? null,
       itemLink: current?.itemLink ?? null,
       stats: current?.itemLevel === ilvl ? current.stats : [],
@@ -1967,7 +1969,8 @@ function GearEditor({
             {planned?.crafted && current?.itemId && (
               <EmbellishmentSelect key={`embellishment:${selected}`} item={{ id: current.itemId, classId: planned.classId, subclassId: planned.subclassId, inventoryType: planned.inventoryType }} itemLevel={current.itemLevel != null ? Math.round(current.itemLevel) : null} value={current.embellishment} onChange={(embellishment) => updateItem(true, { embellishment })} />
             )}
-            {current?.itemId && <VariantToggle key={`variant:${selected}`} item={current} character={character} top={topPlayers.data} value={current.variantBonusIds ?? []} onChange={(variantBonusIds) => updateItem(true, { variantBonusIds })} />}
+            {current?.itemId && planned?.setPiece && <CatalystSelect key={`catalyst:${selected}`} item={current} onChange={(choice) => updateItem(true, choice)} />}
+            {current?.itemId && !planned?.setPiece && <VariantToggle key={`variant:${selected}`} item={current} character={character} top={topPlayers.data} value={current.variantBonusIds ?? []} onChange={(variantBonusIds) => updateItem(true, { variantBonusIds })} />}
             <EnhancementRecommendations character={character} items={items} slot={selected} sockets={socketsOf(current)} enchantable={canEnchant(current, selected)} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}

@@ -3,7 +3,7 @@ import { GameDataEngine } from '../../main/gamedata/engine'
 
 /** Game files are parsed off the main thread; this worker is the only reader of the install and item index */
 const engine = new GameDataEngine(workerData.directory, { status: status => parentPort!.postMessage({ event: 'status', status }) })
-const allowed = new Set(['getStatus', 'configure', 'ensureIndex', 'search', 'searchPage', 'item', 'itemPower', 'lootShare', 'trackInfoFor', 'effectsFor', 'instances', 'items', 'enhancements', 'embellishments', 'talentTree', 'specializations', 'enchantSlots', 'appearanceOptions', 'enchantNames', 'enhancementIds', 'runeforges', 'bonusInfo', 'icon', 'close'])
+const allowed = new Set(['getStatus', 'configure', 'ensureIndex', 'search', 'searchPage', 'item', 'itemPower', 'lootShare', 'trackInfoFor', 'effectsFor', 'instances', 'items', 'enhancements', 'embellishments', 'talentTree', 'specializations', 'enchantSlots', 'appearanceOptions', 'enchantNames', 'enhancementIds', 'runeforges', 'bonusInfo', 'catalystSources', 'icon', 'close'])
 parentPort!.on('message', async (message: { id: number; method: string; args: unknown[] }) => {
   try {
     if (!allowed.has(message.method)) throw new Error('Unknown game data operation')
