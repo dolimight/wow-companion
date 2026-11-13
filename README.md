@@ -53,31 +53,47 @@ Choose Light, Dark, or System appearance, plus a classic, nightly, or holiday ap
 
 ## Inside the app
 
-These are unaltered desktop acceptance captures using fictional characters and items. Demo numbers are illustrative, and the character artwork is a labeled concept illustration
-
-### Roster
-
-Every character in one table, with item level, distance to target, rating, and what needs attention
-
-![Dark roster table with fictional characters, item levels, and a selected-character pane](docs/marketing/roster.png)
+These are unaltered captures of a real Blood Death Knight in the desktop app, in dark mode, with item art and the character model read from the installed game
 
 ### Character overview
 
 See the character, saved target, and next steps together, with missing data left visible
 
-![Dark character overview with a fictional mage, gear target, and next steps](docs/marketing/character-overview.png)
+![Character overview with the Blizzard character render, gear gap, and next steps](docs/marketing/character-overview.png)
 
 ### Gear plan
 
-Plan each slot with its item, level, enchant, and gems beside what you wear now. Changes save on their own
+Plan every slot around your character model, with item icons, levels, upgrades, enchants, gems, and what you wear now. Changes save on their own
 
-![Dark gear plan with a fictional planned helm, enchant, and gems](docs/marketing/gear-plan.png)
+![Gear plan paper doll with item icons around the 3D character model and the slot editor](docs/marketing/gear-plan.png)
+
+### Talents
+
+Edit your build on the real talent tree, or start from the builds top players use
+
+![Talent editor with class, hero, and specialization trees and top-player build presets](docs/marketing/talents.png)
 
 ### Item search
 
-Browse compatible results, inspect sources, and add an item to your plan. Further results load as you scroll
+Browse items for a slot with their sources and the highest level they reach, then inspect stats at any track before adding one to your plan
 
-![Dark item-search dialog with fictional results and source filters](docs/marketing/item-search.png)
+![Head item search with season filters, item icons, and a stat detail pane](docs/marketing/item-search.png)
+
+### Simulate your plan against top players
+
+SimulationCraft runs your plan beside each top player's own gear and talents, on your character, and ranks you among them
+
+![Simulation ranking your plan among top players by damage](docs/marketing/simulation-roster.png)
+
+Step through each player to see why, slot by slot: which items, enchants, gems, and talents differ, and what each is worth
+
+![Slot-by-slot comparison of your plan against the top player with item, enchant, and gem icons](docs/marketing/simulation-compare.png)
+
+### Top players
+
+See the item level and talent builds of the highest-rated players of your specialization, and copy a build in one click
+
+![Top players page with average item level and talent builds to copy](docs/marketing/top-players.png)
 
 ## Updates and saved data
 
