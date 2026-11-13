@@ -55,4 +55,10 @@ describe('plan swaps', () => {
     expect(swaps[2]!.itemLink).toBe(exact)
     expect(skipped).toEqual(['Cloak: the planned item level is unknown'])
   })
+  it('gives a planned item the bonus lists of a known copy, then the plan embellishment', () => {
+    const character = simulationCharacter()
+    const head = character.gear.find(item => item.slot === 'head')!
+    const { swaps } = planSwaps(character, [{ ...head, itemLevel: (head.itemLevel ?? 0) + 10, itemLink: null, bonusIds: [], embellishmentBonusIds: [12384] }], () => [111, 222])
+    expect(swaps[0]?.bonusIds).toEqual([111, 222, 12384])
+  })
 })

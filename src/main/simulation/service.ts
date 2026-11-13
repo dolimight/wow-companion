@@ -10,7 +10,8 @@ import { asCompatibilityItem } from '../../shared/gear-set-validation'
 import { validateGearSet } from '../../shared/gear-set-validation'
 import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
-import { ladderCeiling } from '../item-tracks'
+import { ladderCeiling, socketRules } from '../item-tracks'
+import { itemLinkVariant } from '../../shared/item-link'
 import { type PlannedItem, benchmarkLabels, benchmarkPlan, describedItem, gearSlotLabels, loadoutPattern, planSwaps } from '../../shared/simulation-benchmark'
 import { capTopLevels, type TopPlayers } from '../../shared/top-players'
 import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
@@ -40,7 +41,7 @@ export async function engineFolder(configured: string | null, roots: string[]) {
   return undefined
 }
 export type EnhancementLookup = (requests: Array<{ slot: GearItem['slot']; enchant: string | null; gems: string[]; embellishment: number | null; enchantItem?: number }>) => Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>>
-export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
+export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; embellishmentBonusLists?: () => Promise<number[]>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
   let closed = false
@@ -137,6 +138,29 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const gemIds = item.gems.length ? item.gems.map((_, slot) => found.gemIds[slot] || item.gemIds?.filter(Boolean)[slot] || 0) : item.gemIds ?? null
       return { ...item, enchantId, gemIds, embellishmentBonusIds: found.bonusIds }
     })
+  }
+
+  /**
+   * Bonus lists for a planned item that names only its item: your own copy's when you wear it, else a top player's copy
+   * without their embellishment, else the socket the item drops with and any socket its planned gems need added
+   */
+  async function planBonusIds(current: Character, top: TopPlayers | null) {
+    const embellished = new Set(options.embellishmentBonusLists ? await options.embellishmentBonusLists().catch(() => []) : [])
+    const theirs = new Map<number, number[]>()
+    for (const player of top?.players ?? []) for (const item of player.gear ?? []) if (item.bonusIds.length && !theirs.has(item.itemId)) theirs.set(item.itemId, item.bonusIds.filter(id => !embellished.has(id)))
+    return (item: GearItem): number[] | null => {
+      const owned = current.gear.find(gear => gear.itemId === item.itemId)
+      const ownedIds = owned ? owned.bonusIds?.length ? owned.bonusIds : itemLinkVariant(owned.itemLink).bonusIds : null
+      if (ownedIds?.length) return ownedIds.filter(id => !embellished.has(id))
+      const copied = theirs.get(item.itemId ?? 0)
+      if (copied?.length) return copied
+      if (!socketRules || item.inventoryType == null) return null
+      const ids: number[] = []
+      let sockets = 0
+      if (socketRules.drop.inventoryTypes.includes(item.inventoryType)) { ids.push(socketRules.drop.bonusList); sockets += socketRules.bonusLists[String(socketRules.drop.bonusList)] ?? 0 }
+      if ((item.gemIds?.filter(Boolean).length ?? item.gems.length) > sockets && socketRules.addable.inventoryTypes.includes(item.inventoryType)) ids.push(socketRules.addable.bonusList)
+      return ids.length ? ids : null
+    }
   }
 
   /**
@@ -333,7 +357,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId, plan: start.plan ?? 'main' })
       if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
       if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
-      const { swaps, skipped } = planSwaps(prepared.current, await resolveEnhancements(draft.items))
+      const { swaps, skipped } = planSwaps(prepared.current, await resolveEnhancements(draft.items), await planBonusIds(prepared.current, top))
       // The plan's own talent build runs with the whole plan and on its own, when it differs from yours
       const planTalents = draft.talents?.loadout && /^[A-Za-z0-9+/=]{1,400}$/.test(draft.talents.loadout) && draft.talents.loadout !== prepared.current.talents?.loadout ? draft.talents.loadout : null
       // Planned levels run as chosen. A plan that reaches past the top regular rank, such as an ascension level, is

@@ -40,7 +40,7 @@ const sameGems = (a: number[] | null | undefined, b: number[] | null | undefined
  * enchant and gems fill in only where the plan doesn't say. Items you already wear at that level or higher, with the same
  * enhancements, are left alone
  */
-export function planSwaps(character: Pick<Character, 'gear'>, planned: PlannedItem[]): PlanSwaps {
+export function planSwaps(character: Pick<Character, 'gear'>, planned: PlannedItem[], baseBonusIds: (item: GearItem) => number[] | null = () => null): PlanSwaps {
   const swaps: GearItem[] = []
   const skipped: string[] = []
   for (const item of planned) {
@@ -59,7 +59,10 @@ export function planSwaps(character: Pick<Character, 'gear'>, planned: PlannedIt
     if (exact) { swaps.push(added.length ? { ...gear, bonusIds: [...new Set([...(item.bonusIds ?? raw.bonusIds ?? []), ...added])] } : gear); continue }
     if (!current) { skipped.push(`${label}: nothing is equipped there to copy enchants and gems from`); continue }
     const described = describedItem(current, item.slot, gear)
-    swaps.push({ ...described, enchantId: item.enchantId ?? described.enchantId, gemIds: item.gemIds?.some(Boolean) ? item.gemIds : described.gemIds, bonusIds: added })
+    // A plan names the item, not its copy: a copy's own bonus lists carry its sockets, crafted stats, and set membership,
+    // so they come from a known copy of the same item, with the plan's embellishment on top
+    const base = item.bonusIds?.length ? item.bonusIds : baseBonusIds(item) ?? []
+    swaps.push({ ...described, enchantId: item.enchantId ?? described.enchantId, gemIds: item.gemIds?.some(Boolean) ? item.gemIds : described.gemIds, bonusIds: [...new Set([...base, ...added])] })
   }
   return { swaps, skipped }
 }
