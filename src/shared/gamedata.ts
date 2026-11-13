@@ -56,7 +56,10 @@ export type ItemPowerEffect = { label: string; text: string; complete: boolean; 
 export type ItemPower = { itemLevel: number; armor: number | null; stats: ItemPowerStat[] | null; effects: ItemPowerEffect[]; setPiece: boolean }
 /** How many items each boss that drops this one has in its loot, in total and for the selected character */
 export type ItemLootShare = { encounter: string; instance: string; kind: ItemSource['kind']; total: number; forCharacter: number | null }
-export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null }
+/** A runeforge has no item: `itemId` is the negative enchant ID, and `enchantId` and `effect` come from its spell */
+export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null; enchantId?: number; effect?: string }
+/** Death Knight runeforges for this expansion, as SpellItemEnchantment IDs; older copies share these names */
+export const runeforgeIds = [3368, 3370, 3847, 6241, 6242, 6243, 6244, 6245]
 /** A crafting reagent that embellishes an item; `effect` is filled for the planned item's level, `complete` false when some values are unknown */
 export type EmbellishmentOption = EnhancementOption & { applies: string | null; limit: string; effect: string; complete: boolean; bonusLists?: number[] }
 export type ItemSearchPage = { items: Array<ItemSummary & { maxLevel?: ItemTracks['max'] | null; effects?: ItemPowerEffect[] }>; nextOffset: number | null }

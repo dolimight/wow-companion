@@ -62,6 +62,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const status = useGameData()
   const ready = status.data?.state === 'ready'
   const specId = character.specId
+  const runeforging = character.className === 'Death Knight'
   const roster = plan?.roster ?? null
   const population = roster?.population ?? plan?.top?.population ?? benchmark?.population ?? ''
   const cap = roster ? roster.cap : plan?.top?.cap ?? benchmark?.cap ?? null
@@ -104,7 +105,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const itemMap = new Map((items.data ?? []).map(item => [item.id, item]))
   const enchantIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => { const id = enchantIdOf(item); return id ? [id] : [] }))].sort((a, b) => a - b)
   const enchantNames = useQuery({ queryKey: ['enchant-names', enchantIds], queryFn: () => api.enchantNames(enchantIds), enabled: ready && enchantIds.length > 0, placeholderData: keepPreviousData })
-  const enchantOptions = useQueries({ queries: [...ENCHANTABLE].map(slot => ({ queryKey: ['enhancements', 'enchant', slot], queryFn: () => api.enhancements({ kind: 'enchant', slot }), enabled: ready, staleTime: Infinity })) })
+  const enchantOptions = useQueries({ queries: [...ENCHANTABLE].map(slot => ({ queryKey: ['enhancements', 'enchant', slot, runeforging], queryFn: () => api.enhancements({ kind: 'enchant', slot, runeforging }), enabled: ready, staleTime: Infinity })) })
   const enchantIcon = (name: string | null | undefined) => {
     if (!name) return null
     for (const query of enchantOptions) for (const option of query.data ?? []) if (sameEnchant(option.name, name)) return option
