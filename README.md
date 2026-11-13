@@ -59,13 +59,13 @@ These are unaltered captures of a real Blood Death Knight in the desktop app, in
 
 See the character, saved target, and next steps together, with missing data left visible
 
-![Character overview with the Blizzard character render, gear gap, and next steps](docs/marketing/character-overview.png)
+![Character overview with the Blizzard character render, gear gap, and next steps](docs/marketing/character-overview-dark.png)
 
 ### Gear plan
 
 Plan every slot around your character model, with item icons, levels, upgrades, enchants, gems, and what you wear now. Changes save on their own
 
-![Gear plan paper doll with item icons around the 3D character model and the slot editor](docs/marketing/gear-plan.png)
+![Gear plan paper doll with item icons around the 3D character model and the slot editor](docs/marketing/gear-plan-dark.png)
 
 ### Talents
 
@@ -77,7 +77,7 @@ Edit your build on the real talent tree, or start from the builds top players us
 
 Browse items for a slot with their sources and the highest level they reach, then inspect stats at any track before adding one to your plan
 
-![Head item search with season filters, item icons, and a stat detail pane](docs/marketing/item-search.png)
+![Head item search with season filters, item icons, and a stat detail pane](docs/marketing/item-search-dark.png)
 
 ### Simulate your plan against top players
 
