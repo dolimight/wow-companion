@@ -761,6 +761,9 @@ export class GameDataEngine {
     const map = new Map(Object.entries(spells).map(([id, spell]) => [Number(id), spell]))
     const noItem: ItemStatBlock = { statTypes: [], alloc: [], socketShare: [], inventoryType: 0, classId: 0, subclassId: 0, quality: 4 }
     const noLevel: ScalingLevel = { itemLevel: 0, epic: [], superior: [], good: [], damageReplace: 0, damageSecondary: 0, rating: null, stamina: null, armorTotal: null, armorQuality: null, shield: null, socketCost: null }
+    // Embellishments add effects too, but they're shown as embellishments, not variants
+    const embellished = new Set<number>()
+    if (this.indexVersion === INDEX_VERSION) for (const row of this.ready().prepare('SELECT bonus_lists FROM embellishments').all() as Array<{ bonus_lists: string | null }>) { try { for (const list of JSON.parse(row.bonus_lists ?? '[]') as number[]) embellished.add(list) } catch { /* unreadable row */ } }
     const result: Record<number, BonusInfo> = {}
     for (const [id, rows] of lists) {
       const named = rows.find(row => Number(row.Type) === 4)
@@ -772,7 +775,9 @@ export class GameDataEngine {
       if (spell) for (const row of misc?.values() ?? []) if (Number(row.SpellID) === spell && !Number(row.DifficultyID)) { icon = Number(row.SpellIconFileDataID) || null; break }
       // Values scale with the item, which the files can't say here, so unknown amounts are left out of the wording
       const text = spell ? cleanGameText(effectText(spell, map, noItem, noLevel).text).replace(/ by \?%?/g, '').replace(/\?%? ?/g, '').replace(/\s+/g, ' ').trim() : ''
-      result[id] = { variant: name && spell ? { name, effect: text, icon } : null, trackGroup: track ? first(track.Value) : null }
+      // A variant without a name of its own, such as one that adds Void Eruption, goes by its effect's name
+      const label = name || (spell ? String(map.get(spell)?.name ?? '') : '')
+      result[id] = { variant: spell && label && !embellished.has(id) ? { name: label, effect: text, icon } : null, trackGroup: track ? first(track.Value) : null }
     }
     return result
   }
