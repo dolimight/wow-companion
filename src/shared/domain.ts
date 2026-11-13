@@ -42,6 +42,8 @@ const itemProgressionFields = {
   embellishment:z.object({name:z.string().min(1).max(200),itemId:z.number().int().positive().nullable().default(null),limit:z.string().min(1).max(100)}).nullable().optional(),
   /** Bonus lists of a named variant planned onto the item, such as Venomcursed, which adds an effect of its own */
   variantBonusIds:z.array(z.number().int().positive()).max(4).optional(),
+  /** Stats a simulation gives the item in place of its own, such as a catalyzed tier piece's base item stats */
+  engineStats:z.string().regex(/^[0-9a-z_]+$/).max(300).optional(),
   /** The item a tier piece was planned to be catalyzed from, whose cantrip the tier piece keeps */
   catalyzedFrom:z.object({itemId:z.number().int().positive(),name:z.string().min(1).max(200)}).nullable().optional(),
   /** Where a planned level came from: a copy seen on a real character, the local game files, or the player */

@@ -12,7 +12,9 @@ import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
 import { ladderCeiling, socketRules } from '../item-tracks'
 import { itemLinkVariant } from '../../shared/item-link'
-import type { BonusInfo } from '../../shared/gamedata'
+import type { BonusInfo, CatalystSource, ItemPower } from '../../shared/gamedata'
+import type { TopPlayerItem } from '../../shared/top-players'
+import { catalyzedBase, engineStats, primaryStatOf } from '../../shared/catalyst'
 import { type PlannedItem, benchmarkLabels, benchmarkPlan, describedItem, gearSlotLabels, loadoutPattern, planSwaps } from '../../shared/simulation-benchmark'
 import { capTopLevels, type TopPlayers } from '../../shared/top-players'
 import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
@@ -42,7 +44,7 @@ export async function engineFolder(configured: string | null, roots: string[]) {
   return undefined
 }
 export type EnhancementLookup = (requests: Array<{ slot: GearItem['slot']; enchant: string | null; gems: string[]; embellishment: number | null; enchantItem?: number }>) => Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>>
-export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; embellishmentBonusLists?: () => Promise<number[]>; bonusInfo?: (ids: number[]) => Promise<Record<number, BonusInfo>>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
+export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; catalystSources?: (itemId: number) => Promise<CatalystSource[]>; itemPower?: (itemId: number, itemLevel: number) => Promise<ItemPower | null>; embellishmentBonusLists?: () => Promise<number[]>; bonusInfo?: (ids: number[]) => Promise<Record<number, BonusInfo>>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
   let closed = false
@@ -195,7 +197,31 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
    * items alone. Items several players share, or that match your plan or what you wear, are measured once. Players
    * whose setup can't be described to the engine are left out, and the run stays inside the engine's profileset limit
    */
-  function rosterRuns(current: Character, top: TopPlayers, sets: Array<{ label: string; entries: Array<{ item: GearItem; text: string }>; extra: string[] }>, shared: Map<string, number>, wearing: Set<string>, mine: Map<GearItem['slot'], number | null>) {
+  /**
+   * Catalyzed tier pieces keep their base item's stats, which the tier item's own data doesn't have. A planned piece
+   * uses the base the plan names; a top player's uses the base its cantrip came from, when only one base drops with it.
+   * Pieces with no known base keep the tier item's stats
+   */
+  async function catalystStats(current: Character, planned: GearItem[], top: TopPlayers | null) {
+    const none = { plan: (_item: GearItem) => null as string | null, theirs: (_item: TopPlayerItem) => null as string | null }
+    const primary = primaryStatOf(current)
+    if (!options.catalystSources || !options.itemPower || !primary) return none
+    const ids = new Set([...planned.map(item => item.itemId ?? 0), ...(top?.players ?? []).flatMap(player => (player.gear ?? []).map(item => item.itemId))].filter(id => id > 0))
+    const sources = new Map<number, CatalystSource[]>()
+    await Promise.all([...ids].map(async id => { const list = await options.catalystSources!(id).catch(() => []); if (list.length) sources.set(id, list) }))
+    if (!sources.size) return none
+    const stats = new Map<string, string | null>()
+    const load = async (base: number, level: number) => { const key = `${base}@${level}`; if (!stats.has(key)) stats.set(key, engineStats(await options.itemPower!(base, level).catch(() => null), primary)) }
+    const baseOf = (item: TopPlayerItem) => catalyzedBase(sources.get(item.itemId) ?? [], item.bonusIds)
+    for (const item of planned) if (item.catalyzedFrom && item.itemLevel && sources.has(item.itemId ?? 0)) await load(item.catalyzedFrom.itemId, Math.round(item.itemLevel))
+    for (const player of top?.players ?? []) for (const item of player.gear ?? []) { const base = baseOf(item); if (base) await load(base.itemId, item.itemLevel) }
+    return {
+      plan: (item: GearItem) => item.catalyzedFrom && item.itemLevel && sources.has(item.itemId ?? 0) ? stats.get(`${item.catalyzedFrom.itemId}@${Math.round(item.itemLevel)}`) ?? null : null,
+      theirs: (item: TopPlayerItem) => { const base = baseOf(item); return base ? stats.get(`${base.itemId}@${item.itemLevel}`) ?? null : null },
+    }
+  }
+
+  function rosterRuns(current: Character, top: TopPlayers, sets: Array<{ label: string; entries: Array<{ item: GearItem; text: string }>; extra: string[] }>, shared: Map<string, number>, wearing: Set<string>, mine: Map<GearItem['slot'], number | null>, catalyst: Awaited<ReturnType<typeof catalystStats>>) {
     const players: NonNullable<NonNullable<SimulationRequest['plan']>['roster']>['players'] = []
     const fallback = current.gear[0]
     if (!fallback) return players
@@ -212,7 +238,8 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const entries = player.gear.map(worn => {
         const item = { ...worn, slot: slotOf.get(worn.slot) ?? worn.slot }
         const base = current.gear.find(value => value.slot === item.slot) ?? fallback
-        const described = describedItem(base, item.slot, { itemId: item.itemId, name: item.name, itemLevel: item.itemLevel, bonusIds: item.bonusIds, enchantId: item.enchantId, gemIds: item.gemIds.length ? [...item.gemIds, 0, 0, 0, 0].slice(0, Math.max(4, item.gemIds.length)) : [0, 0, 0, 0] })
+        const stats = catalyst.theirs(item)
+        const described = { ...describedItem(base, item.slot, { itemId: item.itemId, name: item.name, itemLevel: item.itemLevel, bonusIds: item.bonusIds, enchantId: item.enchantId, gemIds: item.gemIds.length ? [...item.gemIds, 0, 0, 0, 0].slice(0, Math.max(4, item.gemIds.length)) : [0, 0, 0, 0] }), ...(stats ? { engineStats: stats } : {}) }
         return { item: described, text: itemLine(described).text }
       })
       if (entries.some(entry => !entry.text)) continue
@@ -371,7 +398,8 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const draft = await options.db.call('getGearDraft', { characterId: prepared.current.id, activity, specId: prepared.current.specId, plan: start.plan ?? 'main' })
       if (!draft?.items.length) throw new Error('Save a gear plan for this activity before simulating it')
       if (new Set(draft.items.map(item => item.slot)).size !== draft.items.length) throw new Error('The gear plan must contain one item per slot')
-      const { swaps, skipped } = planSwaps(prepared.current, await resolveEnhancements(draft.items), await planBonusIds(prepared.current, top))
+      const planned = planSwaps(prepared.current, await resolveEnhancements(draft.items), await planBonusIds(prepared.current, top))
+      const skipped = planned.skipped
       // The plan's own talent build runs with the whole plan and on its own, when it differs from yours
       const planTalents = draft.talents?.loadout && /^[A-Za-z0-9+/=]{1,400}$/.test(draft.talents.loadout) && draft.talents.loadout !== prepared.current.talents?.loadout ? draft.talents.loadout : null
       // Planned levels run as chosen. A plan that reaches past the top regular rank, such as an ascension level, is
@@ -379,6 +407,9 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const beyond = draft.items.some(item => item.itemLevel != null && ladderCeiling != null && item.itemLevel > ladderCeiling)
       const cap = beyond ? null : ladderCeiling
       const topForRun = top ? capTopLevels(top, cap) : null
+      const catalyst = await catalystStats(prepared.current, draft.items, topForRun)
+      // A catalyzed piece the plan names a base for runs with that base's stats
+      const swaps = planned.swaps.map(swap => { const item = draft.items.find(entry => entry.slot === swap.slot); const stats = item ? catalyst.plan({ ...item, itemLevel: swap.itemLevel }) : null; return stats ? { ...swap, engineStats: stats } : swap })
       if (!swaps.length && !planTalents) throw new Error(skipped[0] ?? 'Your plan matches the gear and talents you already use')
       if (swaps.length) try { swapIn(prepared.current, swaps) } catch (error) { throw new Error(`Your plan: ${error instanceof Error ? error.message : 'this set is not allowed'}`) }
       const described = swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(`${gearSlotLabels[item.slot]}: ${line.reasons[0] ?? 'the planned item could not be described to the engine'}`); return { item, text: line.text } })
@@ -395,7 +426,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const sharedSingle = new Map<string, number>(described.map((entry, index) => [entry.text, index + (wholePlan ? 1 : 0)]))
       // What you wear now needs no run of its own; an item identical to it is measured as the reference
       const wearing = new Set(prepared.current.gear.flatMap(item => { const text = itemLine(item).text; return text ? [text] : [] }))
-      const roster = topForRun && topForRun.specId === prepared.current.specId ? rosterRuns(prepared.current, topForRun, sets, sharedSingle, wearing, new Map([...prepared.current.gear, ...swaps].map(item => [item.slot, item.itemId ?? null]))) : []
+      const roster = topForRun && topForRun.specId === prepared.current.specId ? rosterRuns(prepared.current, topForRun, sets, sharedSingle, wearing, new Map([...prepared.current.gear, ...swaps].map(item => [item.slot, item.itemId ?? null])), catalyst) : []
       const lines = sets.flatMap((set, index) => [...set.entries.map(entry => entry.text), ...set.extra].map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')

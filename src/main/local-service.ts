@@ -68,7 +68,7 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   const evaluator=new ProgressionEvaluator(options.progressionWorker)
   const progression=createProgressionService({db,items:ids=>gameData.call('items',ids),installedBuild:()=>gameData.currentStatus.install?.version??null,metadataBuild:()=>gameData.currentStatus.indexedVersion,evaluator:input=>evaluator.evaluate(input)})
   const session=createSessionService({db,progression})
-  const simulations=createSimulationService({db,artifactDir:path.join(options.assetsDir,'simulations'),onChanged:()=>changed(),enhancementIds:requests=>gameData.call('enhancementIds',requests),bonusInfo:ids=>gameData.call('bonusInfo',ids),embellishmentBonusLists:async()=>(await gameData.call('embellishments',null,null)).flatMap(option=>option.bonusLists??[])})
+  const simulations=createSimulationService({db,artifactDir:path.join(options.assetsDir,'simulations'),onChanged:()=>changed(),enhancementIds:requests=>gameData.call('enhancementIds',requests),bonusInfo:ids=>gameData.call('bonusInfo',ids),catalystSources:itemId=>gameData.call('catalystSources',itemId),itemPower:(itemId,itemLevel)=>gameData.call('itemPower',itemId,itemLevel),embellishmentBonusLists:async()=>(await gameData.call('embellishments',null,null)).flatMap(option=>option.bonusLists??[])})
   const models=createModelCache({db,rootDir:path.join(options.assetsDir,'models')})
   const comparisons=createComparisonService({db,insights,blizzardApi:()=>connections.blizzardApi(),secrets:options.secrets})
   const sync=createSync({db,refreshCharacter,discover:()=>connections.discover(!!options.autoSync),checkAddonFile:async()=>{await watcher?.check()},addonFile:()=>status,changed:()=>changed()})

@@ -227,6 +227,24 @@ describe('simulating a saved plan', () => {
     // Their own run keeps the copy they wear
     expect(job.request.candidates[job.request.plan!.roster!.players[0]!.index]!.find(item => item.slot === 'chest')?.bonusIds).toEqual([8960, 12384, 555, 666])
   })
+  it('runs catalyzed tier pieces with their base item stats, for the plan and for top players', async () => {
+    const source = (itemId: number, bonusId: number) => ({ itemId, name: `Base ${itemId}`, quality: 4, icon: null, stats: [], variants: [{ bonusId, name: 'Cantrip', effect: '', icon: null }] })
+    const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`, {
+      catalystSources: async itemId => itemId === 3200 ? [source(3300, 14049), source(3400, 13708)] : [],
+      itemPower: async (itemId, itemLevel) => ({ itemLevel, armor: 300, stats: [{ type: 74, name: 'Strength or Intellect', value: 100, secondary: false }, { type: 36, name: 'Haste', value: itemId === 3300 ? 50 : 70, secondary: true }], effects: [], setPiece: false }),
+    })
+    await service.configureExecutable(process.execPath)
+    const stored = database.getCharacter(character.id)!
+    database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [
+      { ...stored.gear[0]!, itemId: 3200, name: 'Tier helm', itemLevel: 130, itemLink: null, bonusIds: [], catalyzedFrom: { itemId: 3400, name: 'Base 3400' } },
+    ], updatedAt: '2026-10-29T12:00:00.000Z' })
+    const top = topFixture({ players: [{ name: 'One', realm: 'Realm', region: 'us', score: 4000, keyLevel: 20, dungeon: null, url: 'https://raider.io/characters/us/realm/One', loadout: null, gear: [{ slot: 'head', itemId: 3200, name: 'Tier helm', itemLevel: 130, bonusIds: [14049], enchantId: 0, gemIds: [] }] }] })
+    const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, top)
+    const head = (index: number) => job.request.candidates[index]!.find(item => item.slot === 'head') as { engineStats?: string } | undefined
+    expect(head(0)?.engineStats).toBe('300armor_100str_70haste')
+    // Their Void Eruption helm can only have come from one base
+    expect(head(job.request.plan!.roster!.players[0]!.index)?.engineStats).toBe('300armor_100str_50haste')
+  })
   it("puts a top player's copy of a planned ring or trinket in the plan's slot", async () => {
     const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`)
     await service.configureExecutable(process.execPath)

@@ -41,6 +41,8 @@ export function itemLine(item: GearItem): { text: string | null; reasons: string
   if (bonuses?.length) fields.push(`bonus_id=${bonuses.join('/')}`)
   if (enchantId) fields.push(`enchant_id=${enchantId}`)
   if (gems?.some(Boolean)) fields.push(`gem_id=${gems.join('/')}`)
+  // Replaces the item's own stats and armor, as a catalyzed tier piece keeps its base item's
+  if (item.engineStats && /^[0-9a-z_]+$/.test(item.engineStats)) fields.push(`stats=${item.engineStats}`)
   return { text: `${slots[item.slot]}=,${fields.join(',')}`, reasons }
 }
 export function exportCharacterProfile(character: Character, now = new Date().toISOString(), gear = character.gear): SimulationProfile {
