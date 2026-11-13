@@ -124,7 +124,12 @@ export function createRouter(s:RouterServices){return t.router({
     return {tracks,power,loot,level,basis:input.itemLevel?'picked' as const:tracks?(tracks.max.assumed?'season' as const:'track' as const):'base' as const}
   })),
   getItems:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('items',input.ids))),
-  enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable()})).query(({input})=>run(()=>s.gameData.call('enhancements',input.kind,input.slot))),
+  // A Death Knight's weapons also take runeforges, which aren't enchant items
+  enhancements:p.input(z.object({kind:z.enum(['enchant','gem']),slot:appearanceSlotSchema.nullable(),runeforging:z.boolean().optional()})).query(({input})=>run(async()=>{
+    const options=await s.gameData.call('enhancements',input.kind,input.slot)
+    if(input.kind!=='enchant'||!input.runeforging||(input.slot!=='mainHand'&&input.slot!=='offHand'))return options
+    return [...options,...await s.gameData.call('runeforges')].sort((a,b)=>a.name.localeCompare(b.name))
+  })),
   talentTree:p.input(z.object({specId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('talentTree',input.specId))),
   specializations:p.query(()=>run(()=>s.gameData.call('specializations'))),
   embellishments:p.input(z.object({itemId:z.number().int().positive().nullable(),itemLevel:z.number().int().min(1).max(2000).nullable()})).query(({input})=>run(()=>s.gameData.call('embellishments',input.itemId,input.itemLevel))),

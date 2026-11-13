@@ -52,6 +52,13 @@ describe('item scaling from game tables', () => {
     const spells = new Map<number, SpellData>([[1, { id: 1, name: 'X', description: 'Deals $s1 damage and $<custom> more$?a123[ with talent][].', durationMs: null, maxStacks: null, effects: [{ index: 0, coefficient: 2, scalingClass: -9, basePoints: 0, periodMs: 0 }] }]])
     expect(effectText(1, spells, trinket, level321)).toEqual({ text: 'Deals 1,167 damage and ? more.', complete: false })
   })
+  it('counts a duration as seconds inside arithmetic', () => {
+    const spells = new Map<number, SpellData>([
+      [1, { id: 1, name: 'Rune', description: 'Heal for ${$2s1*$2d}% over $2d.', durationMs: null, maxStacks: null, effects: [] }],
+      [2, { id: 2, name: 'Heal', description: '', durationMs: 8_000, maxStacks: null, effects: [{ index: 0, coefficient: 0, scalingClass: 0, basePoints: 2, periodMs: 0 }] }],
+    ])
+    expect(effectText(1, spells, trinket, level321)).toEqual({ text: 'Heal for 16% over 8 sec.', complete: true })
+  })
   it('reads tab-separated game tables', () => {
     expect(parseGameTable('Item Level\tArmor\tWeapon\r\n1\t0.5\t0.6\r\n2\t0.7\t0.8\r\n').get(2)).toEqual([0.7, 0.8])
   })

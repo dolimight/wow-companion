@@ -141,7 +141,11 @@ export function effectText(spellId: number, spells: Map<number, SpellData>, item
   // Conditions test the player's talents or auras; the plain branch is the one most players see
   for (let pass = 0; pass < 4 && /\$\?/.test(text); pass++) text = text.replace(/\$\?[^[]*\[([^[\]]*)\]\[([^[\]]*)\]/g, (_match, _when: string, otherwise: string) => otherwise)
   text = text.replace(/\$\{([^}]*)\}(\.\d)?/g, (_match, expression: string) => {
-    const filled = expression.replace(/\$(\d*)([smMwWodut])(\d?)/g, (_token, id: string, kind: string, index: string) => (value(Number(id), kind, Number(index || 1)) ?? 'NaN').replace(/,/g, ''))
+    // Inside arithmetic a duration counts as plain seconds, not the "8 sec" shown in text
+    const filled = expression.replace(/\$(\d*)([smMwWodut])(\d?)/g, (_token, id: string, kind: string, index: string) => {
+      if (kind === 'd') { const ms = spells.get(Number(id) || spellId)?.durationMs; return ms ? String(ms / 1000) : 'NaN' }
+      return (value(Number(id), kind, Number(index || 1)) ?? 'NaN').replace(/,/g, '')
+    })
     if (!/^[\d.+\-*/() ]+$/.test(filled)) { complete = false; return '?' }
     const result = arithmetic(filled)
     return Number.isFinite(result) ? number(Math.round(result)) : (complete = false, '?')

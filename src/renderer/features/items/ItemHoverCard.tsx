@@ -14,7 +14,7 @@ export function ItemHoverCard({ itemId, item, gear, name, enhancement, active = 
   const visible = open || active;
   const details = useQuery({
     queryKey: ["item-tooltip", id], queryFn: () => api.itemTooltip(id!),
-    enabled: visible && !!id, staleTime: (query) => query.state.data?.preview ? 5 * 60_000 : 0, retry: false,
+    enabled: visible && !!id && id > 0, staleTime: (query) => query.state.data?.preview ? 5 * 60_000 : 0, retry: false,
   });
   const local = details.data?.item ?? item;
   const preview = details.data?.preview;
@@ -23,7 +23,8 @@ export function ItemHoverCard({ itemId, item, gear, name, enhancement, active = 
   const stats = exact ? gear!.stats : preview?.stats ?? [];
   const effects = exact ? gear!.effects : preview?.effects ?? [];
   const localDescription = details.data?.item?.description;
-  const description = enhancement && !stats.length && !effects.length && localDescription && !localDescription.includes('$') ? localDescription : null;
+  // A runeforge is a spell, so its effect arrives with the option instead of from an item tooltip
+  const description = enhancement?.effect ? enhancement.effect : enhancement && !stats.length && !effects.length && localDescription && !localDescription.includes('$') ? localDescription : null;
   const source = local?.sources[0];
   const baseLevel = preview?.level ?? local?.itemLevel;
   if (!id && !gear) return children;
@@ -34,7 +35,7 @@ export function ItemHoverCard({ itemId, item, gear, name, enhancement, active = 
         <header className="item-hover-heading">
           <ItemIcon icon={local?.icon ?? enhancement?.icon} quality={local?.quality ?? enhancement?.quality} size="large" label={`${title} icon`} />
           <div><strong className={`quality-text-${local?.quality ?? enhancement?.quality ?? 1}`}>{title}</strong>
-            {enhancement ? <span>{enhancement.kind === 'gem' ? 'Gem' : 'Enchant'}</span> : <>
+            {enhancement ? <span>{enhancement.kind === 'gem' ? 'Gem' : enhancement.enchantId ? 'Runeforge' : 'Enchant'}</span> : <>
               <span>{gear?.itemLevel != null ? `Item level ${gear.itemLevel}` : baseLevel ? `Base item level ${baseLevel}` : "Item level unknown"}</span>
               <small>{[preview?.slot ?? local?.slot, preview?.subclass ?? local?.armor].filter(Boolean).join(" · ")}</small>
             </>}
@@ -58,8 +59,8 @@ export function ItemHoverCard({ itemId, item, gear, name, enhancement, active = 
         {preview?.requirement && <p className="item-hover-note">{preview.requirement}</p>}
         {preview?.set && <p>{preview.set}</p>}
         {source && <p className="item-hover-source">{source.encounter} · {source.instance}</p>}
-        {details.isFetching && !preview && !exact && <p className="item-hover-note" role="status">Loading item stats…</p>}
-        {!details.isFetching && !exact && !preview && !description && <p className="item-hover-note">Stats unavailable · connect Blizzard data in Settings or refresh your character</p>}
+        {!enhancement?.enchantId && details.isFetching && !preview && !exact && <p className="item-hover-note" role="status">Loading item stats…</p>}
+        {!enhancement?.enchantId && !details.isFetching && !exact && !preview && !description && <p className="item-hover-note">Stats unavailable · connect Blizzard data in Settings or refresh your character</p>}
       </HoverCardContent>
     </HoverCard>
   );

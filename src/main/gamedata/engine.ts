@@ -6,14 +6,14 @@ import { LocalCasc } from './casc'
 import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
-import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EmbellishmentOption, type EnhancementOption, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
+import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
 import { equalWeights } from '../../shared/enhancement-recommendations'
 import { getItemCompatibility } from '../../shared/item-compatibility'
 import { compatibilityMetadata } from './item-metadata'
 import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
-import { buildTalentTree, specializationRows } from './talents'
+import { buildTalentTree, specializationRows, talentSpells } from './talents'
 import type { TalentTree } from '../../shared/talents'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
@@ -706,6 +706,40 @@ export class GameDataEngine {
     }).sort((a, b) => a.name.localeCompare(b.name))
   }
 
+  /**
+   * Death Knight runeforges. They're spells rather than enchant scrolls, so no item lists them; each comes from the spell
+   * that applies its enchant (SpellEffect 53), with that spell's icon and description
+   */
+  private runeforgeList: Promise<EnhancementOption[]> | null = null
+  runeforges(): Promise<EnhancementOption[]> {
+    this.runeforgeList ??= (async () => {
+      const db = this.ready()
+      const named = db.prepare(`SELECT id, name, icon FROM enchants WHERE id IN (${runeforgeIds.join(',')})`).all() as Array<{ id: number; name: string; icon: number | null }>
+      const [effects, names, misc] = await Promise.all([this.traitTable('SpellEffect'), this.traitTable('SpellName'), this.traitTable('SpellMisc')])
+      const wanted = new Set(runeforgeIds)
+      const spellOf = new Map<number, number>()
+      for (const row of effects.values()) {
+        const value = row.EffectMiscValue, enchant = Number(Array.isArray(value) ? value[0] : value), spell = Number(row.SpellID)
+        // The runeforging spell shares the rune's name; other spells that apply it (such as old item effects) don't
+        if (Number(row.Effect) === 53 && wanted.has(enchant) && String(names.get(spell)?.Name_lang ?? '') === named.find(rune => rune.id === enchant)?.name) spellOf.set(enchant, Math.max(spellOf.get(enchant) ?? 0, spell))
+      }
+      const icons = new Map<number, number>()
+      for (const row of misc.values()) if (!Number(row.DifficultyID) && Number(row.SpellIconFileDataID) > 0) icons.set(Number(row.SpellID), Number(row.SpellIconFileDataID))
+      const spells = await talentSpells(name => this.traitTable(name), [...spellOf.values()])
+      const map = new Map(Object.entries(spells).map(([id, spell]) => [Number(id), spell]))
+      const noItem: ItemStatBlock = { statTypes: [], alloc: [], socketShare: [], inventoryType: 0, classId: 0, subclassId: 0, quality: 4 }
+      const noLevel: ScalingLevel = { itemLevel: 0, epic: [], superior: [], good: [], damageReplace: 0, damageSecondary: 0, rating: null, stamina: null, armorTotal: null, armorQuality: null, shield: null, socketCost: null }
+      return named.map(rune => {
+        const spell = spellOf.get(rune.id)
+        // A value scaled by attack power can't be read from the files, so it's left out rather than shown as ?%
+        const effect = spell ? cleanGameText(effectText(spell, map, noItem, noLevel).text).replace(/\?% /g, '').replace(/\s+/g, ' ').trim() : ''
+        return { itemId: -rune.id, enchantId: rune.id, name: rune.name, quality: 1, icon: (spell ? icons.get(spell) : undefined) ?? rune.icon, effect }
+      }).sort((a, b) => a.name.localeCompare(b.name))
+    })()
+    this.runeforgeList.catch(() => { this.runeforgeList = null })
+    return this.runeforgeList
+  }
+
   appearanceOptions(slot: AppearanceSlot, text: string, armor: (typeof armorTypes)[number] | null): AppearanceOption[] {
     const items = this.search({ text, slot, armor, limit: 60 })
     if (!items.length) return []
@@ -829,6 +863,8 @@ export class GameDataEngine {
           slotEnchants.set(request.slot, options)
           const option = options.find(entry => entry.name.toLowerCase() === strip(enchant))
           enchantId = option ? enchantOf.get(option.itemId) ?? await viaSpell(option.itemId).catch(() => null) : null
+          // A runeforge by name is this expansion's copy, not an older enchant of the same name
+          if (!enchantId) enchantId = (db.prepare(`SELECT id FROM enchants WHERE lower(name) = ? AND id IN (${runeforgeIds.join(',')})`).get(strip(enchant)) as { id: number } | undefined)?.id ?? null
           if (!enchantId) enchantId = (db.prepare('SELECT id FROM enchants WHERE lower(name) = ? ORDER BY id DESC').get(strip(enchant)) as { id: number } | undefined)?.id ?? null
         }
       }

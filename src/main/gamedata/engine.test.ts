@@ -182,6 +182,13 @@ describe('effects on search rows',()=>{
     expect(effects[1]![0]).toMatchObject({label:'Use',text:'Calls down a fictional spark',cooldown:'90 sec'})
     expect(engine.effectsFor([{id:1,itemLevel:999}])).toEqual({})
   })
+  it('names a runeforge by the current enchant, not an older copy that shares its name',async()=>{
+    const {db,engine}=fixture()
+    db.prepare('INSERT INTO enchants VALUES (?,?,?)').run(3370,'Rune of Razorice',null)
+    db.prepare('INSERT INTO enchants VALUES (?,?,?)').run(5869,'Rune of Razorice',135842)
+    db.close();await engine.useInstall(install)
+    expect((await engine.enhancementIds([{slot:'mainHand',enchant:'Rune of Razorice',gems:[],embellishment:null}]))[0]?.enchantId).toBe(3370)
+  })
   it('marks item data from an older version as outdated instead of up to date',async()=>{
     const {add,db,engine}=fixture(2);add(1,'Old helm');db.close();await engine.useInstall(install)
     expect(engine.getStatus()).toMatchObject({state:'not-indexed',outdated:true})
