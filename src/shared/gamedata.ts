@@ -14,7 +14,7 @@ export type GameDataStatus = {
 
 export type ItemSource = { encounter: string; instance: string; kind: 'dungeon' | 'raid' | 'other' }
 export type ItemPrimaryStat = 'strength' | 'agility' | 'intellect'
-export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null; setPiece?: boolean; sockets?: number; crafted?: boolean }
+export type ItemSummary = { id: number; name: string; quality: number; itemLevel: number; requiredLevel: number; slot: string; inventoryType: number; armor: string | null; icon: number | null; expansion: number; sources: ItemSource[]; classId?: number; subclassId?: number; allowableClassMask?: number | null; specIds?: number[] | null; primaryStats?: ItemPrimaryStat[] | null; setPiece?: boolean; /** Made at the Catalyst: a set piece or an off-slot piece in the set's look */ catalyst?: boolean; sockets?: number; crafted?: boolean }
 export type ItemAppearanceOption = { modifiedAppearanceId: number; appearanceId: number; modifier: number; icon: number | null }
 /** An upgrade-track group from the game files: its season scaling set, cross-season track key, and item level per rank */
 export type ItemTrackGroup = { group: number; set: number; key: number; levels: number[]; latest: boolean }

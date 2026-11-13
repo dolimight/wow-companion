@@ -90,6 +90,9 @@ export class GameDataEngine {
   /** Every upgrade track group, read once per index for sorting and filtering by highest reachable level */
   private groupCache: Map<number, { group: number; set: number; key: number; levels: number[]; latest: boolean }> | null = null
   private elevatedCache: Map<number, string[]> | null = null
+  /** Items the Catalyst makes, from the game's ItemConversionEntry table; read in the background once the index opens */
+  private conversionItems: Set<number> | null = null
+  private conversionLoad: Promise<Set<number>> | null = null
   private indexing: Promise<void> | null = null
   private status: GameDataStatus = { state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null }
   private definitions: Definitions
@@ -110,7 +113,7 @@ export class GameDataEngine {
 
   async useInstall(install: WowInstall | null) {
     await this.releaseCasc()
-    this.db?.close(); this.db = null; this.indexVersion = null; this.groupCache = null; this.elevatedCache = null
+    this.db?.close(); this.db = null; this.indexVersion = null; this.groupCache = null; this.elevatedCache = null; this.conversionItems = null; this.conversionLoad = null
     this.install = install
     if (!install) { this.publish({ state: 'no-install', install: null, indexedVersion: null, itemCount: 0, progress: null, error: null, outdated: false }); return }
     const file = this.indexPath(install.build.version)
@@ -122,6 +125,7 @@ export class GameDataEngine {
       this.db = db
       this.indexVersion = Number(version)
       const count = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
+      if (this.indexVersion === INDEX_VERSION) void this.catalystItems().catch(() => {})
       this.publish({ outdated: this.indexVersion !== INDEX_VERSION, state: this.indexVersion === INDEX_VERSION ? 'ready' : 'not-indexed', install: { root: install.root, version: install.build.version }, indexedVersion: install.build.version, itemCount: count, progress: null, error: null })
     } catch {
       opened?.close(); this.db = null; this.indexVersion = null
@@ -470,7 +474,7 @@ export class GameDataEngine {
 
   private summary(row: ItemRow, sources: Map<number, ItemSource[]>): ItemSummary {
     const armor = row.class_id === 4 && row.subclass_id >= 1 && row.subclass_id <= 4 && ![16].includes(row.inventory_type) ? armorTypes[row.subclass_id - 1]! : null
-    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set, sockets:row.sockets, crafted:!!row.crafted }
+    return { id: row.id, name: row.name, quality: row.quality, itemLevel: row.item_level, requiredLevel: row.required_level, slot: inventoryTypeNames[row.inventory_type] ?? 'Other', inventoryType: row.inventory_type, armor, icon: row.icon, expansion: row.expansion, sources: sources.get(row.id) ?? [], classId:row.class_id, subclassId:row.subclass_id, allowableClassMask:row.allowable_class_mask??null, specIds:row.spec_ids?JSON.parse(row.spec_ids):null, primaryStats:row.primary_stats?JSON.parse(row.primary_stats):null, setPiece:!!row.item_set, catalyst:this.conversionItems ? this.conversionItems.has(row.id) : !!row.item_set, sockets:row.sockets, crafted:!!row.crafted }
   }
 
   search(input: ItemSearch): ItemSummary[] {
@@ -771,6 +775,20 @@ export class GameDataEngine {
   }
 
   /**
+   * Items the Catalyst makes: every season's tier set pieces plus the off-slot pieces (cloak, wrist, waist, feet) that
+   * share the set's look but carry no set bonus
+   */
+  private catalystItems() {
+    this.conversionLoad ??= this.traitTable('ItemConversionEntry').then(rows => {
+      const items = new Set([...rows.values()].map(row => Number(row.ItemID)).filter(id => id > 0))
+      this.conversionItems = items
+      return items
+    })
+    this.conversionLoad.catch(() => { this.conversionLoad = null })
+    return this.conversionLoad
+  }
+
+  /**
    * This season's items the Catalyst can turn into the given tier piece: the same slot and armor type, not crafted.
    * Catalyzing keeps the base's secondary stats and any cantrip its drop carries (such as Corroded Hulk's Skullcap with
    * Void Eruption), so each base lists both. Bases with a cantrip come first
@@ -778,9 +796,13 @@ export class GameDataEngine {
   async catalystSources(itemId: number): Promise<CatalystSource[]> {
     const db = this.ready()
     const tier = db.prepare('SELECT * FROM items WHERE id = ?').get(itemId) as ItemRow | undefined
-    if (!tier?.item_set || this.indexVersion !== INDEX_VERSION) return []
+    if (!tier || this.indexVersion !== INDEX_VERSION) return []
+    const made = await this.catalystItems().catch(() => new Set<number>())
+    if (made.size ? !made.has(itemId) : !tier.item_set) return []
     const slots = [5, 20].includes(tier.inventory_type) ? [5, 20] : [tier.inventory_type]
-    const rows = db.prepare(`SELECT id, name, quality, icon FROM items WHERE class_id = ? AND subclass_id = ? AND inventory_type IN (${slots.join(',')}) AND item_set IS NULL AND quality >= 3 AND latest_track = 1 AND crafted = 0 ORDER BY name`).all(tier.class_id, tier.subclass_id) as Array<{ id: number; name: string; quality: number; icon: number | null }>
+    // Other classes' off-pieces carry no set id either, so the Catalyst's own list leaves them out
+    const rows = (db.prepare(`SELECT id, name, quality, icon FROM items WHERE class_id = ? AND subclass_id = ? AND inventory_type IN (${slots.join(',')}) AND item_set IS NULL AND quality >= 3 AND latest_track = 1 AND crafted = 0 ORDER BY name`).all(tier.class_id, tier.subclass_id) as Array<{ id: number; name: string; quality: number; icon: number | null }>)
+      .filter(row => !made.has(row.id))
     const listsOf = await this.dropBonusLists()
     const result: CatalystSource[] = []
     for (const row of rows) {
