@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Equal, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Equal, FlaskConical, Gem, Layers, Sparkles, Swords, Trophy, WandSparkles } from 'lucide-react'
 import type { Character, GearItem, GearSlot } from '../../../shared/domain'
 import type { BonusInfo } from '../../../shared/gamedata'
+import { catalyzedBase } from '../../../shared/catalyst'
 type ItemVariant = NonNullable<BonusInfo['variant']>
 import type { SimulationJob } from '../../../shared/simulation'
 import { compareSimulationValues } from '../../../shared/simulation'
@@ -45,9 +46,11 @@ const regionOf = (population: string): TopRegion => (Object.entries(topRegionNam
 type Row = {
   slot: GearSlot
   mine: Variant | undefined
-  top: { id: number; name: string; level: number | null; share: string | null; enchant: string | null; gems: number[]; embellishment: string | null; variants: ItemVariant[] } | null
+  top: { id: number; name: string; level: number | null; share: string | null; enchant: string | null; gems: number[]; embellishment: string | null; variants: ItemVariant[]; base: string | null } | null
   /** Named variants of your copy, such as Venomcursed, that add an effect of their own */
   variants: ItemVariant[]
+  /** The base a catalyzed tier piece came from, when its cantrip names one */
+  base: string | null
   /** Who wins the slot: measured from each item simulated alone when the run has them, else read from item level */
   verdict: { winner: 'mine' | 'theirs' | 'even' | null; text: string; detail: string | null; measured: boolean; identical?: boolean }
   embellishment: string | null
@@ -138,6 +141,10 @@ export function SimCompare({ character, job, result }: { character: Character; j
   // Named variants such as Venomcursed add an effect the item's name doesn't show
   const bonusIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => item.bonusIds ?? []))].sort((a, b) => a - b)
   const bonuses = useQuery({ queryKey: ['bonus-info', bonusIds], queryFn: () => api.bonusInfo(bonusIds), enabled: ready && bonusIds.length > 0, staleTime: Infinity, placeholderData: keepPreviousData })
+  // A catalyzed tier piece names its base by the cantrip it kept; only tier pieces have bases to look up
+  const tierIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => item.itemId && itemMap.get(item.itemId)?.setPiece ? [item.itemId] : []))].sort((a, b) => a - b)
+  const catalyst = useQueries({ queries: tierIds.map(id => ({ queryKey: ['catalyst-sources', id], queryFn: () => api.catalystSources(id), enabled: ready, staleTime: Infinity })) })
+  const baseOf = (item: Variant | undefined) => { const index = item?.itemId ? tierIds.indexOf(item.itemId) : -1; return index >= 0 ? catalyzedBase(catalyst[index]?.data ?? [], item?.bonusIds)?.name ?? null : null }
   const variantsOf = (item: Variant | undefined): ItemVariant[] => (item?.bonusIds ?? []).flatMap(id => { const variant = bonuses.data?.[id]?.variant; return variant ? [variant] : [] })
   const embellishmentArt = (name: string | null) => name ? (reagents.data ?? []).find(option => option.name === name) ?? null : null
   const whole = plan ? valueAt(plan.whole ?? 0) : undefined
@@ -182,7 +189,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
     // The plan's own name (such as an armor kit) reads better than the enchant's internal one
     const named = item?.enchant && !/^Enchant #\d+$/.test(item.enchant) ? item.enchant : null
     const enchant = named ?? (enchantId ? enchantNames.data?.[enchantId] ?? item?.enchant ?? `Enchant #${enchantId}` : item?.enchant ?? null)
-    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share: share && data ? `${share.count} of ${data.gearPlayers}` : null, enchant: theirEnchant, gems: theirGems, embellishment: topEmbellishment, variants: opponent ? variantsOf(topItem) : [] } : null
+    const topRow: Row['top'] = topItem?.itemId ? { id: topItem.itemId, name: itemMap.get(topItem.itemId)?.name ?? topItem.name, level: topItem.itemLevel, share: share && data ? `${share.count} of ${data.gearPlayers}` : null, enchant: theirEnchant, gems: theirGems, embellishment: topEmbellishment, variants: opponent ? variantsOf(topItem) : [], base: opponent ? baseOf(topItem) : null } : null
     const notes: Row['notes'] = []
     const gap = topRow?.level != null && item?.itemLevel != null ? Math.round(topRow.level - item.itemLevel) : 0
     if (item?.itemId && topRow && topRow.id !== item.itemId) notes.push({ text: 'Different item', icon: <Swords size={12} /> })
@@ -207,7 +214,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
     const sameGems = [...myGems].sort().join() === [...theirGems].sort().join()
     const sameEnchant_ = opponent ? (enchantId ?? 0) === (theirEnchantId ?? 0) : !enchant === !topRow?.enchant && (!enchant || sameEnchant(enchant, topRow?.enchant))
     const identical = !!item?.itemId && topRow?.id === item.itemId && gap === 0 && sameGems && sameEnchant_ && (myEmbellishment ?? null) === (topEmbellishment ?? null) && myVariants === theirVariants
-    return [{ slot, mine: item, top: topRow, variants: variantsOf(item), embellishment: myEmbellishment, enchant, gain: singles.get(slot) ?? null, notes, verdict: verdictFor(slot, item, topRow, gap, identical) }]
+    return [{ slot, mine: item, top: topRow, variants: variantsOf(item), base: baseOf(item), embellishment: myEmbellishment, enchant, gain: singles.get(slot) ?? null, notes, verdict: verdictFor(slot, item, topRow, gap, identical) }]
   })
 
   // The plan's own build when it has one, against the build the compared player (or most top players) runs
@@ -264,11 +271,11 @@ export function SimCompare({ character, job, result }: { character: Character; j
               <Badge tone={row.verdict.winner === 'mine' ? 'green' : row.verdict.winner === 'theirs' ? 'amber' : 'neutral'}>{row.verdict.winner === 'mine' ? <><Trophy size={12} />Yours</> : row.verdict.winner === 'theirs' ? <><ArrowDown size={12} />Theirs</> : row.verdict.winner === 'even' ? <><Equal size={12} />{row.verdict.identical ? 'Equal' : 'Close'}</> : <>Unclear</>}</Badge></span>
             <span role="cell">
               {row.mine ? <Side itemId={row.mine.itemId} name={row.mine.name} level={row.mine.itemLevel} items={itemMap}
-                enchant={row.enchant} enchantArt={enchantIcon(row.enchant)} gems={gemIdsOf(row.mine)} embellishment={row.embellishment} embellishmentArt={embellishmentArt(row.embellishment)} variants={row.variants} /> : <span className="muted">Empty</span>}
+                enchant={row.enchant} enchantArt={enchantIcon(row.enchant)} gems={gemIdsOf(row.mine)} embellishment={row.embellishment} embellishmentArt={embellishmentArt(row.embellishment)} variants={row.variants} base={row.base} /> : <span className="muted">Empty</span>}
             </span>
             <span role="cell">
               {row.top ? <Side itemId={row.top.id} name={row.top.name} level={row.top.level} items={itemMap} share={row.top.share}
-                enchant={row.top.enchant} enchantArt={enchantIcon(row.top.enchant)} gems={row.top.gems} embellishment={row.top.embellishment} embellishmentArt={embellishmentArt(row.top.embellishment)} variants={row.top.variants} /> : <span className="muted">Unknown</span>}
+                enchant={row.top.enchant} enchantArt={enchantIcon(row.top.enchant)} gems={row.top.gems} embellishment={row.top.embellishment} embellishmentArt={embellishmentArt(row.top.embellishment)} variants={row.top.variants} base={row.top.base} /> : <span className="muted">Unknown</span>}
             </span>
             <span role="cell" className="sim-notes">
               <span className="sim-verdict" data-winner={row.verdict.winner ?? undefined}><strong>{row.verdict.text}</strong>{row.verdict.detail && <small className="muted">{row.verdict.detail}</small>}</span>
@@ -287,10 +294,10 @@ export function SimCompare({ character, job, result }: { character: Character; j
   )
 }
 
-function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellishment, embellishmentArt, share, variants = [] }: {
+function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellishment, embellishmentArt, share, variants = [], base = null }: {
   itemId: number | null; name: string; level: number | null; items: Map<number, import('../../../shared/gamedata').ItemSummary>
   enchant: string | null; enchantArt: { itemId: number; icon: number | null; quality: number; name: string } | null; gems: number[]; embellishment: string | null
-  embellishmentArt?: { itemId: number; icon: number | null } | null; share?: string | null; variants?: ItemVariant[]
+  embellishmentArt?: { itemId: number; icon: number | null } | null; share?: string | null; variants?: ItemVariant[]; base?: string | null
 }) {
   const info = itemId ? items.get(itemId) : undefined
   return (
@@ -312,6 +319,7 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
         {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover" data-cursor-target=""><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
         {embellishment && <EmbellishmentChip name={embellishment} art={embellishmentArt ?? null} itemId={itemId} level={level} />}
         {variants.map(variant => <VariantChip key={variant.name} variant={variant} />)}
+        {base && <Badge><span className="sim-extra" title={`Catalyzed from ${base}, keeping its secondary stats`}><FlaskConical size={12} />From {base}</span></Badge>}
       </span>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { ExternalLink, RefreshCw, Search, Sparkles, X } from "lucide-react";
@@ -53,7 +53,12 @@ const qualityOptions = [{ value: "any", label: "Any quality" }, ...[2, 3, 4, 5].
 const armorOptions = [{ value: "any", label: "Any armor" }, ...armorTypes.map(armor => ({ value: armor, label: armor[0]!.toUpperCase() + armor.slice(1) }))];
 
 /** Item search that runs entirely against the local index built from the user's WoW install */
-export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel, weights = null }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string; weights?: StatWeights | null }) {
+export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlot, title = "Search items", onPick, addLabel, weights = null, allow, annotate, emptyText }: { open: boolean; onOpenChange: (open: boolean) => void; character?: Character; slot?: AppearanceSlot; title?: string; onPick?: (item: ItemSummary) => void; addLabel?: string; weights?: StatWeights | null
+  /** Only these items are shown, such as the bases the Catalyst accepts */
+  allow?: ReadonlySet<number>
+  /** Extra lines under a result, such as the cantrip a base carries */
+  annotate?: (item: ItemSummary) => ReactNode
+  emptyText?: string }) {
   const status = useGameData();
   const client = useQueryClient();
   const rebuild = useMutation({ mutationFn: () => api.rebuildItemData(), onSuccess: () => { notify("Item data prepared"); void client.invalidateQueries(); }, onError: (error) => notify(errorMessage(error)) });
@@ -87,7 +92,9 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
     getNextPageParam: page => page.nextOffset ?? undefined,
     enabled: open && ready,
   });
-  const items = results.data?.pages.flatMap(page => page.items) ?? [];
+  const items = (results.data?.pages.flatMap(page => page.items) ?? []).filter(item => !allow || allow.has(item.id));
+  // An allow list can leave a page nearly empty, so keep loading until the list can scroll
+  useEffect(() => { if (allow && open && items.length < 12 && results.hasNextPage && !results.isFetching) void results.fetchNextPage(); }, [allow, open, items.length, results.hasNextPage, results.isFetching]);
   useEffect(() => { list.current?.scrollTo(0, 0); setHighlighted(""); }, [debouncedText, fixedSlot, slot, filters, current, sort, levels.min, levels.max, character?.id, character?.className, character?.specId, character?.level]);
   const loadMore = () => { if (results.hasNextPage && !results.isFetching && !results.isFetchNextPageError) void results.fetchNextPage(); };
   const pickItem = (item: ItemSummary) => {
@@ -147,13 +154,14 @@ export function ItemSearchDialog({ open, onOpenChange, character, slot: fixedSlo
                 <div className="item-search-empty" role="alert"><p>{errorMessage(results.error)}</p><Button onClick={() => void results.refetch()}>Try again</Button></div>
               ) : (
                 <>
-                  <CommandEmpty className="item-search-empty">{results.isFetching ? "Searching…" : character ? "No compatible items match — try another name, source, or season filter" : "No items match — try another name or turn off a filter"}</CommandEmpty>
+                  <CommandEmpty className="item-search-empty">{results.isFetching ? "Searching…" : emptyText ? emptyText : character ? "No compatible items match — try another name, source, or season filter" : "No items match — try another name or turn off a filter"}</CommandEmpty>
                   {items.map((item) => (
                     <CommandItem key={item.id} value={String(item.id)} onFocus={() => setHighlighted(String(item.id))} onSelect={() => previewItem(item)} className="item-result">
                       <ItemIcon icon={item.icon} quality={item.quality} />
                       <span className="item-result-text">
                         <strong className={`quality-text-${item.quality}`}>{item.name}</strong>
                         <small>{[item.slot, item.armor && item.armor[0]!.toUpperCase() + item.armor.slice(1), item.itemLevel ? `Base ${item.itemLevel}` : null, item.maxLevel ? `Up to ${item.maxLevel.itemLevel} (${trackRankLabel(item.maxLevel.track, item.maxLevel.rank, item.maxLevel.ranks, item.maxLevel.via)}${item.maxLevel.assumed ? ", assumed" : ""})` : null].filter(Boolean).join(" · ")}</small>
+                        {annotate?.(item)}
                         {item.effects?.map((effect, index) => <small key={index} className="item-result-effect"><Sparkles aria-hidden="true" /><span><strong>{effect.label}:</strong> {effect.text}</span></small>)}
                         {sourceLine(item) && <small className="item-result-source">{sourceLine(item)}</small>}
                         {context && !getItemCompatibility(item,context).verified && <small>{getItemCompatibility(item,context).reason ?? "Some equipment restrictions are unknown"}</small>}

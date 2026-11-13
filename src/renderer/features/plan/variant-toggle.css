@@ -5,3 +5,6 @@
 .variant-field .variant-toggle small { font-size: 12px; font-weight: 400; line-height: 1.4; color: var(--secondary); }
 .variant-field .variant-toggle[aria-pressed="true"] { border-color: var(--accent); }
 .variant-field > small { font-size: 12px; line-height: 1.5; color: var(--secondary); }
+.catalyst-choice { display: flex; gap: 6px; align-items: center; }
+.catalyst-choice .catalyst-pick { flex: 1; min-width: 0; justify-content: flex-start; gap: 8px; min-height: 36px; }
+.catalyst-choice .catalyst-pick > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

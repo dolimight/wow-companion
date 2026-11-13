@@ -771,25 +771,26 @@ export class GameDataEngine {
   }
 
   /**
-   * This season's items the Catalyst can turn into the given tier piece (same slot and armor type) whose drops carry a
-   * cantrip, such as Corroded Hulk's Skullcap with Void Eruption. Catalyzing keeps the cantrip on the tier piece
+   * This season's items the Catalyst can turn into the given tier piece: the same slot and armor type, not crafted.
+   * Catalyzing keeps the base's secondary stats and any cantrip its drop carries (such as Corroded Hulk's Skullcap with
+   * Void Eruption), so each base lists both. Bases with a cantrip come first
    */
   async catalystSources(itemId: number): Promise<CatalystSource[]> {
     const db = this.ready()
     const tier = db.prepare('SELECT * FROM items WHERE id = ?').get(itemId) as ItemRow | undefined
     if (!tier?.item_set || this.indexVersion !== INDEX_VERSION) return []
     const slots = [5, 20].includes(tier.inventory_type) ? [5, 20] : [tier.inventory_type]
-    const rows = db.prepare(`SELECT id, name, quality, icon FROM items WHERE class_id = ? AND subclass_id = ? AND inventory_type IN (${slots.join(',')}) AND item_set IS NULL AND quality >= 4 AND latest_track = 1 ORDER BY name`).all(tier.class_id, tier.subclass_id) as Array<{ id: number; name: string; quality: number; icon: number | null }>
+    const rows = db.prepare(`SELECT id, name, quality, icon FROM items WHERE class_id = ? AND subclass_id = ? AND inventory_type IN (${slots.join(',')}) AND item_set IS NULL AND quality >= 3 AND latest_track = 1 AND crafted = 0 ORDER BY name`).all(tier.class_id, tier.subclass_id) as Array<{ id: number; name: string; quality: number; icon: number | null }>
     const listsOf = await this.dropBonusLists()
     const result: CatalystSource[] = []
     for (const row of rows) {
       const lists = listsOf(row.id)
-      if (!lists.length) continue
-      const info = await this.bonusInfo(lists)
+      const info = lists.length ? await this.bonusInfo(lists) : {}
       const variants = Object.entries(info).flatMap(([id, entry]) => entry.variant ? [{ bonusId: Number(id), ...entry.variant }] : [])
-      if (variants.length) result.push({ itemId: row.id, name: row.name, quality: row.quality, icon: row.icon, variants })
+      const stats = (this.itemPower(row.id, tier.item_level)?.stats ?? []).filter(stat => stat.secondary).map(stat => stat.name)
+      result.push({ itemId: row.id, name: row.name, quality: row.quality, icon: row.icon, stats, variants })
     }
-    return result
+    return result.sort((a, b) => (Number(!a.variants.length) - Number(!b.variants.length)) || a.name.localeCompare(b.name))
   }
 
   /** Bonus lists' variants and upgrade tracks, read once from the game's ItemBonus table */
