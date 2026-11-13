@@ -212,6 +212,19 @@ describe('simulating a saved plan', () => {
     const other = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, { ...top, specId: 251 })
     expect(other.request.plan?.roster).toBeNull()
   })
+  it("puts a top player's copy of a planned ring or trinket in the plan's slot", async () => {
+    const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`)
+    await service.configureExecutable(process.execPath)
+    const stored = database.getCharacter(character.id)!
+    database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [{ ...stored.gear[0]!, slot: 'trinket1', itemId: 3000, name: 'Heart', itemLevel: 120, inventoryType: 12, itemLink: null, enchant: null, gems: [], gemIds: [], bonusIds: [] }], updatedAt: '2026-10-29T12:00:00.000Z' })
+    const item = (slot: string, itemId: number) => ({ slot: slot as 'trinket1', itemId, name: `Item ${itemId}`, itemLevel: 120, bonusIds: [], enchantId: 0, gemIds: [] })
+    const top = topFixture({ players: [{ name: 'One', realm: 'Realm', region: 'us', score: 4000, keyLevel: 20, dungeon: null, url: 'https://raider.io/characters/us/realm/One', loadout: null, gear: [item('trinket1', 3001), item('trinket2', 3000)] }] })
+    const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, top)
+    const run = job.request.candidates[job.request.plan!.roster!.players[0]!.index]!
+    expect(run.map(entry => [entry.slot, entry.itemId])).toEqual([['trinket2', 3001], ['trinket1', 3000]])
+    // Their heart alone replaces the same trinket the plan's does, so it shares the plan's measurement
+    expect(job.request.plan!.roster!.players[0]!.singles).toContainEqual({ slot: 'trinket1', index: 0 })
+  })
   it("runs the plan's own enchants, gems, embellishments, and talents, and picks the plan you have open", async () => {
     const lookups: unknown[] = []
     const { character, service, root, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2', 'companion_candidate_3', 'companion_candidate_4'], [104_000, 102_000, 101_500, 101_000]))}));`, {

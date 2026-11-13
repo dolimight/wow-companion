@@ -157,13 +157,22 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
    * items alone. Items several players share, or that match your plan or what you wear, are measured once. Players
    * whose setup can't be described to the engine are left out, and the run stays inside the engine's profileset limit
    */
-  function rosterRuns(current: Character, top: TopPlayers, sets: Array<{ label: string; entries: Array<{ item: GearItem; text: string }>; extra: string[] }>, shared: Map<string, number>, wearing: Set<string>) {
+  function rosterRuns(current: Character, top: TopPlayers, sets: Array<{ label: string; entries: Array<{ item: GearItem; text: string }>; extra: string[] }>, shared: Map<string, number>, wearing: Set<string>, mine: Map<GearItem['slot'], number | null>) {
     const players: NonNullable<NonNullable<SimulationRequest['plan']>['roster']>['players'] = []
     const fallback = current.gear[0]
     if (!fallback) return players
     for (const player of top.players) {
       if (!player.gear?.length || players.length >= 20) continue
-      const entries = player.gear.map(item => {
+      // Rings and trinkets are a pair. Their copy of a planned item goes in the plan's slot, so its run alone replaces
+      // the same item yours does; otherwise the gap measures whichever item each pushed out, not the item itself
+      const slotOf = new Map(player.gear.map(item => [item.slot, item.slot]))
+      for (const [a, b] of [['finger1', 'finger2'], ['trinket1', 'trinket2']] as const) {
+        const theirs = (slot: GearItem['slot']) => player.gear!.find(item => item.slot === slot)?.itemId ?? null
+        const crossed = (mine.get(a) != null && mine.get(a) === theirs(b) && mine.get(a) !== theirs(a)) || (mine.get(b) != null && mine.get(b) === theirs(a) && mine.get(b) !== theirs(b))
+        if (crossed) { slotOf.set(a, b); slotOf.set(b, a) }
+      }
+      const entries = player.gear.map(worn => {
+        const item = { ...worn, slot: slotOf.get(worn.slot) ?? worn.slot }
         const base = current.gear.find(value => value.slot === item.slot) ?? fallback
         const described = describedItem(base, item.slot, { itemId: item.itemId, name: item.name, itemLevel: item.itemLevel, bonusIds: item.bonusIds, enchantId: item.enchantId, gemIds: item.gemIds.length ? [...item.gemIds, 0, 0, 0, 0].slice(0, Math.max(4, item.gemIds.length)) : [0, 0, 0, 0] })
         return { item: described, text: itemLine(described).text }
@@ -348,7 +357,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const sharedSingle = new Map<string, number>(described.map((entry, index) => [entry.text, index + (wholePlan ? 1 : 0)]))
       // What you wear now needs no run of its own; an item identical to it is measured as the reference
       const wearing = new Set(prepared.current.gear.flatMap(item => { const text = itemLine(item).text; return text ? [text] : [] }))
-      const roster = topForRun && topForRun.specId === prepared.current.specId ? rosterRuns(prepared.current, topForRun, sets, sharedSingle, wearing) : []
+      const roster = topForRun && topForRun.specId === prepared.current.specId ? rosterRuns(prepared.current, topForRun, sets, sharedSingle, wearing, new Map([...prepared.current.gear, ...swaps].map(item => [item.slot, item.itemId ?? null]))) : []
       const lines = sets.flatMap((set, index) => [...set.entries.map(entry => entry.text), ...set.extra].map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')

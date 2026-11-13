@@ -10,3 +10,4 @@
 .enhancement-popup [data-slot="combobox-item"] { padding-block: 8px; gap: 10px; font-size: 13px; }
 .enhancement-popup [data-slot="combobox-item"] > span:not(.game-icon) { overflow-wrap: anywhere; }
 .enhancement-status { padding: 12px; font-size: 12px; line-height: 1.5; color: var(--secondary); }
+.enhancement-sockets { display: grid; gap: 6px; }
