@@ -40,6 +40,8 @@ const itemProgressionFields = {
   variantCoverage:z.enum(['complete','partial','unknown']).optional(),
   /** A crafting reagent planned onto a crafted item, and the Embellished limit it counts against */
   embellishment:z.object({name:z.string().min(1).max(200),itemId:z.number().int().positive().nullable().default(null),limit:z.string().min(1).max(100)}).nullable().optional(),
+  /** Bonus lists of a named variant planned onto the item, such as Venomcursed, which adds an effect of its own */
+  variantBonusIds:z.array(z.number().int().positive()).max(4).optional(),
   /** Where a planned level came from: a copy seen on a real character, the local game files, or the player */
   levelSource:z.enum(['observed','estimated','manual']).nullable().optional(),
 }

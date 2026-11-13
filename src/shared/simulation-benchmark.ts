@@ -47,7 +47,8 @@ export function planSwaps(character: Pick<Character, 'gear'>, planned: PlannedIt
     const label = gearSlotLabels[item.slot]
     if (!item.itemId) { skipped.push(`${label}: the planned item is unknown`); continue }
     const current = character.gear.find(value => value.slot === item.slot)
-    const added = item.embellishmentBonusIds ?? []
+    // The plan's embellishment and any variant it chose, such as Venomcursed, go on top of the copy's own bonus lists
+    const added = [...(item.embellishmentBonusIds ?? []), ...(item.variantBonusIds ?? [])]
     const currentRaw = itemLinkVariant(current?.itemLink)
     const sameEnhancements = (item.enchantId == null || item.enchantId === (current?.enchantId ?? currentRaw.enchantId ?? 0))
       && (item.gemIds == null || sameGems(item.gemIds, current?.gemIds ?? currentRaw.gemIds)) && !added.length

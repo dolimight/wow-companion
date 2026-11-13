@@ -1,0 +1,7 @@
+.variant-field > span { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+.variant-field > span > svg { color: var(--secondary); }
+.variant-field .variant-toggle { height: auto; width: 100%; justify-content: flex-start; align-items: flex-start; gap: 10px; padding: 8px 10px; white-space: normal; text-align: left; }
+.variant-field .variant-toggle > span { display: grid; gap: 2px; min-width: 0; }
+.variant-field .variant-toggle small { font-size: 12px; font-weight: 400; line-height: 1.4; color: var(--secondary); }
+.variant-field .variant-toggle[aria-pressed="true"] { border-color: var(--accent); }
+.variant-field > small { font-size: 12px; line-height: 1.5; color: var(--secondary); }
