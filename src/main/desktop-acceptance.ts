@@ -979,7 +979,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await window.loadURL(contents.getURL().split('#')[0] + `#/characters/${workflowId}/gear/plan`)
       await wait(`!!document.querySelector('input[aria-label="Enchant"]')`, 'enhancement combobox inputs')
       const openEnhancements = async (label: string) => {
-        await evaluate(`document.querySelector('input[aria-label="${label}"]').closest('.enhancement-field').querySelector('button').click()`)
+        await evaluate(`document.querySelector('input[aria-label="${label}"]').closest('[data-slot="input-group"]').querySelector('button').click()`)
         await evaluate(`document.querySelector('input[aria-label="${label}"]').focus()`)
         await wait(`document.querySelector('input[aria-label="${label}"]')?.getAttribute('aria-expanded')==='true'`, label + ' dropdown')
       }
@@ -1007,9 +1007,14 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await contents.debugger.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
       await wait(`document.querySelector('input[aria-label="Enchant"]')?.value==='Acceptance Fiery Focus'&&document.querySelector('input[aria-label="Enchant"]')?.getAttribute('aria-expanded')!=='true'`, 'keyboard enchant selection')
       await field('Gems', '')
+      // Each socket has its own picker; without known sockets an empty one waits after the last gem
+      const gemInputs = `[...document.querySelectorAll('.enhancement-field input[aria-label^="Gem"]')]`
+      const gemValue = `${gemInputs}.map(node=>node.value.trim()).filter(Boolean).join(', ')`
       const selectedGems: string[] = []
       for (const gem of ['Acceptance Ruby', 'Acceptance Ruby', 'Acceptance Sapphire']) {
-        await openEnhancements('Gems')
+        const socket = await evaluate<string>(`${gemInputs}.find(node=>!node.value.trim())?.getAttribute('aria-label')`)
+        assert(socket, 'An empty gem picker waits for the next gem')
+        await openEnhancements(socket)
         await wait(`!![...document.querySelectorAll(${literal(options)})].find(node=>node.textContent.trim()===${literal(gem)})`, 'gem option')
         if (!selectedGems.length) {
           await hoverEnhancement(gem, '+37 Haste')
@@ -1018,19 +1023,19 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
         }
         await click(gem, options)
         selectedGems.push(gem)
-        await wait(`document.querySelector('input[aria-label="Gems"]')?.getAttribute('aria-expanded')!=='true'`, 'gem selection closes the dropdown')
-        await wait(`document.querySelector('input[aria-label="Gems"]')?.value===${literal(selectedGems.join(', '))}`, 'selected gems remain in the field')
+        await wait(`document.querySelector('input[aria-label="${socket}"]')?.getAttribute('aria-expanded')!=='true'`, 'gem selection closes the dropdown')
+        await wait(`${gemValue}===${literal(selectedGems.join(', '))}`, 'selected gems remain in their sockets')
       }
-      await openEnhancements('Gems')
+      await openEnhancements('Gem 1')
       await capture('gear-enhancement-dropdown-dark', false)
       const originalSize = window.getContentSize()
       try {
         await db.call('setSettings', { theme: 'light' }); await service.changed()
         window.setContentSize(820, 900)
         await wait(`innerWidth===820&&document.documentElement.dataset.theme==='light'`, 'light enhancement layout')
-        await evaluate(`document.querySelector('input[aria-label="Gems"]').scrollIntoView({block:'center'})`)
+        await evaluate(`document.querySelector('input[aria-label="Gem 1"]').scrollIntoView({block:'center'})`)
         assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Enhancement controls overflow the minimum width')
-        await openEnhancements('Gems')
+        await openEnhancements('Gem 1')
         await hoverEnhancement('Acceptance Ruby', '+37 Haste')
         assert(await evaluate(`(()=>{const box=document.querySelector('.item-hover-card').getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&box.top>=0&&box.bottom<=innerHeight})()`), 'Enhancement stat preview extends beyond the window')
         await capture('gear-enhancement-dropdown-light-minimum', false)
@@ -1038,7 +1043,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       } finally { window.setContentSize(originalSize[0], originalSize[1]); await db.call('setSettings', { theme: 'dark' }); await service.changed() }
       await wait(`innerWidth===${originalSize[0]}&&document.querySelector('.app-shell')?.dataset.navigation===${literal(originalSize[0] < 1100 ? 'drawer' : 'sidebar')}&&document.documentElement.dataset.theme==='dark'`, 'editor layout restored before saving')
       contents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' }); contents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
-      await wait(`document.querySelector('input[aria-label="Gems"]')?.getAttribute('aria-expanded')!=='true'`, 'close gem dropdown before saving')
+      await wait(`document.querySelector('input[aria-label="Gem 1"]')?.getAttribute('aria-expanded')!=='true'`, 'close gem dropdown before saving')
       // Picks save on their own
       await waitDb(async () => {
         const draft = await db.call('getGearDraft', { characterId: workflowId, specId: 62, activity: 'mythicPlus' })
@@ -1047,7 +1052,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       }, 'selected enchant and repeated gems saved')
       await wait(`document.querySelector('.save-status')?.getAttribute('data-state')==='saved'`, 'enhancement save completes before reload')
       await window.loadURL(contents.getURL())
-      await wait(`document.querySelector('input[aria-label="Gems"]')?.value==='Acceptance Ruby, Acceptance Ruby, Acceptance Sapphire'`, 'enhancements restored after reload')
+      await wait(`${gemValue}==='Acceptance Ruby, Acceptance Ruby, Acceptance Sapphire'`, 'enhancements restored after reload')
       try {
         await wait(`document.querySelector('.save-status')?.getAttribute('data-state')==='saved'`, 'restored plan finishes hydration without unsaved changes')
       } catch (error) {
