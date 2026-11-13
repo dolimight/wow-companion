@@ -1958,7 +1958,7 @@ function GearEditor({
                 </slotForm.Field>
               }
             />
-            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} enchantable={canEnchant(current, selected)} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else slotForm.setFieldValue("enchant", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
+            <EnhancementSelect key={`enchant:${selected}`} kind="enchant" slot={selected} runeforging={character.className === "Death Knight"} enchantable={canEnchant(current, selected)} value={enchant} onChange={(value, selected) => { if (selected) updateItem(true, { enchant: value }); else slotForm.setFieldValue("enchant", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             <EnhancementSelect key={`gems:${selected}`} kind="gem" slot={selected} sockets={socketsOf(current)} value={gems} onChange={(value, selected) => { if (selected) updateItem(true, { gems: value }); else slotForm.setFieldValue("gems", value); }} onCommit={() => { if (inspectorDirty) updateItem(true); }} />
             {planned?.crafted && current?.itemId && (
               <EmbellishmentSelect key={`embellishment:${selected}`} item={{ id: current.itemId, classId: planned.classId, subclassId: planned.subclassId, inventoryType: planned.inventoryType }} itemLevel={current.itemLevel != null ? Math.round(current.itemLevel) : null} value={current.embellishment} onChange={(embellishment) => updateItem(true, { embellishment })} />

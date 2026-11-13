@@ -111,7 +111,7 @@ export async function buildTalentTree(table: Tables, specId: number, build: stri
 }
 
 /** Talent spells with what their descriptions need: text, effect values, durations, and stacks, two references deep */
-async function talentSpells(table: Tables, ids: number[]): Promise<Record<number, SpellData>> {
+export async function talentSpells(table: Tables, ids: number[]): Promise<Record<number, SpellData>> {
   const [names, texts, effects, misc, durations, auras] = await Promise.all([table('SpellName'), table('Spell'), table('SpellEffect'), table('SpellMisc'), table('SpellDuration'), table('SpellAuraOptions')])
   const wanted = new Set(ids)
   let frontier = [...wanted]

@@ -12,8 +12,8 @@ import { ItemHoverCard } from './ItemHoverCard'
 import './enhancement-select.css'
 
 /** One searchable enhancement; typed names are kept as planned even when the library doesn't list them */
-function EnhancementPicker({ id, kind, slot, label, value, placeholder, disabled, onChange, onCommit }: {
-  id?: string; kind: 'enchant' | 'gem'; slot: GearSlot; label: string; value: string; placeholder: string; disabled?: boolean
+function EnhancementPicker({ id, kind, slot, label, value, placeholder, disabled, runeforging = false, onChange, onCommit }: {
+  id?: string; kind: 'enchant' | 'gem'; slot: GearSlot; label: string; value: string; placeholder: string; disabled?: boolean; runeforging?: boolean
   onChange: (value: string, selected?: boolean) => void; onCommit: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -21,7 +21,7 @@ function EnhancementPicker({ id, kind, slot, label, value, placeholder, disabled
   const [keyboardPreview, setKeyboardPreview] = useState<number | null>(null)
   const status = useGameData()
   const ready = status.data?.state === 'ready'
-  const options = useQuery({ queryKey: ['enhancements', kind, kind === 'enchant' ? slot : null], queryFn: () => api.enhancements({ kind, slot: kind === 'enchant' ? slot : null }), enabled: open && ready })
+  const options = useQuery({ queryKey: ['enhancements', kind, kind === 'enchant' ? slot : null, runeforging], queryFn: () => api.enhancements({ kind, slot: kind === 'enchant' ? slot : null, runeforging }), enabled: open && ready })
   const choices = (options.data ?? []).filter(option => option.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   return <Combobox<EnhancementOption | string> items={choices} filter={null} value={value} inputValue={value}
     open={open} onOpenChange={(next, details) => { setOpen(next); if (!next) setKeyboardPreview(null); if (next && details.reason !== 'input-change') setSearch('') }}
@@ -45,12 +45,14 @@ function EnhancementPicker({ id, kind, slot, label, value, placeholder, disabled
   </Combobox>
 }
 
-export function EnhancementSelect({ kind, slot, value, onChange, onCommit, sockets = null, enchantable = null }: {
+export function EnhancementSelect({ kind, slot, value, onChange, onCommit, sockets = null, enchantable = null, runeforging = false }: {
   kind: 'enchant' | 'gem'; slot: GearSlot; value: string; onChange: (value: string, selected?: boolean) => void; onCommit: () => void
   /** The planned item's sockets; without them up to 10 gems can be planned */
   sockets?: ItemSockets | null
   /** False when this season has no enchant for the slot */
   enchantable?: boolean | null
+  /** A Death Knight, whose weapons also take runeforges */
+  runeforging?: boolean
 }) {
   const id = useId()
   const LabelIcon = kind === 'enchant' ? WandSparkles : Gem
@@ -58,7 +60,7 @@ export function EnhancementSelect({ kind, slot, value, onChange, onCommit, socke
     const noEnchant = enchantable === false && !value.trim()
     return <div className="field enhancement-field">
       <label htmlFor={id}><LabelIcon size={14} aria-hidden="true" />Enchant</label>
-      <EnhancementPicker id={id} kind="enchant" slot={slot} label="Enchant" value={value} disabled={noEnchant} placeholder={noEnchant ? "Can't be enchanted" : 'Search enchants'} onChange={onChange} onCommit={onCommit} />
+      <EnhancementPicker id={id} kind="enchant" slot={slot} label="Enchant" value={value} disabled={noEnchant} runeforging={runeforging} placeholder={noEnchant ? "Can't be enchanted" : 'Search enchants'} onChange={onChange} onCommit={onCommit} />
       {enchantable === false && <small>This season has no enchant for this slot</small>}
     </div>
   }
