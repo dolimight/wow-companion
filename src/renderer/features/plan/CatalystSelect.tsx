@@ -31,7 +31,7 @@ export function CatalystSelect({ item, slot, character, onChange }: { item: Gear
       </Button>
       {chosen && <Button variant="icon" aria-label="Not catalyzed" onClick={() => onChange({ catalyzedFrom: null, variantBonusIds: [] })}><X size={16} /></Button>}
     </div>
-    <small>{chosen ? [chosen.stats.length ? `Keeps its ${chosen.stats.join(' and ')}` : null, ...chosen.variants.map(variant => `${variant.name}: ${variant.effect}`)].filter(Boolean).join(' · ') : "A catalyzed tier piece keeps its base item's secondary stats and cantrip"}</small>
+    <small>{chosen ? [chosen.stats.length ? `Keeps its ${chosen.stats.join(' and ')}` : null, ...chosen.variants.map(variant => `${variant.name}: ${variant.effect}`)].filter(Boolean).join(' · ') : "A catalyzed piece keeps its base item's secondary stats and cantrip"}</small>
     <ItemSearchDialog open={open} onOpenChange={setOpen} character={character} slot={slot} title={`Catalyze into ${item.name}`} addLabel="Catalyze from this" allow={allow}
       emptyText="No base matches · the Catalyst takes this season's items of the same slot and armor type, not crafted ones"
       annotate={result => { const source = byId.get(result.id); return source ? <>

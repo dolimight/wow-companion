@@ -1969,8 +1969,8 @@ function GearEditor({
             {planned?.crafted && current?.itemId && (
               <EmbellishmentSelect key={`embellishment:${selected}`} item={{ id: current.itemId, classId: planned.classId, subclassId: planned.subclassId, inventoryType: planned.inventoryType }} itemLevel={current.itemLevel != null ? Math.round(current.itemLevel) : null} value={current.embellishment} onChange={(embellishment) => updateItem(true, { embellishment })} />
             )}
-            {current?.itemId && planned?.setPiece && <CatalystSelect key={`catalyst:${selected}`} item={current} slot={selected} character={character} onChange={(choice) => updateItem(true, choice)} />}
-            {current?.itemId && !planned?.setPiece && <VariantToggle key={`variant:${selected}`} item={current} character={character} top={topPlayers.data} value={current.variantBonusIds ?? []} onChange={(variantBonusIds) => updateItem(true, { variantBonusIds })} />}
+            {current?.itemId && planned?.catalyst && <CatalystSelect key={`catalyst:${selected}`} item={current} slot={selected} character={character} onChange={(choice) => updateItem(true, choice)} />}
+            {current?.itemId && !planned?.catalyst && <VariantToggle key={`variant:${selected}`} item={current} character={character} top={topPlayers.data} value={current.variantBonusIds ?? []} onChange={(variantBonusIds) => updateItem(true, { variantBonusIds })} />}
             <EnhancementRecommendations character={character} items={items} slot={selected} sockets={socketsOf(current)} enchantable={canEnchant(current, selected)} weights={statWeights} onWeights={(weights) => { setStatWeights(weights); setDirty(true); }} disabled={inspectorDirty} onApply={(kind, value) => updateItem(true, kind === "enchant" ? { enchant: value } : { gems: value })} />
             <p className="inspector-note">
               This plan is scoped to {character.name}, {spec(character)}, and{" "}

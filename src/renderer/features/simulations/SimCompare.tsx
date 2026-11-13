@@ -142,7 +142,7 @@ export function SimCompare({ character, job, result }: { character: Character; j
   const bonusIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => item.bonusIds ?? []))].sort((a, b) => a - b)
   const bonuses = useQuery({ queryKey: ['bonus-info', bonusIds], queryFn: () => api.bonusInfo(bonusIds), enabled: ready && bonusIds.length > 0, staleTime: Infinity, placeholderData: keepPreviousData })
   // A catalyzed tier piece names its base by the cantrip it kept; only tier pieces have bases to look up
-  const tierIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => item.itemId && itemMap.get(item.itemId)?.setPiece ? [item.itemId] : []))].sort((a, b) => a - b)
+  const tierIds = [...new Set([...mine.values(), ...rosterItems].flatMap(item => item.itemId && itemMap.get(item.itemId)?.catalyst ? [item.itemId] : []))].sort((a, b) => a - b)
   const catalyst = useQueries({ queries: tierIds.map(id => ({ queryKey: ['catalyst-sources', id], queryFn: () => api.catalystSources(id), enabled: ready, staleTime: Infinity })) })
   const baseOf = (item: Variant | undefined) => { const index = item?.itemId ? tierIds.indexOf(item.itemId) : -1; return index >= 0 ? catalyzedBase(catalyst[index]?.data ?? [], item?.bonusIds)?.name ?? null : null }
   const variantsOf = (item: Variant | undefined): ItemVariant[] => (item?.bonusIds ?? []).flatMap(id => { const variant = bonuses.data?.[id]?.variant; return variant ? [variant] : [] })

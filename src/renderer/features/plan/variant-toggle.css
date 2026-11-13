@@ -8,3 +8,6 @@
 .catalyst-choice { display: flex; gap: 6px; align-items: center; }
 .catalyst-choice .catalyst-pick { flex: 1; min-width: 0; justify-content: flex-start; gap: 8px; min-height: 36px; }
 .catalyst-choice .catalyst-pick > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The inspector stretches and spaces its buttons; this row lays out its own pair */
+.gear-inspector .catalyst-choice > .button { margin-top: 0; }
+.gear-inspector .catalyst-choice > .button-icon { width: 32px; flex: none; }
