@@ -6,20 +6,20 @@ Original promotional artwork and real app captures for the project README and sh
 | --- | --- | --- |
 | [wow-companion-banner.png](wow-companion-banner.png) | Wide README header | Generated promotional artwork |
 | [wow-companion-social.png](wow-companion-social.png) | Standalone social card | Generated promotional artwork |
-| [character-overview.png](character-overview.png) | Dark character overview | Unaltered Electron acceptance capture |
-| [item-search.png](item-search.png) | Light item-search dialog | Unaltered Electron acceptance capture |
+| [character-overview.png](character-overview.png) | Character overview | Unaltered dev-app capture |
+| [gear-plan.png](gear-plan.png) | Gear plan paper doll | Unaltered dev-app capture |
+| [talents.png](talents.png) | Talent editor | Unaltered dev-app capture |
+| [item-search.png](item-search.png) | Item search dialog | Unaltered dev-app capture |
+| [simulation-roster.png](simulation-roster.png) | Plan ranked among top players | Unaltered dev-app capture |
+| [simulation-compare.png](simulation-compare.png) | Slot-by-slot simulation comparison | Unaltered dev-app capture |
+| [top-players.png](top-players.png) | Top players and talent builds | Unaltered dev-app capture |
 | [buymeacoffee-button.png](buymeacoffee-button.png) | README support link | Official Buy Me a Coffee button |
 
 The banner and social card were created on 2026-11-03 with the built-in image-generation tool, using the existing [compass logo](../../public/assets/wow-companion-logo.png) as a supporting brand reference. Their atlas scenes are original promotional illustrations, not game maps or app screenshots
 
 The [exact prompts](prompts.md) retain the requested copy, visual direction, and restrictions. The existing logo's provenance remains in [app assets](../../public/assets/README.md)
 
-The app captures come from the isolated desktop acceptance run `debug-acceptance-1793739273403`, at source commit `d0395db4880e2fd45fdd64b294e8c84a7911b1ca`
-
-- `character-overview.png` copies `acceptance/polish-character-demo-dark-1460.png`
-- `item-search.png` copies `acceptance/item-search-populated-light-820.png`
-
-Characters, item names, ratings, and other values in these captures are fictional test data. The mage is the app's labeled generated concept illustration, not a captured player model. These images don't establish live-provider behavior, a current season ceiling, or a dynamic 3D character builder
+The app captures were taken on 2026-11-12 from the development build in dark mode at 1460 pixels wide (the gear plan at 1460 by 1120), using the maintainer's own character with the owner's consent. Item icons, talent art, and the character model come from the locally installed game; top-player names, scores, and builds come from public Raider.IO rankings; damage values come from a local SimulationCraft run
 
 Keep these documentation assets outside the app's shipping `public/assets` directory so release packages don't include marketing-only imagery
 
