@@ -6,10 +6,10 @@ Original promotional artwork and real app captures for the project README and sh
 | --- | --- | --- |
 | [wow-companion-banner.png](wow-companion-banner.png) | Wide README header | Generated promotional artwork |
 | [wow-companion-social.png](wow-companion-social.png) | Standalone social card | Generated promotional artwork |
-| [character-overview.png](character-overview.png) | Character overview | Unaltered dev-app capture |
-| [gear-plan.png](gear-plan.png) | Gear plan paper doll | Unaltered dev-app capture |
+| [character-overview-dark.png](character-overview-dark.png) | Character overview | Unaltered dev-app capture |
+| [gear-plan-dark.png](gear-plan-dark.png) | Gear plan paper doll | Unaltered dev-app capture |
 | [talents.png](talents.png) | Talent editor | Unaltered dev-app capture |
-| [item-search.png](item-search.png) | Item search dialog | Unaltered dev-app capture |
+| [item-search-dark.png](item-search-dark.png) | Item search dialog | Unaltered dev-app capture |
 | [simulation-roster.png](simulation-roster.png) | Plan ranked among top players | Unaltered dev-app capture |
 | [simulation-compare.png](simulation-compare.png) | Slot-by-slot simulation comparison | Unaltered dev-app capture |
 | [top-players.png](top-players.png) | Top players and talent builds | Unaltered dev-app capture |
