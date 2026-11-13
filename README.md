@@ -55,17 +55,29 @@ Choose Light, Dark, or System appearance, plus a classic, nightly, or holiday ap
 
 These are unaltered desktop acceptance captures using fictional characters and items. Demo numbers are illustrative, and the character artwork is a labeled concept illustration
 
+### Roster
+
+Every character in one table, with item level, distance to target, rating, and what needs attention
+
+![Dark roster table with fictional characters, item levels, and a selected-character pane](docs/marketing/roster.png)
+
 ### Character overview
 
 See the character, saved target, and next steps together, with missing data left visible
 
 ![Dark character overview with a fictional mage, gear target, and next steps](docs/marketing/character-overview.png)
 
+### Gear plan
+
+Plan each slot with its item, level, enchant, and gems beside what you wear now. Changes save on their own
+
+![Dark gear plan with a fictional planned helm, enchant, and gems](docs/marketing/gear-plan.png)
+
 ### Item search
 
 Browse compatible results, inspect sources, and add an item to your plan. Further results load as you scroll
 
-![Light item-search dialog with fictional results, source filters, and an item detail pane](docs/marketing/item-search.png)
+![Dark item-search dialog with fictional results and source filters](docs/marketing/item-search.png)
 
 ## Updates and saved data
 
