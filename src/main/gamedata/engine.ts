@@ -6,7 +6,7 @@ import { LocalCasc } from './casc'
 import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
-import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
+import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
 import { equalWeights } from '../../shared/enhancement-recommendations'
@@ -738,6 +738,43 @@ export class GameDataEngine {
     })()
     this.runeforgeList.catch(() => { this.runeforgeList = null })
     return this.runeforgeList
+  }
+
+  /** Bonus lists' variants and upgrade tracks, read once from the game's ItemBonus table */
+  private bonusRows: Promise<Map<number, Row[]>> | null = null
+  async bonusInfo(ids: number[]): Promise<Record<number, BonusInfo>> {
+    const wanted = [...new Set(ids)].filter(id => Number.isInteger(id) && id > 0).slice(0, 400)
+    if (!wanted.length) return {}
+    this.bonusRows ??= this.traitTable('ItemBonus').then(rows => {
+      const byList = new Map<number, Row[]>()
+      for (const row of rows.values()) { const list = Number(row.ParentItemBonusListID); byList.set(list, [...(byList.get(list) ?? []), row]) }
+      return byList
+    })
+    this.bonusRows.catch(() => { this.bonusRows = null })
+    const byList = await this.bonusRows
+    const first = (value: unknown) => Number(Array.isArray(value) ? value[0] : value)
+    const lists = wanted.map(id => [id, byList.get(id) ?? []] as const)
+    const effectIds = lists.flatMap(([, rows]) => rows.filter(row => Number(row.Type) === 23).map(row => first(row.Value)))
+    const [effects, descriptions, misc] = effectIds.length ? await Promise.all([this.traitTable('ItemEffect'), this.traitTable('ItemNameDescription'), this.traitTable('SpellMisc')]) : [null, null, null]
+    const spellOf = (effect: number) => Number(effects?.get(effect)?.SpellID ?? 0)
+    const spells = effectIds.length ? await talentSpells(name => this.traitTable(name), effectIds.map(spellOf).filter(Boolean)) : {}
+    const map = new Map(Object.entries(spells).map(([id, spell]) => [Number(id), spell]))
+    const noItem: ItemStatBlock = { statTypes: [], alloc: [], socketShare: [], inventoryType: 0, classId: 0, subclassId: 0, quality: 4 }
+    const noLevel: ScalingLevel = { itemLevel: 0, epic: [], superior: [], good: [], damageReplace: 0, damageSecondary: 0, rating: null, stamina: null, armorTotal: null, armorQuality: null, shield: null, socketCost: null }
+    const result: Record<number, BonusInfo> = {}
+    for (const [id, rows] of lists) {
+      const named = rows.find(row => Number(row.Type) === 4)
+      const effect = rows.find(row => Number(row.Type) === 23)
+      const track = rows.find(row => Number(row.Type) === 34)
+      const name = named ? String(descriptions?.get(first(named.Value))?.Description_lang ?? '') : ''
+      const spell = effect ? spellOf(first(effect.Value)) : 0
+      let icon: number | null = null
+      if (spell) for (const row of misc?.values() ?? []) if (Number(row.SpellID) === spell && !Number(row.DifficultyID)) { icon = Number(row.SpellIconFileDataID) || null; break }
+      // Values scale with the item, which the files can't say here, so unknown amounts are left out of the wording
+      const text = spell ? cleanGameText(effectText(spell, map, noItem, noLevel).text).replace(/ by \?%?/g, '').replace(/\?%? ?/g, '').replace(/\s+/g, ' ').trim() : ''
+      result[id] = { variant: name && spell ? { name, effect: text, icon } : null, trackGroup: track ? first(track.Value) : null }
+    }
+    return result
   }
 
   appearanceOptions(slot: AppearanceSlot, text: string, armor: (typeof armorTypes)[number] | null): AppearanceOption[] {

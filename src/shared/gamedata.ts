@@ -59,6 +59,11 @@ export type ItemLootShare = { encounter: string; instance: string; kind: ItemSou
 /** A runeforge has no item: `itemId` is the negative enchant ID, and `enchantId` and `effect` come from its spell */
 export type EnhancementOption = { itemId: number; name: string; quality: number; icon: number | null; enchantId?: number; effect?: string }
 /** Death Knight runeforges for this expansion, as SpellItemEnchantment IDs; older copies share these names */
+/**
+ * What a copy's bonus list changes beyond its level: a named variant that adds its own effect (such as Venomcursed), and
+ * the upgrade track group it places the copy on
+ */
+export type BonusInfo = { variant: { name: string; effect: string; icon: number | null } | null; trackGroup: number | null }
 export const runeforgeIds = [3368, 3370, 3847, 6241, 6242, 6243, 6244, 6245]
 /** A crafting reagent that embellishes an item; `effect` is filled for the planned item's level, `complete` false when some values are unknown */
 export type EmbellishmentOption = EnhancementOption & { applies: string | null; limit: string; effect: string; complete: boolean; bonusLists?: number[] }

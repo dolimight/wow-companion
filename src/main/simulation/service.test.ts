@@ -212,8 +212,8 @@ describe('simulating a saved plan', () => {
     const other = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, { ...top, specId: 251 })
     expect(other.request.plan?.roster).toBeNull()
   })
-  it("gives a planned item a top player's copy's bonus lists, without their embellishment", async () => {
-    const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`, { embellishmentBonusLists: async () => [8960, 12384] })
+  it("gives a planned item a top player's copy's bonus lists, without their embellishment or variant effect", async () => {
+    const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`, { embellishmentBonusLists: async () => [8960, 12384], bonusInfo: async () => ({ 555: { variant: null, trackGroup: 618 }, 666: { variant: { name: 'Venomcursed', effect: 'Crit', icon: null }, trackGroup: null } }) })
     await service.configureExecutable(process.execPath)
     const stored = database.getCharacter(character.id)!
     database.saveGearDraft({ id: 'plan', characterId: character.id, specId: 250, activity: 'mythicPlus', rulesetId: 'unknown', name: 'Upgrade plan', items: [
@@ -222,8 +222,10 @@ describe('simulating a saved plan', () => {
     const top = topFixture({ players: [{ name: 'One', realm: 'Realm', region: 'us', score: 4000, keyLevel: 20, dungeon: null, url: 'https://raider.io/characters/us/realm/One', loadout: null, gear: [{ slot: 'chest', itemId: 3100, name: 'Crafted chest', itemLevel: 130, bonusIds: [8960, 12384, 555, 666], enchantId: 0, gemIds: [] }] }] })
     const job = await service.startPlan({ characterId: character.id, activity: 'mythicPlus', iterations: 100 }, top)
     const whole = job.request.candidates[0]!
-    // Their embellishment's bonus lists stay off; the plan didn't ask for one
-    expect(whole.find(item => item.slot === 'chest')?.bonusIds).toEqual([555, 666])
+    // Their embellishment and Venomcursed stay off; the plan asked for neither
+    expect(whole.find(item => item.slot === 'chest')?.bonusIds).toEqual([555])
+    // Their own run keeps the copy they wear
+    expect(job.request.candidates[job.request.plan!.roster!.players[0]!.index]!.find(item => item.slot === 'chest')?.bonusIds).toEqual([8960, 12384, 555, 666])
   })
   it("puts a top player's copy of a planned ring or trinket in the plan's slot", async () => {
     const { character, service, database } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`)

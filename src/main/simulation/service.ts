@@ -12,6 +12,7 @@ import { resolveSeasonRuleset } from '../../shared/season-rules'
 import { loadBundledProgressionRules } from '../progression/service'
 import { ladderCeiling, socketRules } from '../item-tracks'
 import { itemLinkVariant } from '../../shared/item-link'
+import type { BonusInfo } from '../../shared/gamedata'
 import { type PlannedItem, benchmarkLabels, benchmarkPlan, describedItem, gearSlotLabels, loadoutPattern, planSwaps } from '../../shared/simulation-benchmark'
 import { capTopLevels, type TopPlayers } from '../../shared/top-players'
 import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
@@ -41,7 +42,7 @@ export async function engineFolder(configured: string | null, roots: string[]) {
   return undefined
 }
 export type EnhancementLookup = (requests: Array<{ slot: GearItem['slot']; enchant: string | null; gems: string[]; embellishment: number | null; enchantItem?: number }>) => Promise<Array<{ enchantId: number | null; gemIds: number[]; bonusIds: number[] }>>
-export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; embellishmentBonusLists?: () => Promise<number[]>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
+export function createSimulationService(options: { db: SimulationDatabase; artifactDir: string; onChanged?: () => Promise<void>; enhancementIds?: EnhancementLookup; embellishmentBonusLists?: () => Promise<number[]>; bonusInfo?: (ids: number[]) => Promise<Record<number, BonusInfo>>; now?: () => Date; execution?: Partial<Pick<Parameters<typeof runSimulationProcess>[0], 'launch' | 'timeoutMs' | 'resultLimit'>> }) {
   let executable: Executable | null = null
   let loaded = false
   let closed = false
@@ -141,19 +142,32 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
   }
 
   /**
-   * Bonus lists for a planned item that names only its item: your own copy's when you wear it, else a top player's copy
-   * without their embellishment, else the socket the item drops with and any socket its planned gems need added
+   * Bonus lists for a planned item that names only its item. Your own copy is used when it already reaches the planned
+   * level; one planned higher moves onto the upgrade track a top player's copy at that level is on. Without your copy, a
+   * top player's is used, minus their embellishment and any named variant effect (such as Venomcursed) the plan didn't
+   * choose. Otherwise the item gets the socket it drops with and any socket its planned gems need
    */
   async function planBonusIds(current: Character, top: TopPlayers | null) {
     const embellished = new Set(options.embellishmentBonusLists ? await options.embellishmentBonusLists().catch(() => []) : [])
-    const theirs = new Map<number, number[]>()
-    for (const player of top?.players ?? []) for (const item of player.gear ?? []) if (item.bonusIds.length && !theirs.has(item.itemId)) theirs.set(item.itemId, item.bonusIds.filter(id => !embellished.has(id)))
+    const copies = new Map<number, Array<{ itemLevel: number; bonusIds: number[] }>>()
+    for (const player of top?.players ?? []) for (const item of player.gear ?? []) if (item.bonusIds.length) copies.set(item.itemId, [...(copies.get(item.itemId) ?? []), { itemLevel: item.itemLevel, bonusIds: item.bonusIds.filter(id => !embellished.has(id)) }])
+    const ownIds = (gear: GearItem) => gear.bonusIds?.length ? gear.bonusIds : itemLinkVariant(gear.itemLink).bonusIds ?? []
+    const known = [...new Set([...[...copies.values()].flat().flatMap(copy => copy.bonusIds), ...current.gear.flatMap(ownIds)])]
+    const info = options.bonusInfo && known.length ? await options.bonusInfo(known).catch(() => ({})) : {}
+    const variant = (id: number) => !!(info as Record<number, BonusInfo>)[id]?.variant
+    const track = (id: number) => (info as Record<number, BonusInfo>)[id]?.trackGroup != null
     return (item: GearItem): number[] | null => {
+      // The copy nearest the planned level, preferring one that reaches it
+      const theirs = (copies.get(item.itemId ?? 0) ?? []).sort((a, b) => Math.abs(a.itemLevel - (item.itemLevel ?? 0)) - Math.abs(b.itemLevel - (item.itemLevel ?? 0)))[0]
+      const plain = theirs?.bonusIds.filter(id => !variant(id))
       const owned = current.gear.find(gear => gear.itemId === item.itemId)
-      const ownedIds = owned ? owned.bonusIds?.length ? owned.bonusIds : itemLinkVariant(owned.itemLink).bonusIds : null
-      if (ownedIds?.length) return ownedIds.filter(id => !embellished.has(id))
-      const copied = theirs.get(item.itemId ?? 0)
-      if (copied?.length) return copied
+      const mine = owned ? ownIds(owned).filter(id => !embellished.has(id)) : []
+      if (mine.length) {
+        if (!plain || (owned!.itemLevel ?? 0) >= (item.itemLevel ?? 0)) return mine
+        const theirTrack = plain.filter(track)
+        return theirTrack.length ? [...mine.filter(id => !track(id)), ...theirTrack] : mine
+      }
+      if (plain?.length) return plain
       if (!socketRules || item.inventoryType == null) return null
       const ids: number[] = []
       let sockets = 0
