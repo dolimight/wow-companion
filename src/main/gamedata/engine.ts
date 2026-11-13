@@ -6,7 +6,7 @@ import { LocalCasc } from './casc'
 import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
-import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
+import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type CatalystSource, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
 import { equalWeights } from '../../shared/enhancement-recommendations'
@@ -738,6 +738,58 @@ export class GameDataEngine {
     })()
     this.runeforgeList.catch(() => { this.runeforgeList = null })
     return this.runeforgeList
+  }
+
+  /** Every bonus list an item's drops can carry, read from its bonus trees (nested trees and list groups included) */
+  private bonusTrees: Promise<(itemId: number) => number[]> | null = null
+  private dropBonusLists(): Promise<(itemId: number) => number[]> {
+    this.bonusTrees ??= (async () => {
+      const [links, nodes, groups] = await Promise.all([this.traitTable('ItemXBonusTree'), this.traitTable('ItemBonusTreeNode'), this.traitTable('ItemBonusListGroupEntry')])
+      const treesOf = new Map<number, number[]>()
+      for (const row of links.values()) { const item = Number(row.ItemID); treesOf.set(item, [...(treesOf.get(item) ?? []), Number(row.ItemBonusTreeID)]) }
+      const children = new Map<number, Row[]>()
+      for (const row of nodes.values()) { const parent = Number(row.ParentItemBonusTreeID); children.set(parent, [...(children.get(parent) ?? []), row]) }
+      const groupLists = new Map<number, number[]>()
+      for (const row of groups.values()) { const group = Number(row.ItemBonusListGroupID); groupLists.set(group, [...(groupLists.get(group) ?? []), Number(row.ItemBonusListID)]) }
+      return (itemId: number) => {
+        const lists = new Set<number>(), seen = new Set<number>()
+        const walk = (tree: number) => {
+          if (seen.has(tree)) return
+          seen.add(tree)
+          for (const node of children.get(tree) ?? []) {
+            if (Number(node.ChildItemBonusListID)) lists.add(Number(node.ChildItemBonusListID))
+            if (Number(node.ChildItemBonusTreeID)) walk(Number(node.ChildItemBonusTreeID))
+            for (const list of groupLists.get(Number(node.ChildItemBonusListGroupID)) ?? []) lists.add(list)
+          }
+        }
+        for (const tree of treesOf.get(itemId) ?? []) walk(tree)
+        return [...lists]
+      }
+    })()
+    this.bonusTrees.catch(() => { this.bonusTrees = null })
+    return this.bonusTrees
+  }
+
+  /**
+   * This season's items the Catalyst can turn into the given tier piece (same slot and armor type) whose drops carry a
+   * cantrip, such as Corroded Hulk's Skullcap with Void Eruption. Catalyzing keeps the cantrip on the tier piece
+   */
+  async catalystSources(itemId: number): Promise<CatalystSource[]> {
+    const db = this.ready()
+    const tier = db.prepare('SELECT * FROM items WHERE id = ?').get(itemId) as ItemRow | undefined
+    if (!tier?.item_set || this.indexVersion !== INDEX_VERSION) return []
+    const slots = [5, 20].includes(tier.inventory_type) ? [5, 20] : [tier.inventory_type]
+    const rows = db.prepare(`SELECT id, name, quality, icon FROM items WHERE class_id = ? AND subclass_id = ? AND inventory_type IN (${slots.join(',')}) AND item_set IS NULL AND quality >= 4 AND latest_track = 1 ORDER BY name`).all(tier.class_id, tier.subclass_id) as Array<{ id: number; name: string; quality: number; icon: number | null }>
+    const listsOf = await this.dropBonusLists()
+    const result: CatalystSource[] = []
+    for (const row of rows) {
+      const lists = listsOf(row.id)
+      if (!lists.length) continue
+      const info = await this.bonusInfo(lists)
+      const variants = Object.entries(info).flatMap(([id, entry]) => entry.variant ? [{ bonusId: Number(id), ...entry.variant }] : [])
+      if (variants.length) result.push({ itemId: row.id, name: row.name, quality: row.quality, icon: row.icon, variants })
+    }
+    return result
   }
 
   /** Bonus lists' variants and upgrade tracks, read once from the game's ItemBonus table */

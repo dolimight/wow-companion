@@ -64,6 +64,8 @@ export type EnhancementOption = { itemId: number; name: string; quality: number;
  * the upgrade track group it places the copy on
  */
 export type BonusInfo = { variant: { name: string; effect: string; icon: number | null } | null; trackGroup: number | null }
+/** An item the Catalyst can turn into a tier piece, with the cantrips (variants) its drops can carry over */
+export type CatalystSource = { itemId: number; name: string; quality: number; icon: number | null; variants: Array<NonNullable<BonusInfo['variant']> & { bonusId: number }> }
 export const runeforgeIds = [3368, 3370, 3847, 6241, 6242, 6243, 6244, 6245]
 /** A crafting reagent that embellishes an item; `effect` is filled for the planned item's level, `complete` false when some values are unknown */
 export type EmbellishmentOption = EnhancementOption & { applies: string | null; limit: string; effect: string; complete: boolean; bonusLists?: number[] }
