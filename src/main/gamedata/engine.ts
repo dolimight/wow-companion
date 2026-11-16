@@ -15,6 +15,7 @@ import { compatibilityMetadata } from './item-metadata'
 import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
 import { buildTalentTree, specializationRows, talentSpells } from './talents'
 import type { TalentTree } from '../../shared/talents'
+import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, type DungeonJournal, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole } from '../../shared/dungeons'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -793,6 +794,101 @@ export class GameDataEngine {
    * Catalyzing keeps the base's secondary stats and any cantrip its drop carries (such as Corroded Hulk's Skullcap with
    * Void Eruption), so each base lists both. Bases with a cantrip come first
    */
+  /**
+   * A dungeon's bosses from the game's Encounter Journal: Blizzard's overview and per-role advice, and every ability with
+   * its icon, warnings (interruptible, magic, deadly…), and description filled in from spell data. Only text that
+   * applies to Mythic+ (difficulty 8) is kept. The instance is matched by the encounters Raider.IO lists, then by name
+   */
+  async dungeonJournal(name: string, encounterIds: number[] = []): Promise<DungeonJournal | null> {
+    const [instances, encounters, sections, perDifficulty, creatures] = await Promise.all(['JournalInstance', 'JournalEncounter', 'JournalEncounterSection', 'JournalSectionXDifficulty', 'JournalEncounterCreature'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const wanted = new Set(encounterIds)
+    const fromIds = [...encounters.values()].find(row => wanted.has(num(row.ID)))
+    const instance = (fromIds ? instances.get(num(fromIds.JournalInstanceID)) : undefined)
+      ?? [...instances.values()].filter(row => dungeonKey(String(row.Name_lang ?? '')) === dungeonKey(name)).sort((a, b) => num(b.ID) - num(a.ID))[0]
+    if (!instance) return null
+    const instanceId = num(instance.ID)
+    const bosses = [...encounters.values()].filter(row => num(row.JournalInstanceID) === instanceId)
+    const order = (id: number) => { const at = encounterIds.indexOf(id); return at < 0 ? 1000 : at }
+    bosses.sort((a, b) => order(num(a.ID)) - order(num(b.ID)) || num(a.OrderIndex) - num(b.OrderIndex))
+    const difficulties = new Map<number, number[]>()
+    for (const row of perDifficulty.values()) { const id = num(row.JournalEncounterSectionID); difficulties.set(id, [...(difficulties.get(id) ?? []), num(row.DifficultyID)]) }
+    // Sections tied to difficulties count only when Mythic (23) or Mythic+ (8) is among them
+    const applies = (id: number) => { const list = difficulties.get(id); return !list || list.includes(8) || list.includes(23) }
+    const walk = (first: number, visit: (row: Row, depth: number) => void, depth = 0) => {
+      for (let id = first, guard = 0; id && guard < 500; guard++) {
+        const row = sections.get(id)
+        if (!row) return
+        if (applies(id)) visit(row, depth)
+        id = num(row.NextSiblingSectionID)
+      }
+    }
+    // Spells named by abilities and by the text, read once
+    const spellIds = new Set<number>()
+    for (const boss of bosses) {
+      const collect = (row: Row) => {
+        if (num(row.SpellID)) spellIds.add(num(row.SpellID))
+        for (const match of String(row.BodyText_lang ?? '').matchAll(/\$(\d{3,})/g)) spellIds.add(Number(match[1]))
+        walk(num(row.FirstChildSectionID), collect)
+      }
+      walk(num(boss.FirstSectionID), collect)
+    }
+    const table = (tableName: string) => this.traitTable(tableName)
+    // Spell text links other spells by name and description; those are read too, a few links deep
+    const spells: Record<number, SpellData> = {}
+    let frontier = [...spellIds]
+    for (let round = 0; round < 3 && frontier.length; round++) {
+      Object.assign(spells, await talentSpells(table, frontier))
+      const next = new Set<number>()
+      for (const spell of Object.values(spells)) for (const match of spell.description.matchAll(/\$(?:@spellname|@spelldesc)?(\d{3,})/g)) { const id = Number(match[1]); if (!spells[id]) next.add(id) }
+      frontier = [...next]
+    }
+    const misc = await this.traitTable('SpellMisc')
+    const map = new Map<number, JournalSpell>(Object.entries(spells).map(([id, spell]) => [Number(id), { name: spell.name, description: spell.description, durationMs: spell.durationMs, effects: spell.effects.map(effect => ({ index: effect.index, periodMs: effect.periodMs ?? 0, basePoints: effect.basePoints })) }]))
+    const iconOf = new Map<number, number>()
+    for (const row of misc.values()) { const spell = num(row.SpellID); if (spellIds.has(spell) && !num(row.DifficultyID) && num(row.SpellIconFileDataID)) iconOf.set(spell, num(row.SpellIconFileDataID)) }
+    const fill = (raw: string, spell = 0) => journalSpellText(journalText(raw), spell, map)
+    const spellText = (id: number) => map.has(id) ? fill(map.get(id)!.description, id) : ''
+    const ability = (row: Row): JournalAbility => {
+      const spell = num(row.SpellID)
+      const children: JournalAbility[] = []
+      walk(num(row.FirstChildSectionID), child => { const entry = ability(child); if (entry.name || entry.text) children.push(entry) })
+      return {
+        id: num(row.ID),
+        name: (placeholderTitle(String(row.Title_lang ?? '')) ? map.get(spell)?.name : String(row.Title_lang).trim()) || '',
+        text: fill(String(row.BodyText_lang ?? ''), spell) || spellText(spell),
+        icon: num(row.IconFileDataID) || iconOf.get(spell) || null,
+        flags: journalFlags(num(row.IconFlags)),
+        children,
+      }
+    }
+    const roleOf = (flags: JournalFlag[]): JournalRole | null => flags.includes('tank') ? 'tank' : flags.includes('healer') ? 'healer' : flags.includes('damage') ? 'damage' : null
+    return {
+      instanceId,
+      name: String(instance.Name_lang ?? name),
+      description: journalText(String(instance.Description_lang ?? '')),
+      button: num(instance.ButtonFileDataID) || null,
+      background: num(instance.BackgroundFileDataID) || null,
+      bosses: bosses.map(boss => {
+        const tips: JournalBoss['tips'] = []
+        const abilities: JournalAbility[] = []
+        let overview = ''
+        walk(num(boss.FirstSectionID), row => {
+          // Type 3 is the overview: its own text sums the fight up and its children are the per-role advice
+          if (num(row.Type) === 3) {
+            overview = fill(String(row.BodyText_lang ?? ''))
+            walk(num(row.FirstChildSectionID), tip => { const role = roleOf(journalFlags(num(tip.IconFlags))); const text = fill(String(tip.BodyText_lang ?? '')); if (role && text) tips.push({ role, text }) })
+            return
+          }
+          const entry = ability(row)
+          if (entry.name || entry.text || entry.children.length) abilities.push(entry)
+        })
+        const portrait = [...creatures.values()].filter(row => num(row.JournalEncounterID) === num(boss.ID)).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0]
+        return { encounterId: num(boss.ID), name: String(boss.Name_lang ?? ''), description: journalText(String(boss.Description_lang ?? '')), portrait: num(portrait?.FileDataID) || null, tips, overview, abilities }
+      }),
+    }
+  }
+
   async catalystSources(itemId: number): Promise<CatalystSource[]> {
     const db = this.ready()
     const tier = db.prepare('SELECT * FROM items WHERE id = ?').get(itemId) as ItemRow | undefined

@@ -8,7 +8,7 @@ const MAX_BYTES = 4 * 1024 * 1024
 export class RaiderIoTopError extends Error { constructor(message: string) { super(message); this.name = 'RaiderIoTopError' } }
 
 /** Same safeguards as the profile provider: fixed origin, no redirects, timeouts, and a size cap */
-async function getJson(path: string, params: Record<string, string>, signal?: AbortSignal): Promise<unknown> {
+export async function getJson(path: string, params: Record<string, string>, signal?: AbortSignal): Promise<unknown> {
   const url = new URL(path, ORIGIN)
   url.search = new URLSearchParams(params).toString()
   const response = await fetch(url, { headers: { Accept: 'application/json' }, redirect: 'error', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000) })

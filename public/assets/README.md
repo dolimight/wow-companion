@@ -54,3 +54,9 @@ The dropdown shows each logo beside its name, including the currently resolved B
 
 Every logo has matching `-icon.png`, `.ico`, and `.icns` exports
 Regenerate a holiday’s native exports with `npm run icons -- --variant newyear`, substituting `valentine`, `stpatrick`, `easter`, `independence`, `thanksgiving`, or `christmas` as appropriate
+
+# Dungeon art
+
+`dungeons/*.jpg` are the Mythic+ dungeon banners Raider.IO publishes for each dungeon (`background_image_url` in its static data), showing Blizzard game art
+They were downloaded with `npm run dungeon-data` on 2026-11-16 and resized to 1440 px wide at JPEG quality 80 for the Dungeons page
+World of Warcraft art is © Blizzard Entertainment

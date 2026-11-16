@@ -140,6 +140,10 @@ export function createRouter(s:RouterServices){return t.router({
   // Public insights: top players for a spec and the WoW Token price
   topPlayers:p.input(z.object({specId:z.number().int().positive(),specName:z.string().min(1).max(60),className:z.string().min(1).max(60),region:z.enum(['us','eu','world']).default('us'),force:z.boolean().optional()})).query(({input})=>run(()=>s.insights.topPlayers(input))),
   itemTooltip:p.input(z.object({id:z.number().int().positive()})).query(({input})=>run(()=>s.insights.itemTooltip(input.id))),
+  dungeons:p.input(z.object({force:z.boolean().default(false)}).optional()).query(({input})=>run(()=>s.insights.dungeons(input?.force??false))),
+  dungeonRoutes:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/),force:z.boolean().default(false)})).query(({input})=>run(()=>s.insights.dungeonRoutes(input.dungeon,input.force))),
+  dungeonEnemies:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/)})).query(({input})=>run(()=>s.insights.dungeonEnemies(input.dungeon))),
+  dungeonJournal:p.input(z.object({name:z.string().min(1).max(120),encounterIds:z.array(z.number().int().positive()).max(20).default([])})).query(({input})=>run(()=>s.gameData.call('dungeonJournal',input.name,input.encounterIds))),
   weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
   characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),
   wowToken:p.input(z.object({region:z.enum(blizzardRegions)})).query(({input})=>run(()=>s.insights.wowToken(input.region))),
