@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { transparentPortrait } from "./lib/portrait";
 import { version as appVersion } from '../../package.json';
-import { appIconChoices, appIconCursor, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
+import { appIconChoices, appIconFiles, resolveAppIcon, type AppIconPreference } from '../shared/app-icons';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm, useStore } from "@tanstack/react-form";
 import {
@@ -58,6 +58,7 @@ import {
   Star,
   Trash2,
   Trophy,
+  Castle,
   Target,
   TrendingUp,
   Upload,
@@ -79,10 +80,7 @@ import { trackLevelOptions } from "../shared/gamedata";
 import { Input } from "./components/ui/input";
 import { EnhancementSelect } from "./features/items/EnhancementSelect";
 import { outdatedRenderSlots } from "../shared/shown-look";
-import TargetCursor from "./components/TargetCursor";
 
-/** The targeting cursor locks only onto things you can click, choose, or type into, including focusable rows and tooltip terms, and skips disabled ones */
-const cursorTargets = ["button", "a[href]", "summary", "input:not([type=\"hidden\"])", "textarea", "select", "[role=\"button\"]", "[role=\"combobox\"]", "[role=\"option\"]", "[role=\"menuitem\"]", "[role=\"menuitemradio\"]", "[role=\"menuitemcheckbox\"]", "[role=\"tab\"]", "[role=\"switch\"]", "[role=\"checkbox\"]", "[role=\"radio\"]", "[role=\"link\"]", "[role=\"row\"][tabindex]", "tr.selectable", "[tabindex=\"0\"]", "[data-cursor-target]"].map((selector) => `${selector}:not(:disabled):not([aria-disabled="true"]):not([data-disabled=""]):not([data-disabled="true"])`).join(", ");
 import { ItemIcon, ItemSearchDialog, SearchButton, useGameData, useItemSearchShortcut } from "./features/items/items";
 import { ConnectionsSection, SetupPage, regionOptions, useConnections } from "./features/connections/connections";
 import { activePlan, addItemToPlan, gearMemory, hydrateActivePlans, planKey, planOwner, savePlan as persistPlan, subscribeGearPlan, usePlanQueryClient } from "./lib/plan-item";
@@ -107,6 +105,7 @@ import { ProgressionPage, ProgressionSummary, useSeasonCeiling } from "./feature
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
+import { DungeonsPage } from "./features/dungeons/DungeonsPage";
 import { UpdateSettings } from "./features/updates/UpdateSettings";
 import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
@@ -204,6 +203,7 @@ const characterSections: Array<{ id: CharacterSection; label: string; icon: type
   { id: "overview", label: "Overview", icon: Shield },
   { id: "gear", label: "Gear", icon: WandSparkles },
   { id: "performance", label: "Performance", icon: Trophy },
+  { id: "dungeons", label: "Dungeons", icon: Castle },
   { id: "wardrobe", label: "Wardrobe", icon: Star },
 ];
 const allSlots: GearSlot[] = [
@@ -796,7 +796,7 @@ function Shell() {
       ) : (
         <button className="add-cta" onClick={() => setSheet("add")}>
           <Plus size={15} />
-          Add a character to unlock Overview, Gear, Performance, and Wardrobe
+          Add a character to unlock Overview, Gear, Performance, Dungeons, and Wardrobe
         </button>
       )}
       <div className="sidebar-footer" role="group" aria-label="Workspace utilities">
@@ -855,7 +855,6 @@ function Shell() {
   );
   return (
     <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
-      {!settings.data?.reducedMotion && <TargetCursor targetSelector={cursorTargets} cursorColor={appIconCursor[appIcon].color} cursorColorOnTarget={appIconCursor[appIcon].target} blendMode="normal" spinDuration={3} showLabel={false} thickness={1.5} cornerSize={10} dotSize={3} />}
       {drawerMode ? (
         <>
           <div className="workspace-flat">{workspaceNode}</div>
@@ -1270,7 +1269,7 @@ function CharacterFrame({
             {character.level != null ? ` · Level ${character.level}` : ""} · Observed {age(character.observedAt).toLowerCase()}
           </p>
         </div>
-        {section !== "wardrobe" && <ActivityTabs value={activity} onChange={setActivity} />}
+        {section !== "wardrobe" && section !== "dungeons" && <ActivityTabs value={activity} onChange={setActivity} />}
       </div>
       {views && "view" in destination && (
         <nav className="subnav" aria-label={`${sectionLabels[section]} views`}>
@@ -1351,6 +1350,8 @@ function CharacterRoute() {
         <OverviewPage character={character} />
       ) : destination.section === "wardrobe" ? (
         <WardrobePage character={character} />
+      ) : destination.section === "dungeons" ? (
+        <DungeonsPage character={character} />
       ) : view === "progress" ? (
         <CharacterProgression character={character} />
       ) : view === "plan" ? (

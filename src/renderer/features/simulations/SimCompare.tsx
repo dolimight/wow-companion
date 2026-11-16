@@ -313,10 +313,10 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
       <span className="sim-extras">
         {/* The enchant, like gems and the embellishment, opens its scroll's game tooltip on hover */}
         {enchant && (enchantArt
-          ? <ItemHoverCard itemId={enchantArt.itemId} enhancement={{ ...enchantArt, kind: 'enchant' }} name={enchant}><span className="sim-hover" data-cursor-target=""><Badge><span className="sim-extra">{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge></span></ItemHoverCard>
+          ? <ItemHoverCard itemId={enchantArt.itemId} enhancement={{ ...enchantArt, kind: 'enchant' }} name={enchant}><span className="sim-hover"><Badge><span className="sim-extra">{enchantArt?.icon ? <img src={iconUrl(enchantArt.icon) ?? undefined} alt="" width={14} height={14} /> : <WandSparkles size={12} />}{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge></span></ItemHoverCard>
           : <Badge><span className="sim-extra" title={enchant}><WandSparkles size={12} />{enchant.replace(/^Enchant (\w+ )+- /, '')}</span></Badge>)}
         {/* Each gem and the embellishment open their game tooltip on hover */}
-        {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover" data-cursor-target=""><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
+        {gems.map((id, index) => { const gem = items.get(id); return <ItemHoverCard key={`${id}-${index}`} itemId={id} item={gem} name={gem?.name ?? 'Gem'}><span className="sim-hover"><Badge><span className="sim-extra">{gem?.icon ? <img src={iconUrl(gem.icon) ?? undefined} alt="" width={14} height={14} /> : <Gem size={12} />}{gems.length === 1 ? gem?.name ?? 'Gem' : ''}</span></Badge></span></ItemHoverCard> })}
         {embellishment && <EmbellishmentChip name={embellishment} art={embellishmentArt ?? null} itemId={itemId} level={level} />}
         {variants.map(variant => <VariantChip key={variant.name} variant={variant} />)}
         {base && <Badge><span className="sim-extra" title={`Catalyzed from ${base}, keeping its secondary stats`}><FlaskConical size={12} />From {base}</span></Badge>}
@@ -329,7 +329,7 @@ function Side({ itemId, name, level, items, enchant, enchantArt, gems, embellish
 function VariantChip({ variant }: { variant: ItemVariant }) {
   return (
     <Popover>
-      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-hover" data-cursor-target="" aria-label={`${variant.name} effect`}>
+      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-hover" aria-label={`${variant.name} effect`}>
         <Badge tone="amber"><span className="sim-extra">{variant.icon ? <img src={iconUrl(variant.icon) ?? undefined} alt="" width={14} height={14} /> : <Sparkles size={12} />}{variant.name}</span></Badge>
       </PopoverTrigger>
       <PopoverContent side="top" className="talent-popover">
@@ -352,7 +352,7 @@ function EmbellishmentChip({ name, art, itemId, level }: { name: string; art: { 
   if (!art) return chip
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-hover" data-cursor-target="" aria-label={`${name} effect`}>{chip}</PopoverTrigger>
+      <PopoverTrigger openOnHover delay={200} closeDelay={120} className="sim-hover" aria-label={`${name} effect`}>{chip}</PopoverTrigger>
       <PopoverContent side="top" className="talent-popover">
         <div className="talent-detail-head"><ItemIcon icon={art.icon} size="medium" fallback={<Sparkles />} /><div><strong>{name}</strong><small>{option?.limit ?? 'Embellishment'}</small></div></div>
         {option ? <p>{option.effect || 'The game files describe no effect for it'}</p> : <p className="muted">{details.isError ? 'The effect could not be read' : 'Reading the effect'}</p>}

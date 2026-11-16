@@ -8,6 +8,8 @@ import { fetchAffixes, fetchTopPlayers, type WeeklyAffixes } from './providers/r
 import { weekStart } from '../shared/weekly'
 import { capTopLevels, type TopPlayers, type TopRegion } from '../shared/top-players'
 import { ladderCeiling } from './item-tracks'
+import { fetchDungeonRoutes, fetchSeasonDungeons } from './providers/raiderio-dungeons'
+import type { DungeonList, DungeonRoutes } from '../shared/dungeons'
 
 const TOP_TTL = 6 * 3_600_000
 const TOKEN_TTL = 20 * 60_000
@@ -164,6 +166,29 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     return value
   }
 
-  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes }
+  // Dungeons and their routes change slowly; six hours keeps route counts fresh without asking Raider.IO on every visit
+  let dungeonList: { value: DungeonList; at: number } | null = null
+  let dungeonListRequest: Promise<DungeonList> | null = null
+  async function dungeons(force = false): Promise<DungeonList> {
+    if (!force && dungeonList && Date.now() - dungeonList.at < TOP_TTL) return dungeonList.value
+    dungeonListRequest ??= fetchSeasonDungeons().then(value => { dungeonList = { value, at: Date.now() }; return value }).finally(() => { dungeonListRequest = null })
+    return dungeonListRequest
+  }
+  const routeCache = new Map<string, { value: DungeonRoutes; at: number }>()
+  const routeRequests = new Map<string, Promise<DungeonRoutes>>()
+  async function dungeonRoutes(dungeon: string, force = false): Promise<DungeonRoutes> {
+    const { season } = await dungeons()
+    const key = `${season.slug}:${dungeon}`
+    const cached = routeCache.get(key)
+    if (!force && cached && Date.now() - cached.at < TOP_TTL) return cached.value
+    let request = routeRequests.get(key)
+    if (!request) {
+      request = fetchDungeonRoutes(season.slug, dungeon).then(value => { routeCache.set(key, { value, at: Date.now() }); return value }).finally(() => routeRequests.delete(key))
+      routeRequests.set(key, request)
+    }
+    return request
+  }
+
+  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes }
 }
 export type Insights = ReturnType<typeof createInsights>

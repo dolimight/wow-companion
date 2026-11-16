@@ -45,7 +45,7 @@ let saveWindowPlacement:(()=>void)|undefined
 let tray:Tray|null=null
 let quitting=false
 let splash:Awaited<ReturnType<typeof openSplash>>=null
-const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: wow-asset:; connect-src 'self' blob: data: ws://127.0.0.1:* wow-asset:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'"
+const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: wow-asset:; connect-src 'self' blob: data: ws://127.0.0.1:* wow-asset:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src https://keystone.guru"
 async function main(){
   const userDir=process.env.WOW_COMPANION_DATA_DIR?resolve(process.env.WOW_COMPANION_DATA_DIR):app.getPath('userData')
   await mkdir(userDir,{recursive:true})
@@ -172,7 +172,7 @@ async function main(){
   handle('companion:import-backup',async()=>{const path=await selectedFile([{name:'JSON backup',extensions:['json']}]);if(!path)return null;const input=JSON.parse(await smallText(path));const result=await db.call('importBackup',input);await service.changed();return {imported:(input.characters as {id:string}[]).map(c=>c.id),unchanged:[],errors:[],revision:result.revision}})
   handle('companion:choose-wow-folder',async()=>{const result=await dialog.showOpenDialog(window!,{title:'Choose your World of Warcraft folder',properties:['openDirectory']});if(result.canceled||!result.filePaths[0])return null;return service.connections.useInstallPath(result.filePaths[0])})
   handle('companion:choose-simulation-executable',async()=>{const local=process.env.LOCALAPPDATA,roots=process.platform==='win32'?[...(local?[join(local,'Programs','SimulationCraft'),join(local,'Programs')]:[]),join(process.env.ProgramFiles??'C:/Program Files','SimulationCraft'),process.env.ProgramFiles??'C:/Program Files',app.getPath('downloads')]:process.platform==='darwin'?['/Applications',app.getPath('downloads')]:['/usr/local/bin','/usr/bin',app.getPath('downloads')];const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft engine (simc.exe)',extensions:['exe']}]:[{name:'SimulationCraft engine (simc)',extensions:['*']}],{title:'Choose the SimulationCraft engine',defaultPath:await service.simulations.engineFolder(roots)});return selected?service.simulations.configureExecutable(await realpath(selected)):null})
-  handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=new URL(value);if(url.protocol!=='https:'||!['raider.io','www.wowhead.com','worldofwarcraft.blizzard.com','news.blizzard.com','github.com','www.warcraftlogs.com','warcraftlogs.com','raidbots.com','www.raidbots.com','simulationcraft.org','www.simulationcraft.org','develop.battle.net','oauth.battle.net','community.developer.battle.net'].includes(url.hostname))throw new Error('This external link is not supported');await shell.openExternal(url.href)})
+  handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=new URL(value);if(url.protocol!=='https:'||!['raider.io','keystone.guru','www.wowhead.com','worldofwarcraft.blizzard.com','news.blizzard.com','github.com','www.warcraftlogs.com','warcraftlogs.com','raidbots.com','www.raidbots.com','simulationcraft.org','www.simulationcraft.org','develop.battle.net','oauth.battle.net','community.developer.battle.net'].includes(url.hostname))throw new Error('This external link is not supported');await shell.openExternal(url.href)})
   const iconRoot=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets':'public/assets')
   const iconPath=(variant:AppIconVariant)=>resolve(iconRoot,appIconFiles[variant].png)
   const windowIcon=iconPath(resolveAppIcon(settings.appIcon,app.getVersion()))
@@ -217,6 +217,8 @@ async function main(){
   nativeTheme.on('updated',()=>{window?.setBackgroundColor(nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa');if(process.platform!=='darwin')window?.setTitleBarOverlay(titleBarOverlay())})
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}))
   window.webContents.on('will-navigate',(event,url)=>{if(!origins.includes(rendererOrigin(url)??''))event.preventDefault()})
+  // The only embedded page is Keystone Guru's route map; its frame may never leave keystone.guru
+  window.webContents.on('will-frame-navigate',event=>{if(event.isMainFrame)return;try{if(new URL(event.url).origin!=='https://keystone.guru')event.preventDefault()}catch{event.preventDefault()}})
   window.webContents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false))
   // Dev pages come from Vite, so they get the release CSP too and eval fails in dev exactly as it does in a release build.
   // The only additions are what Vite itself needs: its inline React refresh preamble and its hot-reload socket
