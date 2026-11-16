@@ -83,7 +83,7 @@ test("registers one page at login with every setting and action", function()
   check(state.event == "PLAYER_LOGIN" and state.page == nil, "registered before login")
   state.login()
   check(state.registered == state.page and state.page.name == "WOW Companion", "page not registered")
-  check(find(state, "header", "Version 0.4.9 · 2 characters saved"), "missing version header")
+  check(find(state, "header", "Version 0.5.0 · 2 characters saved"), "missing version header")
   for _, name in ipairs({ "Auto-summon a favorite pet", "Show previews on hover", "Mounts", "Battle pets", "Appearance sets", "Gear", "Housing decor" }) do
     check(find(state, "checkbox", name), "missing switch " .. name)
   end

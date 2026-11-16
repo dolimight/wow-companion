@@ -20,16 +20,18 @@ If the client reports the addon as out of date, verify its APIs against the curr
 
 ## Settings
 
-Version 0.4.9 adds a settings page in the game's own options window: Options, AddOns, WOW Companion, or `/wowcompanion settings`
-- Companion: the favorite pet auto-summon switch
-- 3D previews: a switch for all previews, one for each kind (mounts, battle pets, appearance sets, gear, housing decor), a preview size slider (180 to 360, default 260), and a turn speed slider (still to 1.5, default 0.6)
-- Desktop app: buttons that open the JSON export and the outfit preview
-- Troubleshooting: a button that prints what the last preview found and any errors from the last capture
+Version 0.5.0 replaces the plain settings list with a designed page in the game's options window: Options, AddOns, WOW Companion, `/wowcompanion settings`, or the addon compartment button by the minimap
+- Header: the addon's icon, version, saved character count, and how long ago the last snapshot was taken
+- Companion: the favorite pet auto-summon switch, whether any favorites are marked, and a button to the Pet Journal
+- 3D previews: a switch for all previews, one tile per kind (mounts, battle pets, appearance sets, gear, housing decor), size (180 to 360, default 260) and turn speed (still to 1.5, default 0.6) sliders, and your character turning at the chosen size and speed
+- Desktop app: copy the export, reload so the game writes saved data for the app, and open the outfit preview
+- Troubleshooting: what the last snapshot could not read, and a button that prints the details to chat
+- The options window's Defaults button restores every setting
 
 The page and the `/wowcompanion` commands read and write the same saved settings, so a change in either shows in both
 Plain `/wowcompanion` still opens the export
-Clients without the add-on settings page keep every command and explain why the page is missing
-`addon/tests/settings.lua` checks the page against a mocked Settings API; the real page still needs an in-game Retail check
+Clients without canvas settings pages get the plain list, and clients without any settings page keep every command and explain why the page is missing
+`addon/tests/settings-canvas.lua` checks the designed page against mocked frames and `addon/tests/settings.lua` checks the plain list; how the page looks still needs an in-game Retail check
 
 ## Automatic favorite companion
 
