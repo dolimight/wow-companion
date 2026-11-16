@@ -9,7 +9,9 @@ import { weekStart } from '../shared/weekly'
 import { capTopLevels, type TopPlayers, type TopRegion } from '../shared/top-players'
 import { ladderCeiling } from './item-tracks'
 import { fetchDungeonRoutes, fetchSeasonDungeons } from './providers/raiderio-dungeons'
-import type { DungeonList, DungeonRoutes } from '../shared/dungeons'
+import { fetchDungeonEnemies } from './providers/keystone-guru'
+import { bundledList, currentBundle } from './dungeon-bundle'
+import { bestFamily, type DungeonEnemies, type DungeonList, type DungeonRoutes } from '../shared/dungeons'
 
 const TOP_TTL = 6 * 3_600_000
 const TOKEN_TTL = 20 * 60_000
@@ -166,14 +168,18 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     return value
   }
 
-  // Dungeons and their routes change slowly; six hours keeps route counts fresh without asking Raider.IO on every visit
+  // Nearly everything about a season's dungeons is bundled with the app (data/dungeons), so most views make no requests.
+  // Only the route counts are fetched live, every six hours, falling back to the bundled snapshot when offline
   let dungeonList: { value: DungeonList; at: number } | null = null
   let dungeonListRequest: Promise<DungeonList> | null = null
   async function dungeons(force = false): Promise<DungeonList> {
+    const bundle = currentBundle()
+    if (bundle && !force) return bundledList(bundle)
     if (!force && dungeonList && Date.now() - dungeonList.at < TOP_TTL) return dungeonList.value
     dungeonListRequest ??= fetchSeasonDungeons().then(value => { dungeonList = { value, at: Date.now() }; return value }).finally(() => { dungeonListRequest = null })
-    return dungeonListRequest
+    return dungeonListRequest.catch(error => { if (bundle) return bundledList(bundle); throw error })
   }
+  const bundled = (dungeon: string) => currentBundle()?.dungeons.find(entry => entry.slug === dungeon) ?? null
   const routeCache = new Map<string, { value: DungeonRoutes; at: number }>()
   const routeRequests = new Map<string, Promise<DungeonRoutes>>()
   async function dungeonRoutes(dungeon: string, force = false): Promise<DungeonRoutes> {
@@ -181,14 +187,42 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     const key = `${season.slug}:${dungeon}`
     const cached = routeCache.get(key)
     if (!force && cached && Date.now() - cached.at < TOP_TTL) return cached.value
+    const snapshot = bundled(dungeon)?.routes ?? null
     let request = routeRequests.get(key)
     if (!request) {
-      request = fetchDungeonRoutes(season.slug, dungeon).then(value => { routeCache.set(key, { value, at: Date.now() }); return value }).finally(() => routeRequests.delete(key))
+      request = fetchDungeonRoutes(season.slug, dungeon)
+        // Timers, forces, and boss order don't change in a season, so the bundle fills any the live answer lacks
+        .then(value => snapshot ? { ...value, timersMs: value.timersMs ?? snapshot.timersMs, enemyForces: value.enemyForces ?? snapshot.enemyForces, encounterIds: value.encounterIds.length ? value.encounterIds : snapshot.encounterIds } : value)
+        .then(value => { routeCache.set(key, { value, at: Date.now() }); return value })
+        .finally(() => routeRequests.delete(key))
       routeRequests.set(key, request)
+    }
+    return request.catch(error => { if (snapshot) return { ...snapshot, source: 'Bundled snapshot of Raider.IO' }; throw error })
+  }
+
+  // Enemies change only when Keystone Guru remaps a dungeon, so the bundled list is used whenever there is one
+  const enemyCache = new Map<string, { value: DungeonEnemies; at: number }>()
+  const enemyRequests = new Map<string, Promise<DungeonEnemies>>()
+  async function dungeonEnemies(dungeon: string): Promise<DungeonEnemies> {
+    const packed = bundled(dungeon)?.enemies
+    if (packed) return packed
+    const cached = enemyCache.get(dungeon)
+    if (cached && Date.now() - cached.at < 24 * 3_600_000) return cached.value
+    let request = enemyRequests.get(dungeon)
+    if (!request) {
+      request = (async () => {
+        // A route's embed page names the data files; any route of the dungeon will do
+        const routes = await dungeonRoutes(dungeon).catch(() => null)
+        const key = (routes ? bestFamily(routes.families)?.routeKey : null) ?? routes?.families.find(family => family.routeKey)?.routeKey ?? null
+        const value = await fetchDungeonEnemies(dungeon, key)
+        enemyCache.set(dungeon, { value, at: Date.now() })
+        return value
+      })().finally(() => enemyRequests.delete(dungeon))
+      enemyRequests.set(dungeon, request)
     }
     return request
   }
 
-  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes }
+  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes, dungeonEnemies }
 }
 export type Insights = ReturnType<typeof createInsights>

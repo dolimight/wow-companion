@@ -95,6 +95,7 @@ export const api={
  realms:async(region:BlizzardRegion)=>(await client()).realms.query({region}),
  dungeons:async(force=false)=>(await client()).dungeons.query({force}),
  dungeonRoutes:async(dungeon:string,force=false)=>(await client()).dungeonRoutes.query({dungeon,force}),
+ dungeonEnemies:async(dungeon:string)=>(await client()).dungeonEnemies.query({dungeon}),
  dungeonJournal:async(name:string,encounterIds:number[])=>(await client()).dungeonJournal.query({name,encounterIds}),
  topPlayers:async(input:{specId:number;specName:string;className:string;region:'us'|'eu'|'world';force?:boolean})=>(await client()).topPlayers.query(input),
  itemTooltip:async(id:number)=>(await client()).itemTooltip.query({id}),

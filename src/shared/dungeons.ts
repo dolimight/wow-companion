@@ -7,8 +7,22 @@ export type SeasonDungeonInfo = {
   challengeModeId: number
   /** The keystone timer for +1 */
   timerMs: number
+  /** Bundled art under the app's assets folder, such as dungeons/den-of-nalorakk.jpg */
+  art?: string | null
+  /** Where the art was downloaded from, kept for the bundling script */
+  artUrl?: string | null
 }
-export type DungeonList = { season: { slug: string; name: string }; dungeons: SeasonDungeonInfo[]; observedAt: string; source: string }
+export type DungeonList = { season: { slug: string; name: string; endsAt?: string | null }; dungeons: SeasonDungeonInfo[]; observedAt: string; source: string }
+
+/**
+ * A season's dungeon data downloaded ahead of time by scripts/dungeon-data.ts, since almost none of it changes during a
+ * season: the dungeons, their timers, enemy forces, boss order, enemies, and a snapshot of the routes players run
+ */
+export type DungeonBundle = {
+  season: { slug: string; name: string; endsAt: string | null }
+  generatedAt: string
+  dungeons: Array<SeasonDungeonInfo & { routes: DungeonRoutes | null; enemies: DungeonEnemies | null }>
+}
 
 /** Runs that followed the same route, grouped by Raider.IO */
 export type RouteFamily = {
@@ -166,3 +180,45 @@ export function bossPace(timersMs: { plusOne: number; plusTwo: number; plusThree
   const share = (bossIndex + 1) / Math.max(1, bosses)
   return { plusOne: Math.round(timersMs.plusOne * share), plusTwo: Math.round(timersMs.plusTwo * share), plusThree: Math.round(timersMs.plusThree * share) }
 }
+
+/**
+ * Why an ability matters to a role, or null when it doesn't need that role's attention. Deadly and important mechanics
+ * matter to everyone; then each role's own work: tanks take tank-flagged hits, healers dispel and heal through the
+ * marked damage, and damage dealers interrupt and soothe
+ */
+export function whyItMatters(flags: JournalFlag[], role: JournalRole): string | null {
+  if (flags.includes('deadly')) return 'Deadly'
+  if (role === 'tank' && flags.includes('tank')) return 'Tank'
+  if (role === 'healer' && (['magic', 'curse', 'poison', 'disease'] as const).some(flag => flags.includes(flag))) return 'Dispel'
+  if (role === 'healer' && flags.includes('healer')) return 'Healing'
+  if (role !== 'healer' && flags.includes('interruptible')) return 'Interrupt'
+  if (role === 'damage' && flags.includes('damage')) return 'Damage'
+  if (role !== 'healer' && flags.includes('enrage')) return 'Soothe'
+  if (flags.includes('important')) return 'Important'
+  return null
+}
+
+/** An enemy in a dungeon, from Keystone Guru's public dungeon data */
+export type DungeonEnemy = {
+  npcId: number
+  name: string
+  /** Flagged by Keystone Guru's curators as an enemy to respect */
+  dangerous: boolean
+  kind: 'caster' | 'melee' | 'ranged' | 'healer' | 'other'
+  elite: boolean
+  boss: boolean
+  health: number | null
+  /** Enemy forces one kill gives, and its share of the dungeon's total */
+  forces: number | null
+}
+export type DungeonEnemies = { dungeon: string; forcesRequired: number | null; enemies: DungeonEnemy[]; observedAt: string; source: string }
+
+/** Why an enemy needs a role's attention */
+export function enemyNote(enemy: DungeonEnemy, role: JournalRole): string | null {
+  if (enemy.dangerous) return 'Dangerous'
+  if (enemy.kind === 'caster' && role !== 'healer') return 'Interrupt'
+  if (enemy.kind === 'healer' && role !== 'healer') return 'Interrupt its heals'
+  return null
+}
+
+export const wowheadNpcUrl = (npcId: number) => `https://www.wowhead.com/npc=${npcId}`

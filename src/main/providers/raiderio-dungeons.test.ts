@@ -14,7 +14,7 @@ describe('Raider.IO dungeons', () => {
     }))
     const list = await fetchSeasonDungeons()
     expect(list.season.slug).toBe('season-mn-2')
-    expect(list.dungeons).toEqual([{ slug: 'den-of-nalorakk', name: 'Den of Nalorakk', shortName: 'DEN', challengeModeId: 586, timerMs: 1_920_000 }])
+    expect(list.dungeons).toEqual([{ slug: 'den-of-nalorakk', name: 'Den of Nalorakk', shortName: 'DEN', challengeModeId: 586, timerMs: 1_920_000, artUrl: null }])
   })
 
   it('reads route families, timers, forces, and journal encounters', async () => {

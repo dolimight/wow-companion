@@ -19,7 +19,8 @@
     "test:desktop": "node --import tsx scripts/desktop-acceptance.ts",
     "test:debug": "node --import tsx scripts/debug-desktop.ts",
     "test:scripts": "node --import tsx --test scripts/*.test.ts scripts/release/*.test.ts",
-    "icons": "node --import tsx scripts/build-icons.ts"
+    "icons": "node --import tsx scripts/build-icons.ts",
+    "dungeon-data": "node --import tsx scripts/dungeon-data.ts"
   },
   "dependencies": {
     "@trpc/server": "11.19.0",

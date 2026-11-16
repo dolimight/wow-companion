@@ -3,8 +3,8 @@ import { getJson, RaiderIoTopError } from './raiderio-top'
 import type { DungeonList, DungeonRoutes } from '../../shared/dungeons'
 
 const seasonSchema = z.object({
-  slug: z.string(), name: z.string(), is_main_season: z.boolean().optional(), starts: z.record(z.string(), z.string().nullable()).optional(),
-  dungeons: z.array(z.object({ slug: z.string(), name: z.string(), short_name: z.string().optional(), challenge_mode_id: z.number().int(), keystone_timer_seconds: z.number().positive() })).default([]),
+  slug: z.string(), name: z.string(), is_main_season: z.boolean().optional(), starts: z.record(z.string(), z.string().nullable()).optional(), ends: z.record(z.string(), z.string().nullable()).optional(),
+  dungeons: z.array(z.object({ slug: z.string(), name: z.string(), short_name: z.string().optional(), challenge_mode_id: z.number().int(), keystone_timer_seconds: z.number().positive(), background_image_url: z.string().url().nullable().optional() })).default([]),
 })
 
 /**
@@ -22,8 +22,8 @@ export async function fetchSeasonDungeons(signal?: AbortSignal): Promise<Dungeon
   const season = started[0]
   if (!season) throw new RaiderIoTopError("This season's dungeons are not available from Raider.IO")
   return {
-    season: { slug: season.slug, name: season.name },
-    dungeons: season.dungeons.map(dungeon => ({ slug: dungeon.slug, name: dungeon.name, shortName: dungeon.short_name ?? dungeon.name, challengeModeId: dungeon.challenge_mode_id, timerMs: dungeon.keystone_timer_seconds * 1000 })),
+    season: { slug: season.slug, name: season.name, endsAt: season.ends?.us ?? null },
+    dungeons: season.dungeons.map(dungeon => ({ slug: dungeon.slug, name: dungeon.name, shortName: dungeon.short_name ?? dungeon.name, challengeModeId: dungeon.challenge_mode_id, timerMs: dungeon.keystone_timer_seconds * 1000, artUrl: dungeon.background_image_url ?? null })),
     observedAt: new Date().toISOString(),
     source: 'Raider.IO',
   }

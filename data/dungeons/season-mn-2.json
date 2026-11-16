@@ -1,0 +1,5350 @@
+{
+ "season": {
+  "slug": "season-mn-2",
+  "name": "MN Season 2",
+  "endsAt": "2030-01-01T00:00:00Z"
+ },
+ "generatedAt": "2026-11-16T21:30:46.238Z",
+ "dungeons": [
+  {
+   "slug": "altar-of-fangs",
+   "name": "Altar of Fangs",
+   "shortName": "AOF",
+   "challengeModeId": 588,
+   "timerMs": 1800000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion11/base/altar-of-fangs.jpg",
+   "art": "dungeons/altar-of-fangs.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "altar-of-fangs",
+    "totalRuns": 668296,
+    "timersMs": {
+     "plusOne": 1800000,
+     "plusTwo": 1440000,
+     "plusThree": 1080000
+    },
+    "enemyForces": 817,
+    "encounterIds": [
+     2878,
+     2879,
+     2880
+    ],
+    "families": [
+     {
+      "familyId": "rf2:99d69f5dba8b17036e7a8f8b5f22715b95f882ab1a81a90ddfe8f40d27caef28",
+      "runs": 117429,
+      "timed": 107237,
+      "medianClearMs": 1424884.47822313,
+      "fastestClearMs": 634968,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T16:37:14.000Z",
+      "routeKey": "hJwCLXI"
+     },
+     {
+      "familyId": "rf2:dfbc91fa680af34604e80d92a5599a41216532dc7ca2df8528e5dd8ea0bc8e20",
+      "runs": 37586,
+      "timed": 34113,
+      "medianClearMs": 1436576.4260766117,
+      "fastestClearMs": 575744,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T14:17:07.000Z",
+      "routeKey": "PsJStoj"
+     },
+     {
+      "familyId": "rf2:4ee3f79169f6c30cc595bf6d0c7173f96e0dfdf6786698ed09a5e7b349699a1d",
+      "runs": 31762,
+      "timed": 29082,
+      "medianClearMs": 1391575.5020397184,
+      "fastestClearMs": 628820,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:36:34.000Z",
+      "routeKey": "K61Pqwo"
+     },
+     {
+      "familyId": "rf2:e98a6f4870624c1deddaf224d935de15f32aeef4aade77cf7190299573620c90",
+      "runs": 27456,
+      "timed": 24907,
+      "medianClearMs": 1468410.2886171232,
+      "fastestClearMs": 640101,
+      "highestKey": 24,
+      "latestAt": "2026-11-16T16:17:02.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:21b10dff83d638a282c71f015c8ede9a250b2935eb849013ed0d17f3d7884a50",
+      "runs": 25979,
+      "timed": 23629,
+      "medianClearMs": 1433102.8837975906,
+      "fastestClearMs": 640715,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T16:47:21.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:acb92c0c20402a3871d6b36ec3d62bfdac03d1c59c4021dea525729ab3c69dbc",
+      "runs": 19388,
+      "timed": 17451,
+      "medianClearMs": 1415714.8615046572,
+      "fastestClearMs": 655689,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T15:57:33.000Z",
+      "routeKey": "mD7AgAL"
+     },
+     {
+      "familyId": "rf2:38af555b104aebe298e7f9a1a3aefa02f3c96d74353676fa1c7e04ff3341d2ff",
+      "runs": 12421,
+      "timed": 10972,
+      "medianClearMs": 1436366.1242012577,
+      "fastestClearMs": 764495,
+      "highestKey": 18,
+      "latestAt": "2026-11-16T12:50:20.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:d62364eb6a051058608cba1dc895e49b62d75e6e1e078e93203fbd8c6c418000",
+      "runs": 12236,
+      "timed": 11059,
+      "medianClearMs": 1460936.9861192717,
+      "fastestClearMs": 679956,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T15:57:26.000Z",
+      "routeKey": "s9SVPkX"
+     },
+     {
+      "familyId": "rf2:26180a57b3913ed36230015376c59d7eaff53890392893468311e0275ee7ab73",
+      "runs": 10220,
+      "timed": 9284,
+      "medianClearMs": 1419737.6827586205,
+      "fastestClearMs": 665866,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T15:22:50.000Z",
+      "routeKey": "mbRWV56"
+     },
+     {
+      "familyId": "rf2:1b1e6c43519ea1410185c4a4a2e796c27126e1b191e84b91e9a6aeef23fc7476",
+      "runs": 10148,
+      "timed": 9091,
+      "medianClearMs": 1670419.7937346892,
+      "fastestClearMs": 637320,
+      "highestKey": 24,
+      "latestAt": "2026-11-16T16:15:01.000Z",
+      "routeKey": "FhHbOKY"
+     },
+     {
+      "familyId": "rf2:d797d42f6faf89db28b779a9651fb4a643415025c3b9a2cef469776d35c09a3e",
+      "runs": 9878,
+      "timed": 8708,
+      "medianClearMs": 1456885.264837074,
+      "fastestClearMs": 663001,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T12:04:07.000Z",
+      "routeKey": "jmSqKxV"
+     },
+     {
+      "familyId": "rf2:c43e082cde2aa19840857cc61ee89542fbda098b891ca24e95d931f117993ffc",
+      "runs": 8063,
+      "timed": 7110,
+      "medianClearMs": 1479095.1375095493,
+      "fastestClearMs": 737886,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T13:45:17.000Z",
+      "routeKey": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:46.609Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "altar-of-fangs",
+    "forcesRequired": 817,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 77936,
+      "name": "Greater Storm Elemental",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 228224,
+      "name": "Fenryr",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 247760,
+      "name": "Invisible Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 251422,
+      "name": "Dread Shade",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 258578,
+      "name": "Lesser Ghoul",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 259445,
+      "name": "Rav'i",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20367641,
+      "forces": null
+     },
+     {
+      "npcId": 259446,
+      "name": "The Writhing Coil",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 29189294,
+      "forces": null
+     },
+     {
+      "npcId": 259447,
+      "name": "Zul'jan",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 25946039,
+      "forces": null
+     },
+     {
+      "npcId": 261550,
+      "name": "Venom Leech",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1945953,
+      "forces": 1
+     },
+     {
+      "npcId": 261552,
+      "name": "Bloodletter",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 261553,
+      "name": "Ravenous Descendant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 5
+     },
+     {
+      "npcId": 261554,
+      "name": "Twinfang Harrower",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": 25
+     },
+     {
+      "npcId": 261556,
+      "name": "Hatchling",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 972977,
+      "forces": null
+     },
+     {
+      "npcId": 261557,
+      "name": "High Evolutionist",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 261560,
+      "name": "Primal Serpent",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 261573,
+      "name": "Ascendant Serpent",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 9081114,
+      "forces": 30
+     },
+     {
+      "npcId": 262011,
+      "name": "Rattling Writhe",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": 25
+     },
+     {
+      "npcId": 262398,
+      "name": "Uncoiled Writhe",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 32432549,
+      "forces": null
+     },
+     {
+      "npcId": 263109,
+      "name": "Ula'tek's Chosen",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 4864883,
+      "forces": 25
+     },
+     {
+      "npcId": 263112,
+      "name": "Living Venom",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1297302,
+      "forces": 1
+     },
+     {
+      "npcId": 264798,
+      "name": "Infused Eggs",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 268358,
+      "name": "Ritual Snake",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 270306,
+      "name": "Ritual Chieftain",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 270378,
+      "name": "Ritual Spirit",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": null
+     },
+     {
+      "npcId": 270417,
+      "name": "Uncoiled Writhe",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 32432550,
+      "forces": null
+     },
+     {
+      "npcId": 271453,
+      "name": "Blade of the Altar",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:47.271Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "den-of-nalorakk",
+   "name": "Den of Nalorakk",
+   "shortName": "DON",
+   "challengeModeId": 586,
+   "timerMs": 1920000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion11/base/den-of-nalorakk.jpg",
+   "art": "dungeons/den-of-nalorakk.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "den-of-nalorakk",
+    "totalRuns": 520563,
+    "timersMs": {
+     "plusOne": 1920000,
+     "plusTwo": 1536000,
+     "plusThree": 1152000
+    },
+    "enemyForces": 729,
+    "encounterIds": [
+     2776,
+     2777,
+     2778
+    ],
+    "families": [
+     {
+      "familyId": "rf2:6dec07777e8eb338e6da26fdbeff80524b2c9b4499e0bbc40b989286f7302ded",
+      "runs": 9522,
+      "timed": 8931,
+      "medianClearMs": 1642868.5149475525,
+      "fastestClearMs": 741446,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T15:54:41.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:661ca3a9070141811ad4f656f21b044c09e249303b062b5ae660fb9c9f2ce40d",
+      "runs": 5652,
+      "timed": 5202,
+      "medianClearMs": 1520200.0860000001,
+      "fastestClearMs": 730518,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T05:45:36.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:f1f05081221c7de90191cdb1e6cc5a42c33f5b3e1eef89b4c70a5778a24f1110",
+      "runs": 5370,
+      "timed": 4982,
+      "medianClearMs": 1467709.048148148,
+      "fastestClearMs": 810282,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T04:33:43.000Z",
+      "routeKey": "G6mLASJ"
+     },
+     {
+      "familyId": "rf2:4c7bccd0ab4015084f159eb90d4767a33dceb2acfa4d7c8846d5e00ece3fd333",
+      "runs": 4566,
+      "timed": 4305,
+      "medianClearMs": 1480950.4836309527,
+      "fastestClearMs": 771801,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T04:07:23.000Z",
+      "routeKey": "a0Lr66S"
+     },
+     {
+      "familyId": "rf2:987d99025377cfe1f6505d012f34e4709a134bd9f914e571afd22adc7182d0cb",
+      "runs": 3931,
+      "timed": 3662,
+      "medianClearMs": 1631009.1510594669,
+      "fastestClearMs": 751117,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T11:33:52.000Z",
+      "routeKey": "VFB1iLC"
+     },
+     {
+      "familyId": "rf2:6a28e899c0d99a2fa9e8d29b909847763fb1b1b86f079f3ad97a9467a8ea176d",
+      "runs": 3564,
+      "timed": 3317,
+      "medianClearMs": 1549962.9215225566,
+      "fastestClearMs": 715299,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T04:13:10.000Z",
+      "routeKey": "6Y8ITK5"
+     },
+     {
+      "familyId": "rf2:9bda1bcb2de94fdb90c3eab4d14168683d1010fb82cfd76ed4489c9b2e4ce388",
+      "runs": 2953,
+      "timed": 2754,
+      "medianClearMs": 1563054.4659090908,
+      "fastestClearMs": 746373,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T15:45:24.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:0b0bd4bbb7b107d42e59e01328d9ae9e8f8b9d8c8b42eb061ca8dcbf8f33e051",
+      "runs": 2802,
+      "timed": 2652,
+      "medianClearMs": 1555859.1136363638,
+      "fastestClearMs": 769033,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T13:44:20.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:a50d0db6c3f8b678d585a02f23f7119fb878580e6c732460eb99c512369c67fa",
+      "runs": 2669,
+      "timed": 2524,
+      "medianClearMs": 1432160.2727272727,
+      "fastestClearMs": 773515,
+      "highestKey": 18,
+      "latestAt": "2026-11-16T03:50:36.000Z",
+      "routeKey": "RbiE2ix"
+     },
+     {
+      "familyId": "rf2:af300a34ef3c4b7f0e107d5baf78998c9eac2ed9a125d6194c143203c6e34ec7",
+      "runs": 2640,
+      "timed": 2474,
+      "medianClearMs": 1570947.6875,
+      "fastestClearMs": 716283,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T06:25:11.000Z",
+      "routeKey": "e3aNCEp"
+     },
+     {
+      "familyId": "rf2:ce88c251bcdf24edd209f0b17c7c446fd7ab181709ce993b1def2cf38aaf6f81",
+      "runs": 2569,
+      "timed": 2382,
+      "medianClearMs": 1560875.5804511276,
+      "fastestClearMs": 869177,
+      "highestKey": 19,
+      "latestAt": "2026-11-15T19:36:53.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:3933b982bc49827832dd16e2b3ec43c2e9817830bb8e7e474b68ef3c0cf91ed8",
+      "runs": 2459,
+      "timed": 2241,
+      "medianClearMs": 1573698.8576923076,
+      "fastestClearMs": 875083,
+      "highestKey": 19,
+      "latestAt": "2026-11-15T22:55:01.000Z",
+      "routeKey": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:47.328Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "den-of-nalorakk",
+    "forcesRequired": 729,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 77936,
+      "name": "Greater Storm Elemental",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 99541,
+      "name": "Risen Skulker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 103822,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 241805,
+      "name": "Avatar of Starvation",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 241808,
+      "name": "Territorial Matriarch",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3729743,
+      "forces": 8
+     },
+     {
+      "npcId": 241809,
+      "name": "Curious Yearling",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 778381,
+      "forces": null
+     },
+     {
+      "npcId": 241812,
+      "name": "The Hoardmonger",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 22702784,
+      "forces": null
+     },
+     {
+      "npcId": 241813,
+      "name": "Thornclaw Gatherer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 241814,
+      "name": "Earthwhisper Tender",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 241816,
+      "name": "Keen-Eyed Striker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 241869,
+      "name": "Avatar of Determination",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6486510,
+      "forces": 28
+     },
+     {
+      "npcId": 241872,
+      "name": "Frigid Mauler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 9
+     },
+     {
+      "npcId": 241874,
+      "name": "Frostfang",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2789199,
+      "forces": 5
+     },
+     {
+      "npcId": 241876,
+      "name": "Glacial Revenant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3081092,
+      "forces": 7
+     },
+     {
+      "npcId": 241911,
+      "name": "Terra Rumbler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 244100,
+      "name": "Sentinel of Winter",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 244696,
+      "name": "Raging Squall",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 428857,
+      "forces": null
+     },
+     {
+      "npcId": 244759,
+      "name": "Fractured Shivercore",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 810814,
+      "forces": null
+     },
+     {
+      "npcId": 244889,
+      "name": "Loa Speaker Nanea",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7783812,
+      "forces": 35
+     },
+     {
+      "npcId": 245076,
+      "name": "The Pale Eye",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 537461,
+      "forces": null
+     },
+     {
+      "npcId": 245139,
+      "name": "Stormbound Mystic",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 245143,
+      "name": "Ruthless Totemcaller",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 245145,
+      "name": "Bonded Beasttamer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3081092,
+      "forces": 6
+     },
+     {
+      "npcId": 245146,
+      "name": "Grizzled Warbringer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": 25
+     },
+     {
+      "npcId": 245148,
+      "name": "Grizzled Warbringer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 698700,
+      "forces": null
+     },
+     {
+      "npcId": 245190,
+      "name": "Loyal Saberfang",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2594604,
+      "forces": 5
+     },
+     {
+      "npcId": 245567,
+      "name": "Starvation Effigy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 421623,
+      "forces": null
+     },
+     {
+      "npcId": 245752,
+      "name": "Keen-Eyed Striker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 245855,
+      "name": "Spirit of Hunger",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 4864883,
+      "forces": 25
+     },
+     {
+      "npcId": 246404,
+      "name": "Nalorakk",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 21016293,
+      "forces": null
+     },
+     {
+      "npcId": 246409,
+      "name": "Zul'jarra",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1621628,
+      "forces": null
+     },
+     {
+      "npcId": 246591,
+      "name": "Glacial Tomb",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 247301,
+      "name": "Echo of Nalorakk",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 3378390,
+      "forces": null
+     },
+     {
+      "npcId": 247760,
+      "name": "Invisible Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 248666,
+      "name": "Magma Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6487,
+      "forces": null
+     },
+     {
+      "npcId": 250478,
+      "name": "The Winter Squall",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 50
+     },
+     {
+      "npcId": 251189,
+      "name": "Snow Orb Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 252041,
+      "name": "Satiated Avatar of Starvation",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255261,
+      "name": "Dryad",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 258578,
+      "name": "Lesser Ghoul",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 272074,
+      "name": "Volatile Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 64865,
+      "forces": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:47.696Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "kings-rest",
+   "name": "Kings' Rest",
+   "shortName": "KR",
+   "challengeModeId": 249,
+   "timerMs": 1980000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion7/base/kings-rest.jpg",
+   "art": "dungeons/kings-rest.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "kings-rest",
+    "totalRuns": 21369,
+    "timersMs": {
+     "plusOne": 1980000,
+     "plusTwo": 1584000,
+     "plusThree": 1188000
+    },
+    "enemyForces": 608,
+    "encounterIds": [
+     2165,
+     2171,
+     2170,
+     2172
+    ],
+    "families": [
+     {
+      "familyId": "rf2:49c1b96861c9e6a36767e386862e4b8689f7b1e434625ecfc74f6238d79afff2",
+      "runs": 8125,
+      "timed": 7502,
+      "medianClearMs": 1610254.761904762,
+      "fastestClearMs": 720845,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T15:52:45.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:aaef5146f4d46fc95083851f27a6e0b1386bd10e38c8dfacdcf6f9027665f41e",
+      "runs": 7141,
+      "timed": 6707,
+      "medianClearMs": 1490539.9987739462,
+      "fastestClearMs": 747742,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T16:15:40.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:ec250a95d221d9511e600b4dc496e4698d96eadee82e658087029ecd423a753c",
+      "runs": 4669,
+      "timed": 4497,
+      "medianClearMs": 1387221.2551724138,
+      "fastestClearMs": 733607,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T12:00:05.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:d81a7592c5c1be58146e75d688f0d57ae035bc5de42c4d494755853e7b4e0a35",
+      "runs": 338,
+      "timed": 309,
+      "medianClearMs": 1846432,
+      "fastestClearMs": 717167,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T14:20:26.000Z",
+      "routeKey": "bhB7ykk"
+     },
+     {
+      "familyId": "rf2:c5a0816859ffd89233a38e775fa244a81cacf393df289615fc0171506f44d9c4",
+      "runs": 208,
+      "timed": 202,
+      "medianClearMs": 1423285,
+      "fastestClearMs": 816528,
+      "highestKey": 15,
+      "latestAt": "2026-11-15T23:28:00.000Z",
+      "routeKey": "QXHJTBb"
+     },
+     {
+      "familyId": "rf2:81f0f7bfa7deb5ec54bcaf4a886f607400586ad19dfba7242912793639eb204a",
+      "runs": 197,
+      "timed": 183,
+      "medianClearMs": 1365868,
+      "fastestClearMs": 836023,
+      "highestKey": 15,
+      "latestAt": "2026-11-16T00:28:00.000Z",
+      "routeKey": "pp74OoS"
+     },
+     {
+      "familyId": "rf2:87fcd9e545737d0f9a841fe3fc3355236528f7ac0534c68d05a63ce836d59990",
+      "runs": 185,
+      "timed": 184,
+      "medianClearMs": 999857,
+      "fastestClearMs": 700269,
+      "highestKey": 15,
+      "latestAt": "2026-11-15T22:13:17.000Z",
+      "routeKey": "Fo40Toi"
+     },
+     {
+      "familyId": "rf2:1d32793d8da950dbf92ba9961254084e0ea4888bd3fe98b66cbffb4a1979acb3",
+      "runs": 97,
+      "timed": 94,
+      "medianClearMs": 1249331,
+      "fastestClearMs": 834889,
+      "highestKey": 19,
+      "latestAt": "2026-11-10T22:59:57.000Z",
+      "routeKey": "ziGEB4t"
+     },
+     {
+      "familyId": "rf2:4f6f3492337aa83d05e4aa1a1b811b31dd6db1f8903eb9d4faf67a605d1b9b3f",
+      "runs": 70,
+      "timed": 63,
+      "medianClearMs": 1834228.5,
+      "fastestClearMs": 912535,
+      "highestKey": 21,
+      "latestAt": "2026-11-15T16:31:01.000Z",
+      "routeKey": "IsxgRX6"
+     },
+     {
+      "familyId": "rf2:1211d875b53d4f3d27551d1821a9ebb97f0fe54f7f7d07022923dda576aa4e1e",
+      "runs": 69,
+      "timed": 61,
+      "medianClearMs": 1868908,
+      "fastestClearMs": 1282601,
+      "highestKey": 23,
+      "latestAt": "2026-11-15T20:35:47.000Z",
+      "routeKey": "5XLyprC"
+     },
+     {
+      "familyId": "rf2:8937c24659c1dfdf76ef6041072fcdc42fd5af09e79d946330bbe6d220ef1150",
+      "runs": 63,
+      "timed": 63,
+      "medianClearMs": 872305,
+      "fastestClearMs": 674786,
+      "highestKey": 12,
+      "latestAt": "2026-11-14T20:30:29.000Z",
+      "routeKey": "ycggvoL"
+     },
+     {
+      "familyId": "rf2:1d97a072ed366066cec2ce5d198381c1e2bca592798d0c12be179b8d8e05cd08",
+      "runs": 51,
+      "timed": 40,
+      "medianClearMs": 1849332,
+      "fastestClearMs": 1325063,
+      "highestKey": 21,
+      "latestAt": "2026-11-14T19:53:41.000Z",
+      "routeKey": "jRk42lZ"
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:47.804Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "kings-rest",
+    "forcesRequired": 608,
+    "enemies": [
+     {
+      "npcId": 14881,
+      "name": "Spider",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 5,
+      "forces": null
+     },
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 77936,
+      "name": "Greater Storm Elemental",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 103822,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 132198,
+      "name": "Effigy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 133935,
+      "name": "Animated Guardian",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": 22
+     },
+     {
+      "npcId": 133943,
+      "name": "Minion of Zul",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 340110,
+      "forces": null
+     },
+     {
+      "npcId": 134157,
+      "name": "Umbral Warrior",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 134158,
+      "name": "Shadow-Borne Champion",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 134174,
+      "name": "Risen Hexer",
+      "dangerous": false,
+      "kind": "ranged",
+      "elite": true,
+      "boss": false,
+      "health": 4864883,
+      "forces": 20
+     },
+     {
+      "npcId": 134251,
+      "name": "Seneschal M'bara",
+      "dangerous": true,
+      "kind": "healer",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 10
+     },
+     {
+      "npcId": 134331,
+      "name": "King Rahu'ai",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 134739,
+      "name": "Purification Construct",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7783811,
+      "forces": 25
+     },
+     {
+      "npcId": 134993,
+      "name": "Mchimba the Embalmer",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 134994,
+      "name": "Spectral Headhunter",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 249760,
+      "forces": null
+     },
+     {
+      "npcId": 135167,
+      "name": "Royal Berserker",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3891906,
+      "forces": 22
+     },
+     {
+      "npcId": 135192,
+      "name": "Honored Raptor",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 135204,
+      "name": "Phantom Hex Priest",
+      "dangerous": false,
+      "kind": "caster",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 135231,
+      "name": "Ghostly Brute",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6486509,
+      "forces": 25
+     },
+     {
+      "npcId": 135235,
+      "name": "Spectral Beastmaster",
+      "dangerous": false,
+      "kind": "ranged",
+      "elite": true,
+      "boss": false,
+      "health": 730070,
+      "forces": null
+     },
+     {
+      "npcId": 135239,
+      "name": "Spectral Shaman",
+      "dangerous": false,
+      "kind": "healer",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 135322,
+      "name": "The Golden Serpent",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 135406,
+      "name": "Animated Gold",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 291893,
+      "forces": null
+     },
+     {
+      "npcId": 135470,
+      "name": "Aka'ali the Conqueror",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 2766579,
+      "forces": null
+     },
+     {
+      "npcId": 135472,
+      "name": "Zanazal the Wise",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 2766579,
+      "forces": null
+     },
+     {
+      "npcId": 135475,
+      "name": "Kula the Butcher",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 2766579,
+      "forces": null
+     },
+     {
+      "npcId": 135761,
+      "name": "Thundering Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 324326,
+      "forces": null
+     },
+     {
+      "npcId": 135764,
+      "name": "Explosive Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 324326,
+      "forces": null
+     },
+     {
+      "npcId": 135765,
+      "name": "Torrent Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 324326,
+      "forces": null
+     },
+     {
+      "npcId": 136160,
+      "name": "King Dazar",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 29189294,
+      "forces": null
+     },
+     {
+      "npcId": 136256,
+      "name": "Coffin",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 136976,
+      "name": "T'zala",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 32432549,
+      "forces": null
+     },
+     {
+      "npcId": 136984,
+      "name": "Reban",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 4540557,
+      "forces": null
+     },
+     {
+      "npcId": 137473,
+      "name": "Guard Captain Atu",
+      "dangerous": true,
+      "kind": "ranged",
+      "elite": true,
+      "boss": false,
+      "health": 5270289,
+      "forces": 10
+     },
+     {
+      "npcId": 137474,
+      "name": "King Timalji",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7783811,
+      "forces": 25
+     },
+     {
+      "npcId": 137478,
+      "name": "Queen Wasi",
+      "dangerous": true,
+      "kind": "caster",
+      "elite": true,
+      "boss": false,
+      "health": 7783811,
+      "forces": 25
+     },
+     {
+      "npcId": 137484,
+      "name": "King A'akul",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 8432462,
+      "forces": 25
+     },
+     {
+      "npcId": 137485,
+      "name": "Bloodsworn Assassin",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 137486,
+      "name": "Queen Patlaa",
+      "dangerous": true,
+      "kind": "ranged",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 137487,
+      "name": "Skeletal Hunting Raptor",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 10
+     },
+     {
+      "npcId": 137591,
+      "name": "Healing Tide Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6487,
+      "forces": null
+     },
+     {
+      "npcId": 137969,
+      "name": "Interment Construct",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5837859,
+      "forces": 15
+     },
+     {
+      "npcId": 137989,
+      "name": "Embalming Fluid",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 1945953,
+      "forces": 1
+     },
+     {
+      "npcId": 138250,
+      "name": "Pool of Darkness",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 138489,
+      "name": "Shadow of Zul",
+      "dangerous": true,
+      "kind": "caster",
+      "elite": true,
+      "boss": false,
+      "health": 8432462,
+      "forces": 30
+     },
+     {
+      "npcId": 138493,
+      "name": "Minion of Zul",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 243242,
+      "forces": null
+     },
+     {
+      "npcId": 161124,
+      "name": "Urg'roth, Breaker of Heroes",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2305485,
+      "forces": null
+     },
+     {
+      "npcId": 161241,
+      "name": "Voidweaver Mal'thir",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1998087,
+      "forces": null
+     },
+     {
+      "npcId": 161243,
+      "name": "Samh'rek, Beckoner of Chaos",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2151786,
+      "forces": null
+     },
+     {
+      "npcId": 161244,
+      "name": "Blood of the Corruptor",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2151786,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 234341,
+      "name": "Crispy Nerubian",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 247760,
+      "name": "Invisible Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 254954,
+      "name": "Unseen Predator",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255261,
+      "name": "Dryad",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 258578,
+      "name": "Lesser Ghoul",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 269808,
+      "name": "Aka'ali the Conqueror",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 7783812,
+      "forces": null
+     },
+     {
+      "npcId": 269810,
+      "name": "Zanazal the Wise",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 9729765,
+      "forces": null
+     },
+     {
+      "npcId": 269811,
+      "name": "Kula the Butcher",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 5189208,
+      "forces": null
+     },
+     {
+      "npcId": 270502,
+      "name": "Half-Finished Mummy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 273050,
+      "name": "Half-Finished Mummy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:48.285Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "murder-row",
+   "name": "Murder Row",
+   "shortName": "MR",
+   "challengeModeId": 587,
+   "timerMs": 2040000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion11/base/murder-row.jpg",
+   "art": "dungeons/murder-row.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "murder-row",
+    "totalRuns": 634111,
+    "timersMs": {
+     "plusOne": 2040000,
+     "plusTwo": 1632000,
+     "plusThree": 1224000
+    },
+    "enemyForces": 655,
+    "encounterIds": [
+     2679,
+     2680,
+     2681,
+     2682
+    ],
+    "families": [
+     {
+      "familyId": "rf2:69b6258c234a881939b1588b1624acef116d0ae1ef50b30f1e0f2c5ee4b12317",
+      "runs": 55969,
+      "timed": 52750,
+      "medianClearMs": 1507641.189762114,
+      "fastestClearMs": 701710,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:49:15.000Z",
+      "routeKey": "beQcTjq"
+     },
+     {
+      "familyId": "rf2:181f47cdc5969ee8df0ee39a57af9c3fa665316918275bfb4a3dc6891bfd6f63",
+      "runs": 27797,
+      "timed": 26542,
+      "medianClearMs": 1469720.0010086165,
+      "fastestClearMs": 658496,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T15:48:49.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:8f21c48d2d327c19652b0805ad3c6e6f5c3e0e7d132beea826993ec29c655ee9",
+      "runs": 24351,
+      "timed": 22997,
+      "medianClearMs": 1582878.2549757932,
+      "fastestClearMs": 708556,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T16:12:33.000Z",
+      "routeKey": "LhPeAX7"
+     },
+     {
+      "familyId": "rf2:8074f0f4797fff7fb6ee257f7824425501ad18f2c891d8ca3a1715f91340fb16",
+      "runs": 23979,
+      "timed": 22411,
+      "medianClearMs": 1528644.8001538464,
+      "fastestClearMs": 737132,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T14:09:41.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:2cf65f8cc13eaca4e4cded9e568ccc4c9d668644bcfa56e0f3fffac03b1043ad",
+      "runs": 20469,
+      "timed": 19253,
+      "medianClearMs": 1577599.340488029,
+      "fastestClearMs": 726917,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T16:33:31.000Z",
+      "routeKey": "xP8Gbvd"
+     },
+     {
+      "familyId": "rf2:1bff306da8fc52ebdb380b00cd6047491d6dd8565a26a6afec3a99a247566119",
+      "runs": 18861,
+      "timed": 17446,
+      "medianClearMs": 1541109.960976156,
+      "fastestClearMs": 712528,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T11:28:45.000Z",
+      "routeKey": "xMvdtGU"
+     },
+     {
+      "familyId": "rf2:fe81d801f1285a0a93caf25164742accfd6714fb5ea5d7a73b44857524619216",
+      "runs": 14534,
+      "timed": 13918,
+      "medianClearMs": 1552355.4420874326,
+      "fastestClearMs": 668631,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T16:15:30.000Z",
+      "routeKey": "EsiGXHf"
+     },
+     {
+      "familyId": "rf2:510d4df56474c2fb8073696e37760ab01905b3ae94184de7f5988558933932df",
+      "runs": 12162,
+      "timed": 11486,
+      "medianClearMs": 1509199.6977142857,
+      "fastestClearMs": 747279,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T13:49:23.000Z",
+      "routeKey": "DvphApV"
+     },
+     {
+      "familyId": "rf2:ecc2706571208e9fdae37813caa3d1569ad3bcdb88f65ac7e32821692796ea23",
+      "runs": 10869,
+      "timed": 10164,
+      "medianClearMs": 1491033.867261905,
+      "fastestClearMs": 709696,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T09:06:14.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:c23476b88a36ab1547445c83c1b8bbd3c6cd15edb3c1828aeb103102b68448d0",
+      "runs": 10694,
+      "timed": 10072,
+      "medianClearMs": 1499159.9887748375,
+      "fastestClearMs": 761556,
+      "highestKey": 18,
+      "latestAt": "2026-11-16T03:26:22.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:7c3beb9a75383b9625bed1e0ec9520e259f0bb5ee1d8381aafdf018944685d23",
+      "runs": 9947,
+      "timed": 9221,
+      "medianClearMs": 1525885.608391789,
+      "fastestClearMs": 754081,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T16:31:14.000Z",
+      "routeKey": "DjcixJx"
+     },
+     {
+      "familyId": "rf2:7c737854cf4a4b0afe3a6c02dfb99d779b56f8cfce1dcb226b3f0b500f7cfcb7",
+      "runs": 8508,
+      "timed": 7949,
+      "medianClearMs": 1567843.6805084746,
+      "fastestClearMs": 817396,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T13:50:34.000Z",
+      "routeKey": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:48.387Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "murder-row",
+    "forcesRequired": 655,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 77936,
+      "name": "Greater Storm Elemental",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 99541,
+      "name": "Risen Skulker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 234647,
+      "name": "Xathuux the Annihilator",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 22702784,
+      "forces": null
+     },
+     {
+      "npcId": 234648,
+      "name": "Kystia Manaheart",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 19459530,
+      "forces": null
+     },
+     {
+      "npcId": 234649,
+      "name": "Zaen Bladesorrow",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 22702784,
+      "forces": null
+     },
+     {
+      "npcId": 234660,
+      "name": "Nibbles",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 7783812,
+      "forces": null
+     },
+     {
+      "npcId": 234763,
+      "name": "Lithiel Cinderfury",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 16864926,
+      "forces": null
+     },
+     {
+      "npcId": 234799,
+      "name": "Furious Vilefiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1945953,
+      "forces": null
+     },
+     {
+      "npcId": 234849,
+      "name": "Unleashed Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 486488,
+      "forces": 2
+     },
+     {
+      "npcId": 234852,
+      "name": "Forbidden Freight",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 649,
+      "forces": null
+     },
+     {
+      "npcId": 234860,
+      "name": "Crate Loader",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 234984,
+      "name": "Silvermoon Patron",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 235257,
+      "name": "Demon Fly",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1621628,
+      "forces": 1
+     },
+     {
+      "npcId": 235261,
+      "name": "Trained Felhunter",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3405418,
+      "forces": 5
+     },
+     {
+      "npcId": 235265,
+      "name": "Corrupted Warlock",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5027045,
+      "forces": 25
+     },
+     {
+      "npcId": 235267,
+      "name": "Wrathguard Flayer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3405418,
+      "forces": 5
+     },
+     {
+      "npcId": 235268,
+      "name": "Fel Invoker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 235322,
+      "name": "Defiled Golem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 8432463,
+      "forces": 35
+     },
+     {
+      "npcId": 235465,
+      "name": "Shivan Punisher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": 25
+     },
+     {
+      "npcId": 235520,
+      "name": "Legion Axe",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 972977,
+      "forces": null
+     },
+     {
+      "npcId": 235841,
+      "name": "Selenar Sunshy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 236071,
+      "name": "Bribed Guard",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 236073,
+      "name": "Row Hooligan",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1945953,
+      "forces": 3
+     },
+     {
+      "npcId": 236082,
+      "name": "Seductive Sayaad",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2270279,
+      "forces": 6
+     },
+     {
+      "npcId": 236084,
+      "name": "Felonious Mage",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2854064,
+      "forces": 7
+     },
+     {
+      "npcId": 236085,
+      "name": "Felwyrm",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1297302,
+      "forces": 1
+     },
+     {
+      "npcId": 236088,
+      "name": "Masked Noble",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 236091,
+      "name": "Street Sneak",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 3
+     },
+     {
+      "npcId": 236525,
+      "name": "Rowdy Patron",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 236893,
+      "name": "Warehouse Worker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2270279,
+      "forces": 2
+     },
+     {
+      "npcId": 236897,
+      "name": "Keen Taskmaster",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 236902,
+      "name": "Massive Felwyrm",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 4540557,
+      "forces": 12
+     },
+     {
+      "npcId": 236905,
+      "name": "Felmaster Lucsei",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6486510,
+      "forces": 30
+     },
+     {
+      "npcId": 237626,
+      "name": "Wild Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 259460,
+      "forces": null
+     },
+     {
+      "npcId": 238414,
+      "name": "Infernal",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2703424,
+      "forces": null
+     },
+     {
+      "npcId": 240289,
+      "name": "Nauseous Patron",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 252529,
+      "name": "Bribed Captain",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7783812,
+      "forces": 35
+     },
+     {
+      "npcId": 253081,
+      "name": "Influentual Reviewer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 253324,
+      "name": "Tiny Felwyrm",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 255050,
+      "name": "Kystia Manaheart",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189210,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255604,
+      "name": "Seductive Sayaad",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2270279,
+      "forces": 6
+     },
+     {
+      "npcId": 263940,
+      "name": "Belath Dawnblade",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 272246,
+      "name": "Trained Felhunter",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:48.752Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "ruby-life-pools",
+   "name": "Ruby Life Pools",
+   "shortName": "RLP",
+   "challengeModeId": 399,
+   "timerMs": 1680000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion9/base/ruby-life-pools.jpg",
+   "art": "dungeons/ruby-life-pools.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "ruby-life-pools",
+    "totalRuns": 463160,
+    "timersMs": {
+     "plusOne": 1680000,
+     "plusTwo": 1344000,
+     "plusThree": 1008000
+    },
+    "enemyForces": 551,
+    "encounterIds": [
+     2488,
+     2485,
+     2503
+    ],
+    "families": [
+     {
+      "familyId": "rf2:edbdcd569a1dbdcbc3cac1cc5df04dc47c1283bf20a5e883c26fe1e37efe460a",
+      "runs": 48022,
+      "timed": 43657,
+      "medianClearMs": 1360661.95077338,
+      "fastestClearMs": 592353,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T16:32:47.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:3f8366de2ce28fd5728254e2646a6100b8ccec61ac938b06976ab94d2e679a85",
+      "runs": 42971,
+      "timed": 38587,
+      "medianClearMs": 1342145.5007428068,
+      "fastestClearMs": 460728,
+      "highestKey": 24,
+      "latestAt": "2026-11-16T16:36:04.000Z",
+      "routeKey": "JUHqQ39"
+     },
+     {
+      "familyId": "rf2:cb7ee6bb6b4e2af505df6a19a5c784232635ffc76e8a725db133fabee380c6c7",
+      "runs": 17778,
+      "timed": 15526,
+      "medianClearMs": 1465876.5886793495,
+      "fastestClearMs": 632748,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T16:08:12.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:13a2dd36a38036bb3570cce87a82f2d103a4d7cda5e28cd10a0268daf2988c28",
+      "runs": 14334,
+      "timed": 13146,
+      "medianClearMs": 1244296.6462603877,
+      "fastestClearMs": 518505,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T10:02:00.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:dec2340a73a6cf184fa018ac422fb5686e80e3a0c8c1319f78efcb2d997462b8",
+      "runs": 10641,
+      "timed": 9111,
+      "medianClearMs": 1390849.191889758,
+      "fastestClearMs": 574873,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T16:39:13.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:b6d074803e3f9afdcde2a489c7e4b7ed902800dbe07ce66d02b6001919c070ee",
+      "runs": 8340,
+      "timed": 7499,
+      "medianClearMs": 1381648.5869328494,
+      "fastestClearMs": 693520,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T15:05:44.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:5c65b3aa66d19f94e71b44be47f900579f9013e0ef4c62b3607130984e580e53",
+      "runs": 6322,
+      "timed": 5288,
+      "medianClearMs": 1457225.6431334622,
+      "fastestClearMs": 700523,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T15:22:12.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:5689fcc0fa5a24bb5eb71b5b0c04acd08c1fa2ba4df8f9aea5a11c65b2207e44",
+      "runs": 6026,
+      "timed": 5512,
+      "medianClearMs": 1329244.768907563,
+      "fastestClearMs": 467528,
+      "highestKey": 24,
+      "latestAt": "2026-11-16T15:56:18.000Z",
+      "routeKey": "SoC1o9U"
+     },
+     {
+      "familyId": "rf2:9a0e5741cef4b4b274d630936b0ce8df07afc31b90fcb700d4bcb21a40382f62",
+      "runs": 5474,
+      "timed": 4944,
+      "medianClearMs": 1323534.000522466,
+      "fastestClearMs": 560760,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:03:11.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:8569527128fa9256ac1da15da7b7070355c4615c5cca42551b005e52e8da327e",
+      "runs": 5069,
+      "timed": 4802,
+      "medianClearMs": 1121049.177301315,
+      "fastestClearMs": 484289,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T16:23:34.000Z",
+      "routeKey": "6bo5IqZ"
+     },
+     {
+      "familyId": "rf2:19a99fb70d16eca9514c44332381b10a66806db5094a5f998c65a6cafabf83b4",
+      "runs": 4924,
+      "timed": 4726,
+      "medianClearMs": 1006127.719047619,
+      "fastestClearMs": 475029,
+      "highestKey": 23,
+      "latestAt": "2026-11-16T15:31:37.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:c456897713ff477b18047991e847c5f5ef9f2130db1066247736d239187c8591",
+      "runs": 4850,
+      "timed": 4380,
+      "medianClearMs": 1361878.3850838502,
+      "fastestClearMs": 551279,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T12:56:35.000Z",
+      "routeKey": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:48.891Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "ruby-life-pools",
+    "forcesRequired": 551,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 187894,
+      "name": "Infused Whelp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 1297302,
+      "forces": null
+     },
+     {
+      "npcId": 187897,
+      "name": "Defier Draghar",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 9729765,
+      "forces": 30
+     },
+     {
+      "npcId": 187969,
+      "name": "Deepstone Earthshaper",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3891906,
+      "forces": 5
+     },
+     {
+      "npcId": 188011,
+      "name": "Earthbound Guardian",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 5
+     },
+     {
+      "npcId": 188067,
+      "name": "Flashfrost Chillweaver",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 188244,
+      "name": "Primal Juggernaut",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6486510,
+      "forces": 25
+     },
+     {
+      "npcId": 188252,
+      "name": "Melidrussa Chillworn",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 19459530,
+      "forces": null
+     },
+     {
+      "npcId": 189232,
+      "name": "Kokia Blazehoof",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20756831,
+      "forces": null
+     },
+     {
+      "npcId": 189886,
+      "name": "Blazebound Firestorm",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2594604,
+      "forces": null
+     },
+     {
+      "npcId": 189893,
+      "name": "Infused Whelp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 972977,
+      "forces": null
+     },
+     {
+      "npcId": 190034,
+      "name": "Blazebound Destroyer",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7135161,
+      "forces": 25
+     },
+     {
+      "npcId": 190205,
+      "name": "Scorchling",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 190206,
+      "name": "Ashseer Flamelasher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 7
+     },
+     {
+      "npcId": 190207,
+      "name": "Primalist Cinderweaver",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 190484,
+      "name": "Kyrakka",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 12973020,
+      "forces": null
+     },
+     {
+      "npcId": 190485,
+      "name": "Erkhart Stormvein",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 14594648,
+      "forces": null
+     },
+     {
+      "npcId": 194622,
+      "name": "Scorchling",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 195119,
+      "name": "Ruinous Stormbringer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10740817,
+      "forces": 10
+     },
+     {
+      "npcId": 197509,
+      "name": "Primal Thundercloud",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 1621628,
+      "forces": null
+     },
+     {
+      "npcId": 197535,
+      "name": "High Channeler Ryvati",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 6486510,
+      "forces": 30
+     },
+     {
+      "npcId": 197697,
+      "name": "Flamegullet",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 9729765,
+      "forces": 40
+     },
+     {
+      "npcId": 197698,
+      "name": "Thunderhead",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 8432463,
+      "forces": 48
+     },
+     {
+      "npcId": 197982,
+      "name": "Storm Warrior",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 5
+     },
+     {
+      "npcId": 197985,
+      "name": "Flame Channeler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10740817,
+      "forces": null
+     },
+     {
+      "npcId": 198047,
+      "name": "Tempest Channeler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 247760,
+      "name": "Invisible Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:49.256Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "temple-of-sethraliss",
+   "name": "Temple of Sethraliss",
+   "shortName": "TOS",
+   "challengeModeId": 250,
+   "timerMs": 1920000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion7/base/temple-of-sethraliss.jpg",
+   "art": "dungeons/temple-of-sethraliss.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "temple-of-sethraliss",
+    "totalRuns": 61028,
+    "timersMs": {
+     "plusOne": 1920000,
+     "plusTwo": 1536000,
+     "plusThree": 1152000
+    },
+    "enemyForces": 687,
+    "encounterIds": [
+     2142,
+     2143,
+     2144,
+     2145
+    ],
+    "families": [
+     {
+      "familyId": "rf2:d026185fbb91e0875e3cffad89c848e4c3e12b19956308dc76395d9d78e2c431",
+      "runs": 26152,
+      "timed": 24196,
+      "medianClearMs": 1495917.9210579626,
+      "fastestClearMs": 682058,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T16:36:48.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:9d5c36a9bfa3a1ba6423e0dfd405fa7ec4b3ff7fa48319cedc6ec3bf3c8a2266",
+      "runs": 19346,
+      "timed": 17647,
+      "medianClearMs": 1503428.1696191025,
+      "fastestClearMs": 681232,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T15:32:35.000Z",
+      "routeKey": "6hTrsqk"
+     },
+     {
+      "familyId": "rf2:97ea6b346ded9923ec84a40b976527bb065304d268730829eec6be92febef035",
+      "runs": 4686,
+      "timed": 4256,
+      "medianClearMs": 1539499.599222448,
+      "fastestClearMs": 752204,
+      "highestKey": 18,
+      "latestAt": "2026-11-15T22:47:32.000Z",
+      "routeKey": "qHhhDa2"
+     },
+     {
+      "familyId": "rf2:ccd82682fc7aca9cb355914b445dae4f67242a6e34d0b0861784c6c4799d7e09",
+      "runs": 2441,
+      "timed": 2251,
+      "medianClearMs": 1459334.5466666666,
+      "fastestClearMs": 791344,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T09:21:55.000Z",
+      "routeKey": "DIxC6Gw"
+     },
+     {
+      "familyId": "rf2:8c259430d7bb407500a37082078d45bb67d8a60ac40d30984238c99b9f48cb97",
+      "runs": 1954,
+      "timed": 1807,
+      "medianClearMs": 1462367.2487394959,
+      "fastestClearMs": 717321,
+      "highestKey": 17,
+      "latestAt": "2026-11-16T01:03:20.000Z",
+      "routeKey": "JX3bWIf"
+     },
+     {
+      "familyId": "rf2:75e02a28f9d88a97520c8220be99df7519f7eaaa1abe7ab148cc5419acb59294",
+      "runs": 1411,
+      "timed": 1264,
+      "medianClearMs": 1528482,
+      "fastestClearMs": 853684,
+      "highestKey": 17,
+      "latestAt": "2026-11-15T12:47:18.000Z",
+      "routeKey": "2yzEWIp"
+     },
+     {
+      "familyId": "rf2:9343b3cacbc097139987c432eecf79d022c4ee8f9f6735ca0165eadf9d80f1ad",
+      "runs": 1150,
+      "timed": 1069,
+      "medianClearMs": 1475931.1333333333,
+      "fastestClearMs": 877665,
+      "highestKey": 18,
+      "latestAt": "2026-11-14T00:42:34.000Z",
+      "routeKey": "M4S3a6W"
+     },
+     {
+      "familyId": "rf2:682d05b0182baa3d108954574d9b14ccb2b786d7cf15e737028adf8312688fe7",
+      "runs": 948,
+      "timed": 885,
+      "medianClearMs": 1426938.375,
+      "fastestClearMs": 668012,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T16:36:15.000Z",
+      "routeKey": "unYjSlo"
+     },
+     {
+      "familyId": "rf2:5cf09483c785a457f4c683c71c4a941f47ee8211e42ae4ae75377efac69b096b",
+      "runs": 562,
+      "timed": 538,
+      "medianClearMs": 1355885.35,
+      "fastestClearMs": 607413,
+      "highestKey": 18,
+      "latestAt": "2026-11-15T19:33:33.000Z",
+      "routeKey": "gP5oPVX"
+     },
+     {
+      "familyId": "rf2:0dec62694e6de1a1ed53b3756250b2fc43494a8d73e9e9322c71368ed63c1ee0",
+      "runs": 397,
+      "timed": 351,
+      "medianClearMs": 1573383,
+      "fastestClearMs": 994048,
+      "highestKey": 13,
+      "latestAt": "2026-11-15T09:54:59.000Z",
+      "routeKey": "fOTukci"
+     },
+     {
+      "familyId": "rf2:af2d33ce163c832c53c87ae8afa34d347d97f615ce9d4907f2bbe7678b5c79bb",
+      "runs": 275,
+      "timed": 256,
+      "medianClearMs": 1493655,
+      "fastestClearMs": 947943,
+      "highestKey": 17,
+      "latestAt": "2026-10-19T21:30:13.000Z",
+      "routeKey": "bqZ6nUF"
+     },
+     {
+      "familyId": "rf2:ca0da69fa7bc1c98036e8a763eabccda9e0157e8420e39a57b895394da69e8ad",
+      "runs": 264,
+      "timed": 233,
+      "medianClearMs": 1552424.75,
+      "fastestClearMs": 1018500,
+      "highestKey": 13,
+      "latestAt": "2026-11-16T00:37:57.000Z",
+      "routeKey": "GYTOUHA"
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:49.351Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "temple-of-sethraliss",
+    "forcesRequired": 687,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 68819,
+      "name": "Arcane Eye",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 0,
+      "forces": null
+     },
+     {
+      "npcId": 77936,
+      "name": "Greater Storm Elemental",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 103822,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 132198,
+      "name": "Effigy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 133379,
+      "name": "Adderis",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 3073980,
+      "forces": null
+     },
+     {
+      "npcId": 133384,
+      "name": "Merektha",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 14918973,
+      "forces": null
+     },
+     {
+      "npcId": 133389,
+      "name": "Galvazzt",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 5379459,
+      "forces": null
+     },
+     {
+      "npcId": 133392,
+      "name": "Avatar of Sethraliss",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 25946039,
+      "forces": null
+     },
+     {
+      "npcId": 133944,
+      "name": "Aspix",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 3073980,
+      "forces": null
+     },
+     {
+      "npcId": 134364,
+      "name": "Faithless Subjugator",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 134388,
+      "name": "A Knot of Snakes",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 540542,
+      "forces": null
+     },
+     {
+      "npcId": 134389,
+      "name": "Toxic Viper",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1686493,
+      "forces": null
+     },
+     {
+      "npcId": 134390,
+      "name": "Storm Serpent",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": null
+     },
+     {
+      "npcId": 134487,
+      "name": "Merektha",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 307716,
+      "forces": null
+     },
+     {
+      "npcId": 134599,
+      "name": "Imbued Stormcaller",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 134600,
+      "name": "Sandswept Hunter",
+      "dangerous": false,
+      "kind": "ranged",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 7
+     },
+     {
+      "npcId": 134602,
+      "name": "Shrouded Fang",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 134616,
+      "name": "Barbed Krolusk",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 2594604,
+      "forces": 5
+     },
+     {
+      "npcId": 134617,
+      "name": "Rogue Krolusk",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": 64865,
+      "forces": null
+     },
+     {
+      "npcId": 134629,
+      "name": "Sand-Sworn Rider",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 134686,
+      "name": "Krolusk Matriarch",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 4216232,
+      "forces": 16
+     },
+     {
+      "npcId": 134691,
+      "name": "Static Anomaly",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 134990,
+      "name": "Storm Adept",
+      "dangerous": false,
+      "kind": "healer",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 134991,
+      "name": "Sandfury Stonefist",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5837859,
+      "forces": 25
+     },
+     {
+      "npcId": 135007,
+      "name": "Orb Watcher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6486510,
+      "forces": 25
+     },
+     {
+      "npcId": 135445,
+      "name": "Lightning Spire",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 21621699,
+      "forces": null
+     },
+     {
+      "npcId": 135562,
+      "name": "Poisonous Viper",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 135846,
+      "name": "Lightning Serpent",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 135971,
+      "name": "Faithless Conscript",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 136076,
+      "name": "Agitated Nimbus",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 136250,
+      "name": "Twisted Hexxer",
+      "dangerous": false,
+      "kind": "caster",
+      "elite": true,
+      "boss": false,
+      "health": 4864883,
+      "forces": 25
+     },
+     {
+      "npcId": 139097,
+      "name": "Sandswept Marksman",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 439629,
+      "forces": null
+     },
+     {
+      "npcId": 139108,
+      "name": "Loose Spark",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": null
+     },
+     {
+      "npcId": 139110,
+      "name": "Spark Channeler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 972977,
+      "forces": 5
+     },
+     {
+      "npcId": 139131,
+      "name": "Polarized Spire",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 139422,
+      "name": "Dutiful Tamer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 139425,
+      "name": "Brood Tender",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 7
+     },
+     {
+      "npcId": 139946,
+      "name": "Heart Guardian",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1229592,
+      "forces": null
+     },
+     {
+      "npcId": 139949,
+      "name": "Plague Doctor",
+      "dangerous": false,
+      "kind": "caster",
+      "elite": true,
+      "boss": false,
+      "health": 768495,
+      "forces": null
+     },
+     {
+      "npcId": 161124,
+      "name": "Urg'roth, Breaker of Heroes",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2305485,
+      "forces": null
+     },
+     {
+      "npcId": 161241,
+      "name": "Voidweaver Mal'thir",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1998087,
+      "forces": null
+     },
+     {
+      "npcId": 161243,
+      "name": "Samh'rek, Beckoner of Chaos",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2151786,
+      "forces": null
+     },
+     {
+      "npcId": 161244,
+      "name": "Blood of the Corruptor",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2151786,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 240681,
+      "name": "Eye of Sethraliss",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 287585,
+      "forces": null
+     },
+     {
+      "npcId": 247760,
+      "name": "Invisible Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 254954,
+      "name": "Unseen Predator",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 258578,
+      "name": "Lesser Ghoul",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 262530,
+      "name": "Adderis",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 9729765,
+      "forces": null
+     },
+     {
+      "npcId": 262822,
+      "name": "Aspix",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 9729765,
+      "forces": null
+     },
+     {
+      "npcId": 263181,
+      "name": "Egg",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 263383,
+      "name": "Snake",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1297302,
+      "forces": null
+     },
+     {
+      "npcId": 263658,
+      "name": "Galvazzt",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20756831,
+      "forces": null
+     },
+     {
+      "npcId": 264785,
+      "name": "Swarming Krolusk",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 810814,
+      "forces": null
+     },
+     {
+      "npcId": 265057,
+      "name": "Spark Channeler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": 5
+     },
+     {
+      "npcId": 268317,
+      "name": "Faithless Tormentor",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1135139,
+      "forces": 5
+     },
+     {
+      "npcId": 268344,
+      "name": "Corrupted Guardian",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2043251,
+      "forces": null
+     },
+     {
+      "npcId": 268364,
+      "name": "Lifeforce",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 330722,
+      "forces": null
+     },
+     {
+      "npcId": 268427,
+      "name": "Essence Defiler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": null
+     },
+     {
+      "npcId": 268491,
+      "name": "Twisted Hexxer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2821632,
+      "forces": null
+     },
+     {
+      "npcId": 268729,
+      "name": "Faithless Tormentor",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 583786,
+      "forces": null
+     },
+     {
+      "npcId": 268747,
+      "name": "Lesser Lifeforce",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 269227,
+      "name": "Temple Disruptor",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1945953,
+      "forces": 5
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:49.695Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "the-blinding-vale",
+   "name": "The Blinding Vale",
+   "shortName": "BV",
+   "challengeModeId": 584,
+   "timerMs": 1800000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion11/base/the-blinding-vale.jpg",
+   "art": "dungeons/the-blinding-vale.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "the-blinding-vale",
+    "totalRuns": 510970,
+    "timersMs": {
+     "plusOne": 1800000,
+     "plusTwo": 1440000,
+     "plusThree": 1080000
+    },
+    "enemyForces": 686,
+    "encounterIds": [
+     2769,
+     2770,
+     2771,
+     2772
+    ],
+    "families": [
+     {
+      "familyId": "rf2:bcecc135aef306da2edd43ecebfc112322d21e42891973e9e91a29f1f721cb36",
+      "runs": 25111,
+      "timed": 22798,
+      "medianClearMs": 1458854.6236642546,
+      "fastestClearMs": 650887,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T14:49:59.000Z",
+      "routeKey": "UEt17JB"
+     },
+     {
+      "familyId": "rf2:857cc41aa0c675a580e6819664c7c94c910fbaacf9997ac9ed5674c1f80fcc74",
+      "runs": 21159,
+      "timed": 19101,
+      "medianClearMs": 1450411.2743806269,
+      "fastestClearMs": 625755,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:11:01.000Z",
+      "routeKey": "WIMAuCl"
+     },
+     {
+      "familyId": "rf2:bd7e0f85aa93971fa3c2299d219964e4742ace509d7a775dbce5f8982a79076f",
+      "runs": 15285,
+      "timed": 13504,
+      "medianClearMs": 1485905.040108489,
+      "fastestClearMs": 550107,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T14:23:34.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:d57b4ff14c6247a951058875e2457fca6cc0a48f6bab447d71e47972f6968aa2",
+      "runs": 9585,
+      "timed": 8907,
+      "medianClearMs": 1398814.9074789726,
+      "fastestClearMs": 595508,
+      "highestKey": 22,
+      "latestAt": "2026-11-16T15:23:09.000Z",
+      "routeKey": "jRMBxcA"
+     },
+     {
+      "familyId": "rf2:c4b10748b98d05d7e3a8e7ec169c5dd51ba996b09961a26479804646e90bedde",
+      "runs": 8888,
+      "timed": 7537,
+      "medianClearMs": 1550399.9641551382,
+      "fastestClearMs": 676629,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T16:09:49.000Z",
+      "routeKey": "EJivd74"
+     },
+     {
+      "familyId": "rf2:cbc08b98987a5436e09bb56c7104cbdd9ab96f69714b182bb4e67ef621390bcd",
+      "runs": 6694,
+      "timed": 5983,
+      "medianClearMs": 1548770.8166666667,
+      "fastestClearMs": 620568,
+      "highestKey": 21,
+      "latestAt": "2026-11-16T12:25:13.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:5e075186466289ad324c7ae1bc8953051227044bf17424b97c41b3d70692b748",
+      "runs": 6092,
+      "timed": 5372,
+      "medianClearMs": 1504050.8551136362,
+      "fastestClearMs": 679325,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T05:35:32.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:f6d860970413950df2be75efb5fb16930660056e46df812e2ddec1e39a1c43f2",
+      "runs": 5796,
+      "timed": 5395,
+      "medianClearMs": 1406530.5176136363,
+      "fastestClearMs": 623746,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:16:51.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:f9c9d2018901a49594f19f74c18cac4f77c14abf7be2adb8bb29dc272b842a26",
+      "runs": 5715,
+      "timed": 5124,
+      "medianClearMs": 1516619.0660368665,
+      "fastestClearMs": 641493,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T15:06:20.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:157ecaacaa1ece43610bb017c9ad6b8ca86b7fbfa75c1afdd045ad55b79a1ec4",
+      "runs": 5574,
+      "timed": 5134,
+      "medianClearMs": 1496112.625252525,
+      "fastestClearMs": 631755,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T12:52:04.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:d67e6260521ee9b0c6b5d23538c874863edc3038ea738d39350d0d530662cafa",
+      "runs": 4385,
+      "timed": 3875,
+      "medianClearMs": 1498896.5823863635,
+      "fastestClearMs": 656721,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T10:12:00.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:8e07be2f36cb4b5a89be1016c8ca570cb08aae6b7a84a2d6812ce207464668af",
+      "runs": 4036,
+      "timed": 3465,
+      "medianClearMs": 1502462.6013431011,
+      "fastestClearMs": 560682,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T08:29:03.000Z",
+      "routeKey": "C9R2l8m"
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:49.864Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "the-blinding-vale",
+    "forcesRequired": 686,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 99541,
+      "name": "Risen Skulker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 103822,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 228224,
+      "name": "Fenryr",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 233036,
+      "name": "Spirit Wolf",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 241808,
+      "name": "Territorial Matriarch",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3729743,
+      "forces": null
+     },
+     {
+      "npcId": 241809,
+      "name": "Curious Yearling",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 778381,
+      "forces": null
+     },
+     {
+      "npcId": 241812,
+      "name": "The Hoardmonger",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 22702784,
+      "forces": null
+     },
+     {
+      "npcId": 241813,
+      "name": "Thornclaw Gatherer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": null
+     },
+     {
+      "npcId": 241814,
+      "name": "Earthwhisper Tender",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": null
+     },
+     {
+      "npcId": 241816,
+      "name": "Keen-Eyed Striker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": null
+     },
+     {
+      "npcId": 241869,
+      "name": "Avatar of Determination",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6486510,
+      "forces": null
+     },
+     {
+      "npcId": 241872,
+      "name": "Frigid Mauler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": null
+     },
+     {
+      "npcId": 241874,
+      "name": "Frostfang",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2789199,
+      "forces": null
+     },
+     {
+      "npcId": 241876,
+      "name": "Glacial Revenant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3081092,
+      "forces": null
+     },
+     {
+      "npcId": 241911,
+      "name": "Terra Rumbler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": null
+     },
+     {
+      "npcId": 243028,
+      "name": "Meittik",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 43783942,
+      "forces": null
+     },
+     {
+      "npcId": 243029,
+      "name": "Kezkitt",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 43783942,
+      "forces": null
+     },
+     {
+      "npcId": 243030,
+      "name": "Lekshi",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 43783942,
+      "forces": null
+     },
+     {
+      "npcId": 244100,
+      "name": "Sentinel of Winter",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 244528,
+      "name": "Lightblossom",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 244696,
+      "name": "Raging Squall",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 428857,
+      "forces": null
+     },
+     {
+      "npcId": 244759,
+      "name": "Fractured Shivercore",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 810814,
+      "forces": null
+     },
+     {
+      "npcId": 244887,
+      "name": "Ikuzz the Light Hunter",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 22702784,
+      "forces": null
+     },
+     {
+      "npcId": 244889,
+      "name": "Loa Speaker Nanea",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7783812,
+      "forces": null
+     },
+     {
+      "npcId": 245076,
+      "name": "The Pale Eye",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 537461,
+      "forces": null
+     },
+     {
+      "npcId": 245139,
+      "name": "Stormbound Mystic",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": null
+     },
+     {
+      "npcId": 245143,
+      "name": "Ruthless Totemcaller",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": null
+     },
+     {
+      "npcId": 245145,
+      "name": "Bonded Beasttamer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3081092,
+      "forces": null
+     },
+     {
+      "npcId": 245146,
+      "name": "Grizzled Warbringer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": null
+     },
+     {
+      "npcId": 245148,
+      "name": "Grizzled Warbringer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 698700,
+      "forces": null
+     },
+     {
+      "npcId": 245190,
+      "name": "Loyal Saberfang",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2594604,
+      "forces": null
+     },
+     {
+      "npcId": 245336,
+      "name": "Radiant Spellsower",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 7
+     },
+     {
+      "npcId": 245339,
+      "name": "Underbrush Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243254,
+      "forces": 6
+     },
+     {
+      "npcId": 245345,
+      "name": "Lightgorged Lasher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3081092,
+      "forces": 7
+     },
+     {
+      "npcId": 245346,
+      "name": "Virid Grovekeeper",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189207,
+      "forces": 20
+     },
+     {
+      "npcId": 245410,
+      "name": "Lasher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": 1
+     },
+     {
+      "npcId": 245460,
+      "name": "Leafy Grovecrawler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243254,
+      "forces": 7
+     },
+     {
+      "npcId": 245473,
+      "name": "Thorny Saptor",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243254,
+      "forces": 5
+     },
+     {
+      "npcId": 245484,
+      "name": "Lightfeather Petalwing",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3891906,
+      "forces": 7
+     },
+     {
+      "npcId": 245513,
+      "name": "Overgrown Hydra",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6162185,
+      "forces": 25
+     },
+     {
+      "npcId": 245527,
+      "name": "Spineshield Beetle",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 324326,
+      "forces": 1
+     },
+     {
+      "npcId": 245567,
+      "name": "Starvation Effigy",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 421623,
+      "forces": null
+     },
+     {
+      "npcId": 245752,
+      "name": "Keen-Eyed Striker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": null
+     },
+     {
+      "npcId": 245855,
+      "name": "Spirit of Hunger",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 4864883,
+      "forces": null
+     },
+     {
+      "npcId": 245912,
+      "name": "Lightwarden Ruia",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 246367,
+      "name": "Spirit Bear",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 246371,
+      "name": "Spirit Moonkin",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 246404,
+      "name": "Nalorakk",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 21016293,
+      "forces": null
+     },
+     {
+      "npcId": 246409,
+      "name": "Zul'jarra",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1621628,
+      "forces": null
+     },
+     {
+      "npcId": 246871,
+      "name": "Luminous Thornmaw",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5675695,
+      "forces": 22
+     },
+     {
+      "npcId": 247301,
+      "name": "Echo of Nalorakk",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 3378390,
+      "forces": null
+     },
+     {
+      "npcId": 247676,
+      "name": "Ziekket",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 22702784,
+      "forces": null
+     },
+     {
+      "npcId": 247755,
+      "name": "Lightspawn Lasher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1297302,
+      "forces": null
+     },
+     {
+      "npcId": 248666,
+      "name": "Magma Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6487,
+      "forces": null
+     },
+     {
+      "npcId": 249756,
+      "name": "Potatoad Matriarch",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 9729764,
+      "forces": 60
+     },
+     {
+      "npcId": 249783,
+      "name": "Potadpole Egg",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 250202,
+      "name": "Newborn Potadpole",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 250478,
+      "name": "The Winter Squall",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": null
+     },
+     {
+      "npcId": 251189,
+      "name": "Snow Orb Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 251422,
+      "name": "Dread Shade",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 253571,
+      "name": "Bloodthorn Roots",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 486488,
+      "forces": null
+     },
+     {
+      "npcId": 254850,
+      "name": "Sporeblight Belcher",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5837858,
+      "forces": 25
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255261,
+      "name": "Dryad",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 272074,
+      "name": "Volatile Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 64865,
+      "forces": null
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:50.212Z",
+    "source": "Keystone Guru"
+   }
+  },
+  {
+   "slug": "voidscar-arena",
+   "name": "Voidscar Arena",
+   "shortName": "VSA",
+   "challengeModeId": 585,
+   "timerMs": 1800000,
+   "artUrl": "https://cdn.raiderio.net/images/dungeons/expansion11/base/voidscar-arena.jpg",
+   "art": "dungeons/voidscar-arena.jpg",
+   "routes": {
+    "season": "season-mn-2",
+    "dungeon": "voidscar-arena",
+    "totalRuns": 575152,
+    "timersMs": {
+     "plusOne": 1800000,
+     "plusTwo": 1440000,
+     "plusThree": 1080000
+    },
+    "enemyForces": 738,
+    "encounterIds": [
+     2791,
+     2792,
+     2793
+    ],
+    "families": [
+     {
+      "familyId": "rf2:fe1b68a2ac32576e13c87c29782b78dec5f9d090a4657b0dd7c33ec8631892bd",
+      "runs": 18543,
+      "timed": 17258,
+      "medianClearMs": 1359534.4139742986,
+      "fastestClearMs": 537302,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:32:05.000Z",
+      "routeKey": "tf6xssJ"
+     },
+     {
+      "familyId": "rf2:c432c8c84927c0d4b8c8f6af989c347b870ea6a60d004d8857fa1c555999c01e",
+      "runs": 14389,
+      "timed": 13462,
+      "medianClearMs": 1389744.4455270437,
+      "fastestClearMs": 635617,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T16:36:09.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:5d0f30c2607babd27f297c9c3a45becda2c46674f773500b9b85976da8368921",
+      "runs": 9598,
+      "timed": 8804,
+      "medianClearMs": 1334573.1923809524,
+      "fastestClearMs": 633786,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T15:01:51.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:ca0d242b50aa2571952a7fa4c94643f3cc17152d24a4efd441417cbf5a1bdd57",
+      "runs": 9485,
+      "timed": 8980,
+      "medianClearMs": 1308909.1123378782,
+      "fastestClearMs": 647348,
+      "highestKey": 18,
+      "latestAt": "2026-11-16T11:22:47.000Z",
+      "routeKey": "wb1uhut"
+     },
+     {
+      "familyId": "rf2:8e3954207301e3c50609df9b7e1009e51b59967b9bd3fc1d9cda0a047084779b",
+      "runs": 8935,
+      "timed": 8356,
+      "medianClearMs": 1335203.4654056744,
+      "fastestClearMs": 504731,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T16:16:08.000Z",
+      "routeKey": "Oa9nUcO"
+     },
+     {
+      "familyId": "rf2:6a9dc7f9ec2e6164a1a16fd11468240a1c41fed0783d0a8b5acffd4d64bf1694",
+      "runs": 8646,
+      "timed": 8075,
+      "medianClearMs": 1393661.454589372,
+      "fastestClearMs": 607643,
+      "highestKey": 20,
+      "latestAt": "2026-11-16T12:23:29.000Z",
+      "routeKey": "y6Gmx0N"
+     },
+     {
+      "familyId": "rf2:e8655b13bc8c29bd7e595d63032654172f28af5d8e10f67714c648e21ddb67b9",
+      "runs": 8394,
+      "timed": 7774,
+      "medianClearMs": 1291532.3222750223,
+      "fastestClearMs": 521701,
+      "highestKey": 20,
+      "latestAt": "2026-11-15T23:50:07.000Z",
+      "routeKey": "QOenTYa"
+     },
+     {
+      "familyId": "rf2:b2d69a1b5180f22e23f5303500cb3bae675e0a5d20560dad52c7bcc6d08138b9",
+      "runs": 7431,
+      "timed": 6951,
+      "medianClearMs": 1269767.2592620444,
+      "fastestClearMs": 617984,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T13:50:46.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:7f04f7b5e0bccb875c8ac18a59fdcd08769f7c42e24cbc02194fa875bce447c5",
+      "runs": 6965,
+      "timed": 6301,
+      "medianClearMs": 1406258.432123656,
+      "fastestClearMs": 676849,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T14:08:44.000Z",
+      "routeKey": "R3QmeNG"
+     },
+     {
+      "familyId": "rf2:690952243c6ea6869132d2df112d2179a5ba2b910834735d060599aa2ab21eb4",
+      "runs": 6029,
+      "timed": 5556,
+      "medianClearMs": 1381973.5985616816,
+      "fastestClearMs": 610779,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T16:40:46.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:a59c5ff6e8641f6f87786eedb12b3b9eb089ca6f89916b650e8a4d472e34b6e3",
+      "runs": 5836,
+      "timed": 5512,
+      "medianClearMs": 1331525.1166304348,
+      "fastestClearMs": 638400,
+      "highestKey": 19,
+      "latestAt": "2026-11-16T12:14:30.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:8926dd538dfaf14a33c473febbb32cf1138138b5e60137e5da1daf118f955990",
+      "runs": 5755,
+      "timed": 5235,
+      "medianClearMs": 1379422.380455408,
+      "fastestClearMs": 617591,
+      "highestKey": 18,
+      "latestAt": "2026-11-16T14:16:49.000Z",
+      "routeKey": "dM5sG9r"
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:50.324Z",
+    "source": "Raider.IO"
+   },
+   "enemies": {
+    "dungeon": "voidscar-arena",
+    "forcesRequired": 738,
+    "enemies": [
+     {
+      "npcId": 54983,
+      "name": "Treant",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217228,
+      "name": "Blood Beast",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 217429,
+      "name": "Overfiend",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 219161,
+      "name": "Diabolic Imp",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 226790,
+      "name": "Infernal Fragment",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 238883,
+      "name": "Dominated Brawler",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3891906,
+      "forces": 7
+     },
+     {
+      "npcId": 238887,
+      "name": "Taz'Rah",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 239008,
+      "name": "Atroxus",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 20432506,
+      "forces": null
+     },
+     {
+      "npcId": 239070,
+      "name": "Toxic Creeper",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1135139,
+      "forces": null
+     },
+     {
+      "npcId": 239167,
+      "name": "Charonus",
+      "dangerous": true,
+      "kind": "melee",
+      "elite": false,
+      "boss": true,
+      "health": 23351436,
+      "forces": null
+     },
+     {
+      "npcId": 241496,
+      "name": "Enthralled Shaman",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 7
+     },
+     {
+      "npcId": 243736,
+      "name": "Blistercreep",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": 1
+     },
+     {
+      "npcId": 243766,
+      "name": "Kilivore Screamer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3081092,
+      "forces": 7
+     },
+     {
+      "npcId": 243835,
+      "name": "Savage Shredclaw",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3405418,
+      "forces": 5
+     },
+     {
+      "npcId": 243983,
+      "name": "Sycophantic Tarasek",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 4
+     },
+     {
+      "npcId": 243985,
+      "name": "Longtooth Tuskarr",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 243988,
+      "name": "Feral Saberon",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3405418,
+      "forces": 4
+     },
+     {
+      "npcId": 243996,
+      "name": "Lost Sethrak",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 2918930,
+      "forces": 4
+     },
+     {
+      "npcId": 244260,
+      "name": "Chitigoth",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5837859,
+      "forces": 25
+     },
+     {
+      "npcId": 244309,
+      "name": "Brutok",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7135161,
+      "forces": 25
+     },
+     {
+      "npcId": 244708,
+      "name": "Voidminder",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3632446,
+      "forces": 7
+     },
+     {
+      "npcId": 245950,
+      "name": "Watchful Harrower",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 8756789,
+      "forces": 65
+     },
+     {
+      "npcId": 248666,
+      "name": "Magma Totem",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6487,
+      "forces": null
+     },
+     {
+      "npcId": 249461,
+      "name": "Abducted Drakonid",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3243255,
+      "forces": 5
+     },
+     {
+      "npcId": 249590,
+      "name": "Angry Krolusk",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3567581,
+      "forces": 8
+     },
+     {
+      "npcId": 249603,
+      "name": "Protective Turtle",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1945953,
+      "forces": 5
+     },
+     {
+      "npcId": 249608,
+      "name": "Raging Raptor",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 3891906,
+      "forces": 5
+     },
+     {
+      "npcId": 252053,
+      "name": "Brutal Overseer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5675696,
+      "forces": 25
+     },
+     {
+      "npcId": 252072,
+      "name": "Voidtouched Magi",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5513534,
+      "forces": 25
+     },
+     {
+      "npcId": 252508,
+      "name": "Scavenging Siphoid",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 1297302,
+      "forces": 1
+     },
+     {
+      "npcId": 254677,
+      "name": "Ethereal Shade",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 648651,
+      "forces": null
+     },
+     {
+      "npcId": 255000,
+      "name": "Targeting Stalker",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 10000,
+      "forces": null
+     },
+     {
+      "npcId": 255001,
+      "name": "Gravitic Orb",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 540543,
+      "forces": null
+     },
+     {
+      "npcId": 255153,
+      "name": "Dark Minion",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 255261,
+      "name": "Dryad",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": false,
+      "boss": false,
+      "health": null,
+      "forces": null
+     },
+     {
+      "npcId": 263228,
+      "name": "Agitated Voidscythe",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 5189208,
+      "forces": 25
+     },
+     {
+      "npcId": 267545,
+      "name": "Aegyra the Unyielding",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 8432463,
+      "forces": 40
+     },
+     {
+      "npcId": 267546,
+      "name": "Raj'kess the Spellstorm",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 7459487,
+      "forces": 40
+     },
+     {
+      "npcId": 268184,
+      "name": "Devouring Brutalizer",
+      "dangerous": false,
+      "kind": "melee",
+      "elite": true,
+      "boss": false,
+      "health": 6227050,
+      "forces": 30
+     }
+    ],
+    "observedAt": "2026-11-16T21:30:50.708Z",
+    "source": "Keystone Guru"
+   }
+  }
+ ]
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { bestFamily, bossPace, clock, journalFlags, journalSpellText, journalText, keystoneTimers, placeholderTitle, routeEmbedUrl, specRole, type JournalSpell, type RouteFamily } from './dungeons'
+import { bestFamily, bossPace, clock, enemyNote, journalFlags, whyItMatters, journalSpellText, journalText, keystoneTimers, placeholderTitle, routeEmbedUrl, specRole, type JournalSpell, type RouteFamily } from './dungeons'
 
 const spells = new Map<number, JournalSpell>([
   [1, { name: 'Ravenous Bellow', description: 'Inflicting $s1 Physical damage to all players and an additional $s2 Physical damage every $t2 sec for $d. Ignores armor.', durationMs: 10_000, effects: [{ index: 0, periodMs: 0, basePoints: 17 }, { index: 1, periodMs: 1000, basePoints: 3 }] }],
@@ -49,5 +49,24 @@ describe('routes and timers', () => {
   it('builds the public embed address and picks the role for a spec', () => {
     expect(routeEmbedUrl('den-of-nalorakk', 'G6mLASJ')).toBe('https://keystone.guru/route/den-of-nalorakk/G6mLASJ/den-of-nalorakk/embed?style=compact&showAffixes=0')
     expect([specRole(250), specRole(65), specRole(71), specRole(null)]).toEqual(['tank', 'healer', 'damage', 'damage'])
+  })
+})
+
+describe('what a role needs to know', () => {
+  it('marks deadly mechanics for everyone and each role its own work', () => {
+    expect(['tank', 'healer', 'damage'].map(role => whyItMatters(['deadly'], role as never))).toEqual(['Deadly', 'Deadly', 'Deadly'])
+    expect(whyItMatters(['tank'], 'tank')).toBe('Tank')
+    expect(whyItMatters(['poison'], 'healer')).toBe('Dispel')
+    expect(whyItMatters(['poison'], 'damage')).toBeNull()
+    expect(whyItMatters(['interruptible', 'magic'], 'damage')).toBe('Interrupt')
+    expect(whyItMatters(['interruptible'], 'healer')).toBeNull()
+    expect(whyItMatters(['healer'], 'healer')).toBe('Healing')
+    expect(whyItMatters([], 'tank')).toBeNull()
+  })
+  it('flags dangerous enemies for everyone and casters for the roles that interrupt', () => {
+    const enemy = { npcId: 1, name: 'Shaman', dangerous: false, kind: 'caster' as const, elite: true, boss: false, health: null, forces: 5 }
+    expect(enemyNote(enemy, 'damage')).toBe('Interrupt')
+    expect(enemyNote(enemy, 'healer')).toBeNull()
+    expect(enemyNote({ ...enemy, dangerous: true }, 'healer')).toBe('Dangerous')
   })
 })
