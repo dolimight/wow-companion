@@ -2,7 +2,9 @@
 ## Title: WOW Companion
 ## Notes: Local roster snapshots, automatic favorite companion summoning, and 3D previews of mounts, pets, appearance sets, gear, and housing decor on hover
 ## Author: Local companion
-## Version: 0.4.9
+## Version: 0.5.0
+## IconTexture: Interface/Icons/INV_Box_PetCarrier_01
+## AddonCompartmentFunc: WoWCompanion_OnAddonCompartmentClick
 ## SavedVariables: WoWCompanionDB
 WoWCompanion.lua
 MountPreview.lua

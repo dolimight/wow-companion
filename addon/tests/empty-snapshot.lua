@@ -67,7 +67,7 @@ test("empty logout preserves the entire previous observation and export time", f
   check(old.observedAt == "time-100" and old.sequence == 9, "refreshed stale observation")
   check(saved.exportedAt == "time-100", "refreshed export time")
   check(saved.characters["Player-other"] == other and saved.sourceProfileId == "existing", "changed unrelated saved data")
-  check(saved.addonVersion == "0.4.9" and saved.schemaVersion == 1, "incorrect version")
+  check(saved.addonVersion == "0.5.0" and saved.schemaVersion == 1, "incorrect version")
 end)
 
 test("first empty capture creates no authoritative empty character", function()
@@ -123,7 +123,7 @@ if io.open then
   local toc = assert(io.open("addon/WoWCompanion.toc", "r"))
   local tocText = toc:read("*a")
   toc:close()
-  check(tocText:match("## Version: 0%.2%.2[\r\n]"), "TOC version mismatch")
+  check(tocText:match("## Version: 0%.5%.0[\r\n]"), "TOC version mismatch")
 else
   print("TOC file read unavailable in this Lua host; version consistency is checked separately")
 end
