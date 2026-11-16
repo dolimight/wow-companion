@@ -789,13 +789,13 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       try { window.setContentSize(820, 760); await wait(`innerWidth===820`, 'minimum inventory width'); assert(await evaluate(`document.documentElement.scrollWidth<=document.documentElement.clientWidth+1`), 'Inventory overflows the minimum desktop width'); await capture('inventory-minimum-width') } finally { window.setContentSize(originalSize[0], originalSize[1]) }
       return { bagsObserved: true, rawItemLink: true, instancePreserved: true, keyboardStats: true, bankUnknown: true, vaultAlternativesVisible: true, minimumWidth: true }
     })
-    await step('Navigation shows seven labeled destinations, redirects old links, recovers from unknown pages, and opens a labeled drawer', async () => {
+    await step('Navigation shows eight labeled destinations, redirects old links, recovers from unknown pages, and opens a labeled drawer', async () => {
       assert(workflowSeeded, 'Workflow fixtures must be available')
       const base = contents.getURL().split('#')[0]
       await window.loadURL(base + `#/characters/${workflowId}/overview`)
       await wait(`document.querySelector('h1')?.textContent==='Workflow fixture'`, 'overview heading')
       const labels = await evaluate<string[]>(`[...document.querySelectorAll('.navigation a')].map(node=>node.textContent.trim())`)
-      assert(JSON.stringify(labels) === JSON.stringify(['Characters', 'Tonight', 'This week', 'Overview', 'Gear', 'Performance', 'Wardrobe']), 'Sidebar destinations are wrong: ' + labels.join(', '))
+      assert(JSON.stringify(labels) === JSON.stringify(['Characters', 'Tonight', 'This week', 'Overview', 'Gear', 'Performance', 'Dungeons', 'Wardrobe']), 'Sidebar destinations are wrong: ' + labels.join(', '))
       await wait(`!!document.querySelector('[aria-label="Resize sidebar"]')&&!document.querySelector('[aria-label="Open navigation"]')`, 'wide layout settled')
       const wide = await evaluate<string>(`JSON.stringify({width:innerWidth,handles:document.querySelectorAll('[aria-label="Resize sidebar"]').length,menu:!!document.querySelector('[aria-label="Open navigation"]')})`)
       assert(wide.includes('"handles":1') && wide.includes('"menu":false'), 'Wide windows must keep the resizable sidebar without a drawer button: ' + wide)
