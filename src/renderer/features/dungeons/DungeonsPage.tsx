@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, Castle, ChevronDown, Compass, Crosshair, ExternalLink, HeartPulse, Map as MapIcon, Play, RefreshCw, Shield, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Castle, ChevronDown, Compass, Crosshair, ExternalLink, HeartPulse, Map as MapIcon, Move, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X, Zap } from 'lucide-react'
 import type { Character, SeasonDungeon } from '../../../shared/domain'
-import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, routeEmbedUrl, routeUrl, specRole, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type DungeonJournal, type DungeonRoutes, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
+import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, routeEmbedUrl, routeUrl, specRole, strategyFor, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type DungeonStrategy, type EnemySpell, type EnemySpellRef, type EnemyStrategy, type StrategyNotes, type DungeonJournal, type DungeonRoutes, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
 import { lowestDungeon, seasonDungeons, timeToSpareMs, upgradesFor } from '../../../shared/key-range'
 import { api } from '../../lib/client'
 import { iconUrl } from '../../lib/assets'
@@ -12,6 +12,7 @@ import { Card } from '../../components/ui/card'
 import { Badge, Button, EmptyState } from '../../components/ui/primitives'
 import { ItemIcon, useGameData } from '../items/items'
 import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group'
+import { dungeonStrategy } from './strategy'
 import './dungeons.css'
 
 const roleLabels: Record<JournalRole, string> = { tank: 'Tank', healer: 'Healer', damage: 'Damage' }
@@ -129,8 +130,9 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
   const [role, setRole] = useDungeonRole(character)
   const bosses = journal.data?.bosses ?? []
   const gameReady = useGameData().data?.state === 'ready'
+  const strategy = dungeonStrategy(dungeon.slug)
 
-  if (playing) return <PlayMode dungeon={dungeon} family={family} familyIndex={family ? families.indexOf(family) : -1} timers={timers} bosses={bosses} role={role} onRole={setRole} onExit={() => onPlay(false)} />
+  if (playing) return <PlayMode dungeon={dungeon} family={family} familyIndex={family ? families.indexOf(family) : -1} timers={timers} bosses={bosses} strategy={strategy} role={role} onRole={setRole} onExit={() => onPlay(false)} />
   return (
     <div className="dungeons">
       <Button variant="quiet" className="back-link" onClick={onBack}><ArrowLeft size={14} />All dungeons</Button>
@@ -188,11 +190,12 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
         {journal.isPending && gameReady ? <p className="muted small" role="status">Reading the Encounter Journal…</p>
           : journal.isError ? <p className="muted small" role="alert">{errorMessage(journal.error)}</p>
             : !bosses.length ? <p className="muted small">Prepare local game data to read this dungeon's bosses</p>
-              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} defaultOpen={index === 0} />)}
+              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)} defaultOpen={index === 0} />)}
         <p className="muted small dungeon-note">Mechanics that need your role's attention are marked; the rest are dimmed. Damage numbers are left out: the server scales them for each key level, and the game files hold placeholders</p>
+        {strategy && <StrategySource strategy={strategy} />}
       </Card>
 
-      <EnemiesCard dungeon={dungeon} role={role} />
+      <EnemiesCard dungeon={dungeon} role={role} strategy={strategy} />
     </div>
   )
 }
@@ -207,33 +210,66 @@ function RouteMap({ dungeon, family }: { dungeon: string; family: RouteFamily | 
   return <iframe key={family.routeKey} className="dungeon-map-frame" title="Keystone Guru route map" src={routeEmbedUrl(dungeon, family.routeKey)} sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer" loading="lazy" />
 }
 
-function BossCard({ boss, index, role, defaultOpen }: { boss: JournalBoss; index: number; role: JournalRole; defaultOpen: boolean }) {
+function BossCard({ boss, index, role, plan, defaultOpen }: { boss: JournalBoss; index: number; role: JournalRole; plan: StrategyNotes | undefined; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
-  const tips = boss.tips.filter(tip => tip.role === role)
+  const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
   const keyCount = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role)).length
-  const RoleIcon = roleIcons[role]
   return (
     <Card as="article" className="boss-card">
       <button type="button" className="boss-head" aria-expanded={open} onClick={() => setOpen(!open)}>
         <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
-        <span className="boss-title"><b>{boss.name}</b><Badge>Boss {index + 1}</Badge>{keyCount > 0 && <Badge tone="blue">{keyCount} for {roleLabels[role].toLowerCase()}</Badge>}</span>
+        <span className="boss-title"><b>{boss.name}</b><Badge>Boss {index + 1}</Badge>{keyCount > 0 && <Badge tone="blue">{keyCount} for {roleLabels[role].toLowerCase()}</Badge>}{plan?.positioning?.length ? <Badge><Move size={11} aria-hidden="true" />Positioning</Badge> : null}</span>
         <ChevronDown size={16} className="boss-chevron" aria-hidden="true" />
       </button>
       {open && <div className="boss-body">
         {boss.overview && <p className="boss-overview">{boss.overview}</p>}
-        {tips.length > 0 && <div className="boss-advice">
-          <h4><RoleIcon size={14} aria-hidden="true" />{roleLabels[role]} advice</h4>
-          {tips.map((tip, at) => <TipText key={at} text={tip.text} />)}
-        </div>}
+        <StrategyView notes={plan} role={role} journalTips={tips} />
         <div className="boss-abilities">{boss.abilities.map(ability => <Ability key={ability.id} ability={ability} role={role} />)}</div>
       </div>}
     </Card>
   )
 }
 
+/**
+ * How to play a boss or enemy: the chosen role's jobs first, with the journal's own advice for that role, then where to
+ * stand and what the whole group does
+ */
+function StrategyView({ notes, role, journalTips = [] }: { notes: StrategyNotes | undefined; role: JournalRole; journalTips?: string[] }) {
+  const { positioning, everyone, mine } = strategyFor(notes, role)
+  const RoleIcon = roleIcons[role]
+  if (!positioning.length && !everyone.length && !mine.length && !journalTips.length) return null
+  return (
+    <div className="strategy">
+      {(mine.length > 0 || journalTips.length > 0) && <div className="boss-advice">
+        <h4><RoleIcon size={14} aria-hidden="true" />{roleLabels[role]}</h4>
+        {mine.length > 0 && <Lines lines={mine} />}
+        {journalTips.map((tip, at) => <TipText key={at} text={tip} />)}
+      </div>}
+      {(positioning.length > 0 || everyone.length > 0) && <div className="strategy-grid">
+        {positioning.length > 0 && <div className="strategy-block"><h4><Move size={14} aria-hidden="true" />Positioning</h4><Lines lines={positioning} /></div>}
+        {everyone.length > 0 && <div className="strategy-block"><h4><Users size={14} aria-hidden="true" />Everyone</h4><Lines lines={everyone} /></div>}
+      </div>}
+    </div>
+  )
+}
+
+function Lines({ lines }: { lines: string[] }) {
+  return <ul className="boss-tips">{lines.map((line, at) => <li key={at}>{line}</li>)}</ul>
+}
+
+function StrategySource({ strategy }: { strategy: DungeonStrategy }) {
+  const updated = new Date(`${strategy.source.updated}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return (
+    <p className="muted small dungeon-note strategy-source">
+      <BookOpen size={13} aria-hidden="true" />Positioning and role notes summarized from {strategy.source.name}'s guide, updated {updated}
+      <Button variant="quiet" onClick={() => void api.openExternal(strategy.source.url)}><ExternalLink size={13} />Full guide</Button>
+    </p>
+  )
+}
+
 function TipText({ text }: { text: string }) {
   const lines = text.split('\n').map(line => line.replace(/^•\s*/, '').trim()).filter(Boolean)
-  return <ul className="boss-tips">{lines.map((line, at) => <li key={at}>{line}</li>)}</ul>
+  return <Lines lines={lines} />
 }
 
 function Ability({ ability, role, depth = 0 }: { ability: JournalAbility; role: JournalRole; depth?: number }) {
@@ -255,55 +291,112 @@ function Ability({ ability, role, depth = 0 }: { ability: JournalAbility; role: 
 }
 
 const kindIcons: Record<DungeonEnemy['kind'], typeof Shield> = { caster: WandSparkles, healer: HeartPulse, ranged: Crosshair, melee: Swords, other: Users }
+/** A render of the enemy's model bundled with the app (public/assets/npcs), downloaded by scripts/dungeon-data.ts */
+const enemyImage = (enemy: DungeonEnemy) => enemy.image ? `${import.meta.env.BASE_URL}assets/${enemy.image}` : null
+
+/** One entry per name: some enemies appear under two NPC ids, and the one with more data wins */
+function uniqueByName(enemies: DungeonEnemy[]) {
+  const byName = new Map<string, DungeonEnemy>()
+  const weight = (enemy: DungeonEnemy) => (enemy.spells?.length ?? 0) + (enemy.forces ?? 0) + (enemy.image ? 1 : 0)
+  for (const enemy of enemies) { const seen = byName.get(enemy.name); if (!seen || weight(enemy) > weight(seen)) byName.set(enemy.name, enemy) }
+  return [...byName.values()]
+}
 
 /**
- * The trash between bosses from Keystone Guru's public dungeon data: who its curators flag as dangerous, casters to
- * interrupt, and what each kill gives toward enemy forces. Their abilities aren't in that data, so each links to Wowhead
+ * The trash between bosses: Keystone Guru's danger flags and enemy forces, each enemy's spells from Mythic Dungeon
+ * Tools with their text read from the game files, and guide strategy for the ones that kill groups
  */
-function EnemiesCard({ dungeon, role }: { dungeon: SeasonDungeonInfo; role: JournalRole }) {
+function EnemiesCard({ dungeon, role, strategy }: { dungeon: SeasonDungeonInfo; role: JournalRole; strategy: DungeonStrategy | null }) {
   const enemies = useQuery({ queryKey: ['dungeon-enemies', dungeon.slug], queryFn: () => api.dungeonEnemies(dungeon.slug), staleTime: 6 * 3_600_000, retry: false })
+  const gameReady = useGameData().data?.state === 'ready'
   const [all, setAll] = useState(false)
   const required = enemies.data?.forcesRequired ?? null
-  const trash = (enemies.data?.enemies ?? []).filter(enemy => !enemy.boss && ((enemy.forces ?? 0) > 0 || enemy.dangerous))
-    .sort((a, b) => Number(!!enemyNote(b, role)) - Number(!!enemyNote(a, role)) || Number(b.dangerous) - Number(a.dangerous) || (b.forces ?? 0) - (a.forces ?? 0))
-  const shown = all ? trash : trash.slice(0, 12)
+  const plans = useMemo(() => new Map((strategy?.enemies ?? []).map((entry, at) => [entry.name, { entry, at }])), [strategy])
+  const trash = useMemo(() => uniqueByName((enemies.data?.enemies ?? []).filter(enemy => !enemy.boss && ((enemy.forces ?? 0) > 0 || enemy.dangerous || plans.has(enemy.name))))
+    // Enemies with written strategy come first, in the guide's order of threat, then by role, danger, and forces
+    .sort((a, b) => (plans.get(a.name)?.at ?? 1e3) - (plans.get(b.name)?.at ?? 1e3) || Number(!!enemyNote(b, role)) - Number(!!enemyNote(a, role)) || Number(b.dangerous) - Number(a.dangerous) || (b.forces ?? 0) - (a.forces ?? 0)), [enemies.data, plans, role])
+  const spellIds = useMemo(() => [...new Set(trash.flatMap(enemy => enemy.spells?.map(spell => spell.id) ?? []))].sort((a, b) => a - b), [trash])
+  const spells = useQuery({ queryKey: ['dungeon-spells', dungeon.slug, spellIds.join(',')], queryFn: () => api.dungeonSpells(spellIds), enabled: gameReady && spellIds.length > 0, staleTime: Infinity })
+  const shown = all ? trash : trash.slice(0, Math.max(12, plans.size))
   return (
     <Card as="section" aria-labelledby="enemies-title">
-      <div className="surface-heading"><h2 id="enemies-title"><Users size={16} aria-hidden="true" />Enemies</h2><p>Trash between the bosses · from Keystone Guru</p></div>
+      <div className="surface-heading"><h2 id="enemies-title"><Users size={16} aria-hidden="true" />Enemies</h2><p>Trash between the bosses · open one for its abilities and how to handle it</p></div>
       {enemies.isPending ? <p className="muted small" role="status">Loading enemies…</p>
         : enemies.isError ? <p className="muted small" role="alert">{errorMessage(enemies.error)}</p>
           : !trash.length ? <p className="muted small">No enemies recorded for this dungeon yet</p>
             : <>
               <div className="dungeon-enemies">
-                {shown.map(enemy => {
-                  const Icon = enemy.dangerous ? Skull : kindIcons[enemy.kind]
-                  const note = enemyNote(enemy, role)
-                  return (
-                    <div key={enemy.npcId} className="dungeon-enemy" data-emphasis={note ? 'key' : 'quiet'} data-dangerous={enemy.dangerous || undefined}>
-                      <span className="dungeon-enemy-icon"><Icon size={16} aria-hidden="true" /></span>
-                      <div className="dungeon-enemy-main">
-                        <b>{enemy.name}</b>
-                        <span className="dungeon-enemy-tags">
-                          {note && <Badge tone={enemy.dangerous ? 'amber' : 'blue'}>{note}</Badge>}
-                          {enemy.elite && <Badge>Elite</Badge>}
-                          {enemy.kind !== 'melee' && enemy.kind !== 'other' && <Badge>{enemy.kind[0]!.toUpperCase() + enemy.kind.slice(1)}</Badge>}
-                        </span>
-                      </div>
-                      <span className="dungeon-enemy-forces">{enemy.forces != null ? <>{enemy.forces}<small>{required ? ` · ${(enemy.forces / required * 100).toFixed(1)}%` : ''}</small></> : '—'}</span>
-                      <Button variant="quiet" onClick={() => void api.openExternal(wowheadNpcUrl(enemy.npcId))} aria-label={`${enemy.name} abilities on Wowhead`}><ExternalLink size={13} />Abilities</Button>
-                    </div>
-                  )
-                })}
+                {shown.map(enemy => <EnemyRow key={enemy.npcId} enemy={enemy} role={role} plan={plans.get(enemy.name)?.entry} spells={spells.data} gameReady={gameReady} required={required} />)}
               </div>
               {trash.length > shown.length && <Button variant="quiet" onClick={() => setAll(true)}>Show all {trash.length} enemies</Button>}
-              <p className="muted small dungeon-note">Forces are per kill, out of {required ?? 'the dungeon total'}. Keystone Guru has not listed this season's trash abilities yet, so Abilities opens each enemy on Wowhead</p>
+              <p className="muted small dungeon-note">Forces are per kill, out of {required ?? 'the dungeon total'}. Danger flags and forces from Keystone Guru, spell lists from Mythic Dungeon Tools with their text from your game files, pictures from Wowhead</p>
             </>}
     </Card>
   )
 }
 
+function EnemyRow({ enemy, role, plan, spells, gameReady, required }: { enemy: DungeonEnemy; role: JournalRole; plan: EnemyStrategy | undefined; spells: Record<number, EnemySpell> | undefined; gameReady: boolean; required: number | null }) {
+  const [open, setOpen] = useState(false)
+  const note = enemyNote(enemy, role)
+  const mine = plan?.[role]?.length ?? 0
+  const image = enemyImage(enemy)
+  const Icon = enemy.dangerous ? Skull : kindIcons[enemy.kind]
+  const kicks = enemy.spells?.filter(spell => spell.interrupt).length ?? 0
+  return (
+    <div className="dungeon-enemy" data-emphasis={plan || note ? 'key' : 'quiet'} data-dangerous={enemy.dangerous || plan ? true : undefined} data-open={open || undefined}>
+      <button type="button" className="dungeon-enemy-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="dungeon-enemy-icon">{image ? <img src={image} alt="" draggable={false} loading="lazy" /> : <Icon size={16} aria-hidden="true" />}</span>
+        <span className="dungeon-enemy-main">
+          <b>{enemy.name}</b>
+          {plan && <span className="dungeon-enemy-threat">{plan.threat}</span>}
+          <span className="dungeon-enemy-tags">
+            {note && <Badge tone={enemy.dangerous ? 'amber' : 'blue'}>{note}</Badge>}
+            {mine > 0 && <Badge tone="blue"><Sparkles size={11} aria-hidden="true" />{mine} for {roleLabels[role].toLowerCase()}</Badge>}
+            {kicks > 0 && <Badge><Zap size={11} aria-hidden="true" />{kicks} to interrupt</Badge>}
+            {enemy.stunnable === false && <Badge><ShieldOff size={11} aria-hidden="true" />No stuns</Badge>}
+            {enemy.elite && <Badge>Elite</Badge>}
+            {enemy.kind !== 'melee' && enemy.kind !== 'other' && <Badge>{enemy.kind[0]!.toUpperCase() + enemy.kind.slice(1)}</Badge>}
+          </span>
+        </span>
+        <span className="dungeon-enemy-forces">{enemy.forces != null ? <>{enemy.forces}<small>{required ? ` · ${(enemy.forces / required * 100).toFixed(1)}%` : ''}</small></> : '—'}</span>
+        <ChevronDown size={16} className="boss-chevron" aria-hidden="true" />
+      </button>
+      {open && <div className="dungeon-enemy-body" data-image={image ? true : undefined}>
+        {image && <img className="dungeon-enemy-portrait" src={image} alt={enemy.name} draggable={false} />}
+        <div className="dungeon-enemy-detail">
+          <StrategyView notes={plan} role={role} />
+          {enemy.spells?.length ? <div className="boss-abilities">
+            {enemy.spells.map(ref => <EnemyAbility key={ref.id} spell={ref} info={spells?.[ref.id]} role={role} />)}
+            {!gameReady && <p className="muted small">Prepare local game data to read these abilities</p>}
+          </div> : null}
+          <Button variant="quiet" className="dungeon-enemy-link" onClick={() => void api.openExternal(wowheadNpcUrl(enemy.npcId))}><ExternalLink size={13} />{enemy.name} on Wowhead</Button>
+        </div>
+      </div>}
+    </div>
+  )
+}
+
+const tagRoles: Partial<Record<NonNullable<EnemySpellRef['tags']>[number], JournalRole>> = { magic: 'healer', curse: 'healer', poison: 'healer', disease: 'healer', enrage: 'damage' }
+
+/** A trash spell with its game text; interrupts matter to tanks and damage, dispels to healers */
+function EnemyAbility({ spell, info, role }: { spell: EnemySpellRef; info: EnemySpell | undefined; role: JournalRole }) {
+  if (!info) return null
+  const forRole = (spell.interrupt && role !== 'healer') || (spell.tags ?? []).some(tag => tagRoles[tag] === role)
+  return (
+    <div className="boss-ability">
+      <div className="boss-ability-row" data-emphasis={forRole ? 'key' : undefined}>
+        <ItemIcon icon={info.icon} size="small" fallback={<Skull />} />
+        <div>
+          <div className="boss-ability-name">{info.name}{spell.interrupt && <Badge tone="blue"><Zap size={11} aria-hidden="true" />Interrupt</Badge>}{(spell.tags ?? []).map(tag => flagLabels[tag] && <Badge key={tag} tone={flagLabels[tag]!.tone}>{flagLabels[tag]!.label}</Badge>)}</div>
+          {info.text && <p>{info.text.split('\n').filter(Boolean).map((line, at) => <span key={at}>{line}</span>)}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** One boss at a time with the advice for your role, a rough pace for each upgrade, and the route map beside it */
-function PlayMode({ dungeon, family, familyIndex, timers, bosses, role, onRole, onExit }: { dungeon: SeasonDungeonInfo; family: RouteFamily | null; familyIndex: number; timers: NonNullable<DungeonRoutes['timersMs']>; bosses: JournalBoss[]; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
+function PlayMode({ dungeon, family, familyIndex, timers, bosses, strategy, role, onRole, onExit }: { dungeon: SeasonDungeonInfo; family: RouteFamily | null; familyIndex: number; timers: NonNullable<DungeonRoutes['timersMs']>; bosses: JournalBoss[]; strategy: DungeonStrategy | null; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const [step, setStep] = useState(0)
   useEffect(() => {
     const keys = (event: KeyboardEvent) => {
@@ -317,7 +410,8 @@ function PlayMode({ dungeon, family, familyIndex, timers, bosses, role, onRole, 
   const boss = bosses[step]
   if (!boss) return null
   const pace = bossPace(timers, step, bosses.length)
-  const tips = boss.tips.filter(tip => tip.role === role)
+  const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
+  const plan = strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)
   const warned = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role))
   return (
     <div className="dungeon-play" role="region" aria-label={`${dungeon.name} play mode`}>
@@ -333,7 +427,7 @@ function PlayMode({ dungeon, family, familyIndex, timers, bosses, role, onRole, 
             <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
             <div><small>Step {step + 1} of {bosses.length} · Boss {step + 1}</small><h2>{boss.name}</h2></div>
           </div>
-          {tips.length ? tips.map((tip, at) => <TipText key={at} text={tip.text} />) : boss.overview ? <p className="boss-overview">{boss.overview}</p> : null}
+          {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} />}
           {warned.length > 0 && <div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div>}
           <div className="play-targets">
             <Card size="sm"><small>Kill by for +3</small><b>{clock(pace.plusThree)}</b></Card>

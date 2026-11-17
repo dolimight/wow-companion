@@ -60,3 +60,9 @@ Regenerate a holiday’s native exports with `npm run icons -- --variant newyear
 `dungeons/*.jpg` are the Mythic+ dungeon banners Raider.IO publishes for each dungeon (`background_image_url` in its static data), showing Blizzard game art
 They were downloaded with `npm run dungeon-data` on 2026-11-16 and resized to 1440 px wide at JPEG quality 80 for the Dungeons page
 World of Warcraft art is © Blizzard Entertainment
+
+# Enemy pictures
+
+`npcs/*.webp` are 300 px transparent renders of creature models from Wowhead's model viewer thumbnails (`wow.zamimg.com/modelviewer/live/webthumbs/npc`), named by creature display id
+They were downloaded with `npm run dungeon-data` on 2026-11-17 for the trash listed on the Dungeons page
+World of Warcraft art is © Blizzard Entertainment

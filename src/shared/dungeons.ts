@@ -210,6 +210,29 @@ export type DungeonEnemy = {
   health: number | null
   /** Enemy forces one kill gives, and its share of the dungeon's total */
   forces: number | null
+  /** The spells it casts, from Mythic Dungeon Tools' dungeon data; their text comes from the game files */
+  spells?: EnemySpellRef[]
+  /** Whether stuns work on it, from the same data */
+  stunnable?: boolean
+  /** Its creature model, and a bundled render of it under public/assets */
+  displayId?: number
+  image?: string
+}
+export type SpellTag = 'magic' | 'curse' | 'poison' | 'disease' | 'bleed' | 'enrage'
+export const spellTags: readonly SpellTag[] = ['magic', 'curse', 'poison', 'disease', 'bleed', 'enrage']
+export type EnemySpellRef = { id: number; interrupt: boolean; tags?: SpellTag[] }
+export type EnemySpell = { id: number; name: string; text: string; icon: number | null }
+
+/** Strategy written for the app from the season's dungeon guides, in short lines per role */
+export type StrategyNotes = { positioning?: string[]; everyone?: string[]; tank?: string[]; healer?: string[]; damage?: string[] }
+export type BossStrategy = StrategyNotes & { encounterId: number; name: string }
+export type EnemyStrategy = StrategyNotes & { npcId: number; name: string; threat: string }
+export type DungeonStrategy = { dungeon: string; source: { name: string; url: string; updated: string }; bosses: BossStrategy[]; enemies: EnemyStrategy[] }
+export type StrategyFile = { season: string; dungeons: DungeonStrategy[] }
+
+/** The lines one role reads: where to stand, what everyone does, then the role's own jobs */
+export function strategyFor(notes: StrategyNotes | undefined, role: JournalRole) {
+  return { positioning: notes?.positioning ?? [], everyone: notes?.everyone ?? [], mine: notes?.[role] ?? [] }
 }
 export type DungeonEnemies = { dungeon: string; forcesRequired: number | null; enemies: DungeonEnemy[]; observedAt: string; source: string }
 

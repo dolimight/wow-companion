@@ -144,6 +144,7 @@ export function createRouter(s:RouterServices){return t.router({
   dungeonRoutes:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/),force:z.boolean().default(false)})).query(({input})=>run(()=>s.insights.dungeonRoutes(input.dungeon,input.force))),
   dungeonEnemies:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/)})).query(({input})=>run(()=>s.insights.dungeonEnemies(input.dungeon))),
   dungeonJournal:p.input(z.object({name:z.string().min(1).max(120),encounterIds:z.array(z.number().int().positive()).max(20).default([])})).query(({input})=>run(()=>s.gameData.call('dungeonJournal',input.name,input.encounterIds))),
+  dungeonSpells:p.input(z.object({ids:z.array(z.number().int().positive()).max(600)})).query(({input})=>run(()=>s.gameData.call('dungeonSpells',input.ids))),
   weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
   characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),
   wowToken:p.input(z.object({region:z.enum(blizzardRegions)})).query(({input})=>run(()=>s.insights.wowToken(input.region))),
