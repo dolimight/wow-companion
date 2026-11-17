@@ -49,8 +49,10 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
   contents.on('console-message', onConsole)
   const evaluate = <T = unknown>(expression: string): Promise<T> => contents.executeJavaScript(expression, true) as Promise<T>
   const assert = (condition: unknown, reason: string) => { if (!condition) throw new Error(reason) }
+  // Hosted CI runners are much slower than a desktop, so waits stretch there instead of failing on a slow frame
+  const waitScale = process.env.CI ? 2.5 : 1
   const wait = async (expression: string, label: string, timeout = 12_000) => {
-    const success = await evaluate<boolean>(`new Promise(resolve=>{const until=Date.now()+${timeout};const check=()=>{try{if(${expression})return resolve(true)}catch{}if(Date.now()>until)return resolve(false);setTimeout(check,50)};check()})`)
+    const success = await evaluate<boolean>(`new Promise(resolve=>{const until=Date.now()+${Math.round(timeout * waitScale)};const check=()=>{try{if(${expression})return resolve(true)}catch{}if(Date.now()>until)return resolve(false);setTimeout(check,50)};check()})`)
     assert(success, `Timed out: ${label} (at ${await evaluate<string>('location.hash')})`)
   }
   // JSON.stringify leaves < > / and the U+2028 and U+2029 separators raw, so escape them before building code

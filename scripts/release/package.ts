@@ -3,7 +3,9 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { releaseChannel } from './metadata.ts'
 import { installerIcon } from './icon.ts'
-const [requestedVersion, architecture] = process.argv.slice(2)
+// `--dir` builds only the unpacked app, which is all the packaged smoke check runs; releases build the installer
+const [requestedVersion, architecture] = process.argv.slice(2).filter(arg => arg !== '--dir')
+const unpackedOnly = process.argv.includes('--dir')
 const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as { version: string }
 const version = requestedVersion === 'current' ? packageJson.version : requestedVersion
 const channel = releaseChannel(`v${version}`)
@@ -12,6 +14,7 @@ if (packageJson.version !== version) throw new Error('Stamp the package with the
 if (process.platform !== 'win32') throw new Error('Release packaging requires Windows')
 const args = [resolve('node_modules/electron-builder/out/cli/cli.js'), '--win', `--${architecture}`, '--publish', 'never', `--config.publish.channel=${channel === 'stable' ? 'latest' : 'nightly'}`, `--config.publish.releaseType=${channel === 'stable' ? 'release' : 'prerelease'}`]
 args.push(`--config.win.icon=${installerIcon(version)}`)
+if (unpackedOnly) args.push('--dir')
 // Unset repository secrets arrive as empty strings, which the builder would read as a certificate path
 const env: NodeJS.ProcessEnv = { ...process.env }
 for (const name of ['CSC_LINK', 'CSC_KEY_PASSWORD']) if (!env[name]) delete env[name]
