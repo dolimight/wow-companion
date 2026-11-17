@@ -85,7 +85,7 @@ export function PlanTalents({ character, live, talents, onChange }: {
   }
   async function copy() {
     if (!talents) return;
-    try { await navigator.clipboard.writeText(talents.loadout); notify("Talent string copied · in game open Talents, choose Import, and paste it"); }
+    try { await api.copyText(talents.loadout); notify("Talent string copied · in game open Talents, choose Import, and paste it"); }
     catch (error) { notify(errorMessage(error)); }
   }
 

@@ -1,0 +1,93 @@
+{
+ "season": "season-mn-2",
+ "raids": [
+  {
+   "raid": "the-venomous-abyss",
+   "source": { "name": "Method", "url": "https://www.method.gg/guides/the-venomous-abyss", "updated": "2026-11-06" },
+   "bosses": [
+    { "encounterId": 2888, "name": "Nek'zali the Soulcoiler",
+      "positioning": ["Pull at the entrance and face the boss away from the raid", "The Soulcoil Well sits in the middle; Restless Amani walk to it from the sarcophagi on the sides", "Essence Rend targets step to the side of the room before the dispel so the Latent Cultist puddle lands out of the way", "In the intermission, stay out of the side Soul Transfer beams; melee group-soak Hungering Pyre"],
+      "everyone": ["Nothing may reach the well: each add that does gives the boss energy and triggers raid-wide Soulcoil Rite", "At 100 energy the boss enrages with Uncoiled Rage, so energy is the real timer", "Dodge Anguished Echoes circles during Soulcoil Ignition, and step out of Latent Cultist explosions"],
+      "tank": ["Tank from 30 or more yards so Possession Barrage spirits lose damage on the way", "Swap on Hollowing Strikes around 30 to 40% reduced healing"],
+      "healer": ["Magic dispel Essence Rend once the target is at the side", "Save cooldowns for Soulcoil Ignition, ideally with no Ritual Burn stacks left", "Phase 2 Uncoiling ticks on the raid until the boss dies"],
+      "damage": ["Strip the Restless Amani's magic-only absorb with magic damage, then kill them before the well", "Clean up corpses in Stage One: Vessels revive as empowered adds in the intermission", "Kill both Echoes of Jawae to end the intermission; use Hero and cooldowns in Phase 2"],
+      "mythic": ["A Drowned Echo spawns in the well six times; assign two teams of 3 damage and 1 healer to kill it", "Interrupt Soulcoiler's Curse or everyone in the well is ejected", "Stop casting before Invoke: it interrupts and silences you", "Revive Vessels one at a time; several together is heavy raid damage"] },
+    { "encounterId": 2874, "name": "Entombed Sentinels",
+      "positioning": ["Keep the two golems 40 or more yards apart at all times, one per side", "Split the raid into two equal teams, one per golem; the red side starts in a corner so puddles go along the wall", "Teams and tanks swap sides after every intermission to drop their marks"],
+      "everyone": ["Within 40 yards of each other the golems take 99% less damage", "Your side's mark stacks every 5 seconds while you stay near that golem", "In the intermission, touch one partner so your combined green orbs equal exactly 4, or you explode with Cultivated Burst", "Keep both golems' health even: the weaker one heals to match at each intermission"],
+      "tank": ["Green tank: Empowering Slam stacks on the same target, so swap", "Red tank: swap on Bloodvenom Injection and walk to a safe spot before it expires, since expiry drops a huge puddle"],
+      "healer": ["Dispel Blighted Blood at the room edge so its pool lands outside the play space", "Don't dispel on cooldown"],
+      "damage": ["Green side: kill Venom Coagulation first and pop Toxic Droplets, one or two each", "Dodge Living Venom both ways", "Red side: group-soak Unstable Miasma, then spread"],
+      "mythic": ["Shifting Protovenom marks 8 players: two marked players touching clears both, touching anyone else explodes", "Toxic Droplet over-soaks, the droplet lines, and short Unstable Miasma soaks are all lethal", "Place Blood Venom puddles on a set pattern so the room lasts", "Balance boss health by moving players, not by stopping damage"] },
+    { "encounterId": 2894, "name": "The Lost Explorers",
+      "positioning": ["Only two turtles may be within 30 yards of each other; all three together are immune", "Place Gebbo's bomb at the room edge", "Spread from Epu's Blink Nova target so she blinks farther away", "Jump on a Bouncy Mushroom to ride over the Blast Wave"],
+      "everyone": ["Feed a Disgusting Fish from the crates to reset Mor'zahi's Final Ascension; you get three", "A fourth Final Ascension is the hard enrage", "Every Mighty Thud mark needs a soak group", "Interrupt Icebound Flames", "Clear your Frostfire debuff by stepping into the opposite patch before the next set", "Each explorer enrages when another dies, so kill them close together"],
+      "tank": ["Swap on Shredding Shards (Epu) and Steady Strikes (Nema)", "Keep only two turtles in cleave range as they move"],
+      "healer": ["Malevolent Presence ticks all fight", "Each fish feed hits the raid with Fishy Feedback and a DoT", "Dispel Icebound Flames if a kick is missed"],
+      "damage": ["Pop every crate before 25 seconds or it hits the raid; crates give the fish", "If you must stagger kills, go Gebbo, then Nema, then Epu"],
+      "mythic": ["Crate pops hit the whole raid with a bleed: assign one popper and keep stacks low", "Feed with about 4 seconds left on Final Ascension, in the order Gebbo, Epu, Nema", "Every Blink Nova goes at least 20 yards from melee", "Bait Shell Spin to the room edge"] },
+    { "encounterId": 2882, "name": "Vashnik the Malignant",
+      "positioning": ["The boss drinks from the two fountains nearest him, so where the tank parks him decides the fight", "Simplest plan: tank him between the Shadow and Fire fountains", "Plague Wave runs along the four cardinal lines, so Plague Froth targets stand off those lines"],
+      "everyone": ["Each Imbibe at 100 energy hits the raid and adds a permanent Toxic Vapor stack: that's the soft enrage", "Kill every venom before it reaches the central pool, and on spawn before it hardens", "Stay within 6 yards of a landing Catalytic Bile, but don't stack the whole raid on one"],
+      "tank": ["Swap after every Dripping Fangs", "One tank walks the boss to the planned fountain pair before each Imbibe and calls it"],
+      "healer": ["Use cooldowns for Imbibe", "Siphoning Infection stops healing; Stygian Infection absorbs healing but can be healed through", "Stagger Exploding Infection dispels, and hold them if the raid is low"],
+      "damage": ["Blood adds split when they die; Shadow adds die twice through their absorb", "Grip or crowd control one Burning Venom and kill them one at a time, never together"],
+      "mythic": ["Tank next to the shadow fountain and stay in that section", "Three Burning Venom spawn: banish one and kill it last", "Malignant Totems can only be cleared by aimed Plague Froth waves; one left at Imbibe hurts, two usually wipe"] },
+    { "encounterId": 2871, "name": "Sszorak",
+      "positioning": ["Tank the boss at the platform edge with the raid behind him in two soak groups", "Mark the possible wind tunnel spots and drop cysts opposite the tunnels that will fire", "In the intermission, pixel stack in the middle so the wind pushes you into the cyst"],
+      "everyone": ["Avoid Tempest tornadoes and Caustic Residue pools", "Venomous Surge targets leave a Viscous Cyst where they stand", "During Raging Crosswinds, collide with another launched player"],
+      "tank": ["Taunts work mid-combo: swap between Ravage casts and take them at the edge"],
+      "healer": ["Ula'tek's Presence drains the raid all fight; a fifth healer helps", "Coordinate knockback immunities so collision partners aren't stranded"],
+      "damage": ["Mutilate needs at least 5 soakers; alternate two soak groups and never soak twice in a row", "Dig In makes the boss take 30% more damage: that's the burn window"],
+      "mythic": ["Serpent's Fury: 14 players stack in the red circle to reset his energy; at 100 he becomes lethal", "After the stack, spread at once for Virulence and use a personal every other set", "Crosswinds gain four lines; pre-assign classes without a reliable cancel"] },
+    { "encounterId": 2887, "name": "The Twin Fangs",
+      "positioning": ["The serpents can't move, so spread loosely around them", "Drop Coiling Ichor circles along the room edge", "When they Submerge and swap sides, cross the Vile Flood beam early; behind it is safe"],
+      "everyone": ["Ten Eternal Venom stacks kill you; green effects add stacks and only Ravenous Feast removes one", "Soak every Caustic Globule with one player, or it stacks the whole raid", "Point your Spawn of Vexhul's spit away from the raid"],
+      "tank": ["Trade serpents on Caustic Deluge and Stone Breaker stacks", "Stay in range of your serpent so the range-check spells never fire"],
+      "healer": ["Toxic Fumes ticks all fight", "Kill both serpents close together: the survivor gains stacking damage", "Hero/Lust on pull"],
+      "damage": ["Two-target damage shines here", "Use three Ravenous Feast soak groups of 7 or more; no group soaks twice", "Both must die before the third Submerge"],
+      "mythic": ["Globules get Barbed Bulwark, which any crowd control removes: use AoE stuns and fears", "Interrupt every Visceral Burst from the ten Broodlings; more than one getting through usually wipes", "Feast soaks need at least 4 each; fully absorb the Tainted Blood founts"] },
+    { "encounterId": 2883, "name": "The Coiled Altar",
+      "positioning": ["Stay stacked behind the boss and return to that formation every phase", "Pile orbs in the middle for the Sever tank to clear", "Guillotine soaks: two alternating groups go to the corner marker with the target", "In Phase 2, move to the Spiritcackle add on the far side; stand near the middle for the 0% knockback"],
+      "everyone": ["Drop orbs into the middle pile; orb carriers don't stack with anyone", "AoE free Dreadmarch players and grip back anyone drifting to the edge", "Gloombomb targets spread, then collect the Soul Fragments within 15 seconds", "Kill both bosses close together"],
+      "tank": ["Aim Sever through the orb pile and swap on stacks", "Swap on Soul Sever and Blighted Sever stacks; Soul Sever also clears the kited ghosts"],
+      "healer": ["Poison dispel Venomfang", "Clear only as many orbs as healers can cover", "Use raid cooldowns when Zul'jan hits 0% and detonates the remaining orbs"],
+      "damage": ["Kick Wail of Terror and kill both Spiritcackle adds before 100 energy", "Burn Malacrass's Eternal Nightfall shield to stop it", "In the intermission, Hero and burst Zul'jan, who takes double damage"],
+      "mythic": ["Purple orbs must never touch other orbs; clear every Virulent Mutation before the next Toxic Deluge", "Two Gloombombs break each Spiteful Soulcoiler's shield", "Ghosts must never touch each other", "Push Phase 2 within seconds of the Soul Sever that clears ghosts"] },
+    { "encounterId": 2895, "name": "Ula'tek",
+      "positioning": ["Split into two equal groups before the pull for Spectral Coils and the Phase 2 sides", "In Phase 1, move to the side opposite the wing she pulls back for Caustic Waves", "When she resurfaces at the bubble spot, the tank must be there at once", "In Phase 3, melee stay on the boss platform and ranged sit to its left; leave it before Circling Prey breaks it"],
+      "everyone": ["Keep green damage off eggs and egg carriers or they hatch Vipers", "Soak Spectral Coils in your group", "Dodge the Mephitic Thrash tail sweep and Virulent Spit", "Leech Serpent's Bite before it calcifies, then spread for Volatile Purge"],
+      "tank": ["Stay in melee for Mother's Wrath and swap on Stone Venom stacks", "Always keep someone on the tail", "Swap during waves or casts, never on an open global"],
+      "healer": ["Necrotic Vapors grows over the fight", "Vipers' Putrid Membrane hits the raid when hatches go wrong"],
+      "damage": ["Phase 2: kill the Doomscale Warden in the corridor, feed every egg to the Cauldron (big one last), then kill the Weakened Doomscale", "Break Grasping Fangs tethers two at a time", "Phase 3: kill each Blightscale Shrieker before 2 Acidic Expulsion stacks and kick Vicious Echoes"],
+      "mythic": ["Egg carriers must never come within 3 yards of each other", "Everyone stands inside the bubble when Fester Burst goes off", "Enraged adds gain double haste and damage: kill them fast", "Use Hero as you land back on the main platform after Phase 2"] }
+   ]
+  },
+  {
+   "raid": "the-tidebound-grotto",
+   "source": { "name": "Method", "url": "https://www.method.gg/guides/the-tidebound-grotto/nymrissa-wavecaller", "updated": "2026-08-19" },
+   "bosses": [
+    { "encounterId": 2849, "name": "Nymrissa Wavecaller",
+      "positioning": ["Bring the boss to the biggest Shorerunner spawn; ranged handle the single spawns", "Run to the gap in the Swirling Whirlpools and stack there", "Don't stand where Pop! knocks you into the water", "Drop Frost Orbs away from the bubble and the raid's paths"],
+      "everyone": ["Stop every Shorerunner before it reaches the Alluring Bubble; any crowd control works", "Soak Frost Orbs in a planned order"],
+      "tank": ["Swap on Water Jet stacks", "Aim Water Jet to wash away Lingering Frost"],
+      "healer": ["Plan a cooldown for Pop!", "Keep Abyssal Rain from overlapping Pulsing Tides or Pop!"],
+      "damage": ["Bubblefin Berserkers are top priority the moment they appear"],
+      "mythic": ["Kill each Bubblefin Frostscale first: its shield protects nearby murlocs", "Soaking a Frost Orb hits the raid, so spread the soaks out in time"] }
+   ]
+  },
+  {
+   "raid": "the-unbinding-of-kithix",
+   "source": { "name": "Method", "url": "https://www.method.gg/guides/the-unbinding-of-kithix/kithix", "updated": "2026-10-14" },
+   "bosses": [
+    { "encounterId": 2896, "name": "Kith'ix",
+      "positioning": ["Keep every add at least 25 yards from Kith'ix, or it takes much less damage", "Drag the Venomous Hulk onto the Voidweaver, which can't move, and stack the raid there", "Point Venom Roar away from the raid", "In the intermission, stand in Liadrin's light in the middle"],
+      "everyone": ["Grab a Light's Embrace mote before each Extinguish, or use an immunity", "Kill every add and egg before 100 energy", "Stay under 5 Nullify stacks", "Kill the boss before the 8th Eightfold Eclipse"],
+      "tank": ["Swap on every Dark Devastation", "With Negation, touch a Null Gate before it expires", "Place Voidscars on the planned markers"],
+      "healer": ["Heal off Abyssal Grasp absorbs within 8 seconds", "Dispel feared players only once they're away from the raid"],
+      "damage": ["Kill the Voidweaver first; Nightfall keeps growing", "Grip Bomber Beetles onto the Hulk one at a time", "Break Mindstinger eggs before they hatch", "Use Hero and every cooldown in Phase 2's Luminous Grace window"],
+      "mythic": ["Nullify kills at 3 stacks instead of 5", "Negation lasts 12 seconds and tanks clear 3 Null Gates", "Beetles and their explosions leave more eggs"] }
+   ]
+  }
+ ]
+}

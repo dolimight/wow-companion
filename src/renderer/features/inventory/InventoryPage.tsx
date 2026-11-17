@@ -28,7 +28,7 @@ const date = (value: string | null | undefined) => value ? new Date(value).toLoc
 const readable = (value: string) => value.replace(/\.+$/, '')
 function money(copper: number) { return `${Math.floor(copper / 10000).toLocaleString()}g ${Math.floor(copper % 10000 / 100)}s ${copper % 100}c` }
 function cost(cost: CurrencyCost) { return cost.currencyId === 'money' ? money(cost.amount) : `${cost.amount.toLocaleString()} × ${cost.currencyId.startsWith('item:') ? `Item #${cost.currencyId.slice(5)}` : `Currency #${cost.currencyId}`}` }
-async function copy(value: string, message: string) { try { await navigator.clipboard.writeText(value); notify(message) } catch (error) { notify(errorMessage(error)) } }
+async function copy(value: string, message: string) { try { await api.copyText(value); notify(message) } catch (error) { notify(errorMessage(error)) } }
 
 export function InventoryPage({ character }: { character: Character }) { return <InventoryContent key={character.id} character={character} /> }
 function InventoryContent({ character }: { character: Character }) {
