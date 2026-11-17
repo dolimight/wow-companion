@@ -286,7 +286,58 @@
       "elite": false,
       "boss": true,
       "health": 20367641,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1296058,
+        "interrupt": false,
+        "tags": [
+         "disease"
+        ]
+       },
+       {
+        "id": 1296219,
+        "interrupt": false
+       },
+       {
+        "id": 1296220,
+        "interrupt": false
+       },
+       {
+        "id": 1298223,
+        "interrupt": false
+       },
+       {
+        "id": 1298683,
+        "interrupt": false
+       },
+       {
+        "id": 1306345,
+        "interrupt": false
+       },
+       {
+        "id": 1307700,
+        "interrupt": false
+       },
+       {
+        "id": 1307703,
+        "interrupt": false
+       },
+       {
+        "id": 1307768,
+        "interrupt": false
+       },
+       {
+        "id": 1307894,
+        "interrupt": false
+       },
+       {
+        "id": 1310378,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 144110
      },
      {
       "npcId": 259446,
@@ -296,7 +347,74 @@
       "elite": false,
       "boss": true,
       "health": 29189294,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1287798,
+        "interrupt": false
+       },
+       {
+        "id": 1287811,
+        "interrupt": false
+       },
+       {
+        "id": 1298949,
+        "interrupt": false
+       },
+       {
+        "id": 1299053,
+        "interrupt": false
+       },
+       {
+        "id": 1299130,
+        "interrupt": false
+       },
+       {
+        "id": 1299154,
+        "interrupt": false
+       },
+       {
+        "id": 1299940,
+        "interrupt": false
+       },
+       {
+        "id": 1300044,
+        "interrupt": false
+       },
+       {
+        "id": 1300503,
+        "interrupt": false
+       },
+       {
+        "id": 1300612,
+        "interrupt": false
+       },
+       {
+        "id": 1300686,
+        "interrupt": false
+       },
+       {
+        "id": 1305368,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1305393,
+        "interrupt": false
+       },
+       {
+        "id": 1310357,
+        "interrupt": false
+       },
+       {
+        "id": 1310974,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 144156
      },
      {
       "npcId": 259447,
@@ -306,7 +424,39 @@
       "elite": false,
       "boss": true,
       "health": 25946039,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300876,
+        "interrupt": false
+       },
+       {
+        "id": 1300888,
+        "interrupt": false
+       },
+       {
+        "id": 1300894,
+        "interrupt": false
+       },
+       {
+        "id": 1301111,
+        "interrupt": false
+       },
+       {
+        "id": 1301217,
+        "interrupt": false
+       },
+       {
+        "id": 1301350,
+        "interrupt": false
+       },
+       {
+        "id": 1301413,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 145435
      },
      {
       "npcId": 261550,
@@ -316,7 +466,20 @@
       "elite": true,
       "boss": false,
       "health": 1945953,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1294432,
+        "interrupt": false
+       },
+       {
+        "id": 1307098,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146598,
+      "image": "npcs/146598.webp"
      },
      {
       "npcId": 261552,
@@ -326,7 +489,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1307526,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146661,
+      "image": "npcs/146661.webp"
      },
      {
       "npcId": 261553,
@@ -336,7 +508,23 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1306308,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1306333,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146654,
+      "image": "npcs/146654.webp"
      },
      {
       "npcId": 261554,
@@ -346,7 +534,27 @@
       "elite": true,
       "boss": false,
       "health": 5513534,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1294567,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1294572,
+        "interrupt": false
+       },
+       {
+        "id": 1306668,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147569,
+      "image": "npcs/147569.webp"
      },
      {
       "npcId": 261556,
@@ -356,7 +564,16 @@
       "elite": true,
       "boss": false,
       "health": 972977,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1306383,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146662,
+      "image": "npcs/146662.webp"
      },
      {
       "npcId": 261557,
@@ -366,7 +583,39 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1287544,
+        "interrupt": false
+       },
+       {
+        "id": 1289416,
+        "interrupt": true,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1292904,
+        "interrupt": false
+       },
+       {
+        "id": 1306385,
+        "interrupt": false
+       },
+       {
+        "id": 1307567,
+        "interrupt": true
+       },
+       {
+        "id": 1307602,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146663,
+      "image": "npcs/146663.webp"
      },
      {
       "npcId": 261560,
@@ -376,7 +625,20 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1294557,
+        "interrupt": true
+       },
+       {
+        "id": 1306381,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146653,
+      "image": "npcs/146653.webp"
      },
      {
       "npcId": 261573,
@@ -386,7 +648,32 @@
       "elite": true,
       "boss": false,
       "health": 9081114,
-      "forces": 30
+      "forces": 30,
+      "spells": [
+       {
+        "id": 1293420,
+        "interrupt": false
+       },
+       {
+        "id": 1294934,
+        "interrupt": false
+       },
+       {
+        "id": 1295055,
+        "interrupt": false
+       },
+       {
+        "id": 1308864,
+        "interrupt": false
+       },
+       {
+        "id": 1309416,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146299,
+      "image": "npcs/146299.webp"
      },
      {
       "npcId": 262011,
@@ -396,7 +683,23 @@
       "elite": true,
       "boss": false,
       "health": 5513534,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1294845,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1294849,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146664,
+      "image": "npcs/146664.webp"
      },
      {
       "npcId": 262398,
@@ -406,7 +709,35 @@
       "elite": true,
       "boss": false,
       "health": 32432549,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300503,
+        "interrupt": false
+       },
+       {
+        "id": 1300698,
+        "interrupt": false
+       },
+       {
+        "id": 1305368,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1305393,
+        "interrupt": false
+       },
+       {
+        "id": 1310666,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 142361,
+      "image": "npcs/142361.webp"
      },
      {
       "npcId": 263109,
@@ -416,7 +747,35 @@
       "elite": true,
       "boss": false,
       "health": 4864883,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1289416,
+        "interrupt": true,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1292892,
+        "interrupt": false
+       },
+       {
+        "id": 1306852,
+        "interrupt": false
+       },
+       {
+        "id": 1306856,
+        "interrupt": false
+       },
+       {
+        "id": 1307567,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147578,
+      "image": "npcs/147578.webp"
      },
      {
       "npcId": 263112,
@@ -426,7 +785,19 @@
       "elite": true,
       "boss": false,
       "health": 1297302,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1303366,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146677,
+      "image": "npcs/146677.webp"
      },
      {
       "npcId": 264798,
@@ -436,7 +807,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1293059,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 144271,
+      "image": "npcs/144271.webp"
      },
      {
       "npcId": 268358,
@@ -446,7 +826,16 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300885,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 11686,
+      "image": "npcs/11686.webp"
      },
      {
       "npcId": 270306,
@@ -456,7 +845,28 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1306517,
+        "interrupt": false
+       },
+       {
+        "id": 1306844,
+        "interrupt": false
+       },
+       {
+        "id": 1306893,
+        "interrupt": false
+       },
+       {
+        "id": 1306911,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146680,
+      "image": "npcs/146680.webp"
      },
      {
       "npcId": 270378,
@@ -466,7 +876,16 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1306657,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 146372,
+      "image": "npcs/146372.webp"
      },
      {
       "npcId": 270417,
@@ -476,7 +895,20 @@
       "elite": true,
       "boss": false,
       "health": 32432550,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300698,
+        "interrupt": false
+       },
+       {
+        "id": 1305393,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 142361,
+      "image": "npcs/142361.webp"
      },
      {
       "npcId": 271453,
@@ -486,7 +918,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1308518,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147577,
+      "image": "npcs/147577.webp"
      }
     ],
     "observedAt": "2026-11-16T21:30:47.271Z",
@@ -753,7 +1194,23 @@
       "elite": true,
       "boss": false,
       "health": 3729743,
-      "forces": 8
+      "forces": 8,
+      "spells": [
+       {
+        "id": 1238053,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1241219,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 14316,
+      "image": "npcs/14316.webp"
      },
      {
       "npcId": 241809,
@@ -763,7 +1220,19 @@
       "elite": true,
       "boss": false,
       "health": 778381,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1238053,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141179,
+      "image": "npcs/141179.webp"
      },
      {
       "npcId": 241812,
@@ -773,7 +1242,62 @@
       "elite": false,
       "boss": true,
       "health": 22702784,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1232012,
+        "interrupt": false
+       },
+       {
+        "id": 1234021,
+        "interrupt": false
+       },
+       {
+        "id": 1234233,
+        "interrupt": false
+       },
+       {
+        "id": 1234681,
+        "interrupt": false
+       },
+       {
+        "id": 1234846,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1235072,
+        "interrupt": false
+       },
+       {
+        "id": 1235079,
+        "interrupt": false
+       },
+       {
+        "id": 1235105,
+        "interrupt": false
+       },
+       {
+        "id": 1235125,
+        "interrupt": false
+       },
+       {
+        "id": 1235129,
+        "interrupt": false
+       },
+       {
+        "id": 1235405,
+        "interrupt": false
+       },
+       {
+        "id": 1245593,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129344
      },
      {
       "npcId": 241813,
@@ -783,7 +1307,27 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1241217,
+        "interrupt": false
+       },
+       {
+        "id": 1297699,
+        "interrupt": false,
+        "tags": [
+         "disease"
+        ]
+       },
+       {
+        "id": 1297701,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141213,
+      "image": "npcs/141213.webp"
      },
      {
       "npcId": 241814,
@@ -793,7 +1337,23 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1241214,
+        "interrupt": true
+       },
+       {
+        "id": 1297696,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 128080,
+      "image": "npcs/128080.webp"
      },
      {
       "npcId": 241816,
@@ -803,7 +1363,19 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1238439,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124212,
+      "image": "npcs/124212.webp"
      },
      {
       "npcId": 241869,
@@ -813,7 +1385,20 @@
       "elite": true,
       "boss": false,
       "health": 6486510,
-      "forces": 28
+      "forces": 28,
+      "spells": [
+       {
+        "id": 1240280,
+        "interrupt": false
+       },
+       {
+        "id": 1241463,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 128095,
+      "image": "npcs/128095.webp"
      },
      {
       "npcId": 241872,
@@ -823,7 +1408,16 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 9
+      "forces": 9,
+      "spells": [
+       {
+        "id": 1309919,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141288,
+      "image": "npcs/141288.webp"
      },
      {
       "npcId": 241874,
@@ -833,7 +1427,20 @@
       "elite": true,
       "boss": false,
       "health": 2789199,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1241226,
+        "interrupt": false
+       },
+       {
+        "id": 1265400,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141223,
+      "image": "npcs/141223.webp"
      },
      {
       "npcId": 241876,
@@ -843,7 +1450,23 @@
       "elite": true,
       "boss": false,
       "health": 3081092,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1239860,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1266178,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 103213,
+      "image": "npcs/103213.webp"
      },
      {
       "npcId": 241911,
@@ -853,7 +1476,16 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1296518,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 73034,
+      "image": "npcs/73034.webp"
      },
      {
       "npcId": 244100,
@@ -863,7 +1495,34 @@
       "elite": false,
       "boss": true,
       "health": 20432506,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1235548,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1235623,
+        "interrupt": false
+       },
+       {
+        "id": 1235656,
+        "interrupt": false
+       },
+       {
+        "id": 1235783,
+        "interrupt": false
+       },
+       {
+        "id": 1236289,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129418
      },
      {
       "npcId": 244696,
@@ -873,7 +1532,16 @@
       "elite": true,
       "boss": false,
       "health": 428857,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1235641,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 169,
+      "image": "npcs/169.webp"
      },
      {
       "npcId": 244759,
@@ -883,7 +1551,28 @@
       "elite": true,
       "boss": false,
       "health": 810814,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1234314,
+        "interrupt": false
+       },
+       {
+        "id": 1235829,
+        "interrupt": true
+       },
+       {
+        "id": 1263590,
+        "interrupt": false
+       },
+       {
+        "id": 1263597,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 103231,
+      "image": "npcs/103231.webp"
      },
      {
       "npcId": 244889,
@@ -893,7 +1582,32 @@
       "elite": true,
       "boss": false,
       "health": 7783812,
-      "forces": 35
+      "forces": 35,
+      "spells": [
+       {
+        "id": 1251027,
+        "interrupt": false
+       },
+       {
+        "id": 1264753,
+        "interrupt": false
+       },
+       {
+        "id": 1290205,
+        "interrupt": true
+       },
+       {
+        "id": 1296722,
+        "interrupt": false
+       },
+       {
+        "id": 1309925,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138584,
+      "image": "npcs/138584.webp"
      },
      {
       "npcId": 245076,
@@ -903,7 +1617,16 @@
       "elite": true,
       "boss": false,
       "health": 537461,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1250805,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129498,
+      "image": "npcs/129498.webp"
      },
      {
       "npcId": 245139,
@@ -913,7 +1636,20 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1246687,
+        "interrupt": true
+       },
+       {
+        "id": 1297778,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129562,
+      "image": "npcs/129562.webp"
      },
      {
       "npcId": 245143,
@@ -923,7 +1659,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1246820,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129563,
+      "image": "npcs/129563.webp"
      },
      {
       "npcId": 245145,
@@ -933,7 +1678,31 @@
       "elite": true,
       "boss": false,
       "health": 3081092,
-      "forces": 6
+      "forces": 6,
+      "spells": [
+       {
+        "id": 1246847,
+        "interrupt": true
+       },
+       {
+        "id": 1246865,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1246877,
+        "interrupt": false
+       },
+       {
+        "id": 1266207,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129581,
+      "image": "npcs/129581.webp"
      },
      {
       "npcId": 245146,
@@ -943,7 +1712,20 @@
       "elite": true,
       "boss": false,
       "health": 5513534,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1246957,
+        "interrupt": false
+       },
+       {
+        "id": 1246986,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 131630,
+      "image": "npcs/131630.webp"
      },
      {
       "npcId": 245148,
@@ -953,7 +1735,20 @@
       "elite": true,
       "boss": false,
       "health": 698700,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1247030,
+        "interrupt": false
+       },
+       {
+        "id": 1311572,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129564,
+      "image": "npcs/129564.webp"
      },
      {
       "npcId": 245190,
@@ -963,7 +1758,23 @@
       "elite": true,
       "boss": false,
       "health": 2594604,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1246865,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1246882,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124949,
+      "image": "npcs/124949.webp"
      },
      {
       "npcId": 245567,
@@ -973,7 +1784,19 @@
       "elite": true,
       "boss": false,
       "health": 421623,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1238801,
+        "interrupt": false,
+        "tags": [
+         "curse"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129707,
+      "image": "npcs/129707.webp"
      },
      {
       "npcId": 245752,
@@ -983,7 +1806,27 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 110960,
+        "interrupt": false
+       },
+       {
+        "id": 1238439,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1239394,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124212,
+      "image": "npcs/124212.webp"
      },
      {
       "npcId": 245855,
@@ -993,7 +1836,20 @@
       "elite": true,
       "boss": false,
       "health": 4864883,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1238687,
+        "interrupt": false
+       },
+       {
+        "id": 1238760,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 26857,
+      "image": "npcs/26857.webp"
      },
      {
       "npcId": 246404,
@@ -1003,7 +1859,39 @@
       "elite": false,
       "boss": true,
       "health": 21016293,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1242860,
+        "interrupt": false
+       },
+       {
+        "id": 1243002,
+        "interrupt": false
+       },
+       {
+        "id": 1243408,
+        "interrupt": false
+       },
+       {
+        "id": 1254622,
+        "interrupt": false
+       },
+       {
+        "id": 1297792,
+        "interrupt": false
+       },
+       {
+        "id": 1297796,
+        "interrupt": false
+       },
+       {
+        "id": 1297797,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129989
      },
      {
       "npcId": 246409,
@@ -1013,7 +1901,32 @@
       "elite": true,
       "boss": false,
       "health": 1621628,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1243018,
+        "interrupt": false
+       },
+       {
+        "id": 1243078,
+        "interrupt": false
+       },
+       {
+        "id": 1249186,
+        "interrupt": false
+       },
+       {
+        "id": 1261776,
+        "interrupt": false
+       },
+       {
+        "id": 1262253,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 125149,
+      "image": "npcs/125149.webp"
      },
      {
       "npcId": 246591,
@@ -1033,7 +1946,19 @@
       "elite": false,
       "boss": true,
       "health": 3378390,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1242976,
+        "interrupt": false
+       },
+       {
+        "id": 1255577,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129989
      },
      {
       "npcId": 247760,
@@ -1053,7 +1978,16 @@
       "elite": true,
       "boss": false,
       "health": 6487,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1246825,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 30762,
+      "image": "npcs/30762.webp"
      },
      {
       "npcId": 250478,
@@ -1063,7 +1997,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 50
+      "forces": 50,
+      "spells": [
+       {
+        "id": 1309947,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138885,
+      "image": "npcs/138885.webp"
      },
      {
       "npcId": 251189,
@@ -1073,7 +2016,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1253083,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 169,
+      "image": "npcs/169.webp"
      },
      {
       "npcId": 252041,
@@ -1123,7 +2075,16 @@
       "elite": true,
       "boss": false,
       "health": 64865,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1309931,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 30762,
+      "image": "npcs/30762.webp"
      }
     ],
     "observedAt": "2026-11-16T21:30:47.696Z",
@@ -1341,7 +2302,24 @@
       "elite": true,
       "boss": false,
       "health": 5513534,
-      "forces": 22
+      "forces": 22,
+      "spells": [
+       {
+        "id": 270003,
+        "interrupt": false
+       },
+       {
+        "id": 270016,
+        "interrupt": false
+       },
+       {
+        "id": 1310755,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83252,
+      "image": "npcs/83252.webp"
      },
      {
       "npcId": 133943,
@@ -1351,7 +2329,19 @@
       "elite": false,
       "boss": false,
       "health": 340110,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 269935,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 76055,
+      "image": "npcs/76055.webp"
      },
      {
       "npcId": 134157,
@@ -1361,7 +2351,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1311942,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 83363,
+      "image": "npcs/83363.webp"
      },
      {
       "npcId": 134158,
@@ -1371,7 +2370,31 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 269928,
+        "interrupt": false
+       },
+       {
+        "id": 269976,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1305945,
+        "interrupt": false
+       },
+       {
+        "id": 1310758,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83364,
+      "image": "npcs/83364.webp"
      },
      {
       "npcId": 134174,
@@ -1381,7 +2404,26 @@
       "elite": true,
       "boss": false,
       "health": 4864883,
-      "forces": 20
+      "forces": 20,
+      "spells": [
+       {
+        "id": 269972,
+        "interrupt": true,
+        "tags": [
+         "curse"
+        ]
+       },
+       {
+        "id": 1294815,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83371,
+      "image": "npcs/83371.webp"
      },
      {
       "npcId": 134251,
@@ -1391,7 +2433,26 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 10
+      "forces": 10,
+      "spells": [
+       {
+        "id": 270901,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1296671,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83517,
+      "image": "npcs/83517.webp"
      },
      {
       "npcId": 134331,
@@ -1401,7 +2462,27 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 270889,
+        "interrupt": false
+       },
+       {
+        "id": 1296671,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1296719,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83544,
+      "image": "npcs/83544.webp"
      },
      {
       "npcId": 134739,
@@ -1411,7 +2492,24 @@
       "elite": true,
       "boss": false,
       "health": 7783811,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 270292,
+        "interrupt": false
+       },
+       {
+        "id": 270293,
+        "interrupt": false
+       },
+       {
+        "id": 1310755,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83836,
+      "image": "npcs/83836.webp"
      },
      {
       "npcId": 134993,
@@ -1421,7 +2519,39 @@
       "elite": false,
       "boss": true,
       "health": 20432506,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267618,
+        "interrupt": false
+       },
+       {
+        "id": 267639,
+        "interrupt": false
+       },
+       {
+        "id": 267702,
+        "interrupt": false
+       },
+       {
+        "id": 267874,
+        "interrupt": false
+       },
+       {
+        "id": 271290,
+        "interrupt": false
+       },
+       {
+        "id": 1312146,
+        "interrupt": false
+       },
+       {
+        "id": 1312848,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83529
      },
      {
       "npcId": 134994,
@@ -1441,7 +2571,23 @@
       "elite": true,
       "boss": false,
       "health": 3891906,
-      "forces": 22
+      "forces": 22,
+      "spells": [
+       {
+        "id": 270482,
+        "interrupt": false
+       },
+       {
+        "id": 1301851,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 84112,
+      "image": "npcs/84112.webp"
      },
      {
       "npcId": 135192,
@@ -1451,7 +2597,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 270502,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 84133,
+      "image": "npcs/84133.webp"
      },
      {
       "npcId": 135204,
@@ -1461,7 +2616,26 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 270492,
+        "interrupt": true,
+        "tags": [
+         "curse"
+        ]
+       },
+       {
+        "id": 1295125,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 84140,
+      "image": "npcs/84140.webp"
      },
      {
       "npcId": 135231,
@@ -1471,7 +2645,20 @@
       "elite": true,
       "boss": false,
       "health": 6486509,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 270514,
+        "interrupt": false
+       },
+       {
+        "id": 1302028,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85125,
+      "image": "npcs/85125.webp"
      },
      {
       "npcId": 135235,
@@ -1491,7 +2678,23 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 270497,
+        "interrupt": false
+       },
+       {
+        "id": 270499,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 84163,
+      "image": "npcs/84163.webp"
      },
      {
       "npcId": 135322,
@@ -1501,7 +2704,31 @@
       "elite": false,
       "boss": true,
       "health": 20432506,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 265773,
+        "interrupt": false
+       },
+       {
+        "id": 265910,
+        "interrupt": false
+       },
+       {
+        "id": 265923,
+        "interrupt": false
+       },
+       {
+        "id": 265991,
+        "interrupt": false
+       },
+       {
+        "id": 1311987,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84202
      },
      {
       "npcId": 135406,
@@ -1511,7 +2738,20 @@
       "elite": true,
       "boss": false,
       "health": 291893,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 265991,
+        "interrupt": false
+       },
+       {
+        "id": 1289063,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 88651,
+      "image": "npcs/88651.webp"
      },
      {
       "npcId": 135470,
@@ -1551,7 +2791,20 @@
       "elite": true,
       "boss": false,
       "health": 324326,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267257,
+        "interrupt": false
+       },
+       {
+        "id": 1309499,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84680,
+      "image": "npcs/84680.webp"
      },
      {
       "npcId": 135764,
@@ -1561,7 +2814,20 @@
       "elite": true,
       "boss": false,
       "health": 324326,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267077,
+        "interrupt": false
+       },
+       {
+        "id": 1309499,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84933,
+      "image": "npcs/84933.webp"
      },
      {
       "npcId": 135765,
@@ -1571,7 +2837,20 @@
       "elite": true,
       "boss": false,
       "health": 324326,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267105,
+        "interrupt": false
+       },
+       {
+        "id": 1309499,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84934,
+      "image": "npcs/84934.webp"
      },
      {
       "npcId": 136160,
@@ -1581,7 +2860,35 @@
       "elite": false,
       "boss": true,
       "health": 29189294,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 268586,
+        "interrupt": false
+       },
+       {
+        "id": 1302945,
+        "interrupt": false
+       },
+       {
+        "id": 1303105,
+        "interrupt": false
+       },
+       {
+        "id": 1303267,
+        "interrupt": false
+       },
+       {
+        "id": 1303372,
+        "interrupt": false
+       },
+       {
+        "id": 1303396,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84352
      },
      {
       "npcId": 136256,
@@ -1591,7 +2898,10 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 76137
      },
      {
       "npcId": 136976,
@@ -1601,7 +2911,23 @@
       "elite": false,
       "boss": true,
       "health": 32432549,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1303324,
+        "interrupt": false
+       },
+       {
+        "id": 1303396,
+        "interrupt": false
+       },
+       {
+        "id": 1303488,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84274
      },
      {
       "npcId": 136984,
@@ -1611,7 +2937,20 @@
       "elite": true,
       "boss": false,
       "health": 4540557,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 269232,
+        "interrupt": false
+       },
+       {
+        "id": 269369,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84273,
+      "image": "npcs/84273.webp"
      },
      {
       "npcId": 137473,
@@ -1621,7 +2960,19 @@
       "elite": true,
       "boss": false,
       "health": 5270289,
-      "forces": 10
+      "forces": 10,
+      "spells": [
+       {
+        "id": 1296671,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 85270,
+      "image": "npcs/85270.webp"
      },
      {
       "npcId": 137474,
@@ -1631,7 +2982,24 @@
       "elite": true,
       "boss": false,
       "health": 7783811,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 270927,
+        "interrupt": false
+       },
+       {
+        "id": 1297326,
+        "interrupt": false
+       },
+       {
+        "id": 1306049,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85272,
+      "image": "npcs/85272.webp"
      },
      {
       "npcId": 137478,
@@ -1641,7 +3009,30 @@
       "elite": true,
       "boss": false,
       "health": 7783811,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 270920,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1294972,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1297326,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85274,
+      "image": "npcs/85274.webp"
      },
      {
       "npcId": 137484,
@@ -1651,7 +3042,23 @@
       "elite": true,
       "boss": false,
       "health": 8432462,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1297918,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1297970,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85284,
+      "image": "npcs/85284.webp"
      },
      {
       "npcId": 137485,
@@ -1661,7 +3068,19 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1297781,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 85285,
+      "image": "npcs/85285.webp"
      },
      {
       "npcId": 137486,
@@ -1671,7 +3090,34 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1294883,
+        "interrupt": false
+       },
+       {
+        "id": 1297763,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1305982,
+        "interrupt": false
+       },
+       {
+        "id": 1306763,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85287,
+      "image": "npcs/85287.webp"
      },
      {
       "npcId": 137487,
@@ -1681,7 +3127,23 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 10
+      "forces": 10,
+      "spells": [
+       {
+        "id": 270502,
+        "interrupt": false
+       },
+       {
+        "id": 1297763,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 33733,
+      "image": "npcs/33733.webp"
      },
      {
       "npcId": 137591,
@@ -1691,7 +3153,10 @@
       "elite": true,
       "boss": false,
       "health": 6487,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 84934
      },
      {
       "npcId": 137969,
@@ -1701,7 +3166,28 @@
       "elite": true,
       "boss": false,
       "health": 5837859,
-      "forces": 15
+      "forces": 15,
+      "spells": [
+       {
+        "id": 271555,
+        "interrupt": false
+       },
+       {
+        "id": 271561,
+        "interrupt": false
+       },
+       {
+        "id": 1310755,
+        "interrupt": false
+       },
+       {
+        "id": 1312569,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85677,
+      "image": "npcs/85677.webp"
      },
      {
       "npcId": 137989,
@@ -1711,7 +3197,23 @@
       "elite": false,
       "boss": false,
       "health": 1945953,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 271563,
+        "interrupt": false
+       },
+       {
+        "id": 1298104,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 33008,
+      "image": "npcs/33008.webp"
      },
      {
       "npcId": 138250,
@@ -1731,7 +3233,24 @@
       "elite": true,
       "boss": false,
       "health": 8432462,
-      "forces": 30
+      "forces": 30,
+      "spells": [
+       {
+        "id": 272388,
+        "interrupt": false
+       },
+       {
+        "id": 1298304,
+        "interrupt": false
+       },
+       {
+        "id": 1309385,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 85860,
+      "image": "npcs/85860.webp"
      },
      {
       "npcId": 138493,
@@ -1741,7 +3260,19 @@
       "elite": true,
       "boss": false,
       "health": 243242,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 269935,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 76055,
+      "image": "npcs/76055.webp"
      },
      {
       "npcId": 161124,
@@ -1901,7 +3432,19 @@
       "elite": false,
       "boss": true,
       "health": 7783812,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 266237,
+        "interrupt": false
+       },
+       {
+        "id": 266951,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84269
      },
      {
       "npcId": 269810,
@@ -1911,7 +3454,26 @@
       "elite": false,
       "boss": true,
       "health": 9729765,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267060,
+        "interrupt": false
+       },
+       {
+        "id": 267273,
+        "interrupt": true,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1305810,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84271
      },
      {
       "npcId": 269811,
@@ -1921,7 +3483,29 @@
       "elite": false,
       "boss": true,
       "health": 5189208,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 266191,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 266206,
+        "interrupt": false
+       },
+       {
+        "id": 266231,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84272
      },
      {
       "npcId": 270502,
@@ -1931,7 +3515,19 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 267763,
+        "interrupt": true,
+        "tags": [
+         "disease"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84688,
+      "image": "npcs/84688.webp"
      },
      {
       "npcId": 273050,
@@ -2189,7 +3785,31 @@
       "elite": false,
       "boss": true,
       "health": 22702784,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 473898,
+        "interrupt": false
+       },
+       {
+        "id": 474197,
+        "interrupt": false
+       },
+       {
+        "id": 474234,
+        "interrupt": false
+       },
+       {
+        "id": 1214641,
+        "interrupt": false
+       },
+       {
+        "id": 1295453,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140268
      },
      {
       "npcId": 234648,
@@ -2199,7 +3819,35 @@
       "elite": false,
       "boss": true,
       "health": 19459530,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 474238,
+        "interrupt": false
+       },
+       {
+        "id": 1214959,
+        "interrupt": false
+       },
+       {
+        "id": 1217989,
+        "interrupt": false
+       },
+       {
+        "id": 1223906,
+        "interrupt": false
+       },
+       {
+        "id": 1230298,
+        "interrupt": false
+       },
+       {
+        "id": 1264095,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124578
      },
      {
       "npcId": 234649,
@@ -2209,7 +3857,40 @@
       "elite": false,
       "boss": true,
       "health": 22702784,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 474478,
+        "interrupt": false
+       },
+       {
+        "id": 474515,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1214357,
+        "interrupt": false
+       },
+       {
+        "id": 1218347,
+        "interrupt": true,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1222795,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124592
      },
      {
       "npcId": 234660,
@@ -2219,7 +3900,30 @@
       "elite": false,
       "boss": true,
       "health": 7783812,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1217464,
+        "interrupt": false
+       },
+       {
+        "id": 1228198,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1230304,
+        "interrupt": false
+       },
+       {
+        "id": 1253811,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 126199
      },
      {
       "npcId": 234763,
@@ -2229,7 +3933,47 @@
       "elite": false,
       "boss": true,
       "health": 16864926,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 474375,
+        "interrupt": true
+       },
+       {
+        "id": 474408,
+        "interrupt": false
+       },
+       {
+        "id": 474462,
+        "interrupt": false
+       },
+       {
+        "id": 1214675,
+        "interrupt": false
+       },
+       {
+        "id": 1217345,
+        "interrupt": false
+       },
+       {
+        "id": 1217415,
+        "interrupt": false
+       },
+       {
+        "id": 1217881,
+        "interrupt": false
+       },
+       {
+        "id": 1226469,
+        "interrupt": false
+       },
+       {
+        "id": 1287627,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124577
      },
      {
       "npcId": 234799,
@@ -2239,7 +3983,16 @@
       "elite": true,
       "boss": false,
       "health": 1945953,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1293101,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84426,
+      "image": "npcs/84426.webp"
      },
      {
       "npcId": 234849,
@@ -2249,7 +4002,16 @@
       "elite": true,
       "boss": false,
       "health": 486488,
-      "forces": 2
+      "forces": 2,
+      "spells": [
+       {
+        "id": 1223204,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 65901,
+      "image": "npcs/65901.webp"
      },
      {
       "npcId": 234852,
@@ -2259,7 +4021,24 @@
       "elite": true,
       "boss": false,
       "health": 649,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1217099,
+        "interrupt": true
+       },
+       {
+        "id": 1222598,
+        "interrupt": false
+       },
+       {
+        "id": 1266241,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137176,
+      "image": "npcs/137176.webp"
      },
      {
       "npcId": 234860,
@@ -2269,7 +4048,20 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 474766,
+        "interrupt": false
+       },
+       {
+        "id": 474768,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140261,
+      "image": "npcs/140261.webp"
      },
      {
       "npcId": 234984,
@@ -2279,7 +4071,24 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 44427,
+        "interrupt": false
+       },
+       {
+        "id": 1214260,
+        "interrupt": false
+       },
+       {
+        "id": 1214487,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136524,
+      "image": "npcs/136524.webp"
      },
      {
       "npcId": 235257,
@@ -2289,7 +4098,16 @@
       "elite": true,
       "boss": false,
       "health": 1621628,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1293022,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 77024,
+      "image": "npcs/77024.webp"
      },
      {
       "npcId": 235261,
@@ -2299,7 +4117,23 @@
       "elite": true,
       "boss": false,
       "health": 3405418,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1217930,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1293101,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 1913,
+      "image": "npcs/1913.webp"
      },
      {
       "npcId": 235265,
@@ -2309,7 +4143,27 @@
       "elite": true,
       "boss": false,
       "health": 5027045,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1217973,
+        "interrupt": false,
+        "tags": [
+         "curse"
+        ]
+       },
+       {
+        "id": 1297682,
+        "interrupt": false
+       },
+       {
+        "id": 1297684,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124763,
+      "image": "npcs/124763.webp"
      },
      {
       "npcId": 235267,
@@ -2319,7 +4173,23 @@
       "elite": true,
       "boss": false,
       "health": 3405418,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1214922,
+        "interrupt": true,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1295427,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 63968,
+      "image": "npcs/63968.webp"
      },
      {
       "npcId": 235268,
@@ -2329,7 +4199,20 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1214980,
+        "interrupt": true
+       },
+       {
+        "id": 1297693,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 124770,
+      "image": "npcs/124770.webp"
      },
      {
       "npcId": 235322,
@@ -2339,7 +4222,28 @@
       "elite": true,
       "boss": false,
       "health": 8432463,
-      "forces": 35
+      "forces": 35,
+      "spells": [
+       {
+        "id": 1215961,
+        "interrupt": false
+       },
+       {
+        "id": 1294824,
+        "interrupt": false
+       },
+       {
+        "id": 1294836,
+        "interrupt": false
+       },
+       {
+        "id": 1294870,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137564,
+      "image": "npcs/137564.webp"
      },
      {
       "npcId": 235465,
@@ -2349,7 +4253,24 @@
       "elite": true,
       "boss": false,
       "health": 5513534,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1294770,
+        "interrupt": false
+       },
+       {
+        "id": 1297676,
+        "interrupt": false
+       },
+       {
+        "id": 1297691,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 76712,
+      "image": "npcs/76712.webp"
      },
      {
       "npcId": 235520,
@@ -2359,7 +4280,20 @@
       "elite": true,
       "boss": false,
       "health": 972977,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 5543,
+        "interrupt": false
+       },
+       {
+        "id": 1214650,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 16956,
+      "image": "npcs/16956.webp"
      },
      {
       "npcId": 235841,
@@ -2369,7 +4303,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1216074,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 105873,
+      "image": "npcs/105873.webp"
      },
      {
       "npcId": 236071,
@@ -2379,7 +4322,20 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1216529,
+        "interrupt": false
+       },
+       {
+        "id": 1295035,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 126157,
+      "image": "npcs/126157.webp"
      },
      {
       "npcId": 236073,
@@ -2389,7 +4345,19 @@
       "elite": true,
       "boss": false,
       "health": 1945953,
-      "forces": 3
+      "forces": 3,
+      "spells": [
+       {
+        "id": 1216300,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136939,
+      "image": "npcs/136939.webp"
      },
      {
       "npcId": 236082,
@@ -2399,7 +4367,19 @@
       "elite": true,
       "boss": false,
       "health": 2270279,
-      "forces": 6
+      "forces": 6,
+      "spells": [
+       {
+        "id": 1201554,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 77400,
+      "image": "npcs/77400.webp"
      },
      {
       "npcId": 236084,
@@ -2409,7 +4389,23 @@
       "elite": true,
       "boss": false,
       "health": 2854064,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1216571,
+        "interrupt": true
+       },
+       {
+        "id": 1229433,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129784,
+      "image": "npcs/129784.webp"
      },
      {
       "npcId": 236085,
@@ -2419,7 +4415,23 @@
       "elite": true,
       "boss": false,
       "health": 1297302,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1214966,
+        "interrupt": false
+       },
+       {
+        "id": 1216538,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 139997,
+      "image": "npcs/139997.webp"
      },
      {
       "npcId": 236088,
@@ -2429,7 +4441,16 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1219468,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140207,
+      "image": "npcs/140207.webp"
      },
      {
       "npcId": 236091,
@@ -2439,7 +4460,23 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 3
+      "forces": 3,
+      "spells": [
+       {
+        "id": 1216284,
+        "interrupt": false
+       },
+       {
+        "id": 1216589,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137441,
+      "image": "npcs/137441.webp"
      },
      {
       "npcId": 236525,
@@ -2449,7 +4486,19 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1213658,
+        "interrupt": true,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136524,
+      "image": "npcs/136524.webp"
      },
      {
       "npcId": 236893,
@@ -2459,7 +4508,27 @@
       "elite": true,
       "boss": false,
       "health": 2270279,
-      "forces": 2
+      "forces": 2,
+      "spells": [
+       {
+        "id": 1216970,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1217992,
+        "interrupt": false
+       },
+       {
+        "id": 1311136,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136834,
+      "image": "npcs/136834.webp"
      },
      {
       "npcId": 236897,
@@ -2469,7 +4538,19 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1216970,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136657,
+      "image": "npcs/136657.webp"
      },
      {
       "npcId": 236902,
@@ -2479,7 +4560,38 @@
       "elite": true,
       "boss": false,
       "health": 4540557,
-      "forces": 12
+      "forces": 12,
+      "spells": [
+       {
+        "id": 1217633,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1256299,
+        "interrupt": false
+       },
+       {
+        "id": 1256300,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1258537,
+        "interrupt": false
+       },
+       {
+        "id": 1297667,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 139996,
+      "image": "npcs/139996.webp"
      },
      {
       "npcId": 236905,
@@ -2489,7 +4601,31 @@
       "elite": true,
       "boss": false,
       "health": 6486510,
-      "forces": 30
+      "forces": 30,
+      "spells": [
+       {
+        "id": 1216954,
+        "interrupt": false
+       },
+       {
+        "id": 1217930,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1217937,
+        "interrupt": false
+       },
+       {
+        "id": 1302007,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138787,
+      "image": "npcs/138787.webp"
      },
      {
       "npcId": 237626,
@@ -2499,7 +4635,20 @@
       "elite": true,
       "boss": false,
       "health": 259460,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1223204,
+        "interrupt": true
+       },
+       {
+        "id": 1226469,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 77406,
+      "image": "npcs/77406.webp"
      },
      {
       "npcId": 238414,
@@ -2509,7 +4658,20 @@
       "elite": true,
       "boss": false,
       "health": 2703424,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1231256,
+        "interrupt": false
+       },
+       {
+        "id": 1231262,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 103096,
+      "image": "npcs/103096.webp"
      },
      {
       "npcId": 240289,
@@ -2519,7 +4681,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1216076,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136524,
+      "image": "npcs/136524.webp"
      },
      {
       "npcId": 252529,
@@ -2529,7 +4700,24 @@
       "elite": true,
       "boss": false,
       "health": 7783812,
-      "forces": 35
+      "forces": 35,
+      "spells": [
+       {
+        "id": 1216529,
+        "interrupt": false
+       },
+       {
+        "id": 1256276,
+        "interrupt": false
+       },
+       {
+        "id": 1295035,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137450,
+      "image": "npcs/137450.webp"
      },
      {
       "npcId": 253081,
@@ -2539,7 +4727,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1257877,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136524,
+      "image": "npcs/136524.webp"
      },
      {
       "npcId": 253324,
@@ -2549,7 +4746,23 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1214966,
+        "interrupt": false
+       },
+       {
+        "id": 1216538,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 139997,
+      "image": "npcs/139997.webp"
      },
      {
       "npcId": 255050,
@@ -2559,7 +4772,16 @@
       "elite": true,
       "boss": false,
       "health": 5189210,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1264106,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138932,
+      "image": "npcs/138932.webp"
      },
      {
       "npcId": 255153,
@@ -2579,7 +4801,19 @@
       "elite": true,
       "boss": false,
       "health": 2270279,
-      "forces": 6
+      "forces": 6,
+      "spells": [
+       {
+        "id": 1201554,
+        "interrupt": true,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138981,
+      "image": "npcs/138981.webp"
      },
      {
       "npcId": 263940,
@@ -2589,7 +4823,36 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1218465,
+        "interrupt": false
+       },
+       {
+        "id": 1218466,
+        "interrupt": false
+       },
+       {
+        "id": 1218467,
+        "interrupt": false
+       },
+       {
+        "id": 1218468,
+        "interrupt": false
+       },
+       {
+        "id": 1218508,
+        "interrupt": false
+       },
+       {
+        "id": 1255881,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129619,
+      "image": "npcs/129619.webp"
      },
      {
       "npcId": 272246,
@@ -2599,7 +4862,16 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1293101,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 1913,
+      "image": "npcs/1913.webp"
      }
     ],
     "observedAt": "2026-11-16T21:30:48.752Z",
@@ -2776,7 +5048,19 @@
       "elite": false,
       "boss": false,
       "health": 1297302,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1305234,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 110633,
+      "image": "npcs/110633.webp"
      },
      {
       "npcId": 187897,
@@ -2786,7 +5070,19 @@
       "elite": false,
       "boss": true,
       "health": 9729765,
-      "forces": 30
+      "forces": 30,
+      "spells": [
+       {
+        "id": 372047,
+        "interrupt": false
+       },
+       {
+        "id": 372087,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 107106
      },
      {
       "npcId": 187969,
@@ -2796,7 +5092,20 @@
       "elite": true,
       "boss": false,
       "health": 3891906,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 371471,
+        "interrupt": false
+       },
+       {
+        "id": 1305225,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 102955,
+      "image": "npcs/102955.webp"
      },
      {
       "npcId": 188011,
@@ -2806,7 +5115,20 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 384933,
+        "interrupt": true
+       },
+       {
+        "id": 1307205,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 79800,
+      "image": "npcs/79800.webp"
      },
      {
       "npcId": 188067,
@@ -2816,7 +5138,24 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 371489,
+        "interrupt": false
+       },
+       {
+        "id": 371984,
+        "interrupt": true
+       },
+       {
+        "id": 372743,
+        "interrupt": true
+       }
+      ],
+      "stunnable": true,
+      "displayId": 107397,
+      "image": "npcs/107397.webp"
      },
      {
       "npcId": 188244,
@@ -2826,7 +5165,28 @@
       "elite": true,
       "boss": false,
       "health": 6486510,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 372730,
+        "interrupt": false
+       },
+       {
+        "id": 372793,
+        "interrupt": false
+       },
+       {
+        "id": 1305201,
+        "interrupt": false
+       },
+       {
+        "id": 1310489,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 101209,
+      "image": "npcs/101209.webp"
      },
      {
       "npcId": 188252,
@@ -2836,7 +5196,43 @@
       "elite": false,
       "boss": true,
       "health": 19459530,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 372808,
+        "interrupt": true
+       },
+       {
+        "id": 372851,
+        "interrupt": false
+       },
+       {
+        "id": 372988,
+        "interrupt": false
+       },
+       {
+        "id": 373046,
+        "interrupt": false
+       },
+       {
+        "id": 373680,
+        "interrupt": false
+       },
+       {
+        "id": 373727,
+        "interrupt": false
+       },
+       {
+        "id": 384024,
+        "interrupt": false
+       },
+       {
+        "id": 396044,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 106891
      },
      {
       "npcId": 189232,
@@ -2846,7 +5242,31 @@
       "elite": false,
       "boss": true,
       "health": 20756831,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 372107,
+        "interrupt": false
+       },
+       {
+        "id": 372820,
+        "interrupt": false
+       },
+       {
+        "id": 372858,
+        "interrupt": false
+       },
+       {
+        "id": 372860,
+        "interrupt": false
+       },
+       {
+        "id": 372863,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 106851
      },
      {
       "npcId": 189886,
@@ -2856,7 +5276,24 @@
       "elite": true,
       "boss": false,
       "health": 2594604,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 373017,
+        "interrupt": true
+       },
+       {
+        "id": 373087,
+        "interrupt": false
+       },
+       {
+        "id": 384823,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 102505,
+      "image": "npcs/102505.webp"
      },
      {
       "npcId": 189893,
@@ -2866,7 +5303,19 @@
       "elite": true,
       "boss": false,
       "health": 972977,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1305234,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 110633,
+      "image": "npcs/110633.webp"
      },
      {
       "npcId": 190034,
@@ -2876,7 +5325,28 @@
       "elite": true,
       "boss": false,
       "health": 7135161,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 373614,
+        "interrupt": false
+       },
+       {
+        "id": 373692,
+        "interrupt": false
+       },
+       {
+        "id": 384139,
+        "interrupt": false
+       },
+       {
+        "id": 1305955,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 102505,
+      "image": "npcs/102505.webp"
      },
      {
       "npcId": 190205,
@@ -2886,7 +5356,16 @@
       "elite": false,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1307372,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 102535,
+      "image": "npcs/102535.webp"
      },
      {
       "npcId": 190206,
@@ -2896,7 +5375,23 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 373972,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 385536,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 102969,
+      "image": "npcs/102969.webp"
      },
      {
       "npcId": 190207,
@@ -2906,7 +5401,20 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 373693,
+        "interrupt": false
+       },
+       {
+        "id": 384194,
+        "interrupt": true
+       }
+      ],
+      "stunnable": true,
+      "displayId": 102886,
+      "image": "npcs/102886.webp"
      },
      {
       "npcId": 190484,
@@ -2916,7 +5424,23 @@
       "elite": false,
       "boss": true,
       "health": 12973020,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 381525,
+        "interrupt": false
+       },
+       {
+        "id": 381602,
+        "interrupt": false
+       },
+       {
+        "id": 384773,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 107137
      },
      {
       "npcId": 190485,
@@ -2926,7 +5450,30 @@
       "elite": false,
       "boss": true,
       "health": 14594648,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 181089,
+        "interrupt": false
+       },
+       {
+        "id": 381512,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 381516,
+        "interrupt": false
+       },
+       {
+        "id": 381517,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 108318
      },
      {
       "npcId": 194622,
@@ -2936,7 +5483,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1307372,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 102535,
+      "image": "npcs/102535.webp"
      },
      {
       "npcId": 195119,
@@ -2946,7 +5502,28 @@
       "elite": true,
       "boss": false,
       "health": 10740817,
-      "forces": 10
+      "forces": 10,
+      "spells": [
+       {
+        "id": 385310,
+        "interrupt": true
+       },
+       {
+        "id": 385311,
+        "interrupt": false
+       },
+       {
+        "id": 385312,
+        "interrupt": false
+       },
+       {
+        "id": 385313,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 108753,
+      "image": "npcs/108753.webp"
      },
      {
       "npcId": 197509,
@@ -2956,7 +5533,23 @@
       "elite": false,
       "boss": false,
       "health": 1621628,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 391031,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 392399,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 102516,
+      "image": "npcs/102516.webp"
      },
      {
       "npcId": 197535,
@@ -2966,7 +5559,23 @@
       "elite": false,
       "boss": true,
       "health": 6486510,
-      "forces": 30
+      "forces": 30,
+      "spells": [
+       {
+        "id": 1306366,
+        "interrupt": false
+       },
+       {
+        "id": 1307511,
+        "interrupt": false
+       },
+       {
+        "id": 1310355,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 110966
      },
      {
       "npcId": 197697,
@@ -2976,7 +5585,23 @@
       "elite": false,
       "boss": true,
       "health": 9729765,
-      "forces": 40
+      "forces": 40,
+      "spells": [
+       {
+        "id": 391723,
+        "interrupt": false
+       },
+       {
+        "id": 392394,
+        "interrupt": false
+       },
+       {
+        "id": 392569,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 106023
      },
      {
       "npcId": 197698,
@@ -2986,7 +5611,30 @@
       "elite": false,
       "boss": true,
       "health": 8432463,
-      "forces": 48
+      "forces": 48,
+      "spells": [
+       {
+        "id": 391726,
+        "interrupt": false
+       },
+       {
+        "id": 392395,
+        "interrupt": false
+       },
+       {
+        "id": 392640,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1310599,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 106435
      },
      {
       "npcId": 197982,
@@ -2996,7 +5644,16 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 392406,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 110964,
+      "image": "npcs/110964.webp"
      },
      {
       "npcId": 197985,
@@ -3016,7 +5673,24 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 392576,
+        "interrupt": true
+       },
+       {
+        "id": 1306366,
+        "interrupt": false
+       },
+       {
+        "id": 1307502,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 110967,
+      "image": "npcs/110967.webp"
      },
      {
       "npcId": 217228,
@@ -3314,7 +5988,47 @@
       "elite": false,
       "boss": true,
       "health": 14918973,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 264172,
+        "interrupt": false
+       },
+       {
+        "id": 1289205,
+        "interrupt": false
+       },
+       {
+        "id": 1289589,
+        "interrupt": false
+       },
+       {
+        "id": 1289602,
+        "interrupt": false
+       },
+       {
+        "id": 1290031,
+        "interrupt": false
+       },
+       {
+        "id": 1290797,
+        "interrupt": false
+       },
+       {
+        "id": 1293048,
+        "interrupt": false
+       },
+       {
+        "id": 1296912,
+        "interrupt": false
+       },
+       {
+        "id": 1297034,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 88585
      },
      {
       "npcId": 133389,
@@ -3334,7 +6048,10 @@
       "elite": false,
       "boss": true,
       "health": 25946039,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 83203
      },
      {
       "npcId": 133944,
@@ -3354,7 +6071,23 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 269896,
+        "interrupt": false
+       },
+       {
+        "id": 1293307,
+        "interrupt": true,
+        "tags": [
+         "curse"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 86510,
+      "image": "npcs/86510.webp"
      },
      {
       "npcId": 134388,
@@ -3364,7 +6097,16 @@
       "elite": true,
       "boss": false,
       "health": 540542,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 263958,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83574,
+      "image": "npcs/83574.webp"
      },
      {
       "npcId": 134389,
@@ -3374,7 +6116,19 @@
       "elite": true,
       "boss": false,
       "health": 1686493,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267027,
+        "interrupt": true,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 78250,
+      "image": "npcs/78250.webp"
      },
      {
       "npcId": 134390,
@@ -3384,7 +6138,20 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1289589,
+        "interrupt": false
+       },
+       {
+        "id": 1291622,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147087,
+      "image": "npcs/147087.webp"
      },
      {
       "npcId": 134487,
@@ -3394,7 +6161,10 @@
       "elite": true,
       "boss": false,
       "health": 307716,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 78247
      },
      {
       "npcId": 134599,
@@ -3404,7 +6174,34 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 269116,
+        "interrupt": false
+       },
+       {
+        "id": 1291262,
+        "interrupt": true
+       },
+       {
+        "id": 1296052,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1310739,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 83779,
+      "image": "npcs/83779.webp"
      },
      {
       "npcId": 134600,
@@ -3414,7 +6211,20 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1292585,
+        "interrupt": false
+       },
+       {
+        "id": 1308113,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 83780,
+      "image": "npcs/83780.webp"
      },
      {
       "npcId": 134602,
@@ -3424,7 +6234,23 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1295635,
+        "interrupt": false
+       },
+       {
+        "id": 1308100,
+        "interrupt": true,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 83782,
+      "image": "npcs/83782.webp"
      },
      {
       "npcId": 134616,
@@ -3434,7 +6260,16 @@
       "elite": false,
       "boss": false,
       "health": 2594604,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1291399,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 83787,
+      "image": "npcs/83787.webp"
      },
      {
       "npcId": 134617,
@@ -3454,7 +6289,28 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 262046,
+        "interrupt": false
+       },
+       {
+        "id": 272655,
+        "interrupt": false
+       },
+       {
+        "id": 1291399,
+        "interrupt": false
+       },
+       {
+        "id": 1292990,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 84761,
+      "image": "npcs/84761.webp"
      },
      {
       "npcId": 134686,
@@ -3464,7 +6320,20 @@
       "elite": true,
       "boss": false,
       "health": 4216232,
-      "forces": 16
+      "forces": 16,
+      "spells": [
+       {
+        "id": 272654,
+        "interrupt": false
+       },
+       {
+        "id": 272655,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 75595,
+      "image": "npcs/75595.webp"
      },
      {
       "npcId": 134691,
@@ -3474,7 +6343,20 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 264763,
+        "interrupt": false
+       },
+       {
+        "id": 1310693,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 81655,
+      "image": "npcs/81655.webp"
      },
      {
       "npcId": 134990,
@@ -3484,7 +6366,16 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1291262,
+        "interrupt": true
+       }
+      ],
+      "stunnable": true,
+      "displayId": 84024,
+      "image": "npcs/84024.webp"
      },
      {
       "npcId": 134991,
@@ -3494,7 +6385,20 @@
       "elite": true,
       "boss": false,
       "health": 5837859,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 265966,
+        "interrupt": false
+       },
+       {
+        "id": 1291468,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84207,
+      "image": "npcs/84207.webp"
      },
      {
       "npcId": 135007,
@@ -3504,7 +6408,24 @@
       "elite": true,
       "boss": false,
       "health": 6486510,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1303443,
+        "interrupt": false
+       },
+       {
+        "id": 1303452,
+        "interrupt": false
+       },
+       {
+        "id": 1303486,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84503,
+      "image": "npcs/84503.webp"
      },
      {
       "npcId": 135445,
@@ -3514,7 +6435,10 @@
       "elite": true,
       "boss": false,
       "health": 21621699,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 46710
      },
      {
       "npcId": 135562,
@@ -3524,7 +6448,19 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1308148,
+        "interrupt": true,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": true,
+      "displayId": 78250,
+      "image": "npcs/78250.webp"
      },
      {
       "npcId": 135846,
@@ -3534,7 +6470,20 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1293133,
+        "interrupt": false
+       },
+       {
+        "id": 1310396,
+        "interrupt": false
+       }
+      ],
+      "stunnable": true,
+      "displayId": 78247,
+      "image": "npcs/78247.webp"
      },
      {
       "npcId": 135971,
@@ -3544,7 +6493,10 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 147077
      },
      {
       "npcId": 136076,
@@ -3554,7 +6506,27 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1293464,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1293475,
+        "interrupt": false
+       },
+       {
+        "id": 1293650,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 65631,
+      "image": "npcs/65631.webp"
      },
      {
       "npcId": 136250,
@@ -3564,7 +6536,28 @@
       "elite": true,
       "boss": false,
       "health": 4864883,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 268013,
+        "interrupt": true
+       },
+       {
+        "id": 1300666,
+        "interrupt": false
+       },
+       {
+        "id": 1300684,
+        "interrupt": false
+       },
+       {
+        "id": 1311980,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84676,
+      "image": "npcs/84676.webp"
      },
      {
       "npcId": 139097,
@@ -3574,7 +6567,16 @@
       "elite": true,
       "boss": false,
       "health": 439629,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 273225,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83780,
+      "image": "npcs/83780.webp"
      },
      {
       "npcId": 139108,
@@ -3584,7 +6586,20 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 267483,
+        "interrupt": false
+       },
+       {
+        "id": 273241,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 51418,
+      "image": "npcs/51418.webp"
      },
      {
       "npcId": 139110,
@@ -3594,7 +6609,16 @@
       "elite": true,
       "boss": false,
       "health": 972977,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 267483,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83553,
+      "image": "npcs/83553.webp"
      },
      {
       "npcId": 139131,
@@ -3604,7 +6628,10 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 46710
      },
      {
       "npcId": 139422,
@@ -3614,7 +6641,20 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1291399,
+        "interrupt": false
+       },
+       {
+        "id": 1292990,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84761,
+      "image": "npcs/84761.webp"
      },
      {
       "npcId": 139425,
@@ -3624,7 +6664,16 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1310683,
+        "interrupt": true
+       }
+      ],
+      "stunnable": true,
+      "displayId": 83444,
+      "image": "npcs/83444.webp"
      },
      {
       "npcId": 139946,
@@ -3744,7 +6793,16 @@
       "elite": true,
       "boss": false,
       "health": 287585,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1303596,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 169,
+      "image": "npcs/169.webp"
      },
      {
       "npcId": 247760,
@@ -3794,7 +6852,27 @@
       "elite": false,
       "boss": true,
       "health": 9729765,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 263425,
+        "interrupt": false
+       },
+       {
+        "id": 1288087,
+        "interrupt": false
+       },
+       {
+        "id": 1288428,
+        "interrupt": false
+       },
+       {
+        "id": 1310311,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83550
      },
      {
       "npcId": 262822,
@@ -3804,7 +6882,31 @@
       "elite": false,
       "boss": true,
       "health": 9729765,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1288457,
+        "interrupt": false
+       },
+       {
+        "id": 1288864,
+        "interrupt": false
+       },
+       {
+        "id": 1289062,
+        "interrupt": false
+       },
+       {
+        "id": 1292035,
+        "interrupt": false
+       },
+       {
+        "id": 1310311,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83552
      },
      {
       "npcId": 263181,
@@ -3814,7 +6916,20 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1289208,
+        "interrupt": false
+       },
+       {
+        "id": 1296738,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 55649,
+      "image": "npcs/55649.webp"
      },
      {
       "npcId": 263383,
@@ -3824,7 +6939,10 @@
       "elite": true,
       "boss": false,
       "health": 1297302,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 7409
      },
      {
       "npcId": 263658,
@@ -3834,7 +6952,19 @@
       "elite": false,
       "boss": true,
       "health": 20756831,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1290531,
+        "interrupt": false
+       },
+       {
+        "id": 1291815,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147355
      },
      {
       "npcId": 264785,
@@ -3844,7 +6974,10 @@
       "elite": true,
       "boss": false,
       "health": 810814,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 83787
      },
      {
       "npcId": 265057,
@@ -3854,7 +6987,11 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": 5
+      "forces": 5,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 83553,
+      "image": "npcs/83553.webp"
      },
      {
       "npcId": 268317,
@@ -3864,7 +7001,20 @@
       "elite": true,
       "boss": false,
       "health": 1135139,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1300704,
+        "interrupt": false
+       },
+       {
+        "id": 1300714,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147718,
+      "image": "npcs/147718.webp"
      },
      {
       "npcId": 268344,
@@ -3874,7 +7024,24 @@
       "elite": true,
       "boss": false,
       "health": 2043251,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300803,
+        "interrupt": false
+       },
+       {
+        "id": 1302616,
+        "interrupt": false
+       },
+       {
+        "id": 1302761,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84761,
+      "image": "npcs/84761.webp"
      },
      {
       "npcId": 268364,
@@ -3884,7 +7051,28 @@
       "elite": true,
       "boss": false,
       "health": 330722,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300871,
+        "interrupt": false
+       },
+       {
+        "id": 1302826,
+        "interrupt": false
+       },
+       {
+        "id": 1302897,
+        "interrupt": false
+       },
+       {
+        "id": 1312214,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 169,
+      "image": "npcs/169.webp"
      },
      {
       "npcId": 268427,
@@ -3894,7 +7082,16 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1301199,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84024,
+      "image": "npcs/84024.webp"
      },
      {
       "npcId": 268491,
@@ -3904,7 +7101,24 @@
       "elite": true,
       "boss": false,
       "health": 2821632,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300684,
+        "interrupt": false
+       },
+       {
+        "id": 1302153,
+        "interrupt": false
+       },
+       {
+        "id": 1302158,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 84676,
+      "image": "npcs/84676.webp"
      },
      {
       "npcId": 268729,
@@ -3914,7 +7128,20 @@
       "elite": true,
       "boss": false,
       "health": 583786,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1300704,
+        "interrupt": false
+       },
+       {
+        "id": 1300714,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147085,
+      "image": "npcs/147085.webp"
      },
      {
       "npcId": 268747,
@@ -3924,7 +7151,10 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 169
      },
      {
       "npcId": 269227,
@@ -3934,7 +7164,11 @@
       "elite": true,
       "boss": false,
       "health": 1945953,
-      "forces": 5
+      "forces": 5,
+      "spells": [],
+      "stunnable": false,
+      "displayId": 80961,
+      "image": "npcs/80961.webp"
      }
     ],
     "observedAt": "2026-11-16T21:30:49.695Z",
@@ -4302,7 +7536,27 @@
       "elite": false,
       "boss": true,
       "health": 43783942,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1234753,
+        "interrupt": false
+       },
+       {
+        "id": 1234802,
+        "interrupt": false
+       },
+       {
+        "id": 1253028,
+        "interrupt": false
+       },
+       {
+        "id": 1276586,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129588
      },
      {
       "npcId": 243029,
@@ -4312,7 +7566,27 @@
       "elite": false,
       "boss": true,
       "health": 43783942,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1235564,
+        "interrupt": false
+       },
+       {
+        "id": 1235616,
+        "interrupt": true
+       },
+       {
+        "id": 1235828,
+        "interrupt": false
+       },
+       {
+        "id": 1253028,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 139027
      },
      {
       "npcId": 243030,
@@ -4322,7 +7596,30 @@
       "elite": false,
       "boss": true,
       "health": 43783942,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1234850,
+        "interrupt": false
+       },
+       {
+        "id": 1235640,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1253028,
+        "interrupt": false
+       },
+       {
+        "id": 1261011,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 139025
      },
      {
       "npcId": 244100,
@@ -4342,7 +7639,16 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1235752,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129261,
+      "image": "npcs/129261.webp"
      },
      {
       "npcId": 244696,
@@ -4372,7 +7678,46 @@
       "elite": false,
       "boss": true,
       "health": 22702784,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1236709,
+        "interrupt": false
+       },
+       {
+        "id": 1236746,
+        "interrupt": false
+       },
+       {
+        "id": 1237073,
+        "interrupt": false
+       },
+       {
+        "id": 1237093,
+        "interrupt": false
+       },
+       {
+        "id": 1237166,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1237330,
+        "interrupt": false
+       },
+       {
+        "id": 1253410,
+        "interrupt": false
+       },
+       {
+        "id": 1272290,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129424
      },
      {
       "npcId": 244889,
@@ -4462,7 +7807,28 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1238063,
+        "interrupt": true
+       },
+       {
+        "id": 1238200,
+        "interrupt": true
+       },
+       {
+        "id": 1267029,
+        "interrupt": false
+       },
+       {
+        "id": 1301834,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 127945,
+      "image": "npcs/127945.webp"
      },
      {
       "npcId": 245339,
@@ -4472,7 +7838,19 @@
       "elite": true,
       "boss": false,
       "health": 3243254,
-      "forces": 6
+      "forces": 6,
+      "spells": [
+       {
+        "id": 1238066,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 127942,
+      "image": "npcs/127942.webp"
      },
      {
       "npcId": 245345,
@@ -4482,7 +7860,20 @@
       "elite": true,
       "boss": false,
       "health": 3081092,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1238158,
+        "interrupt": true
+       },
+       {
+        "id": 1238173,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 125875,
+      "image": "npcs/125875.webp"
      },
      {
       "npcId": 245346,
@@ -4492,7 +7883,24 @@
       "elite": true,
       "boss": false,
       "health": 5189207,
-      "forces": 20
+      "forces": 20,
+      "spells": [
+       {
+        "id": 1237855,
+        "interrupt": false
+       },
+       {
+        "id": 1237858,
+        "interrupt": false
+       },
+       {
+        "id": 1255205,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 127946,
+      "image": "npcs/127946.webp"
      },
      {
       "npcId": 245410,
@@ -4502,7 +7910,19 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1238084,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 104473,
+      "image": "npcs/104473.webp"
      },
      {
       "npcId": 245460,
@@ -4512,7 +7932,20 @@
       "elite": true,
       "boss": false,
       "health": 3243254,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1238232,
+        "interrupt": true
+       },
+       {
+        "id": 1242200,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 128068,
+      "image": "npcs/128068.webp"
      },
      {
       "npcId": 245473,
@@ -4522,7 +7955,20 @@
       "elite": true,
       "boss": false,
       "health": 3243254,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1242200,
+        "interrupt": false
+       },
+       {
+        "id": 1314883,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 122805,
+      "image": "npcs/122805.webp"
      },
      {
       "npcId": 245484,
@@ -4532,7 +7978,20 @@
       "elite": true,
       "boss": false,
       "health": 3891906,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1238294,
+        "interrupt": true
+       },
+       {
+        "id": 1242200,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136758,
+      "image": "npcs/136758.webp"
      },
      {
       "npcId": 245513,
@@ -4542,7 +8001,20 @@
       "elite": true,
       "boss": false,
       "health": 6162185,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1238368,
+        "interrupt": false
+       },
+       {
+        "id": 1238642,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 142839,
+      "image": "npcs/142839.webp"
      },
      {
       "npcId": 245527,
@@ -4552,7 +8024,23 @@
       "elite": true,
       "boss": false,
       "health": 324326,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1238581,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1242200,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 110392,
+      "image": "npcs/110392.webp"
      },
      {
       "npcId": 245567,
@@ -4592,7 +8080,70 @@
       "elite": false,
       "boss": true,
       "health": 20432506,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1239821,
+        "interrupt": true
+       },
+       {
+        "id": 1239824,
+        "interrupt": false
+       },
+       {
+        "id": 1239882,
+        "interrupt": false
+       },
+       {
+        "id": 1239883,
+        "interrupt": false
+       },
+       {
+        "id": 1239885,
+        "interrupt": false
+       },
+       {
+        "id": 1239919,
+        "interrupt": false
+       },
+       {
+        "id": 1240100,
+        "interrupt": false
+       },
+       {
+        "id": 1240210,
+        "interrupt": false
+       },
+       {
+        "id": 1241058,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1241067,
+        "interrupt": false
+       },
+       {
+        "id": 1242180,
+        "interrupt": false
+       },
+       {
+        "id": 1242244,
+        "interrupt": false
+       },
+       {
+        "id": 1257094,
+        "interrupt": false
+       },
+       {
+        "id": 1272265,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129856
      },
      {
       "npcId": 246367,
@@ -4602,7 +8153,27 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1240210,
+        "interrupt": false
+       },
+       {
+        "id": 1241058,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       },
+       {
+        "id": 1257094,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 129858,
+      "image": "npcs/129858.webp"
      },
      {
       "npcId": 246371,
@@ -4612,7 +8183,20 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1239824,
+        "interrupt": false
+       },
+       {
+        "id": 1240100,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137347,
+      "image": "npcs/137347.webp"
      },
      {
       "npcId": 246404,
@@ -4642,7 +8226,24 @@
       "elite": true,
       "boss": false,
       "health": 5675695,
-      "forces": 22
+      "forces": 22,
+      "spells": [
+       {
+        "id": 1242135,
+        "interrupt": false
+       },
+       {
+        "id": 1242138,
+        "interrupt": false
+       },
+       {
+        "id": 1242200,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 126929,
+      "image": "npcs/126929.webp"
      },
      {
       "npcId": 247301,
@@ -4662,7 +8263,46 @@
       "elite": false,
       "boss": true,
       "health": 22702784,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1246372,
+        "interrupt": false
+       },
+       {
+        "id": 1246607,
+        "interrupt": false
+       },
+       {
+        "id": 1246753,
+        "interrupt": false
+       },
+       {
+        "id": 1246858,
+        "interrupt": false
+       },
+       {
+        "id": 1247039,
+        "interrupt": false
+       },
+       {
+        "id": 1247050,
+        "interrupt": false
+       },
+       {
+        "id": 1247377,
+        "interrupt": false
+       },
+       {
+        "id": 1247685,
+        "interrupt": false,
+        "tags": [
+         "bleed"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136619
      },
      {
       "npcId": 247755,
@@ -4672,7 +8312,24 @@
       "elite": true,
       "boss": false,
       "health": 1297302,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1246527,
+        "interrupt": false
+       },
+       {
+        "id": 1247669,
+        "interrupt": true
+       },
+       {
+        "id": 1253320,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 131589,
+      "image": "npcs/131589.webp"
      },
      {
       "npcId": 248666,
@@ -4692,7 +8349,31 @@
       "elite": true,
       "boss": false,
       "health": 9729764,
-      "forces": 60
+      "forces": 60,
+      "spells": [
+       {
+        "id": 1250100,
+        "interrupt": false
+       },
+       {
+        "id": 1250199,
+        "interrupt": false
+       },
+       {
+        "id": 1250813,
+        "interrupt": false
+       },
+       {
+        "id": 1250937,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 136026,
+      "image": "npcs/136026.webp"
      },
      {
       "npcId": 249783,
@@ -4702,7 +8383,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1250203,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 83115,
+      "image": "npcs/83115.webp"
      },
      {
       "npcId": 250202,
@@ -4712,7 +8402,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1250829,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 131772,
+      "image": "npcs/131772.webp"
      },
      {
       "npcId": 250478,
@@ -4752,7 +8451,19 @@
       "elite": true,
       "boss": false,
       "health": 486488,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1259365,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141000,
+      "image": "npcs/141000.webp"
      },
      {
       "npcId": 254850,
@@ -4762,7 +8473,24 @@
       "elite": true,
       "boss": false,
       "health": 5837858,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1242200,
+        "interrupt": false
+       },
+       {
+        "id": 1263636,
+        "interrupt": false
+       },
+       {
+        "id": 1271385,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 126462,
+      "image": "npcs/126462.webp"
      },
      {
       "npcId": 255153,
@@ -5009,7 +8737,23 @@
       "elite": true,
       "boss": false,
       "health": 3891906,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1254826,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1298899,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 130200,
+      "image": "npcs/130200.webp"
      },
      {
       "npcId": 238887,
@@ -5019,7 +8763,31 @@
       "elite": false,
       "boss": true,
       "health": 20432506,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1296889,
+        "interrupt": false
+       },
+       {
+        "id": 1296963,
+        "interrupt": false
+       },
+       {
+        "id": 1296967,
+        "interrupt": false
+       },
+       {
+        "id": 1297017,
+        "interrupt": false
+       },
+       {
+        "id": 1300259,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140300
      },
      {
       "npcId": 239008,
@@ -5029,7 +8797,45 @@
       "elite": false,
       "boss": true,
       "health": 20432506,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1222484,
+        "interrupt": false
+       },
+       {
+        "id": 1222519,
+        "interrupt": false
+       },
+       {
+        "id": 1222642,
+        "interrupt": false
+       },
+       {
+        "id": 1222721,
+        "interrupt": false
+       },
+       {
+        "id": 1226120,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       },
+       {
+        "id": 1262497,
+        "interrupt": false
+       },
+       {
+        "id": 1263971,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 131553
      },
      {
       "npcId": 239070,
@@ -5039,7 +8845,20 @@
       "elite": true,
       "boss": false,
       "health": 1135139,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1222692,
+        "interrupt": false
+       },
+       {
+        "id": 1282892,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140374,
+      "image": "npcs/140374.webp"
      },
      {
       "npcId": 239167,
@@ -5049,7 +8868,31 @@
       "elite": false,
       "boss": true,
       "health": 23351436,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1227197,
+        "interrupt": false
+       },
+       {
+        "id": 1227247,
+        "interrupt": false
+       },
+       {
+        "id": 1248112,
+        "interrupt": false
+       },
+       {
+        "id": 1310025,
+        "interrupt": false
+       },
+       {
+        "id": 1311923,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138269
      },
      {
       "npcId": 241496,
@@ -5059,7 +8902,20 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1228176,
+        "interrupt": true
+       },
+       {
+        "id": 1246820,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 130201,
+      "image": "npcs/130201.webp"
      },
      {
       "npcId": 243736,
@@ -5069,7 +8925,16 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1233264,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141204,
+      "image": "npcs/141204.webp"
      },
      {
       "npcId": 243766,
@@ -5079,7 +8944,16 @@
       "elite": true,
       "boss": false,
       "health": 3081092,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1233398,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141196,
+      "image": "npcs/141196.webp"
      },
      {
       "npcId": 243835,
@@ -5089,7 +8963,16 @@
       "elite": true,
       "boss": false,
       "health": 3405418,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1233535,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141810,
+      "image": "npcs/141810.webp"
      },
      {
       "npcId": 243983,
@@ -5099,7 +8982,26 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 4
+      "forces": 4,
+      "spells": [
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1250043,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140037,
+      "image": "npcs/140037.webp"
      },
      {
       "npcId": 243985,
@@ -5109,7 +9011,26 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1310319,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140036,
+      "image": "npcs/140036.webp"
      },
      {
       "npcId": 243988,
@@ -5119,7 +9040,23 @@
       "elite": true,
       "boss": false,
       "health": 3405418,
-      "forces": 4
+      "forces": 4,
+      "spells": [
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1267894,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140041,
+      "image": "npcs/140041.webp"
      },
      {
       "npcId": 243996,
@@ -5129,7 +9066,16 @@
       "elite": true,
       "boss": false,
       "health": 2918930,
-      "forces": 4
+      "forces": 4,
+      "spells": [
+       {
+        "id": 1250640,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140045,
+      "image": "npcs/140045.webp"
      },
      {
       "npcId": 244260,
@@ -5139,7 +9085,27 @@
       "elite": true,
       "boss": false,
       "health": 5837859,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1234833,
+        "interrupt": false
+       },
+       {
+        "id": 1234855,
+        "interrupt": false
+       },
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140256,
+      "image": "npcs/140256.webp"
      },
      {
       "npcId": 244309,
@@ -5149,7 +9115,35 @@
       "elite": true,
       "boss": false,
       "health": 7135161,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1234890,
+        "interrupt": false
+       },
+       {
+        "id": 1245186,
+        "interrupt": false
+       },
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1269284,
+        "interrupt": false
+       },
+       {
+        "id": 1310321,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140264,
+      "image": "npcs/140264.webp"
      },
      {
       "npcId": 244708,
@@ -5159,7 +9153,20 @@
       "elite": true,
       "boss": false,
       "health": 3632446,
-      "forces": 7
+      "forces": 7,
+      "spells": [
+       {
+        "id": 1227020,
+        "interrupt": false
+       },
+       {
+        "id": 1310324,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147460,
+      "image": "npcs/147460.webp"
      },
      {
       "npcId": 245950,
@@ -5169,7 +9176,27 @@
       "elite": true,
       "boss": false,
       "health": 8756789,
-      "forces": 65
+      "forces": 65,
+      "spells": [
+       {
+        "id": 1239856,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1300116,
+        "interrupt": false
+       },
+       {
+        "id": 1300138,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141286,
+      "image": "npcs/141286.webp"
      },
      {
       "npcId": 248666,
@@ -5179,7 +9206,16 @@
       "elite": true,
       "boss": false,
       "health": 6487,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1246825,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 30762,
+      "image": "npcs/30762.webp"
      },
      {
       "npcId": 249461,
@@ -5189,7 +9225,26 @@
       "elite": true,
       "boss": false,
       "health": 3243255,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1249238,
+        "interrupt": false,
+        "tags": [
+         "magic"
+        ]
+       },
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140299,
+      "image": "npcs/140299.webp"
      },
      {
       "npcId": 249590,
@@ -5199,7 +9254,16 @@
       "elite": true,
       "boss": false,
       "health": 3567581,
-      "forces": 8
+      "forces": 8,
+      "spells": [
+       {
+        "id": 1249621,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141195,
+      "image": "npcs/141195.webp"
      },
      {
       "npcId": 249603,
@@ -5209,7 +9273,31 @@
       "elite": true,
       "boss": false,
       "health": 1945953,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       },
+       {
+        "id": 1250021,
+        "interrupt": false
+       },
+       {
+        "id": 1250023,
+        "interrupt": false
+       },
+       {
+        "id": 1310320,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 140295,
+      "image": "npcs/140295.webp"
      },
      {
       "npcId": 249608,
@@ -5219,7 +9307,19 @@
       "elite": true,
       "boss": false,
       "health": 3891906,
-      "forces": 5
+      "forces": 5,
+      "spells": [
+       {
+        "id": 1249661,
+        "interrupt": false,
+        "tags": [
+         "enrage"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141194,
+      "image": "npcs/141194.webp"
      },
      {
       "npcId": 252053,
@@ -5229,7 +9329,20 @@
       "elite": true,
       "boss": false,
       "health": 5675696,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1298900,
+        "interrupt": false
+       },
+       {
+        "id": 1310309,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137329,
+      "image": "npcs/137329.webp"
      },
      {
       "npcId": 252072,
@@ -5239,7 +9352,20 @@
       "elite": true,
       "boss": false,
       "health": 5513534,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1299913,
+        "interrupt": false
+       },
+       {
+        "id": 1299938,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 137330,
+      "image": "npcs/137330.webp"
      },
      {
       "npcId": 252508,
@@ -5249,7 +9375,16 @@
       "elite": true,
       "boss": false,
       "health": 1297302,
-      "forces": 1
+      "forces": 1,
+      "spells": [
+       {
+        "id": 1269866,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 141207,
+      "image": "npcs/141207.webp"
      },
      {
       "npcId": 254677,
@@ -5259,7 +9394,20 @@
       "elite": true,
       "boss": false,
       "health": 648651,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1222100,
+        "interrupt": false
+       },
+       {
+        "id": 1296963,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147404,
+      "image": "npcs/147404.webp"
      },
      {
       "npcId": 255000,
@@ -5269,7 +9417,16 @@
       "elite": true,
       "boss": false,
       "health": 10000,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1263984,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 169,
+      "image": "npcs/169.webp"
      },
      {
       "npcId": 255001,
@@ -5279,7 +9436,16 @@
       "elite": true,
       "boss": false,
       "health": 540543,
-      "forces": null
+      "forces": null,
+      "spells": [
+       {
+        "id": 1263983,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 169,
+      "image": "npcs/169.webp"
      },
      {
       "npcId": 255153,
@@ -5309,7 +9475,23 @@
       "elite": true,
       "boss": false,
       "health": 5189208,
-      "forces": 25
+      "forces": 25,
+      "spells": [
+       {
+        "id": 1233472,
+        "interrupt": false
+       },
+       {
+        "id": 1289265,
+        "interrupt": false,
+        "tags": [
+         "poison"
+        ]
+       }
+      ],
+      "stunnable": false,
+      "displayId": 138723,
+      "image": "npcs/138723.webp"
      },
      {
       "npcId": 267545,
@@ -5319,7 +9501,36 @@
       "elite": true,
       "boss": false,
       "health": 8432463,
-      "forces": 40
+      "forces": 40,
+      "spells": [
+       {
+        "id": 1298903,
+        "interrupt": false
+       },
+       {
+        "id": 1298908,
+        "interrupt": false
+       },
+       {
+        "id": 1298924,
+        "interrupt": false
+       },
+       {
+        "id": 1299125,
+        "interrupt": false
+       },
+       {
+        "id": 1299145,
+        "interrupt": false
+       },
+       {
+        "id": 1299210,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147378,
+      "image": "npcs/147378.webp"
      },
      {
       "npcId": 267546,
@@ -5329,7 +9540,40 @@
       "elite": true,
       "boss": false,
       "health": 7459487,
-      "forces": 40
+      "forces": 40,
+      "spells": [
+       {
+        "id": 1298902,
+        "interrupt": false
+       },
+       {
+        "id": 1299240,
+        "interrupt": false
+       },
+       {
+        "id": 1299257,
+        "interrupt": false
+       },
+       {
+        "id": 1299270,
+        "interrupt": false
+       },
+       {
+        "id": 1311712,
+        "interrupt": false
+       },
+       {
+        "id": 1311747,
+        "interrupt": false
+       },
+       {
+        "id": 1311754,
+        "interrupt": false
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147363,
+      "image": "npcs/147363.webp"
      },
      {
       "npcId": 268184,
@@ -5339,7 +9583,36 @@
       "elite": true,
       "boss": false,
       "health": 6227050,
-      "forces": 30
+      "forces": 30,
+      "spells": [
+       {
+        "id": 1252406,
+        "interrupt": false
+       },
+       {
+        "id": 1282959,
+        "interrupt": false
+       },
+       {
+        "id": 1300243,
+        "interrupt": false
+       },
+       {
+        "id": 1300249,
+        "interrupt": false
+       },
+       {
+        "id": 1300250,
+        "interrupt": false
+       },
+       {
+        "id": 1310324,
+        "interrupt": true
+       }
+      ],
+      "stunnable": false,
+      "displayId": 147459,
+      "image": "npcs/147459.webp"
      }
     ],
     "observedAt": "2026-11-16T21:30:50.708Z",

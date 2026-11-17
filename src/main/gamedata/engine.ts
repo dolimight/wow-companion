@@ -15,7 +15,7 @@ import { compatibilityMetadata } from './item-metadata'
 import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
 import { buildTalentTree, specializationRows, talentSpells } from './talents'
 import type { TalentTree } from '../../shared/talents'
-import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, type DungeonJournal, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole } from '../../shared/dungeons'
+import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, type DungeonJournal, type EnemySpell, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole } from '../../shared/dungeons'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -833,21 +833,7 @@ export class GameDataEngine {
       }
       walk(num(boss.FirstSectionID), collect)
     }
-    const table = (tableName: string) => this.traitTable(tableName)
-    // Spell text links other spells by name and description; those are read too, a few links deep
-    const spells: Record<number, SpellData> = {}
-    let frontier = [...spellIds]
-    for (let round = 0; round < 3 && frontier.length; round++) {
-      Object.assign(spells, await talentSpells(table, frontier))
-      const next = new Set<number>()
-      for (const spell of Object.values(spells)) for (const match of spell.description.matchAll(/\$(?:@spellname|@spelldesc)?(\d{3,})/g)) { const id = Number(match[1]); if (!spells[id]) next.add(id) }
-      frontier = [...next]
-    }
-    const misc = await this.traitTable('SpellMisc')
-    const map = new Map<number, JournalSpell>(Object.entries(spells).map(([id, spell]) => [Number(id), { name: spell.name, description: spell.description, durationMs: spell.durationMs, effects: spell.effects.map(effect => ({ index: effect.index, periodMs: effect.periodMs ?? 0, basePoints: effect.basePoints })) }]))
-    const iconOf = new Map<number, number>()
-    for (const row of misc.values()) { const spell = num(row.SpellID); if (spellIds.has(spell) && !num(row.DifficultyID) && num(row.SpellIconFileDataID)) iconOf.set(spell, num(row.SpellIconFileDataID)) }
-    const fill = (raw: string, spell = 0) => journalSpellText(journalText(raw), spell, map)
+    const { map, iconOf, fill } = await this.journalSpells(spellIds)
     const spellText = (id: number) => map.has(id) ? fill(map.get(id)!.description, id) : ''
     const ability = (row: Row): JournalAbility => {
       const spell = num(row.SpellID)
@@ -887,6 +873,37 @@ export class GameDataEngine {
         return { encounterId: num(boss.ID), name: String(boss.Name_lang ?? ''), description: journalText(String(boss.Description_lang ?? '')), portrait: num(portrait?.FileDataID) || null, tips, overview, abilities }
       }),
     }
+  }
+
+  /** Spells for journal and enemy text, with the spells their text links to a few links deep, and their icons */
+  private async journalSpells(spellIds: Set<number>) {
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const table = (tableName: string) => this.traitTable(tableName)
+    const spells: Record<number, SpellData> = {}
+    let frontier = [...spellIds]
+    for (let round = 0; round < 3 && frontier.length; round++) {
+      Object.assign(spells, await talentSpells(table, frontier))
+      const next = new Set<number>()
+      for (const spell of Object.values(spells)) for (const match of spell.description.matchAll(/$(?:@spellname|@spelldesc)?(d{3,})/g)) { const id = Number(match[1]); if (!spells[id]) next.add(id) }
+      frontier = [...next]
+    }
+    const misc = await this.traitTable('SpellMisc')
+    const map = new Map<number, JournalSpell>(Object.entries(spells).map(([id, spell]) => [Number(id), { name: spell.name, description: spell.description, durationMs: spell.durationMs, effects: spell.effects.map(effect => ({ index: effect.index, periodMs: effect.periodMs ?? 0, basePoints: effect.basePoints })) }]))
+    const iconOf = new Map<number, number>()
+    for (const row of misc.values()) { const spell = num(row.SpellID); if (spellIds.has(spell) && !num(row.DifficultyID) && num(row.SpellIconFileDataID)) iconOf.set(spell, num(row.SpellIconFileDataID)) }
+    const fill = (raw: string, spell = 0) => journalSpellText(journalText(raw), spell, map)
+    return { map, iconOf, fill }
+  }
+
+  /** Names, text, and icons for the spells trash enemies cast, read from the game files */
+  async dungeonSpells(ids: number[]): Promise<Record<number, EnemySpell>> {
+    const { map, iconOf, fill } = await this.journalSpells(new Set(ids))
+    const out: Record<number, EnemySpell> = {}
+    for (const id of ids) {
+      const spell = map.get(id)
+      if (spell?.name) out[id] = { id, name: spell.name, text: fill(spell.description, id), icon: iconOf.get(id) ?? null }
+    }
+    return out
   }
 
   async catalystSources(itemId: number): Promise<CatalystSource[]> {
