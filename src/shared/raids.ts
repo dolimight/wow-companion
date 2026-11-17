@@ -1,7 +1,8 @@
 import { dungeonKey, type JournalDifficulty, type StrategyNotes } from './dungeons'
 
 export type RaidEncounter = { slug: string; name: string }
-export type RaidInfo = { slug: string; name: string; shortName: string; startsAt: string | null; encounters: RaidEncounter[] }
+/** `art` is a path under public/assets to the raid's loading-screen art, bundled from the game files */
+export type RaidInfo = { slug: string; name: string; shortName: string; startsAt: string | null; encounters: RaidEncounter[]; art?: string }
 export type RaidList = { raids: RaidInfo[]; observedAt: string; source: string }
 
 export type RaidDifficulty = Extract<JournalDifficulty, 'lfr' | 'normal' | 'heroic' | 'mythic'>

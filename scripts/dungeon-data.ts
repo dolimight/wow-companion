@@ -112,12 +112,23 @@ async function saveNpcArt(displayId: number) {
   return relative
 }
 
+/**
+ * Raids keep art already extracted to public/assets/raids: the loading-screen image from the game files, cropped out of
+ * its padding and saved 1440 px wide, since Raider.IO publishes none for raids
+ */
+async function withRaidArt(raids: RaidInfo[]): Promise<RaidInfo[]> {
+  return Promise.all(raids.map(async raid => {
+    const relative = `raids/${raid.slug}.jpg`
+    try { await access(resolve(root, 'public/assets', relative)); return { ...raid, art: relative } } catch { return raid }
+  }))
+}
+
 async function main() {
   const log = (line: string) => console.log(line)
   const saved = async () => JSON.parse(await readFile(resolve(root, 'data/dungeons', `${(await fetchSeasonDungeons()).season.slug}.json`), 'utf8')) as DungeonBundle
   const bundle = process.argv.includes('--spells') ? await addSpells(await saved(), mdtSource(), log, saveNpcArt)
-    : process.argv.includes('--raids') ? { ...await saved(), raids: seasonRaids(await fetchRaids()) }
-      : await buildBundle({ list: () => fetchSeasonDungeons(), routes: fetchDungeonRoutes, enemies: fetchDungeonEnemies, art: saveArt, mdt: mdtSource(), npcArt: saveNpcArt, raids: () => fetchRaids(), log })
+    : process.argv.includes('--raids') ? { ...await saved(), raids: await withRaidArt(seasonRaids(await fetchRaids())) }
+      : await buildBundle({ list: () => fetchSeasonDungeons(), routes: fetchDungeonRoutes, enemies: fetchDungeonEnemies, art: saveArt, mdt: mdtSource(), npcArt: saveNpcArt, raids: () => fetchRaids().then(withRaidArt), log })
   const file = resolve(root, 'data/dungeons', `${bundle.season.slug}.json`)
   await mkdir(dirname(file), { recursive: true })
   await writeFile(file, `${JSON.stringify(bundle, null, 1)}\n`)

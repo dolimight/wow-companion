@@ -23,7 +23,7 @@ export type DungeonBundle = {
   generatedAt: string
   dungeons: Array<SeasonDungeonInfo & { routes: DungeonRoutes | null; enemies: DungeonEnemies | null }>
   /** The season's raids from Raider.IO, for the Raids page */
-  raids?: Array<{ slug: string; name: string; shortName: string; startsAt: string | null; encounters: Array<{ slug: string; name: string }> }>
+  raids?: Array<{ slug: string; name: string; shortName: string; startsAt: string | null; encounters: Array<{ slug: string; name: string }>; art?: string }>
 }
 
 /** Runs that followed the same route, grouped by Raider.IO */

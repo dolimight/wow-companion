@@ -9659,7 +9659,8 @@
      "slug": "ulatek",
      "name": "Ula'tek"
     }
-   ]
+   ],
+   "art": "raids/the-venomous-abyss.jpg"
   },
   {
    "slug": "the-tidebound-grotto",
@@ -9671,7 +9672,8 @@
      "slug": "nymrissa-wavecaller",
      "name": "Nymrissa Wavecaller"
     }
-   ]
+   ],
+   "art": "raids/the-tidebound-grotto.jpg"
   },
   {
    "slug": "the-unbinding-of-kithix",
@@ -9683,7 +9685,8 @@
      "slug": "kithix",
      "name": "Kith'ix"
     }
-   ]
+   ],
+   "art": "raids/the-unbinding-of-kithix.jpg"
   }
  ]
 }

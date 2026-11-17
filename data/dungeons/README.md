@@ -10,7 +10,7 @@ Each file holds:
 - The path of the dungeon's art under `public/assets/dungeons`
 - Each enemy's spells, their interrupt and dispel flags, whether stuns work on it, and its creature display, from [Mythic Dungeon Tools](https://github.com/Nnoggie/MythicDungeonTools) (GPL-2.0). Spell names and text come from the player's game files
 - The path of a render of each listed enemy under `public/assets/npcs`
-- The season's raids (the newest full tier and the lairs opened since) from Raider.IO's documented raiding `static-data`, for the Raids page
+- The season's raids (the newest full tier and the lairs opened since) from Raider.IO's documented raiding `static-data`, for the Raids page, with the path of each raid's art under `public/assets/raids` when it has been extracted
 
 `npm run dungeon-data -- --spells` refreshes only the spells and pictures in the saved bundle, and `-- --raids` only its raids
 

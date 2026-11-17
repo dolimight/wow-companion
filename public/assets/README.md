@@ -66,3 +66,9 @@ World of Warcraft art is © Blizzard Entertainment
 `npcs/*.webp` are 300 px transparent renders of creature models from Wowhead's model viewer thumbnails (`wow.zamimg.com/modelviewer/live/webthumbs/npc`), named by creature display id
 They were downloaded with `npm run dungeon-data` on 2026-11-17 for the trash listed on the Dungeons page
 World of Warcraft art is © Blizzard Entertainment
+
+# Raid art
+
+`raids/*.jpg` are each raid's loading-screen image (`LoadingScreens.MainImageFileDataID` through `JournalInstance` and `Map`) read from the game files with the app's game data engine on 2026-11-17
+Each texture was cropped out of its gray padding and saved 1440 px wide at JPEG quality 80. Raider.IO publishes no raid banners, so these are bundled instead
+World of Warcraft art is © Blizzard Entertainment
