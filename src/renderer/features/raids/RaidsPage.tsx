@@ -70,9 +70,13 @@ export function RaidsPage({ character }: { character: Character }) {
   )
 }
 
-function RaidArt({ journal, className, children }: { journal: DungeonJournal | null | undefined; className: string; children?: React.ReactNode }) {
-  const src = iconUrl(journal?.button)
-  return <div className={className}>{src && <img className="dungeon-art dungeon-art-button" src={src} alt="" draggable={false} />}{children}</div>
+/** Loading-screen art bundled with the app (public/assets/raids); a raid without it falls back to the journal's button art */
+const bundledArt = (raid: RaidInfo) => raid.art ? `${import.meta.env.BASE_URL}assets/${raid.art}` : null
+
+function RaidArt({ raid, journal, className, children }: { raid: RaidInfo; journal: DungeonJournal | null | undefined; className: string; children?: React.ReactNode }) {
+  const bundled = bundledArt(raid)
+  const src = bundled ?? iconUrl(journal?.button)
+  return <div className={className}>{src && <img className={bundled ? 'dungeon-art dungeon-art-cover' : 'dungeon-art dungeon-art-button'} src={src} alt="" draggable={false} />}{children}</div>
 }
 
 function RaidCard({ character, raid, onOpen }: { character: Character; raid: RaidInfo; onOpen: () => void }) {
@@ -82,7 +86,7 @@ function RaidCard({ character, raid, onOpen }: { character: Character; raid: Rai
   return (
     <Card as="article" size="sm" className="dungeon-card">
       <button type="button" className="dungeon-card-hit" onClick={onOpen} aria-label={`Open ${raid.name}`}>
-        <RaidArt journal={journal.data} className="dungeon-card-art"><span>{raid.name}</span></RaidArt>
+        <RaidArt raid={raid} journal={journal.data} className="dungeon-card-art"><span>{raid.name}</span></RaidArt>
         <span className="dungeon-card-body">
           <span className="dungeon-best"><b>{summary ?? '—'}</b><small>{summary ? 'your best progress' : 'no kills recorded'}</small></span>
           <span className="dungeon-chips">
@@ -114,10 +118,11 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
   return (
     <div className="dungeons">
       <Button variant="quiet" className="back-link" onClick={onBack}><ArrowLeft size={14} />All raids</Button>
-      <div className="dungeon-hero" data-art="thumb">
-        {iconUrl(journal.data?.button) && <img className="dungeon-hero-backdrop" src={iconUrl(journal.data?.button)!} alt="" draggable={false} />}
+      <div className="dungeon-hero" data-art={bundledArt(raid) ? 'wide' : 'thumb'}>
+        {bundledArt(raid) ? <img className="dungeon-hero-cover" src={bundledArt(raid)!} alt="" draggable={false} />
+          : iconUrl(journal.data?.button) && <img className="dungeon-hero-backdrop" src={iconUrl(journal.data?.button)!} alt="" draggable={false} />}
         <div className="dungeon-hero-inner">
-          <RaidArt journal={journal.data} className="dungeon-hero-thumb" />
+          {!bundledArt(raid) && <RaidArt raid={raid} journal={journal.data} className="dungeon-hero-thumb" />}
           <div className="dungeon-hero-text">
             <h2>{raid.name}</h2>
             <p>{summary ? `Your progress ${summary}` : 'No kills recorded this season'}</p>
