@@ -3,15 +3,15 @@ export const gearViews = ['progress', 'plan', 'owned', 'simulations'] as const
 export const performanceViews = ['standing', 'keys', 'leaders', 'history', 'reports'] as const
 export type GearView = (typeof gearViews)[number]
 export type PerformanceView = (typeof performanceViews)[number]
-export type CharacterSection = 'overview' | 'gear' | 'performance' | 'dungeons' | 'wardrobe'
+export type CharacterSection = 'overview' | 'gear' | 'performance' | 'dungeons' | 'raids' | 'wardrobe'
 export type CharacterDestination =
-  | { section: 'overview' | 'dungeons' | 'wardrobe' }
+  | { section: 'overview' | 'dungeons' | 'raids' | 'wardrobe' }
   | { section: 'gear'; view: GearView }
   | { section: 'performance'; view: PerformanceView }
 
 export const gearViewLabels: Record<GearView, string> = { progress: 'Progress', plan: 'Plan', owned: 'Owned', simulations: 'Simulations' }
 export const performanceViewLabels: Record<PerformanceView, string> = { standing: 'Your standing', keys: 'Key range', leaders: 'Leaders', history: 'History', reports: 'Reports' }
-export const sectionLabels: Record<CharacterSection, string> = { overview: 'Overview', gear: 'Gear', performance: 'Performance', dungeons: 'Dungeons', wardrobe: 'Wardrobe' }
+export const sectionLabels: Record<CharacterSection, string> = { overview: 'Overview', gear: 'Gear', performance: 'Performance', dungeons: 'Dungeons', raids: 'Raids', wardrobe: 'Wardrobe' }
 
 export type Resolution =
   | { kind: 'ok'; destination: CharacterDestination }
@@ -29,7 +29,7 @@ const legacy: Record<string, CharacterDestination> = {
 /** Turn the two path segments after the character id into one destination, or an explicit redirect or not-found result */
 export function resolveCharacterPath(section: string | undefined, view?: string): Resolution {
   if (!section || section === 'overview') return view ? { kind: 'unknown' } : { kind: 'ok', destination: { section: 'overview' } }
-  if (section === 'wardrobe' || section === 'dungeons') return view ? { kind: 'unknown' } : { kind: 'ok', destination: { section } }
+  if (section === 'wardrobe' || section === 'dungeons' || section === 'raids') return view ? { kind: 'unknown' } : { kind: 'ok', destination: { section } }
   if (section === 'gear') {
     // A bare gear link is the old planner and keeps meaning Plan; the sidebar links to Progress explicitly
     if (!view) return { kind: 'redirect', destination: { section: 'gear', view: 'plan' } }
@@ -69,7 +69,7 @@ export function sameDestinationFor(pathname: string): CharacterDestination | nul
   return resolved.kind === 'unknown' ? null : resolved.destination
 }
 
-const returnTargets = [/^\/tonight$/, /^\/week(\?expanded=[\w-]+)?$/, /^\/characters(\?selected=[\w-]+)?$/, /^\/characters\/[\w-]+\/(overview|wardrobe|dungeons|(gear|performance)\/[a-z]+)$/]
+const returnTargets = [/^\/tonight$/, /^\/week(\?expanded=[\w-]+)?$/, /^\/characters(\?selected=[\w-]+)?$/, /^\/characters\/[\w-]+\/(overview|wardrobe|dungeons|raids|(gear|performance)\/[a-z]+)$/]
 /** Return destinations are internal hash routes only, never external or script URLs */
 export function safeReturn(value: unknown): string | null {
   return typeof value === 'string' && value.length <= 200 && returnTargets.some(pattern => pattern.test(value)) ? value : null

@@ -45,5 +45,6 @@ const bridge:NativeBridge={
   chooseSimulationExecutable:()=>ipcRenderer.invoke('companion:choose-simulation-executable'),
   chooseModelFile:(characterId)=>ipcRenderer.invoke('companion:choose-model-file',characterId),
   openExternal:(url)=>ipcRenderer.invoke('companion:open-external',url),
+  copyText:(text)=>ipcRenderer.invoke('companion:copy-text',text),
 }
 contextBridge.exposeInMainWorld('companion',bridge)

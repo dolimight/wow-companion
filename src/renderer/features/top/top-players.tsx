@@ -20,7 +20,7 @@ import { LatticeLoader } from "../../components/motion/LatticeLoader";
 import { Card } from "../../components/ui/card";
 
 async function copy(text: string, what: string) {
-  try { await navigator.clipboard.writeText(text); notify(`${what} copied`); } catch { notify("Copy failed, select the text and copy it manually"); }
+  try { await api.copyText(text); notify(`${what} copied`); } catch { notify("Copy failed, select the text and copy it manually"); }
 }
 const same = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && (a.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(a.toLowerCase()));
 

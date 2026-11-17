@@ -22,6 +22,8 @@ export type DungeonBundle = {
   season: { slug: string; name: string; endsAt: string | null }
   generatedAt: string
   dungeons: Array<SeasonDungeonInfo & { routes: DungeonRoutes | null; enemies: DungeonEnemies | null }>
+  /** The season's raids from Raider.IO, for the Raids page */
+  raids?: Array<{ slug: string; name: string; shortName: string; startsAt: string | null; encounters: Array<{ slug: string; name: string }> }>
 }
 
 /** Runs that followed the same route, grouped by Raider.IO */
@@ -62,7 +64,7 @@ export type JournalBoss = {
   overview: string
   abilities: JournalAbility[]
 }
-export type DungeonJournal = { instanceId: number; name: string; description: string; button: number | null; background: number | null; bosses: JournalBoss[] }
+export type DungeonJournal = { instanceId: number; name: string; description: string; button: number | null; background: number | null; bosses: JournalBoss[]; difficultyIds?: number[] }
 
 /** The journal's icon flag bits, as the game's Encounter Journal shows them */
 export const journalFlagBits: Array<[number, JournalFlag]> = [
@@ -220,11 +222,15 @@ export type DungeonEnemy = {
 }
 export type SpellTag = 'magic' | 'curse' | 'poison' | 'disease' | 'bleed' | 'enrage'
 export const spellTags: readonly SpellTag[] = ['magic', 'curse', 'poison', 'disease', 'bleed', 'enrage']
+/** Which difficulty's journal sections to read: dungeons use Mythic+ (8) with Mythic (23); raids their own difficulty */
+export type JournalDifficulty = 'mythicPlus' | 'lfr' | 'normal' | 'heroic' | 'mythic'
+export const journalDifficulties: readonly JournalDifficulty[] = ['mythicPlus', 'lfr', 'normal', 'heroic', 'mythic']
+export const journalDifficultyIds: Record<JournalDifficulty, number[]> = { mythicPlus: [8, 23], lfr: [17], normal: [14], heroic: [15], mythic: [16] }
 export type EnemySpellRef = { id: number; interrupt: boolean; tags?: SpellTag[] }
 export type EnemySpell = { id: number; name: string; text: string; icon: number | null }
 
 /** Strategy written for the app from the season's dungeon guides, in short lines per role */
-export type StrategyNotes = { positioning?: string[]; everyone?: string[]; tank?: string[]; healer?: string[]; damage?: string[] }
+export type StrategyNotes = { positioning?: string[]; everyone?: string[]; tank?: string[]; healer?: string[]; damage?: string[]; mythic?: string[] }
 export type BossStrategy = StrategyNotes & { encounterId: number; name: string }
 export type EnemyStrategy = StrategyNotes & { npcId: number; name: string; threat: string }
 export type DungeonStrategy = { dungeon: string; source: { name: string; url: string; updated: string }; bosses: BossStrategy[]; enemies: EnemyStrategy[] }

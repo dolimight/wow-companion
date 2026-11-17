@@ -8,10 +8,10 @@ const MAX_BYTES = 4 * 1024 * 1024
 export class KeystoneGuruError extends Error { constructor(message: string) { super(message); this.name = 'KeystoneGuruError' } }
 
 /** Fixed origins, no redirects, a timeout, and a size cap, the same safeguards as the Raider.IO providers */
-async function getText(url: string, signal?: AbortSignal): Promise<string> {
+async function getText(url: string, signal?: AbortSignal, headers?: Record<string, string>): Promise<string> {
   const origin = new URL(url).origin
   if (origin !== SITE && origin !== ASSETS) throw new KeystoneGuruError('Unexpected Keystone Guru address')
-  const response = await fetch(url, { redirect: 'error', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000) })
+  const response = await fetch(url, { redirect: 'error', headers, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000) })
   if (!response.ok) throw new KeystoneGuruError(response.status === 429 ? 'Keystone Guru rate limit reached, try again in a minute' : `Keystone Guru request failed (${response.status})`)
   const reader = response.body?.getReader()
   if (!reader) throw new KeystoneGuruError('Keystone Guru returned an empty response')
@@ -86,4 +86,20 @@ export async function fetchDungeonEnemies(dungeon: string, routeKey: string | nu
     observedAt: new Date().toISOString(),
     source: 'Keystone Guru',
   }
+}
+
+/**
+ * A route's Mythic Dungeon Tools import string, from the signed export link its embed page carries. The site answers
+ * only the requests its own page makes, so the request says it comes from script as that page's does
+ */
+export async function fetchRouteMdt(dungeon: string, routeKey: string, signal?: AbortSignal): Promise<string> {
+  if (!/^[a-z0-9-]{1,80}$/.test(dungeon) || !/^[A-Za-z0-9]{1,20}$/.test(routeKey)) throw new KeystoneGuruError('Unknown route')
+  const page = await getText(routeEmbedUrl(dungeon, routeKey), signal)
+  // The link sits in the page's JSON options with escaped slashes, such as "\/ajax\/3Kx6vSa\/mdtExport?expires=…"
+  const link = page.match(/"mdtExportUrl":"([^"]{1,600})"/)?.[1]?.replace(/\\\//g, '/')
+  if (!link || !link.startsWith(`/ajax/${routeKey}/mdtExport?`)) throw new KeystoneGuruError('Keystone Guru has no MDT export for this route')
+  const body = await getText(`${SITE}${link}`, signal, { 'x-requested-with': 'XMLHttpRequest', accept: 'application/json' })
+  const parsed = z.object({ mdt_string: z.string().min(1).max(200_000).regex(/^[A-Za-z0-9+/=!~]+$/) }).safeParse(JSON.parse(body))
+  if (!parsed.success) throw new KeystoneGuruError('Keystone Guru returned an unreadable MDT string')
+  return parsed.data.mdt_string
 }

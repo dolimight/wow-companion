@@ -9,6 +9,9 @@ import { weekStart } from '../shared/weekly'
 import { capTopLevels, type TopPlayers, type TopRegion } from '../shared/top-players'
 import { ladderCeiling } from './item-tracks'
 import { fetchDungeonRoutes, fetchSeasonDungeons } from './providers/raiderio-dungeons'
+import { fetchSeasonRaids } from './providers/raiderio-raids'
+import { fetchRouteMdt } from './providers/keystone-guru'
+import type { RaidList } from '../shared/raids'
 import { fetchDungeonEnemies } from './providers/keystone-guru'
 import { bundledList, currentBundle } from './dungeon-bundle'
 import { bestFamily, type DungeonEnemies, type DungeonList, type DungeonRoutes } from '../shared/dungeons'
@@ -223,6 +226,20 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
     return request
   }
 
-  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes, dungeonEnemies }
+  // This season's raids come with the bundle; without one they are fetched once a day
+  let raidList: { value: RaidList; at: number } | null = null
+  let raidRequest: Promise<RaidList> | null = null
+  async function raids(): Promise<RaidList> {
+    const bundle = currentBundle()
+    if (bundle?.raids?.length) return { raids: bundle.raids, observedAt: bundle.generatedAt, source: 'Bundled from Raider.IO' }
+    if (raidList && Date.now() - raidList.at < 24 * 3_600_000) return raidList.value
+    raidRequest ??= fetchSeasonRaids().then(value => { raidList = { value, at: Date.now() }; return value }).finally(() => { raidRequest = null })
+    return raidRequest
+  }
+
+  // A route's MDT import string; the export link is signed per page load, so each copy reads it fresh
+  const routeMdt = (dungeon: string, routeKey: string) => fetchRouteMdt(dungeon, routeKey)
+
+  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes, dungeonEnemies, raids, routeMdt }
 }
 export type Insights = ReturnType<typeof createInsights>

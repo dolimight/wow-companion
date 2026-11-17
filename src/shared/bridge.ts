@@ -41,5 +41,7 @@ export type NativeBridge = {
   chooseSimulationExecutable():Promise<{configured:true;name:string}|null>
   chooseModelFile(characterId:string):Promise<import('../main/models/cache').ModelDescriptor|null>
   openExternal(url:string):Promise<void>
+  /** Writes plain text to the system clipboard from the main process, which works whether or not the page has focus */
+  copyText(text:string):Promise<void>
 }
 declare global { interface Window { companion?: NativeBridge } }

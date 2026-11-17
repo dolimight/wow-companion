@@ -1,50 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, BookOpen, Castle, ChevronDown, Compass, Crosshair, ExternalLink, HeartPulse, Map as MapIcon, Move, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Castle, ChevronDown, Compass, Copy, Crosshair, ExternalLink, HeartPulse, Map as MapIcon, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X, Zap } from 'lucide-react'
 import type { Character, SeasonDungeon } from '../../../shared/domain'
-import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, routeEmbedUrl, routeUrl, specRole, strategyFor, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type DungeonStrategy, type EnemySpell, type EnemySpellRef, type EnemyStrategy, type StrategyNotes, type DungeonJournal, type DungeonRoutes, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
+import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, routeEmbedUrl, routeUrl, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type DungeonStrategy, type EnemySpell, type EnemySpellRef, type EnemyStrategy, type DungeonJournal, type DungeonRoutes, type JournalBoss, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
 import { lowestDungeon, seasonDungeons, timeToSpareMs, upgradesFor } from '../../../shared/key-range'
 import { api } from '../../lib/client'
 import { iconUrl } from '../../lib/assets'
-import { errorMessage } from '../../lib/notify'
+import { errorMessage, notify } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Badge, Button, EmptyState } from '../../components/ui/primitives'
 import { ItemIcon, useGameData } from '../items/items'
-import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group'
 import { dungeonStrategy } from './strategy'
+import { Ability, BossCard, flagLabels, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole } from './encounters'
 import './dungeons.css'
-
-const roleLabels: Record<JournalRole, string> = { tank: 'Tank', healer: 'Healer', damage: 'Damage' }
-const roleIcons: Record<JournalRole, typeof Shield> = { tank: Shield, healer: HeartPulse, damage: Swords }
-
-/** The role the page is read as: the spec's role until the player picks another, remembered per character */
-function useDungeonRole(character: Character) {
-  const key = `wowc:dungeon-role:${character.id}`
-  const [role, setRole] = useState<JournalRole>(() => {
-    try { const saved = localStorage.getItem(key); if (saved === 'tank' || saved === 'healer' || saved === 'damage') return saved } catch { /* storage unavailable */ }
-    return specRole(character.specId)
-  })
-  const choose = (next: JournalRole) => { setRole(next); try { localStorage.setItem(key, next) } catch { /* storage unavailable */ } }
-  return [role, choose] as const
-}
-
-function RolePicker({ role, onChange }: { role: JournalRole; onChange: (role: JournalRole) => void }) {
-  return (
-    <div className="dungeon-role">
-      <span>Read as</span>
-      <ToggleGroup variant="outline" size="sm" value={[role]} onValueChange={values => { const next = values[0] as JournalRole | undefined; if (next) onChange(next) }} aria-label="Your role">
-        {(['tank', 'healer', 'damage'] as const).map(entry => { const Icon = roleIcons[entry]; return <ToggleGroupItem key={entry} value={entry} aria-label={roleLabels[entry]}><Icon aria-hidden="true" />{roleLabels[entry]}</ToggleGroupItem> })}
-      </ToggleGroup>
-    </div>
-  )
-}
-const flagLabels: Partial<Record<JournalFlag, { label: string; tone: 'neutral' | 'blue' | 'green' | 'amber' }>> = {
-  deadly: { label: 'Deadly', tone: 'amber' }, important: { label: 'Important', tone: 'amber' }, interruptible: { label: 'Interruptible', tone: 'blue' },
-  magic: { label: 'Magic', tone: 'blue' }, curse: { label: 'Curse', tone: 'blue' }, poison: { label: 'Poison', tone: 'green' }, disease: { label: 'Disease', tone: 'green' },
-  enrage: { label: 'Enrage', tone: 'amber' }, bleed: { label: 'Bleed', tone: 'amber' }, mythic: { label: 'Mythic', tone: 'neutral' },
-  tank: { label: 'Tank', tone: 'neutral' }, healer: { label: 'Healer', tone: 'neutral' }, damage: { label: 'Damage', tone: 'neutral' },
-}
 
 function useJournal(name: string | null, encounterIds: number[] = []) {
   const ready = useGameData().data?.state === 'ready'
@@ -180,7 +149,7 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
                 </>}
         </Card>
         <Card as="section" className="dungeon-map" aria-labelledby="map-title">
-          <h3 id="map-title"><MapIcon size={15} aria-hidden="true" />Route map</h3>
+          <div className="dungeon-map-head"><h3 id="map-title"><MapIcon size={15} aria-hidden="true" />Route map</h3>{family?.routeKey && <CopyMdt dungeon={dungeon.slug} routeKey={family.routeKey} />}</div>
           <RouteMap dungeon={dungeon.slug} family={family} />
         </Card>
       </div>
@@ -204,90 +173,25 @@ function Stat({ label, value }: { label: string; value: string }) {
   return <Card className="dungeon-stat"><small>{label}</small><b>{value}</b></Card>
 }
 
-/** Keystone Guru's own embed draws the pulls, their numbers, and the enemy forces as the route goes */
-function RouteMap({ dungeon, family }: { dungeon: string; family: RouteFamily | null }) {
-  if (!family?.routeKey) return <div className="dungeon-map-empty"><MapIcon size={22} aria-hidden="true" /><p>{family ? 'Raider.IO has not drawn this route yet; pick another route to see its map' : 'Pick a route to see its map'}</p></div>
-  return <iframe key={family.routeKey} className="dungeon-map-frame" title="Keystone Guru route map" src={routeEmbedUrl(dungeon, family.routeKey)} sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer" loading="lazy" />
-}
-
-function BossCard({ boss, index, role, plan, defaultOpen }: { boss: JournalBoss; index: number; role: JournalRole; plan: StrategyNotes | undefined; defaultOpen: boolean }) {
-  const [open, setOpen] = useState(defaultOpen)
-  const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
-  const keyCount = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role)).length
-  return (
-    <Card as="article" className="boss-card">
-      <button type="button" className="boss-head" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
-        <span className="boss-title"><b>{boss.name}</b><Badge>Boss {index + 1}</Badge>{keyCount > 0 && <Badge tone="blue">{keyCount} for {roleLabels[role].toLowerCase()}</Badge>}{plan?.positioning?.length ? <Badge><Move size={11} aria-hidden="true" />Positioning</Badge> : null}</span>
-        <ChevronDown size={16} className="boss-chevron" aria-hidden="true" />
-      </button>
-      {open && <div className="boss-body">
-        {boss.overview && <p className="boss-overview">{boss.overview}</p>}
-        <StrategyView notes={plan} role={role} journalTips={tips} />
-        <div className="boss-abilities">{boss.abilities.map(ability => <Ability key={ability.id} ability={ability} role={role} />)}</div>
-      </div>}
-    </Card>
-  )
+/** Copies the route's MDT import string, read by the app from Keystone Guru so it never depends on the embed's own button */
+function CopyMdt({ dungeon, routeKey }: { dungeon: string; routeKey: string }) {
+  const [busy, setBusy] = useState(false)
+  const copy = async () => {
+    setBusy(true)
+    try { await api.copyText(await api.routeMdt(dungeon, routeKey)); notify('MDT string copied, import it in Mythic Dungeon Tools') }
+    catch (error) { notify(errorMessage(error)) }
+    finally { setBusy(false) }
+  }
+  return <Button variant="quiet" onClick={() => void copy()} disabled={busy}><Copy size={13} />{busy ? 'Copying…' : 'Copy MDT'}</Button>
 }
 
 /**
- * How to play a boss or enemy: the chosen role's jobs first, with the journal's own advice for that role, then where to
- * stand and what the whole group does
+ * Keystone Guru's own embed draws the pulls, their numbers, and the enemy forces as the route goes. Its View route opens
+ * in the browser through the main process, and Copy MDT may write the clipboard
  */
-function StrategyView({ notes, role, journalTips = [] }: { notes: StrategyNotes | undefined; role: JournalRole; journalTips?: string[] }) {
-  const { positioning, everyone, mine } = strategyFor(notes, role)
-  const RoleIcon = roleIcons[role]
-  if (!positioning.length && !everyone.length && !mine.length && !journalTips.length) return null
-  return (
-    <div className="strategy">
-      {(mine.length > 0 || journalTips.length > 0) && <div className="boss-advice">
-        <h4><RoleIcon size={14} aria-hidden="true" />{roleLabels[role]}</h4>
-        {mine.length > 0 && <Lines lines={mine} />}
-        {journalTips.map((tip, at) => <TipText key={at} text={tip} />)}
-      </div>}
-      {(positioning.length > 0 || everyone.length > 0) && <div className="strategy-grid">
-        {positioning.length > 0 && <div className="strategy-block"><h4><Move size={14} aria-hidden="true" />Positioning</h4><Lines lines={positioning} /></div>}
-        {everyone.length > 0 && <div className="strategy-block"><h4><Users size={14} aria-hidden="true" />Everyone</h4><Lines lines={everyone} /></div>}
-      </div>}
-    </div>
-  )
-}
-
-function Lines({ lines }: { lines: string[] }) {
-  return <ul className="boss-tips">{lines.map((line, at) => <li key={at}>{line}</li>)}</ul>
-}
-
-function StrategySource({ strategy }: { strategy: DungeonStrategy }) {
-  const updated = new Date(`${strategy.source.updated}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  return (
-    <p className="muted small dungeon-note strategy-source">
-      <BookOpen size={13} aria-hidden="true" />Positioning and role notes summarized from {strategy.source.name}'s guide, updated {updated}
-      <Button variant="quiet" onClick={() => void api.openExternal(strategy.source.url)}><ExternalLink size={13} />Full guide</Button>
-    </p>
-  )
-}
-
-function TipText({ text }: { text: string }) {
-  const lines = text.split('\n').map(line => line.replace(/^•\s*/, '').trim()).filter(Boolean)
-  return <Lines lines={lines} />
-}
-
-function Ability({ ability, role, depth = 0 }: { ability: JournalAbility; role: JournalRole; depth?: number }) {
-  const why = whyItMatters(ability.flags, role)
-  // The "For you" badge already names the reason, so that flag isn't repeated
-  const flags = ability.flags.filter(flag => flagLabels[flag] && flag !== 'damage' && flagLabels[flag]!.label !== why)
-  return (
-    <div className="boss-ability" style={{ marginLeft: depth * 28 }}>
-      <div className="boss-ability-row" data-emphasis={why ? 'key' : 'quiet'}>
-        <ItemIcon icon={ability.icon} size="small" fallback={<Skull />} />
-        <div>
-          <div className="boss-ability-name">{ability.name || 'Ability'}{why && <Badge tone="blue"><Sparkles size={11} aria-hidden="true" />For you · {why}</Badge>}{flags.map(flag => <Badge key={flag} tone={flagLabels[flag]!.tone}>{flagLabels[flag]!.label}</Badge>)}</div>
-          {ability.text && <p>{ability.text.split('\n').filter(Boolean).map((line, at) => <span key={at}>{line}</span>)}</p>}
-        </div>
-      </div>
-      {ability.children.length > 0 && ability.children.map(child => <Ability key={child.id} ability={child} role={role} depth={1} />)}
-    </div>
-  )
+function RouteMap({ dungeon, family }: { dungeon: string; family: RouteFamily | null }) {
+  if (!family?.routeKey) return <div className="dungeon-map-empty"><MapIcon size={22} aria-hidden="true" /><p>{family ? 'Raider.IO has not drawn this route yet; pick another route to see its map' : 'Pick a route to see its map'}</p></div>
+  return <iframe key={family.routeKey} className="dungeon-map-frame" title="Keystone Guru route map" src={routeEmbedUrl(dungeon, family.routeKey)} sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" allow="clipboard-write" referrerPolicy="no-referrer" loading="lazy" />
 }
 
 const kindIcons: Record<DungeonEnemy['kind'], typeof Shield> = { caster: WandSparkles, healer: HeartPulse, ranged: Crosshair, melee: Swords, other: Users }
