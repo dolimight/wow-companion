@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vite-plus/test'
+import { describe, it } from 'node:test'
+import assert from 'node:assert/strict'
 import { mdtFileFor, parseMdtEnemies } from './mdt'
 
 const lua = `local dungeonIndex = 17
@@ -45,15 +46,15 @@ MDT.dungeonEnemies[dungeonIndex] = {
 describe('Mythic Dungeon Tools data', () => {
   it('reads each enemy with its spells, flags, and stun immunity', () => {
     const enemies = parseMdtEnemies(lua)
-    expect(enemies.get(134174)).toEqual({ npcId: 134174, displayId: 83371, stunnable: false, spells: [{ id: 269972, interrupt: true, tags: ['curse'] }, { id: 1294815, interrupt: false }] })
-    expect(enemies.get(134157)).toEqual({ npcId: 134157, displayId: null, stunnable: true, spells: [{ id: 1294900, interrupt: false, tags: ['bleed'] }] })
+    assert.deepEqual(enemies.get(134174), { npcId: 134174, displayId: 83371, stunnable: false, spells: [{ id: 269972, interrupt: true, tags: ['curse'] }, { id: 1294815, interrupt: false }] })
+    assert.deepEqual(enemies.get(134157), { npcId: 134157, displayId: null, stunnable: true, spells: [{ id: 1294900, interrupt: false, tags: ['bleed'] }] })
   })
   it('reads nothing outside the enemies table', () => {
-    expect(parseMdtEnemies('MDT.dungeonTotalCount[1] = { normal = 1 }').size).toBe(0)
+    assert.equal(parseMdtEnemies('MDT.dungeonTotalCount[1] = { normal = 1 }').size, 0)
   })
   it('finds a dungeon file from its Raider.IO slug', () => {
-    expect(mdtFileFor('kings-rest', ['AltarOfFangs.lua', 'KingsRest.lua'])).toBe('KingsRest.lua')
-    expect(mdtFileFor('the-blinding-vale', ['TheBlindingVale.lua'])).toBe('TheBlindingVale.lua')
-    expect(mdtFileFor('unknown', ['KingsRest.lua'])).toBeNull()
+    assert.equal(mdtFileFor('kings-rest', ['AltarOfFangs.lua', 'KingsRest.lua']), 'KingsRest.lua')
+    assert.equal(mdtFileFor('the-blinding-vale', ['TheBlindingVale.lua']), 'TheBlindingVale.lua')
+    assert.equal(mdtFileFor('unknown', ['KingsRest.lua']), null)
   })
 })
