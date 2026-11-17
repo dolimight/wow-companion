@@ -106,6 +106,7 @@ import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
 import { DungeonsPage } from "./features/dungeons/DungeonsPage";
+import { RaidsPage } from "./features/raids/RaidsPage";
 import { UpdateSettings } from "./features/updates/UpdateSettings";
 import { UpdateButton } from "./features/updates/UpdateButton";
 import { useUpdateBlocker, useUpdateSafety } from "./lib/update-safety";
@@ -204,6 +205,7 @@ const characterSections: Array<{ id: CharacterSection; label: string; icon: type
   { id: "gear", label: "Gear", icon: WandSparkles },
   { id: "performance", label: "Performance", icon: Trophy },
   { id: "dungeons", label: "Dungeons", icon: Castle },
+  { id: "raids", label: "Raids", icon: Crown },
   { id: "wardrobe", label: "Wardrobe", icon: Star },
 ];
 const allSlots: GearSlot[] = [
@@ -1269,7 +1271,7 @@ function CharacterFrame({
             {character.level != null ? ` · Level ${character.level}` : ""} · Observed {age(character.observedAt).toLowerCase()}
           </p>
         </div>
-        {section !== "wardrobe" && section !== "dungeons" && <ActivityTabs value={activity} onChange={setActivity} />}
+        {section !== "wardrobe" && section !== "dungeons" && section !== "raids" && <ActivityTabs value={activity} onChange={setActivity} />}
       </div>
       {views && "view" in destination && (
         <nav className="subnav" aria-label={`${sectionLabels[section]} views`}>
@@ -1352,6 +1354,8 @@ function CharacterRoute() {
         <WardrobePage character={character} />
       ) : destination.section === "dungeons" ? (
         <DungeonsPage character={character} />
+      ) : destination.section === "raids" ? (
+        <RaidsPage character={character} />
       ) : view === "progress" ? (
         <CharacterProgression character={character} />
       ) : view === "plan" ? (

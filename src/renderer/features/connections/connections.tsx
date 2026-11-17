@@ -125,7 +125,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
     <div className="copy-field">
       <span>{label}</span>
       <code>{value}</code>
-      <Button variant="icon" aria-label={`Copy ${label.toLowerCase()}`} onClick={() => void navigator.clipboard.writeText(value).then(() => notify(`${label} copied`), () => notify("Copy failed, select the text instead"))}><Copy /></Button>
+      <Button variant="icon" aria-label={`Copy ${label.toLowerCase()}`} onClick={() => void api.copyText(value).then(() => notify(`${label} copied`), () => notify("Copy failed, select the text instead"))}><Copy /></Button>
     </div>
   );
 }

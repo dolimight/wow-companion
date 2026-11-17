@@ -15,7 +15,7 @@ import { compatibilityMetadata } from './item-metadata'
 import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
 import { buildTalentTree, specializationRows, talentSpells } from './talents'
 import type { TalentTree } from '../../shared/talents'
-import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, type DungeonJournal, type EnemySpell, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole } from '../../shared/dungeons'
+import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, journalDifficultyIds, type DungeonJournal, type EnemySpell, type JournalDifficulty, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole } from '../../shared/dungeons'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -799,7 +799,8 @@ export class GameDataEngine {
    * its icon, warnings (interruptible, magic, deadly…), and description filled in from spell data. Only text that
    * applies to Mythic+ (difficulty 8) is kept. The instance is matched by the encounters Raider.IO lists, then by name
    */
-  async dungeonJournal(name: string, encounterIds: number[] = []): Promise<DungeonJournal | null> {
+  async dungeonJournal(name: string, encounterIds: number[] = [], difficulty: JournalDifficulty = 'mythicPlus'): Promise<DungeonJournal | null> {
+    const wantedDifficulties = journalDifficultyIds[difficulty]
     const [instances, encounters, sections, perDifficulty, creatures] = await Promise.all(['JournalInstance', 'JournalEncounter', 'JournalEncounterSection', 'JournalSectionXDifficulty', 'JournalEncounterCreature'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const wanted = new Set(encounterIds)
@@ -813,8 +814,12 @@ export class GameDataEngine {
     bosses.sort((a, b) => order(num(a.ID)) - order(num(b.ID)) || num(a.OrderIndex) - num(b.OrderIndex))
     const difficulties = new Map<number, number[]>()
     for (const row of perDifficulty.values()) { const id = num(row.JournalEncounterSectionID); difficulties.set(id, [...(difficulties.get(id) ?? []), num(row.DifficultyID)]) }
-    // Sections tied to difficulties count only when Mythic (23) or Mythic+ (8) is among them
-    const applies = (id: number) => { const list = difficulties.get(id); return !list || list.includes(8) || list.includes(23) }
+    // Sections tied to difficulties count only when the chosen one is among them, such as Mythic (23) or Mythic+ (8) for dungeons
+    const applies = (id: number) => { const list = difficulties.get(id); return !list || list.some(entry => wantedDifficulties.includes(entry)) }
+    // Every difficulty the journal tags in this instance, so a page offers only the ones the encounters have
+    const bossIds = new Set(bosses.map(boss => num(boss.ID)))
+    const tagged = new Set<number>()
+    for (const row of sections.values()) if (bossIds.has(num(row.JournalEncounterID))) for (const id of difficulties.get(num(row.ID)) ?? []) tagged.add(id)
     const walk = (first: number, visit: (row: Row, depth: number) => void, depth = 0) => {
       for (let id = first, guard = 0; id && guard < 500; guard++) {
         const row = sections.get(id)
@@ -855,6 +860,7 @@ export class GameDataEngine {
       description: journalText(String(instance.Description_lang ?? '')),
       button: num(instance.ButtonFileDataID) || null,
       background: num(instance.BackgroundFileDataID) || null,
+      difficultyIds: [...tagged].sort((x, y) => x - y),
       bosses: bosses.map(boss => {
         const tips: JournalBoss['tips'] = []
         const abilities: JournalAbility[] = []

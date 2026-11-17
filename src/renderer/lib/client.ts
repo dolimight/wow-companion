@@ -95,8 +95,10 @@ export const api={
  realms:async(region:BlizzardRegion)=>(await client()).realms.query({region}),
  dungeons:async(force=false)=>(await client()).dungeons.query({force}),
  dungeonRoutes:async(dungeon:string,force=false)=>(await client()).dungeonRoutes.query({dungeon,force}),
+ raids:async()=>(await client()).raids.query(),
+ routeMdt:async(dungeon:string,routeKey:string)=>(await client()).routeMdt.query({dungeon,routeKey}),
  dungeonEnemies:async(dungeon:string)=>(await client()).dungeonEnemies.query({dungeon}),
- dungeonJournal:async(name:string,encounterIds:number[])=>(await client()).dungeonJournal.query({name,encounterIds}),
+ dungeonJournal:async(name:string,encounterIds:number[],difficulty:'mythicPlus'|'lfr'|'normal'|'heroic'|'mythic'='mythicPlus')=>(await client()).dungeonJournal.query({name,encounterIds,difficulty}),
  dungeonSpells:async(ids:number[])=>(await client()).dungeonSpells.query({ids}),
  topPlayers:async(input:{specId:number;specName:string;className:string;region:'us'|'eu'|'world';force?:boolean})=>(await client()).topPlayers.query(input),
  itemTooltip:async(id:number)=>(await client()).itemTooltip.query({id}),
@@ -114,6 +116,8 @@ export const api={
   chooseWowFolder:()=>native('chooseWowFolder'),
   chooseImportFile:()=>native('chooseImportFile'),chooseWatchFile:()=>native('chooseWatchFile'),
  exportBackup:()=>native('exportBackup'),importBackup:()=>native('importBackup'),
+ /** Copies text through the main process; a browser build falls back to the web clipboard */
+ copyText:async(text:string)=>{if(window.companion)return window.companion.copyText(text);await navigator.clipboard.writeText(text)},
  openExternal:async(url:string)=>{if(window.companion)return window.companion.openExternal(url);window.open(url,'_blank','noopener,noreferrer')},
  subscribe(callback:()=>void){let cancelled=false;let unsubscribe:(()=>void)|undefined;void client().then(c=>{if(cancelled)return;const sub=c.changes.subscribe(undefined,{onData:callback,onStarted:callback,onError:()=>callback()});unsubscribe=()=>sub.unsubscribe()}).catch(()=>callback());return()=>{cancelled=true;unsubscribe?.()}},
 }

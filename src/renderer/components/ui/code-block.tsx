@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/client"
 import { CheckIcon, CopyIcon } from "lucide-react"
 
 const codeBlockVariants = cva(
@@ -114,8 +115,9 @@ function CodeBlockCopyButton({
         className={cn(className)}
         onClick={(event) => {
           onClick?.(event)
-          navigator.clipboard
-            .writeText(value)
+          // Copies through the app's main process, which works whether or not the page has focus
+          api
+            .copyText(value)
             .then(() => setCopied(true))
             .catch(() => {})
         }}

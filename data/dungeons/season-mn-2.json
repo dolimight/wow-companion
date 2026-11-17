@@ -9619,5 +9619,71 @@
     "source": "Keystone Guru"
    }
   }
+ ],
+ "raids": [
+  {
+   "slug": "the-venomous-abyss",
+   "name": "The Venomous Abyss",
+   "shortName": "VA",
+   "startsAt": "2026-08-18T15:00:00Z",
+   "encounters": [
+    {
+     "slug": "nekzali-the-soulcoiler",
+     "name": "Nek'zali the Soulcoiler"
+    },
+    {
+     "slug": "entombed-sentinels",
+     "name": "Entombed Sentinels"
+    },
+    {
+     "slug": "the-lost-explorers",
+     "name": "The Lost Explorers"
+    },
+    {
+     "slug": "vashnik-the-malignant",
+     "name": "Vashnik the Malignant"
+    },
+    {
+     "slug": "sszorak",
+     "name": "Sszorak"
+    },
+    {
+     "slug": "the-twin-fangs",
+     "name": "The Twin Fangs"
+    },
+    {
+     "slug": "the-coiled-altar",
+     "name": "The Coiled Altar"
+    },
+    {
+     "slug": "ulatek",
+     "name": "Ula'tek"
+    }
+   ]
+  },
+  {
+   "slug": "the-tidebound-grotto",
+   "name": "The Tidebound Grotto",
+   "shortName": "TG",
+   "startsAt": "2026-08-18T15:00:00Z",
+   "encounters": [
+    {
+     "slug": "nymrissa-wavecaller",
+     "name": "Nymrissa Wavecaller"
+    }
+   ]
+  },
+  {
+   "slug": "the-unbinding-of-kithix",
+   "name": "The Unbinding of Kith'ix",
+   "shortName": "UOK",
+   "startsAt": "2026-10-13T15:00:00Z",
+   "encounters": [
+    {
+     "slug": "kithix",
+     "name": "Kith'ix"
+    }
+   ]
+  }
  ]
 }
