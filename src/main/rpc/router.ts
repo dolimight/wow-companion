@@ -144,6 +144,7 @@ export function createRouter(s:RouterServices){return t.router({
   dungeonRoutes:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/),force:z.boolean().default(false)})).query(({input})=>run(()=>s.insights.dungeonRoutes(input.dungeon,input.force))),
   raids:p.query(()=>run(()=>s.insights.raids())),
   routeMdt:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/),routeKey:z.string().regex(/^[A-Za-z0-9]{1,20}$/)})).query(({input})=>run(()=>s.insights.routeMdt(input.dungeon,input.routeKey))),
+  routePulls:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/),routeKey:z.string().regex(/^[A-Za-z0-9]{1,20}$/)})).query(({input})=>run(()=>s.insights.routePulls(input.dungeon,input.routeKey))),
   dungeonEnemies:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/)})).query(({input})=>run(()=>s.insights.dungeonEnemies(input.dungeon))),
   dungeonJournal:p.input(z.object({name:z.string().min(1).max(120),encounterIds:z.array(z.number().int().positive()).max(20).default([]),difficulty:z.enum(['mythicPlus','lfr','normal','heroic','mythic']).default('mythicPlus')})).query(({input})=>run(()=>s.gameData.call('dungeonJournal',input.name,input.encounterIds,input.difficulty))),
   dungeonSpells:p.input(z.object({ids:z.array(z.number().int().positive()).max(600)})).query(({input})=>run(()=>s.gameData.call('dungeonSpells',input.ids))),

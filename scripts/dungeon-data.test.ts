@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildBundle } from './dungeon-data'
+import { addPulls, buildBundle } from './dungeon-data'
 
 describe('dungeon data bundle', () => {
   it('collects each dungeon, keeps going when one source fails, and finds enemies through the best drawn route', async () => {
@@ -19,5 +19,16 @@ describe('dungeon data bundle', () => {
     assert.equal(bundle.dungeons[0]?.art, 'dungeons/a.jpg')
     assert.equal(bundle.dungeons[1]?.routes, null)
     assert.equal(bundle.dungeons[1]?.art, null)
+  })
+})
+
+describe('route pulls', () => {
+  it('saves the pulls of the five most-run drawn routes and keeps going when one fails', async () => {
+    const families = ['K1', null, 'K2', 'K3', 'K4', 'K5', 'K6'].map((routeKey, at) => ({ familyId: `f${at}`, runs: 1, timed: 1, medianClearMs: null, fastestClearMs: null, highestKey: null, latestAt: null, routeKey }))
+    const bundle = { season: { slug: 's', name: 'S', endsAt: null }, generatedAt: 'x', dungeons: [{ slug: 'a', name: 'A', shortName: 'A', challengeModeId: 1, timerMs: 1, enemies: null, routes: { season: 's', dungeon: 'a', totalRuns: 1, timersMs: null, enemyForces: null, encounterIds: [], families, observedAt: 'x', source: 't' } }] }
+    const asked: string[] = []
+    const saved = await addPulls(bundle, async (_dungeon, key) => { asked.push(key); if (key === 'K2') throw new Error('down'); return [[[1, 2]]] })
+    assert.deepEqual(asked, ['K1', 'K2', 'K3', 'K4', 'K5'])
+    assert.deepEqual(Object.keys(saved.dungeons[0]?.pulls ?? {}), ['K1', 'K3', 'K4', 'K5'])
   })
 })

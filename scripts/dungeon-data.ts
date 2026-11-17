@@ -1,15 +1,16 @@
 // Downloads a Mythic+ season's dungeon data and art into the app, since almost none of it changes during a season
 // Run with `npm run dungeon-data`; commit data/dungeons/<season>.json and any new public/assets/dungeons images
-// `npm run dungeon-data -- --spells` only refreshes the trash spells in the bundle already saved, and `-- --raids` only its raids
+// `npm run dungeon-data -- --spells` only refreshes the trash spells in the bundle already saved, `-- --raids` only its
+// raids, and `-- --pulls` only its route pulls. Boss text and loot come from scripts/encounter-data.ts
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { fetchDungeonRoutes, fetchSeasonDungeons } from '../src/main/providers/raiderio-dungeons'
-import { fetchDungeonEnemies } from '../src/main/providers/keystone-guru'
+import { fetchDungeonEnemies, fetchRoutePulls } from '../src/main/providers/keystone-guru'
 import { fetchRaids } from '../src/main/providers/raiderio-raids'
 import { seasonRaids, type RaidInfo } from '../src/shared/raids'
 import { MDT_REPO, mdtFileFor, parseMdtEnemies } from './mdt'
-import { bestFamily, type DungeonBundle, type DungeonEnemies, type DungeonList, type DungeonRoutes } from '../src/shared/dungeons'
+import { bestFamily, type DungeonBundle, type DungeonEnemies, type DungeonList, type DungeonRoutes, type RoutePull } from '../src/shared/dungeons'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -25,6 +26,8 @@ export type Sources = {
   npcArt?: (displayId: number) => Promise<string | null>
   /** Every raid of the expansion; the bundle keeps this season's */
   raids?: () => Promise<RaidInfo[]>
+  /** A Keystone Guru route's pulls, each as the NPCs it kills */
+  pulls?: (dungeon: string, routeKey: string) => Promise<RoutePull[]>
   log?: (line: string) => void
 }
 
@@ -43,7 +46,8 @@ export async function buildBundle(sources: Sources, now = new Date()): Promise<D
     log(`${dungeon.name}: ${routes?.families.length ?? 0} routes, ${enemies?.enemies.length ?? 0} enemies${art ? ', art' : ''}`)
   }
   const raids = sources.raids ? await sources.raids().then(all => seasonRaids(all, now.getTime())).catch(error => { log(`raids unavailable (${(error as Error).message})`); return undefined }) : undefined
-  const bundle: DungeonBundle = { season: { slug: list.season.slug, name: list.season.name, endsAt: list.season.endsAt ?? null }, generatedAt: now.toISOString(), dungeons, ...(raids?.length ? { raids } : {}) }
+  let bundle: DungeonBundle = { season: { slug: list.season.slug, name: list.season.name, endsAt: list.season.endsAt ?? null }, generatedAt: now.toISOString(), dungeons, ...(raids?.length ? { raids } : {}) }
+  if (sources.pulls) bundle = await addPulls(bundle, sources.pulls, log)
   return sources.mdt ? addSpells(bundle, sources.mdt, log, sources.npcArt) : bundle
 }
 
@@ -61,10 +65,28 @@ export async function addSpells(bundle: DungeonBundle, mdt: (slug: string) => Pr
       // Bosses have journal portraits, and filler such as critters is never listed, so only trash that matters gets art
       const listed = !enemy.boss && ((enemy.forces ?? 0) > 0 || enemy.dangerous || entry.spells.length > 0)
       const image = listed && entry.displayId && npcArt ? await npcArt(entry.displayId).catch(error => { log(`${enemy.name}: art unavailable (${(error as Error).message})`); return null }) : null
-      enemies.push({ ...enemy, spells: entry.spells, stunnable: entry.stunnable, ...(entry.displayId ? { displayId: entry.displayId } : {}), ...(image ? { image } : {}) })
+      // A stun answer from an earlier run is dropped, so a file that stops listing one never keeps a stale answer
+      const { stunnable: _, ...rest } = enemy
+      enemies.push({ ...rest, spells: entry.spells, ...(entry.stunnable != null ? { stunnable: entry.stunnable } : {}), ...(entry.displayId ? { displayId: entry.displayId } : {}), ...(image ? { image } : {}) })
     }
     log(`${dungeon.name}: spells for ${enemies.filter(enemy => enemy.spells?.length).length} of ${enemies.length} enemies, ${enemies.filter(enemy => enemy.image).length} pictures`)
     dungeons.push({ ...dungeon, enemies: { ...dungeon.enemies, enemies } })
+  }
+  return { ...bundle, dungeons }
+}
+
+/** The page shows a dungeon's five most-run routes, so those are the ones whose pulls play mode lists without a request */
+export async function addPulls(bundle: DungeonBundle, pulls: (dungeon: string, routeKey: string) => Promise<RoutePull[]>, log: (line: string) => void = () => {}): Promise<DungeonBundle> {
+  const dungeons: DungeonBundle['dungeons'] = []
+  for (const dungeon of bundle.dungeons) {
+    const keys = (dungeon.routes?.families ?? []).filter(family => family.routeKey).slice(0, 5).map(family => family.routeKey!)
+    const found: Record<string, RoutePull[]> = {}
+    for (const key of keys) {
+      const list = await pulls(dungeon.slug, key).catch(error => { log(`${dungeon.slug} ${key}: pulls unavailable (${(error as Error).message})`); return null })
+      if (list?.length) found[key] = list
+    }
+    log(`${dungeon.name}: pulls for ${Object.keys(found).length} of ${keys.length} routes`)
+    dungeons.push({ ...dungeon, pulls: found })
   }
   return { ...bundle, dungeons }
 }
@@ -128,7 +150,8 @@ async function main() {
   const saved = async () => JSON.parse(await readFile(resolve(root, 'data/dungeons', `${(await fetchSeasonDungeons()).season.slug}.json`), 'utf8')) as DungeonBundle
   const bundle = process.argv.includes('--spells') ? await addSpells(await saved(), mdtSource(), log, saveNpcArt)
     : process.argv.includes('--raids') ? { ...await saved(), raids: await withRaidArt(seasonRaids(await fetchRaids())) }
-      : await buildBundle({ list: () => fetchSeasonDungeons(), routes: fetchDungeonRoutes, enemies: fetchDungeonEnemies, art: saveArt, mdt: mdtSource(), npcArt: saveNpcArt, raids: () => fetchRaids().then(withRaidArt), log })
+      : process.argv.includes('--pulls') ? await addPulls(await saved(), fetchRoutePulls, log)
+        : await buildBundle({ list: () => fetchSeasonDungeons(), routes: fetchDungeonRoutes, enemies: fetchDungeonEnemies, art: saveArt, mdt: mdtSource(), npcArt: saveNpcArt, raids: () => fetchRaids().then(withRaidArt), pulls: fetchRoutePulls, log })
   const file = resolve(root, 'data/dungeons', `${bundle.season.slug}.json`)
   await mkdir(dirname(file), { recursive: true })
   await writeFile(file, `${JSON.stringify(bundle, null, 1)}\n`)

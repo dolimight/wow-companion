@@ -15,7 +15,7 @@ import { compatibilityMetadata } from './item-metadata'
 import { elevatedEncounters, embellishmentRules, itemTracks } from '../item-tracks'
 import { buildTalentTree, specializationRows, talentSpells } from './talents'
 import type { TalentTree } from '../../shared/talents'
-import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, journalDifficultyIds, type DungeonJournal, type EnemySpell, type JournalDifficulty, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole } from '../../shared/dungeons'
+import { dungeonKey, journalFlags, journalSpellText, journalText, placeholderTitle, journalDifficultyIds, type DungeonJournal, type EnemySpell, type JournalDifficulty, type JournalSpell, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type LootItem } from '../../shared/dungeons'
 
 /** Windows refuses to replace a file another handle has open, and antivirus scans hold new files briefly, so retry before giving up */
 export async function replaceFile(from: string, to: string, attempts = 20, delayMs = 250) {
@@ -899,6 +899,25 @@ export class GameDataEngine {
     for (const row of misc.values()) { const spell = num(row.SpellID); if (spellIds.has(spell) && !num(row.DifficultyID) && num(row.SpellIconFileDataID)) iconOf.set(spell, num(row.SpellIconFileDataID)) }
     const fill = (raw: string, spell = 0) => journalSpellText(journalText(raw), spell, map)
     return { map, iconOf, fill }
+  }
+
+  /** Each boss's loot from the journal, as the summaries a compatibility check reads; needs the item index */
+  async encounterLoot(encounterIds: number[]): Promise<Record<number, LootItem[]>> {
+    const rows = await this.traitTable('JournalEncounterItem')
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const wanted = new Set(encounterIds)
+    const byBoss = new Map<number, number[]>()
+    for (const row of rows.values()) { const boss = num(row.JournalEncounterID); if (wanted.has(boss)) byBoss.set(boss, [...(byBoss.get(boss) ?? []), num(row.ItemID)]) }
+    const out: Record<number, LootItem[]> = {}
+    for (const [boss, ids] of byBoss) {
+      const items = new Map(this.items(ids).map(item => [item.id, item]))
+      // Journal order is the order the game shows the loot in
+      out[boss] = ids.map(id => items.get(id)).filter(item => !!item).map(item => ({
+        id: item.id, name: item.name, quality: item.quality, slot: item.slot, inventoryType: item.inventoryType, armor: item.armor, icon: item.icon,
+        requiredLevel: item.requiredLevel, classId: item.classId, subclassId: item.subclassId, allowableClassMask: item.allowableClassMask, specIds: item.specIds, primaryStats: item.primaryStats,
+      }))
+    }
+    return out
   }
 
   /** Names, text, and icons for the spells trash enemies cast, read from the game files */

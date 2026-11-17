@@ -149,3 +149,31 @@
   .dungeon-hero-inner { grid-template-columns: auto minmax(0, 1fr); }
   .dungeon-hero-actions { grid-column: 1 / -1; justify-content: flex-start; }
 }
+
+/* Loot: the drops for you, a Voidcore's odds over them, and the rest on request */
+.boss-loot { display: grid; gap: 8px; }
+.boss-loot h4 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--secondary); }
+.loot { display: grid; gap: 10px; }
+.loot > button { justify-self: start; }
+.loot-summary { font-size: 13px; color: var(--secondary); }
+.loot-summary b { color: var(--text); }
+.loot-voidcore { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; }
+.loot-voidcore svg { color: var(--accent); margin-top: 2px; }
+.loot-voidcore span { display: grid; gap: 3px; }
+.loot-voidcore b { font-size: 13.5px; }
+.loot-voidcore small { font-size: 12.5px; color: var(--secondary); line-height: 1.45; }
+.loot-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 14px; }
+.loot-item { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 4px 0; }
+.loot-item > span { display: grid; min-width: 0; }
+.loot-item b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loot-item small { font-size: 11.5px; color: var(--muted); }
+.loot-item[data-emphasis="quiet"] { opacity: .5; }
+
+/* Play mode: the trash a route pulls before the boss on screen */
+.play-pulls { display: grid; gap: 8px; }
+.play-pulls h4 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--secondary); }
+.play-pull-rows { display: grid; gap: 4px; }
+.play-pull { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; padding: 4px 0; }
+.play-pull .dungeon-enemy-icon { width: 36px; height: 36px; border-radius: 8px; }
+.play-pull b small { font-weight: 500; color: var(--muted); }
+.play-pull[data-emphasis="quiet"] { opacity: .6; }

@@ -10,11 +10,11 @@ import { capTopLevels, type TopPlayers, type TopRegion } from '../shared/top-pla
 import { ladderCeiling } from './item-tracks'
 import { fetchDungeonRoutes, fetchSeasonDungeons } from './providers/raiderio-dungeons'
 import { fetchSeasonRaids } from './providers/raiderio-raids'
-import { fetchRouteMdt } from './providers/keystone-guru'
+import { fetchRouteMdt, fetchRoutePulls } from './providers/keystone-guru'
 import type { RaidList } from '../shared/raids'
 import { fetchDungeonEnemies } from './providers/keystone-guru'
 import { bundledList, currentBundle } from './dungeon-bundle'
-import { bestFamily, type DungeonEnemies, type DungeonList, type DungeonRoutes } from '../shared/dungeons'
+import { bestFamily, type DungeonEnemies, type DungeonList, type DungeonRoutes, type RoutePull } from '../shared/dungeons'
 
 const TOP_TTL = 6 * 3_600_000
 const TOKEN_TTL = 20 * 60_000
@@ -240,6 +240,17 @@ export function createInsights(options: { cacheDir: string; blizzardApi: () => P
   // A route's MDT import string; the export link is signed per page load, so each copy reads it fresh
   const routeMdt = (dungeon: string, routeKey: string) => fetchRouteMdt(dungeon, routeKey)
 
-  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes, dungeonEnemies, raids, routeMdt }
+  // A route's pulls never change once drawn, so bundled ones are used and any other is read once per run of the app
+  const pullCache = new Map<string, Promise<RoutePull[]>>()
+  function routePulls(dungeon: string, routeKey: string): Promise<RoutePull[]> {
+    const packed = bundled(dungeon)?.pulls?.[routeKey]
+    if (packed) return Promise.resolve(packed)
+    const key = `${dungeon}:${routeKey}`
+    let request = pullCache.get(key)
+    if (!request) { request = fetchRoutePulls(dungeon, routeKey); request.catch(() => pullCache.delete(key)); pullCache.set(key, request) }
+    return request
+  }
+
+  return { topPlayers, wowToken, realmStatus, itemTooltip, affixes, dungeons, dungeonRoutes, dungeonEnemies, raids, routeMdt, routePulls }
 }
 export type Insights = ReturnType<typeof createInsights>

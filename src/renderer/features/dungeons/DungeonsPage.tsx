@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, Castle, ChevronDown, Compass, Copy, Crosshair, ExternalLink, HeartPulse, Map as MapIcon, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X, Zap } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Castle, ChevronDown, Compass, Copy, Crosshair, ExternalLink, Gem, HeartPulse, Map as MapIcon, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X, Zap } from 'lucide-react'
 import type { Character, SeasonDungeon } from '../../../shared/domain'
-import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, routeEmbedUrl, routeUrl, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type DungeonStrategy, type EnemySpell, type EnemySpellRef, type EnemyStrategy, type DungeonJournal, type DungeonRoutes, type JournalBoss, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
+import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, pullsBeforeBosses, routeEmbedUrl, routeUrl, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type LootItem, type PullGroup, type DungeonStrategy, type EnemySpell, type EnemySpellRef, type EnemyStrategy, type DungeonJournal, type DungeonRoutes, type JournalBoss, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
 import { lowestDungeon, seasonDungeons, timeToSpareMs, upgradesFor } from '../../../shared/key-range'
 import { api } from '../../lib/client'
 import { iconUrl } from '../../lib/assets'
@@ -12,13 +12,9 @@ import { Card } from '../../components/ui/card'
 import { Badge, Button, EmptyState } from '../../components/ui/primitives'
 import { ItemIcon, useGameData } from '../items/items'
 import { dungeonStrategy } from './strategy'
-import { Ability, BossCard, flagLabels, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole } from './encounters'
+import { Ability, BossCard, flagLabels, LootList, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole } from './encounters'
+import { bundledSpell, useDungeonJournal } from './bundled'
 import './dungeons.css'
-
-function useJournal(name: string | null, encounterIds: number[] = []) {
-  const ready = useGameData().data?.state === 'ready'
-  return useQuery({ queryKey: ['dungeon-journal', name, encounterIds], queryFn: () => api.dungeonJournal(name!, encounterIds), enabled: ready && !!name, staleTime: Infinity })
-}
 
 function bestLine(best: SeasonDungeon | undefined) {
   if (!best?.timed) return best?.overtime ? `+${best.overtime.level} ran out of time` : 'No key this season'
@@ -46,7 +42,7 @@ export function DungeonsPage({ character }: { character: Character }) {
   const lowest = lowestDungeon([...bests.values()])
   return (
     <div className="dungeons">
-      <p className="dungeons-intro">{list.data.season.name} · {list.data.dungeons.length} dungeons · routes from Raider.IO runs · bosses from your game files</p>
+      <p className="dungeons-intro">{list.data.season.name} · {list.data.dungeons.length} dungeons · routes from Raider.IO runs · bosses and loot from the Encounter Journal</p>
       <div className="dungeon-grid">
         {list.data.dungeons.map(dungeon => <DungeonCard key={dungeon.slug} dungeon={dungeon} best={bests.get(dungeonKey(dungeon.name))} lowest={!!lowest && dungeonKey(lowest.dungeon) === dungeonKey(dungeon.name)} onOpen={() => open(dungeon.slug)} />)}
       </div>
@@ -68,7 +64,7 @@ function DungeonArt({ dungeon, journal, className, children }: { dungeon: Season
 }
 
 function DungeonCard({ dungeon, best, lowest, onOpen }: { dungeon: SeasonDungeonInfo; best: SeasonDungeon | undefined; lowest: boolean; onOpen: () => void }) {
-  const journal = useJournal(dungeon.name)
+  const journal = useDungeonJournal(dungeon.slug, dungeon.name)
   const routes = useQuery({ queryKey: ['dungeon-routes', dungeon.slug], queryFn: () => api.dungeonRoutes(dungeon.slug), staleTime: 30 * 60_000, retry: false })
   const top = routes.data ? bestFamily(routes.data.families) : null
   return (
@@ -90,7 +86,7 @@ function DungeonCard({ dungeon, best, lowest, onOpen }: { dungeon: SeasonDungeon
 
 function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { character: Character; dungeon: SeasonDungeonInfo; best: SeasonDungeon | undefined; playing: boolean; onPlay: (play: boolean) => void; onBack: () => void }) {
   const routes = useQuery({ queryKey: ['dungeon-routes', dungeon.slug], queryFn: () => api.dungeonRoutes(dungeon.slug), staleTime: 30 * 60_000, retry: false })
-  const journal = useJournal(dungeon.name, routes.data?.encounterIds ?? [])
+  const journal = useDungeonJournal(dungeon.slug, dungeon.name, routes.data?.encounterIds ?? [])
   // Only routes with a drawn map are offered, so every choice shows its pulls
   const families = (routes.data?.families ?? []).filter(entry => entry.routeKey)
   const [familyId, setFamilyId] = useState<string | null>(null)
@@ -155,7 +151,7 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
       </div>
 
       <Card as="section" aria-labelledby="bosses-title">
-        <div className="surface-heading"><h2 id="bosses-title"><Skull size={16} aria-hidden="true" />Bosses</h2><p>From the Encounter Journal in your game files</p></div>
+        <div className="surface-heading"><h2 id="bosses-title"><Skull size={16} aria-hidden="true" />Bosses</h2><p>From the Encounter Journal</p></div>
         {journal.isPending && gameReady ? <p className="muted small" role="status">Reading the Encounter Journal…</p>
           : journal.isError ? <p className="muted small" role="alert">{errorMessage(journal.error)}</p>
             : !bosses.length ? <p className="muted small">Prepare local game data to read this dungeon's bosses</p>
@@ -165,6 +161,8 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
       </Card>
 
       <EnemiesCard dungeon={dungeon} role={role} strategy={strategy} />
+
+      <LootCard character={character} bosses={bosses} />
     </div>
   )
 }
@@ -220,7 +218,11 @@ function EnemiesCard({ dungeon, role, strategy }: { dungeon: SeasonDungeonInfo; 
     // Enemies with written strategy come first, in the guide's order of threat, then by role, danger, and forces
     .sort((a, b) => (plans.get(a.name)?.at ?? 1e3) - (plans.get(b.name)?.at ?? 1e3) || Number(!!enemyNote(b, role)) - Number(!!enemyNote(a, role)) || Number(b.dangerous) - Number(a.dangerous) || (b.forces ?? 0) - (a.forces ?? 0)), [enemies.data, plans, role])
   const spellIds = useMemo(() => [...new Set(trash.flatMap(enemy => enemy.spells?.map(spell => spell.id) ?? []))].sort((a, b) => a - b), [trash])
-  const spells = useQuery({ queryKey: ['dungeon-spells', dungeon.slug, spellIds.join(',')], queryFn: () => api.dungeonSpells(spellIds), enabled: gameReady && spellIds.length > 0, staleTime: Infinity })
+  // Spell text is bundled; one the bundle lacks is read from the game files when they are ready
+  const missing = useMemo(() => spellIds.filter(id => !bundledSpell(id)), [spellIds])
+  const live = useQuery({ queryKey: ['dungeon-spells', dungeon.slug, missing.join(',')], queryFn: () => api.dungeonSpells(missing), enabled: gameReady && missing.length > 0, staleTime: Infinity })
+  const spells = useMemo(() => { const out: Record<number, EnemySpell> = { ...live.data }; for (const id of spellIds) { const spell = bundledSpell(id); if (spell) out[id] = spell } return out }, [spellIds, live.data])
+  const readable = gameReady || !missing.length
   const shown = all ? trash : trash.slice(0, Math.max(12, plans.size))
   return (
     <Card as="section" aria-labelledby="enemies-title">
@@ -230,10 +232,10 @@ function EnemiesCard({ dungeon, role, strategy }: { dungeon: SeasonDungeonInfo; 
           : !trash.length ? <p className="muted small">No enemies recorded for this dungeon yet</p>
             : <>
               <div className="dungeon-enemies">
-                {shown.map(enemy => <EnemyRow key={enemy.npcId} enemy={enemy} role={role} plan={plans.get(enemy.name)?.entry} spells={spells.data} gameReady={gameReady} required={required} />)}
+                {shown.map(enemy => <EnemyRow key={enemy.npcId} enemy={enemy} role={role} plan={plans.get(enemy.name)?.entry} spells={spells} gameReady={readable} required={required} />)}
               </div>
               {trash.length > shown.length && <Button variant="quiet" onClick={() => setAll(true)}>Show all {trash.length} enemies</Button>}
-              <p className="muted small dungeon-note">Forces are per kill, out of {required ?? 'the dungeon total'}. Danger flags and forces from Keystone Guru, spell lists from Mythic Dungeon Tools with their text from your game files, pictures from Wowhead</p>
+              <p className="muted small dungeon-note">Forces are per kill, out of {required ?? 'the dungeon total'}. Danger flags and forces from Keystone Guru, spell lists from Mythic Dungeon Tools with their text from the game files, pictures from Wowhead</p>
             </>}
     </Card>
   )
@@ -299,9 +301,75 @@ function EnemyAbility({ spell, info, role }: { spell: EnemySpellRef; info: Enemy
   )
 }
 
-/** One boss at a time with the advice for your role, a rough pace for each upgrade, and the route map beside it */
+/** Mythic+ loot comes from the chest at the end, so the dungeon's whole table is one pool, and a Voidcore rolls from it */
+function LootCard({ character, bosses }: { character: Character; bosses: JournalBoss[] }) {
+  const items = useMemo(() => {
+    const seen = new Map<number, LootItem>()
+    for (const boss of bosses) for (const item of boss.loot ?? []) if (!seen.has(item.id)) seen.set(item.id, item)
+    return [...seen.values()]
+  }, [bosses])
+  if (!items.length) return null
+  return (
+    <Card as="section" aria-labelledby="loot-title">
+      <div className="surface-heading"><h2 id="loot-title"><Gem size={16} aria-hidden="true" />Loot</h2><p>Every boss's drops · in Mythic+ they come from the chest at the end</p></div>
+      <LootList items={items} character={character} />
+    </Card>
+  )
+}
+
+/** The trash a route pulls on the way to a boss, one row per enemy with how many and why it matters */
+function PullList({ boss, groups, enemies, strategy, role, routed }: { boss: JournalBoss; groups: PullGroup[]; enemies: DungeonEnemy[]; strategy: DungeonStrategy | null; role: JournalRole; routed: boolean }) {
+  const byId = useMemo(() => new Map(enemies.map(enemy => [enemy.npcId, enemy])), [enemies])
+  const rows = useMemo(() => {
+    // Some enemies appear under two NPC ids, so they are counted by name
+    const byName = new Map<string, { enemy: DungeonEnemy; count: number }>()
+    for (const group of groups) for (const { npcId, count } of group.npcs) {
+      const enemy = byId.get(npcId)
+      if (!enemy) continue
+      const seen = byName.get(enemy.name)
+      byName.set(enemy.name, { enemy: seen && (seen.enemy.spells?.length ?? 0) >= (enemy.spells?.length ?? 0) ? seen.enemy : enemy, count: (seen?.count ?? 0) + count })
+    }
+    const order = new Map((strategy?.enemies ?? []).map((entry, at) => [entry.name, at]))
+    return [...byName.values()].sort((a, b) => (order.get(a.enemy.name) ?? 1e3) - (order.get(b.enemy.name) ?? 1e3) || Number(b.enemy.dangerous) - Number(a.enemy.dangerous) || b.count - a.count)
+  }, [groups, byId, strategy])
+  const first = groups[0]?.pull, last = groups[groups.length - 1]?.pull
+  return (
+    <div className="play-pulls">
+      <h4><Users size={14} aria-hidden="true" />Before {boss.name}{first != null ? ` · ${first === last ? `pull ${first}` : `pulls ${first}–${last}`}` : ''}</h4>
+      {!routed ? <p className="muted small">Pick a route with a map to see the pulls before each boss</p>
+        : !rows.length ? <p className="muted small">This route pulls no trash before {boss.name}</p>
+          : <div className="play-pull-rows">{rows.map(({ enemy, count }) => {
+            const plan = strategy?.enemies.find(entry => entry.name === enemy.name)
+            const note = enemyNote(enemy, role)
+            const kicks = enemy.spells?.filter(spell => spell.interrupt).length ?? 0
+            const image = enemyImage(enemy)
+            const Icon = enemy.dangerous ? Skull : kindIcons[enemy.kind]
+            return (
+              <div key={enemy.name} className="play-pull" data-emphasis={plan || note ? 'key' : 'quiet'}>
+                <span className="dungeon-enemy-icon">{image ? <img src={image} alt="" draggable={false} loading="lazy" /> : <Icon size={16} aria-hidden="true" />}</span>
+                <span className="dungeon-enemy-main">
+                  <b>{enemy.name} <small>×{count}</small></b>
+                  {plan && <span className="dungeon-enemy-threat">{plan.threat}</span>}
+                  {(note || kicks > 0 || enemy.stunnable === false) && <span className="dungeon-enemy-tags">
+                    {note && <Badge tone={enemy.dangerous ? 'amber' : 'blue'}>{note}</Badge>}
+                    {kicks > 0 && <Badge><Zap size={11} aria-hidden="true" />{kicks} to interrupt</Badge>}
+                    {enemy.stunnable === false && <Badge><ShieldOff size={11} aria-hidden="true" />No stuns</Badge>}
+                  </span>}
+                </span>
+              </div>
+            )
+          })}</div>}
+    </div>
+  )
+}
+
+/** One boss at a time with the trash before it, the advice for your role, a rough pace for each upgrade, and the route map beside it */
 function PlayMode({ dungeon, family, familyIndex, timers, bosses, strategy, role, onRole, onExit }: { dungeon: SeasonDungeonInfo; family: RouteFamily | null; familyIndex: number; timers: NonNullable<DungeonRoutes['timersMs']>; bosses: JournalBoss[]; strategy: DungeonStrategy | null; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const [step, setStep] = useState(0)
+  const enemies = useQuery({ queryKey: ['dungeon-enemies', dungeon.slug], queryFn: () => api.dungeonEnemies(dungeon.slug), staleTime: 6 * 3_600_000, retry: false })
+  const routeKey = family?.routeKey ?? null
+  const pulls = useQuery({ queryKey: ['route-pulls', dungeon.slug, routeKey], queryFn: () => api.routePulls(dungeon.slug, routeKey!), enabled: !!routeKey, staleTime: Infinity, retry: false })
+  const stretches = useMemo(() => pulls.data && enemies.data ? pullsBeforeBosses(pulls.data, enemies.data.enemies, bosses) : null, [pulls.data, enemies.data, bosses])
   useEffect(() => {
     const keys = (event: KeyboardEvent) => {
       if (event.key === 'ArrowRight') setStep(value => Math.min(bosses.length - 1, value + 1))
@@ -331,6 +399,9 @@ function PlayMode({ dungeon, family, familyIndex, timers, bosses, strategy, role
             <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
             <div><small>Step {step + 1} of {bosses.length} · Boss {step + 1}</small><h2>{boss.name}</h2></div>
           </div>
+          {pulls.isError ? <p className="muted small" role="alert">{errorMessage(pulls.error)}</p>
+            : routeKey && !stretches ? <p className="muted small" role="status">Loading the route's pulls…</p>
+              : <PullList boss={boss} groups={stretches?.get(boss.encounterId) ?? []} enemies={enemies.data?.enemies ?? []} strategy={strategy} role={role} routed={!!routeKey} />}
           {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} />}
           {warned.length > 0 && <div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div>}
           <div className="play-targets">

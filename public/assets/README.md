@@ -72,3 +72,9 @@ World of Warcraft art is © Blizzard Entertainment
 `raids/*.jpg` are each raid's loading-screen image (`LoadingScreens.MainImageFileDataID` through `JournalInstance` and `Map`) read from the game files with the app's game data engine on 2026-11-17
 Each texture was cropped out of its gray padding and saved 1440 px wide at JPEG quality 80. Raider.IO publishes no raid banners, so these are bundled instead
 World of Warcraft art is © Blizzard Entertainment
+
+# Encounter icons
+
+`icons/*.png` are the 64 px icons (and boss portraits) for the season's bosses, abilities, loot, and enemy spells, decoded from the game files by `npm run encounter-data` on 2026-11-17 and named by file data id
+`data/dungeons/encounters/icons.json` lists them; the app loads a listed icon from here and any other from the player's game files
+World of Warcraft art is © Blizzard Entertainment
