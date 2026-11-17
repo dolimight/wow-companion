@@ -1,8 +1,9 @@
 // Boss cards, strategy, and the role picker shared by the Dungeons and Raids pages
-import { useState } from 'react'
-import { BookOpen, ChevronDown, ExternalLink, HeartPulse, Move, Shield, Skull, Sparkles, Swords, Users } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { BookOpen, ChevronDown, ExternalLink, Gem, HeartPulse, Move, Shield, Skull, Sparkles, Swords, Users } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
-import { specRole, strategyFor, whyItMatters, type DungeonStrategy, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type StrategyNotes } from '../../../shared/dungeons'
+import { specRole, strategyFor, whyItMatters, type DungeonStrategy, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type LootItem, type StrategyNotes } from '../../../shared/dungeons'
+import { inLootTable, isGearDrop, lootKind, uniqueDrops, voidcoreShare } from '../../../shared/loot'
 import { api } from '../../lib/client'
 import { Card } from '../../components/ui/card'
 import { Badge, Button } from '../../components/ui/primitives'
@@ -40,7 +41,7 @@ export const flagLabels: Partial<Record<JournalFlag, { label: string; tone: 'neu
   tank: { label: 'Tank', tone: 'neutral' }, healer: { label: 'Healer', tone: 'neutral' }, damage: { label: 'Damage', tone: 'neutral' },
 }
 
-export function BossCard({ boss, index, role, plan, defaultOpen, showMythic = false }: { boss: JournalBoss; index: number; role: JournalRole; plan: StrategyNotes | undefined; defaultOpen: boolean; showMythic?: boolean }) {
+export function BossCard({ boss, index, role, plan, defaultOpen, showMythic = false, character }: { boss: JournalBoss; index: number; role: JournalRole; plan: StrategyNotes | undefined; defaultOpen: boolean; showMythic?: boolean; /** Shows the boss's loot for this character, as raids drop it per boss */ character?: Character }) {
   const [open, setOpen] = useState(defaultOpen)
   const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
   const keyCount = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role)).length
@@ -55,6 +56,7 @@ export function BossCard({ boss, index, role, plan, defaultOpen, showMythic = fa
         {boss.overview && <p className="boss-overview">{boss.overview}</p>}
         <StrategyView notes={plan} role={role} journalTips={tips} showMythic={showMythic} />
         <div className="boss-abilities">{boss.abilities.map(ability => <Ability key={ability.id} ability={ability} role={role} />)}</div>
+        {character && boss.loot?.length ? <div className="boss-loot"><h4><Gem size={14} aria-hidden="true" />Loot</h4><LootList items={boss.loot} character={character} /></div> : null}
       </div>}
     </Card>
   )
@@ -120,6 +122,39 @@ export function Ability({ ability, role, depth = 0 }: { ability: JournalAbility;
         </div>
       </div>
       {ability.children.length > 0 && ability.children.map(child => <Ability key={child.id} ability={child} role={role} depth={1} />)}
+    </div>
+  )
+}
+
+/** A loot table with what drops for you first, and a Voidcore roll's odds over those */
+export function LootList({ items: listed, character }: { items: LootItem[]; character: Character }) {
+  const [all, setAll] = useState(false)
+  const items = useMemo(() => uniqueDrops(listed), [listed])
+  // Level is left out: a character synced before the level cap still wants to know what drops at it
+  const who = useMemo(() => ({ className: character.className, specId: character.specId, level: null }), [character.className, character.specId])
+  const mine = useMemo(() => new Set(items.filter(item => inLootTable(item, who))), [items, who])
+  const gear = items.filter(isGearDrop).length
+  const others = items.length - gear
+  const shown = all ? items : items.filter(item => mine.has(item))
+  const spec = character.specName && character.specName !== 'Unknown' ? `${character.specName} ${character.className}` : character.className
+  return (
+    <div className="loot">
+      <p className="loot-summary"><b>{mine.size} of {gear}</b> gear drops for {spec}{others > 0 ? ` · ${others} non-gear ${others === 1 ? 'drop' : 'drops'}` : ''}</p>
+      {mine.size > 0 && <Card size="sm" className="loot-voidcore">
+        <Sparkles size={15} aria-hidden="true" />
+        <span><b>Nebulous Voidcore · {voidcoreShare(mine.size)}% each</b><small>A bonus roll gives one of the {mine.size} pieces for your loot specialization; ones you already won with a Voidcore leave its pool, so the odds rise as you collect them</small></span>
+      </Card>}
+      <div className="loot-items">
+        {shown.map(item => (
+          <div key={item.id} className="loot-item" data-emphasis={mine.has(item) ? undefined : 'quiet'}>
+            <ItemIcon icon={item.icon} quality={item.quality} size="small" />
+            <span><b className={`quality-text-${item.quality}`}>{item.name}</b><small>{lootKind(item)}</small></span>
+            {all && mine.has(item) && <Badge tone="green">For you</Badge>}
+          </div>
+        ))}
+      </div>
+      {items.length > mine.size && <Button variant="quiet" onClick={() => setAll(!all)}>{all ? `Only gear for ${spec}` : `Show all ${items.length} drops`}</Button>}
+      <p className="muted small">Loot from the Encounter Journal. Blizzard doesn't publish drop rates, so only the Voidcore's odds are shown</p>
     </div>
   )
 }

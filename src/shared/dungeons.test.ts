@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { bestFamily, bossPace, clock, enemyNote, journalFlags, whyItMatters, journalSpellText, journalText, keystoneTimers, placeholderTitle, routeEmbedUrl, specRole, type JournalSpell, type RouteFamily } from './dungeons'
+import { bestFamily, bossPace, clock, enemyNote, journalFlags, pullsBeforeBosses, type DungeonEnemy, whyItMatters, journalSpellText, journalText, keystoneTimers, placeholderTitle, routeEmbedUrl, specRole, type JournalSpell, type RouteFamily } from './dungeons'
 
 const spells = new Map<number, JournalSpell>([
   [1, { name: 'Ravenous Bellow', description: 'Inflicting $s1 Physical damage to all players and an additional $s2 Physical damage every $t2 sec for $d. Ignores armor.', durationMs: 10_000, effects: [{ index: 0, periodMs: 0, basePoints: 17 }, { index: 1, periodMs: 1000, basePoints: 3 }] }],
@@ -68,5 +68,25 @@ describe('what a role needs to know', () => {
     expect(enemyNote(enemy, 'damage')).toBe('Interrupt')
     expect(enemyNote(enemy, 'healer')).toBeNull()
     expect(enemyNote({ ...enemy, dangerous: true }, 'healer')).toBe('Dangerous')
+  })
+})
+
+describe('pulls before each boss', () => {
+  const npc = (npcId: number, name: string, boss = false): DungeonEnemy => ({ npcId, name, boss, dangerous: false, kind: 'melee', elite: false, health: null, forces: 1 })
+  const enemies = [npc(1, 'Trash'), npc(2, 'Caster'), npc(10, "Rav'i", true), npc(11, 'Adderis', true), npc(12, 'Aspix', true)]
+  const bosses = [{ encounterId: 100, name: "Rav'i" }, { encounterId: 200, name: 'Adderis and Aspix' }, { encounterId: 300, name: 'Last Boss' }]
+
+  it('splits the route at each boss pull and leaves the boss out of the trash', () => {
+    const split = pullsBeforeBosses([[[1, 3]], [[2, 1], [10, 1]], [[1, 2]], [[11, 1], [12, 1]], [[2, 4]]], enemies, bosses)
+    expect(split.get(100)).toEqual([{ pull: 1, npcs: [{ npcId: 1, count: 3 }] }, { pull: 2, npcs: [{ npcId: 2, count: 1 }] }])
+    expect(split.get(200)).toEqual([{ pull: 3, npcs: [{ npcId: 1, count: 2 }] }])
+    // The route ends before the last boss, so the trash after the council leads to it
+    expect(split.get(300)).toEqual([{ pull: 5, npcs: [{ npcId: 2, count: 4 }] }])
+  })
+
+  it('matches a boss killed out of order by name', () => {
+    const split = pullsBeforeBosses([[[1, 1]], [[11, 1], [12, 1]], [[2, 1]], [[10, 1]]], enemies, bosses)
+    expect(split.get(200)?.map(group => group.pull)).toEqual([1])
+    expect(split.get(100)?.map(group => group.pull)).toEqual([3])
   })
 })

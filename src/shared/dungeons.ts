@@ -1,4 +1,5 @@
 /** Mythic+ dungeons for the season: the list, the routes players actually run, and each boss from the Dungeon Journal */
+import type { ItemPrimaryStat } from './gamedata'
 
 export type SeasonDungeonInfo = {
   slug: string
@@ -21,7 +22,7 @@ export type DungeonList = { season: { slug: string; name: string; endsAt?: strin
 export type DungeonBundle = {
   season: { slug: string; name: string; endsAt: string | null }
   generatedAt: string
-  dungeons: Array<SeasonDungeonInfo & { routes: DungeonRoutes | null; enemies: DungeonEnemies | null }>
+  dungeons: Array<SeasonDungeonInfo & { routes: DungeonRoutes | null; enemies: DungeonEnemies | null; pulls?: Record<string, RoutePull[]> }>
   /** The season's raids from Raider.IO, for the Raids page */
   raids?: Array<{ slug: string; name: string; shortName: string; startsAt: string | null; encounters: Array<{ slug: string; name: string }>; art?: string }>
 }
@@ -63,6 +64,8 @@ export type JournalBoss = {
   tips: Array<{ role: JournalRole; text: string }>
   overview: string
   abilities: JournalAbility[]
+  /** What the boss can drop, from the journal's loot table */
+  loot?: LootItem[]
 }
 export type DungeonJournal = { instanceId: number; name: string; description: string; button: number | null; background: number | null; bosses: JournalBoss[]; difficultyIds?: number[] }
 
@@ -251,3 +254,64 @@ export function enemyNote(enemy: DungeonEnemy, role: JournalRole): string | null
 }
 
 export const wowheadNpcUrl = (npcId: number) => `https://www.wowhead.com/npc=${npcId}`
+
+/** An item from a boss's journal loot, with what a compatibility check needs */
+export type LootItem = {
+  id: number
+  name: string
+  quality: number
+  slot: string
+  inventoryType: number
+  armor: string | null
+  icon: number | null
+  requiredLevel: number
+  classId?: number
+  subclassId?: number
+  allowableClassMask?: number | null
+  specIds?: number[] | null
+  primaryStats?: ItemPrimaryStat[] | null
+}
+
+/**
+ * Boss text, loot, and enemy spells read from the game files ahead of time by scripts/encounter-data.ts, so the pages
+ * work without the player's install; the icons it names are bundled under public/assets/icons
+ */
+export type EncounterBundle = {
+  season: string
+  gameBuild: string
+  generatedAt: string
+  dungeons: Record<string, DungeonJournal>
+  raids: Record<string, Partial<Record<JournalDifficulty, DungeonJournal>>>
+  spells: Record<number, EnemySpell>
+}
+
+/** One pull of a Keystone Guru route: each NPC in it and how many of them */
+export type RoutePull = Array<[npcId: number, count: number]>
+
+/** A pull of trash before a boss, numbered as the route numbers it */
+export type PullGroup = { pull: number; npcs: Array<{ npcId: number; count: number }> }
+
+/**
+ * Splits a route's pulls at each boss: a pull with a boss NPC ends that boss's stretch. Boss pulls are matched to the
+ * journal by name, then by order, so a route that kills bosses out of order still lists the right trash
+ */
+export function pullsBeforeBosses(pulls: RoutePull[], enemies: DungeonEnemy[], bosses: Array<Pick<JournalBoss, 'encounterId' | 'name'>>): Map<number, PullGroup[]> {
+  const byId = new Map(enemies.map(enemy => [enemy.npcId, enemy]))
+  const result = new Map<number, PullGroup[]>()
+  const left = [...bosses]
+  let trash: PullGroup[] = []
+  pulls.forEach((pull, index) => {
+    const bossNpcs = pull.filter(([npcId]) => byId.get(npcId)?.boss)
+    const npcs = pull.filter(([npcId]) => !byId.get(npcId)?.boss).map(([npcId, count]) => ({ npcId, count }))
+    if (npcs.length) trash.push({ pull: index + 1, npcs })
+    if (!bossNpcs.length || !left.length) return
+    const names = bossNpcs.map(([npcId]) => dungeonKey(byId.get(npcId)!.name))
+    const named = left.findIndex(boss => { const key = dungeonKey(boss.name); return names.some(name => key.includes(name) || name.includes(key)) })
+    const boss = left.splice(named >= 0 ? named : 0, 1)[0]!
+    result.set(boss.encounterId, trash)
+    trash = []
+  })
+  // Routes often stop before the last boss, so trash after the final boss pull leads to the next boss still standing
+  if (trash.length && left.length) result.set(left[0]!.encounterId, trash)
+  return result
+}

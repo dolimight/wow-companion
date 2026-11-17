@@ -4,7 +4,8 @@ import { spellTags, type EnemySpellRef, type SpellTag } from '../src/shared/dung
 
 export const MDT_REPO = 'Nnoggie/MythicDungeonTools'
 
-export type MdtEnemy = { npcId: number; displayId: number | null; spells: EnemySpellRef[]; stunnable: boolean }
+/** Stuns are known only for dungeons whose MDT file lists characteristics; newer files have none */
+export type MdtEnemy = { npcId: number; displayId: number | null; spells: EnemySpellRef[]; stunnable?: boolean }
 
 /** Each enemy in a dungeon file's MDT.dungeonEnemies table, by NPC id */
 export function parseMdtEnemies(lua: string): Map<number, MdtEnemy> {
@@ -17,7 +18,7 @@ export function parseMdtEnemies(lua: string): Map<number, MdtEnemy> {
     const npcId = Number(chunk.match(/^ {4}\["id"\] = (\d+),/m)?.[1])
     if (!(npcId > 0)) continue
     const displayId = Number(chunk.match(/^ {4}\["displayId"\] = (\d+),/m)?.[1]) || null
-    const characteristics = chunk.match(/^ {4}\["characteristics"\] = \{\n([\s\S]*?)\n {4}\},/m)?.[1] ?? ''
+    const characteristics = chunk.match(/^ {4}\["characteristics"\] = \{\n([\s\S]*?)\n {4}\},/m)?.[1] ?? null
     const block = chunk.match(/^ {4}\["spells"\] = \{\n([\s\S]*?)\n {4}\},/m)?.[1] ?? ''
     // Spells sit six spaces in, and their flags, such as interruptible or magic, eight
     const spells: EnemySpellRef[] = []
@@ -37,7 +38,7 @@ export function parseMdtEnemies(lua: string): Map<number, MdtEnemy> {
     }
     close()
     const previous = out.get(npcId)
-    out.set(npcId, { npcId, displayId: previous?.displayId ?? displayId, spells: previous?.spells.length ? previous.spells : spells, stunnable: /\["Stun"\] = true/.test(characteristics) })
+    out.set(npcId, { npcId, displayId: previous?.displayId ?? displayId, spells: previous?.spells.length ? previous.spells : spells, ...(characteristics != null ? { stunnable: /\["Stun"\] = true/.test(characteristics) } : {}) })
   }
   return out
 }

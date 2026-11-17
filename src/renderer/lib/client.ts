@@ -97,6 +97,7 @@ export const api={
  dungeonRoutes:async(dungeon:string,force=false)=>(await client()).dungeonRoutes.query({dungeon,force}),
  raids:async()=>(await client()).raids.query(),
  routeMdt:async(dungeon:string,routeKey:string)=>(await client()).routeMdt.query({dungeon,routeKey}),
+ routePulls:async(dungeon:string,routeKey:string)=>(await client()).routePulls.query({dungeon,routeKey}),
  dungeonEnemies:async(dungeon:string)=>(await client()).dungeonEnemies.query({dungeon}),
  dungeonJournal:async(name:string,encounterIds:number[],difficulty:'mythicPlus'|'lfr'|'normal'|'heroic'|'mythic'='mythicPlus')=>(await client()).dungeonJournal.query({name,encounterIds,difficulty}),
  dungeonSpells:async(ids:number[])=>(await client()).dungeonSpells.query({ids}),

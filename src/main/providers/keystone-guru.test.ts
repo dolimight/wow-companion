@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
-import { fetchDungeonEnemies, scriptObject } from './keystone-guru'
+import { fetchDungeonEnemies, fetchRoutePulls, inlineArray, scriptObject } from './keystone-guru'
 
 const embed = '<script src="https://assets.keystone.guru/compiled/v16.3.0/js/app-v16.3.0.js"></script><script src="https://assets.keystone.guru/compiled/v16.3.0/mapcontext/data/den-of-nalorakk/1991/facade.js"></script>'
 const npcs = `let mapContextDungeonData = ${JSON.stringify({ dungeonNpcs: [
@@ -48,5 +48,26 @@ describe('Keystone Guru enemies', () => {
   it('reads the data object without running the script', () => {
     expect(scriptObject('let x = {"a":1};')).toEqual({ a: 1 })
     expect(() => scriptObject('alert(1)')).toThrow()
+  })
+})
+
+describe('Keystone Guru route pulls', () => {
+  const page = `${embed}<script>let options = {"killZones":[{"id":2,"index":2,"enemies":[13]},{"id":1,"index":1,"description":"pull \\"one\\" [big]","enemies":[10,11,12]}],"other":1}</script>`
+  const spawns = `let data = ${JSON.stringify({ dungeon: { enemies: [{ id: 10, npc_id: 241808 }, { id: 11, npc_id: 241808 }, { id: 12, npc_id: 241900 }, { id: 13, npc_id: 241812 }] } })};`
+
+  it('lists each pull in route order as the NPCs it kills', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(url.includes('facade.js') ? spawns : page)))
+    await expect(fetchRoutePulls('den-of-nalorakk', 'KEY')).resolves.toEqual([[[241808, 2], [241900, 1]], [[241812, 1]]])
+  })
+
+  it('reads an inline array past quoted brackets and escaped quotes', () => {
+    expect(inlineArray('x = {"list":[{"a":"]\\"["},[1,2]],"b":3}', 'list')).toEqual([{ a: ']"[' }, [1, 2]])
+    expect(inlineArray('nothing here', 'list')).toBeNull()
+  })
+
+  it('refuses route keys and pages it cannot read', async () => {
+    await expect(fetchRoutePulls('den-of-nalorakk', '../x')).rejects.toThrow('Unknown route')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html></html>')))
+    await expect(fetchRoutePulls('den-of-nalorakk', 'KEY')).rejects.toThrow('pulls are unavailable')
   })
 })

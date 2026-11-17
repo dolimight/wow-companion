@@ -14,6 +14,7 @@ import { Badge, Button, EmptyState } from '../../components/ui/primitives'
 import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group'
 import { ItemIcon, useGameData } from '../items/items'
 import { Ability, BossCard, RolePicker, StrategySource, StrategyView, useDungeonRole } from '../dungeons/encounters'
+import { bundledRaid, useEncounterJournal } from '../dungeons/bundled'
 import { raidStrategy } from './strategy'
 import '../dungeons/dungeons.css'
 import './raids.css'
@@ -29,13 +30,16 @@ function useRaidDifficulty(character: Character) {
   return [difficulty, choose] as const
 }
 
-function useRaidJournal(name: string, difficulty: RaidDifficulty) {
-  const ready = useGameData().data?.state === 'ready'
-  return useQuery({ queryKey: ['raid-journal', name, difficulty], queryFn: () => api.dungeonJournal(name, [], difficulty), enabled: ready, staleTime: Infinity })
+/** A bundled raid at the difficulty, or the game files' journal for a raid the bundle lacks */
+function useRaidJournal(raid: RaidInfo, difficulty: RaidDifficulty) {
+  const packed = bundledRaid(raid.slug)
+  return useEncounterJournal(`raid:${raid.slug}:${difficulty}`, packed ? packed[difficulty] ?? Object.values(packed)[0] : null, () => api.dungeonJournal(raid.name, [], difficulty))
 }
 
 /** The difficulties the journal tags for this raid; lairs have no Raid Finder or Mythic in the journal */
-function offered(journal: DungeonJournal | null | undefined): RaidDifficulty[] {
+function offered(raid: RaidInfo, journal: DungeonJournal | null | undefined): RaidDifficulty[] {
+  const packed = bundledRaid(raid.slug)
+  if (packed) return raidDifficulties.filter(entry => packed[entry])
   const tagged = new Set(journal?.difficultyIds ?? [])
   const list = raidDifficulties.filter(difficulty => journalDifficultyIds[difficulty].some(id => tagged.has(id)))
   return list.length ? list : ['normal', 'heroic', 'mythic']
@@ -62,7 +66,7 @@ export function RaidsPage({ character }: { character: Character }) {
   if (selected) return <RaidDetail key={selected.slug} character={character} raid={selected} playing={!!search.play} onPlay={play => open(selected.slug, play)} onBack={() => open(null)} />
   return (
     <div className="dungeons">
-      <p className="dungeons-intro">{list.data.raids.length} raids this season · bosses from your game files · strategy from Method's guides</p>
+      <p className="dungeons-intro">{list.data.raids.length} raids this season · bosses and loot from the Encounter Journal · strategy from Method's guides</p>
       <div className="dungeon-grid">
         {list.data.raids.map(raid => <RaidCard key={raid.slug} character={character} raid={raid} onOpen={() => open(raid.slug)} />)}
       </div>
@@ -80,7 +84,7 @@ function RaidArt({ raid, journal, className, children }: { raid: RaidInfo; journ
 }
 
 function RaidCard({ character, raid, onOpen }: { character: Character; raid: RaidInfo; onOpen: () => void }) {
-  const journal = useRaidJournal(raid.name, 'heroic')
+  const journal = useRaidJournal(raid, 'heroic')
   const summary = raidSummary(character.ratings?.raiding?.label, raid.slug)
   const week = useLockouts(character, raid)
   return (
@@ -102,11 +106,11 @@ function RaidCard({ character, raid, onOpen }: { character: Character; raid: Rai
 function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: Character; raid: RaidInfo; playing: boolean; onPlay: (play: boolean) => void; onBack: () => void }) {
   const [role, setRole] = useDungeonRole(character)
   const [chosen, setDifficulty] = useRaidDifficulty(character)
-  const probe = useRaidJournal(raid.name, chosen)
-  const choices = offered(probe.data)
+  const probe = useRaidJournal(raid, chosen)
+  const choices = offered(raid, probe.data)
   // A difficulty the raid lacks, such as Mythic for a lair, falls back to the hardest one it has
   const difficulty = choices.includes(chosen) ? chosen : choices[choices.length - 1]!
-  const journal = useRaidJournal(raid.name, difficulty)
+  const journal = useRaidJournal(raid, difficulty)
   const strategy = raidStrategy(raid.slug)
   const bosses = journal.data?.bosses ?? []
   const gameReady = useGameData().data?.state === 'ready'
@@ -151,11 +155,11 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
       </div>
 
       <Card as="section" aria-labelledby="raid-bosses-title">
-        <div className="surface-heading"><h2 id="raid-bosses-title"><Skull size={16} aria-hidden="true" />Bosses</h2><p>{raidDifficultyLabels[difficulty]} · from the Encounter Journal in your game files</p></div>
+        <div className="surface-heading"><h2 id="raid-bosses-title"><Skull size={16} aria-hidden="true" />Bosses</h2><p>{raidDifficultyLabels[difficulty]} · from the Encounter Journal, with each boss's loot</p></div>
         {journal.isPending && gameReady ? <p className="muted small" role="status">Reading the Encounter Journal…</p>
           : journal.isError ? <p className="muted small" role="alert">{errorMessage(journal.error)}</p>
             : !bosses.length ? <p className="muted small">Prepare local game data to read this raid's bosses</p>
-              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={plan(boss)} defaultOpen={index === 0} showMythic={difficulty === 'mythic'} />)}
+              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={plan(boss)} defaultOpen={index === 0} showMythic={difficulty === 'mythic'} character={character} />)}
         <p className="muted small dungeon-note">Mechanics that need your role's attention are marked; the rest are dimmed. Damage numbers are left out: the server scales them, and the game files hold placeholders</p>
         {strategy && <StrategySource strategy={strategy} />}
       </Card>

@@ -49,6 +49,10 @@ describe('Mythic Dungeon Tools data', () => {
     assert.deepEqual(enemies.get(134174), { npcId: 134174, displayId: 83371, stunnable: false, spells: [{ id: 269972, interrupt: true, tags: ['curse'] }, { id: 1294815, interrupt: false }] })
     assert.deepEqual(enemies.get(134157), { npcId: 134157, displayId: null, stunnable: true, spells: [{ id: 1294900, interrupt: false, tags: ['bleed'] }] })
   })
+  it('leaves stuns unknown when the file lists no characteristics', () => {
+    const newer = lua.replace(/ {4}\["characteristics"\] = \{\n[\s\S]*?\n {4}\},\n/g, '')
+    assert.equal(parseMdtEnemies(newer).get(134174)?.stunnable, undefined)
+  })
   it('reads nothing outside the enemies table', () => {
     assert.equal(parseMdtEnemies('MDT.dungeonTotalCount[1] = { normal = 1 }').size, 0)
   })

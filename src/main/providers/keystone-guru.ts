@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { routeEmbedUrl, type DungeonEnemies } from '../../shared/dungeons'
+import { routeEmbedUrl, type DungeonEnemies, type RoutePull } from '../../shared/dungeons'
 
 const SITE = 'https://keystone.guru'
 const ASSETS = 'https://assets.keystone.guru'
@@ -36,6 +36,13 @@ export function scriptObject(text: string): unknown {
   return JSON.parse(text.slice(start, end + 1))
 }
 
+/** The site's build version and the dungeon's mapping version, which the map's data file addresses include */
+function mapFiles(page: string, dungeon: string) {
+  const build = page.match(/assets\.keystone\.guru\/compiled\/(v[\d.]{1,20})\//)?.[1] ?? null
+  const mapping = page.match(new RegExp(`mapcontext/data/${dungeon}/(\\d{1,8})/facade\\.js`))?.[1] ?? null
+  return { build, mapping }
+}
+
 const npcsSchema = z.object({
   dungeonNpcs: z.array(z.object({
     id: z.number().int().positive(),
@@ -60,9 +67,8 @@ const facadeSchema = z.object({
 export async function fetchDungeonEnemies(dungeon: string, routeKey: string | null, signal?: AbortSignal): Promise<DungeonEnemies> {
   if (!/^[a-z0-9-]{1,80}$/.test(dungeon)) throw new KeystoneGuruError('Unknown dungeon')
   const page = await getText(routeKey ? routeEmbedUrl(dungeon, routeKey) : `${SITE}/`, signal)
-  const build = page.match(/assets\.keystone\.guru\/compiled\/(v[\d.]{1,20})\//)?.[1]
+  const { build, mapping } = mapFiles(page, dungeon)
   if (!build) throw new KeystoneGuruError('Keystone Guru changed its pages; enemies are unavailable for now')
-  const mapping = page.match(new RegExp(`mapcontext/data/${dungeon}/(\\d{1,8})/facade\\.js`))?.[1] ?? null
   const [npcs, facade] = await Promise.all([
     getText(`${ASSETS}/compiled/${build}/mapcontext/data/${dungeon}/en_US.js`, signal).then(text => npcsSchema.parse(scriptObject(text))),
     mapping ? getText(`${ASSETS}/compiled/${build}/mapcontext/data/${dungeon}/${mapping}/facade.js`, signal).then(text => facadeSchema.parse(scriptObject(text))).catch(() => null) : Promise.resolve(null),
@@ -102,4 +108,42 @@ export async function fetchRouteMdt(dungeon: string, routeKey: string, signal?: 
   const parsed = z.object({ mdt_string: z.string().min(1).max(200_000).regex(/^[A-Za-z0-9+/=!~]+$/) }).safeParse(JSON.parse(body))
   if (!parsed.success) throw new KeystoneGuruError('Keystone Guru returned an unreadable MDT string')
   return parsed.data.mdt_string
+}
+
+/** The JSON array that follows a key in a page's inline options, read by bracket matching so nothing on the page runs */
+export function inlineArray(page: string, key: string): unknown {
+  const start = page.indexOf(`"${key}":[`)
+  if (start < 0) return null
+  const open = start + key.length + 3
+  let depth = 0, quoted = false
+  for (let at = open; at < page.length && at - open < 2_000_000; at++) {
+    const char = page[at]
+    if (quoted) { if (char === '\\') at++; else if (char === '"') quoted = false; continue }
+    if (char === '"') quoted = true
+    else if (char === '[' || char === '{') depth++
+    else if ((char === ']' || char === '}') && --depth === 0) return JSON.parse(page.slice(open, at + 1))
+  }
+  return null
+}
+
+const killZonesSchema = z.array(z.object({ index: z.number().int().optional(), enemies: z.array(z.number().int().positive()).max(400).default([]) })).max(200)
+const spawnsSchema = z.object({ dungeon: z.object({ enemies: z.array(z.object({ id: z.number().int().positive(), npc_id: z.number().int().positive().nullable() })).max(5000).default([]) }) })
+
+/**
+ * A route's pulls in order, each as the NPCs it kills. The embed page lists each pull's enemy spawns, and the dungeon's
+ * map data names the NPC behind each spawn
+ */
+export async function fetchRoutePulls(dungeon: string, routeKey: string, signal?: AbortSignal): Promise<RoutePull[]> {
+  if (!/^[a-z0-9-]{1,80}$/.test(dungeon) || !/^[A-Za-z0-9]{1,20}$/.test(routeKey)) throw new KeystoneGuruError('Unknown route')
+  const page = await getText(routeEmbedUrl(dungeon, routeKey), signal)
+  const { build, mapping } = mapFiles(page, dungeon)
+  const zones = killZonesSchema.safeParse(inlineArray(page, 'killZones'))
+  if (!build || !mapping || !zones.success) throw new KeystoneGuruError('Keystone Guru changed its pages; pulls are unavailable for now')
+  const spawns = spawnsSchema.parse(scriptObject(await getText(`${ASSETS}/compiled/${build}/mapcontext/data/${dungeon}/${mapping}/facade.js`, signal)))
+  const npcOf = new Map(spawns.dungeon.enemies.map(enemy => [enemy.id, enemy.npc_id]))
+  return [...zones.data].sort((a, b) => (a.index ?? 0) - (b.index ?? 0)).map(zone => {
+    const counts = new Map<number, number>()
+    for (const spawn of zone.enemies) { const npc = npcOf.get(spawn); if (npc) counts.set(npc, (counts.get(npc) ?? 0) + 1) }
+    return [...counts]
+  })
 }

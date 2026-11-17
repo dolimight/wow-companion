@@ -4,7 +4,7 @@
   "name": "MN Season 2",
   "endsAt": "2030-01-01T00:00:00Z"
  },
- "generatedAt": "2026-11-16T21:30:46.238Z",
+ "generatedAt": "2026-11-17T22:18:04.218Z",
  "dungeons": [
   {
    "slug": "altar-of-fangs",
@@ -17,7 +17,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "altar-of-fangs",
-    "totalRuns": 668296,
+    "totalRuns": 670314,
     "timersMs": {
      "plusOne": 1800000,
      "plusTwo": 1440000,
@@ -32,126 +32,126 @@
     "families": [
      {
       "familyId": "rf2:99d69f5dba8b17036e7a8f8b5f22715b95f882ab1a81a90ddfe8f40d27caef28",
-      "runs": 117429,
-      "timed": 107237,
-      "medianClearMs": 1424884.47822313,
+      "runs": 117758,
+      "timed": 107539,
+      "medianClearMs": 1424754.4966074962,
       "fastestClearMs": 634968,
       "highestKey": 21,
-      "latestAt": "2026-11-16T16:37:14.000Z",
-      "routeKey": "hJwCLXI"
+      "latestAt": "2026-11-17T21:42:50.000Z",
+      "routeKey": "VeXc5yg"
      },
      {
       "familyId": "rf2:dfbc91fa680af34604e80d92a5599a41216532dc7ca2df8528e5dd8ea0bc8e20",
-      "runs": 37586,
-      "timed": 34113,
-      "medianClearMs": 1436576.4260766117,
+      "runs": 37632,
+      "timed": 34152,
+      "medianClearMs": 1436604.5696872177,
       "fastestClearMs": 575744,
       "highestKey": 21,
-      "latestAt": "2026-11-16T14:17:07.000Z",
-      "routeKey": "PsJStoj"
+      "latestAt": "2026-11-17T21:44:45.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:4ee3f79169f6c30cc595bf6d0c7173f96e0dfdf6786698ed09a5e7b349699a1d",
-      "runs": 31762,
-      "timed": 29082,
-      "medianClearMs": 1391575.5020397184,
+      "runs": 31838,
+      "timed": 29150,
+      "medianClearMs": 1391373.0289515322,
       "fastestClearMs": 628820,
       "highestKey": 20,
-      "latestAt": "2026-11-16T16:36:34.000Z",
-      "routeKey": "K61Pqwo"
+      "latestAt": "2026-11-17T21:44:20.000Z",
+      "routeKey": "kqfDGkc"
      },
      {
       "familyId": "rf2:e98a6f4870624c1deddaf224d935de15f32aeef4aade77cf7190299573620c90",
-      "runs": 27456,
-      "timed": 24907,
-      "medianClearMs": 1468410.2886171232,
+      "runs": 27584,
+      "timed": 25022,
+      "medianClearMs": 1468617.5025235633,
       "fastestClearMs": 640101,
       "highestKey": 24,
-      "latestAt": "2026-11-16T16:17:02.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:42:00.000Z",
+      "routeKey": "0ZjKXSo"
      },
      {
       "familyId": "rf2:21b10dff83d638a282c71f015c8ede9a250b2935eb849013ed0d17f3d7884a50",
-      "runs": 25979,
-      "timed": 23629,
-      "medianClearMs": 1433102.8837975906,
+      "runs": 26080,
+      "timed": 23723,
+      "medianClearMs": 1433017.1134012563,
       "fastestClearMs": 640715,
       "highestKey": 21,
-      "latestAt": "2026-11-16T16:47:21.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:46:41.000Z",
+      "routeKey": "8kzueDw"
      },
      {
       "familyId": "rf2:acb92c0c20402a3871d6b36ec3d62bfdac03d1c59c4021dea525729ab3c69dbc",
-      "runs": 19388,
-      "timed": 17451,
-      "medianClearMs": 1415714.8615046572,
+      "runs": 19447,
+      "timed": 17505,
+      "medianClearMs": 1415169.6535247955,
       "fastestClearMs": 655689,
       "highestKey": 21,
-      "latestAt": "2026-11-16T15:57:33.000Z",
-      "routeKey": "mD7AgAL"
+      "latestAt": "2026-11-17T21:47:07.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:38af555b104aebe298e7f9a1a3aefa02f3c96d74353676fa1c7e04ff3341d2ff",
-      "runs": 12421,
-      "timed": 10972,
-      "medianClearMs": 1436366.1242012577,
+      "runs": 12428,
+      "timed": 10978,
+      "medianClearMs": 1436338.8200371058,
       "fastestClearMs": 764495,
       "highestKey": 18,
-      "latestAt": "2026-11-16T12:50:20.000Z",
+      "latestAt": "2026-11-17T20:44:02.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:d62364eb6a051058608cba1dc895e49b62d75e6e1e078e93203fbd8c6c418000",
-      "runs": 12236,
-      "timed": 11059,
-      "medianClearMs": 1460936.9861192717,
+      "runs": 12260,
+      "timed": 11077,
+      "medianClearMs": 1461209.8169615923,
       "fastestClearMs": 679956,
       "highestKey": 20,
-      "latestAt": "2026-11-16T15:57:26.000Z",
-      "routeKey": "s9SVPkX"
+      "latestAt": "2026-11-17T20:36:37.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:26180a57b3913ed36230015376c59d7eaff53890392893468311e0275ee7ab73",
-      "runs": 10220,
-      "timed": 9284,
-      "medianClearMs": 1419737.6827586205,
+      "runs": 10254,
+      "timed": 9315,
+      "medianClearMs": 1419557.643020595,
       "fastestClearMs": 665866,
       "highestKey": 23,
-      "latestAt": "2026-11-16T15:22:50.000Z",
-      "routeKey": "mbRWV56"
+      "latestAt": "2026-11-17T19:14:26.000Z",
+      "routeKey": "xcU90Ho"
      },
      {
       "familyId": "rf2:1b1e6c43519ea1410185c4a4a2e796c27126e1b191e84b91e9a6aeef23fc7476",
-      "runs": 10148,
-      "timed": 9091,
-      "medianClearMs": 1670419.7937346892,
+      "runs": 10240,
+      "timed": 9170,
+      "medianClearMs": 1670305.8298180313,
       "fastestClearMs": 637320,
       "highestKey": 24,
-      "latestAt": "2026-11-16T16:15:01.000Z",
-      "routeKey": "FhHbOKY"
+      "latestAt": "2026-11-17T21:52:29.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:d797d42f6faf89db28b779a9651fb4a643415025c3b9a2cef469776d35c09a3e",
-      "runs": 9878,
-      "timed": 8708,
-      "medianClearMs": 1456885.264837074,
+      "runs": 9899,
+      "timed": 8725,
+      "medianClearMs": 1457150.7188795519,
       "fastestClearMs": 663001,
       "highestKey": 19,
-      "latestAt": "2026-11-16T12:04:07.000Z",
-      "routeKey": "jmSqKxV"
+      "latestAt": "2026-11-17T20:33:35.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:c43e082cde2aa19840857cc61ee89542fbda098b891ca24e95d931f117993ffc",
-      "runs": 8063,
-      "timed": 7110,
-      "medianClearMs": 1479095.1375095493,
+      "runs": 8092,
+      "timed": 7135,
+      "medianClearMs": 1479094.0561372146,
       "fastestClearMs": 737886,
       "highestKey": 20,
-      "latestAt": "2026-11-16T13:45:17.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:17:09.000Z",
+      "routeKey": "smSXGPl"
      }
     ],
-    "observedAt": "2026-11-16T21:30:46.609Z",
+    "observedAt": "2026-11-17T22:18:04.944Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -336,7 +336,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 144110
      },
      {
@@ -413,7 +412,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 144156
      },
      {
@@ -455,7 +453,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 145435
      },
      {
@@ -477,7 +474,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146598,
       "image": "npcs/146598.webp"
      },
@@ -496,7 +492,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146661,
       "image": "npcs/146661.webp"
      },
@@ -522,7 +517,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146654,
       "image": "npcs/146654.webp"
      },
@@ -552,7 +546,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147569,
       "image": "npcs/147569.webp"
      },
@@ -571,7 +564,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146662,
       "image": "npcs/146662.webp"
      },
@@ -613,7 +605,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146663,
       "image": "npcs/146663.webp"
      },
@@ -636,7 +627,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146653,
       "image": "npcs/146653.webp"
      },
@@ -671,7 +661,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146299,
       "image": "npcs/146299.webp"
      },
@@ -697,7 +686,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146664,
       "image": "npcs/146664.webp"
      },
@@ -735,7 +723,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 142361,
       "image": "npcs/142361.webp"
      },
@@ -773,7 +760,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 147578,
       "image": "npcs/147578.webp"
      },
@@ -795,7 +781,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 146677,
       "image": "npcs/146677.webp"
      },
@@ -814,7 +799,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 144271,
       "image": "npcs/144271.webp"
      },
@@ -833,7 +817,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 11686,
       "image": "npcs/11686.webp"
      },
@@ -864,7 +847,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146680,
       "image": "npcs/146680.webp"
      },
@@ -883,7 +865,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 146372,
       "image": "npcs/146372.webp"
      },
@@ -906,7 +887,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 142361,
       "image": "npcs/142361.webp"
      },
@@ -925,13 +905,1110 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147577,
       "image": "npcs/147577.webp"
      }
     ],
-    "observedAt": "2026-11-16T21:30:47.271Z",
+    "observedAt": "2026-11-17T22:18:05.895Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "VeXc5yg": [
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       261550,
+       3
+      ],
+      [
+       261554,
+       1
+      ],
+      [
+       261553,
+       7
+      ]
+     ],
+     [
+      [
+       261560,
+       3
+      ],
+      [
+       261553,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261560,
+       3
+      ],
+      [
+       261550,
+       3
+      ],
+      [
+       261553,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261553,
+       6
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       4
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       261553,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261554,
+       2
+      ]
+     ],
+     [
+      [
+       259445,
+       1
+      ]
+     ],
+     [
+      [
+       261552,
+       7
+      ],
+      [
+       261557,
+       3
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       262011,
+       1
+      ],
+      [
+       261552,
+       6
+      ],
+      [
+       261557,
+       2
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       261552,
+       3
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       259446,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       271453,
+       1
+      ]
+     ],
+     [
+      [
+       261573,
+       1
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       263112,
+       6
+      ],
+      [
+       271453,
+       6
+      ],
+      [
+       263109,
+       1
+      ]
+     ],
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       261554,
+       1
+      ],
+      [
+       271453,
+       5
+      ]
+     ],
+     [
+      [
+       263109,
+       1
+      ],
+      [
+       271453,
+       2
+      ],
+      [
+       270306,
+       2
+      ]
+     ]
+    ],
+    "kqfDGkc": [
+     [
+      [
+       261560,
+       5
+      ],
+      [
+       261553,
+       4
+      ],
+      [
+       261554,
+       1
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261553,
+       5
+      ]
+     ],
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261553,
+       2
+      ],
+      [
+       261560,
+       3
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       5
+      ]
+     ],
+     [
+      [
+       261553,
+       2
+      ]
+     ],
+     [
+      [
+       261553,
+       4
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261553,
+       2
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       261554,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       259445,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       261552,
+       7
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ],
+      [
+       261552,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ],
+      [
+       261552,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ],
+      [
+       261552,
+       2
+      ]
+     ],
+     [
+      [
+       262011,
+       1
+      ],
+      [
+       261552,
+       2
+      ]
+     ],
+     [
+      [
+       261552,
+       3
+      ],
+      [
+       261557,
+       2
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       259446,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       271453,
+       3
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       261573,
+       1
+      ]
+     ],
+     [
+      [
+       263112,
+       6
+      ],
+      [
+       271453,
+       6
+      ],
+      [
+       263109,
+       1
+      ]
+     ],
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       271453,
+       4
+      ],
+      [
+       261554,
+       1
+      ]
+     ],
+     [
+      [
+       263109,
+       1
+      ],
+      [
+       271453,
+       2
+      ],
+      [
+       270306,
+       2
+      ]
+     ]
+    ],
+    "0ZjKXSo": [
+     [
+      [
+       261554,
+       1
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       261550,
+       3
+      ],
+      [
+       261553,
+       7
+      ]
+     ],
+     [
+      [
+       261560,
+       3
+      ],
+      [
+       261553,
+       2
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       8
+      ],
+      [
+       261560,
+       3
+      ],
+      [
+       261553,
+       4
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       261550,
+       3
+      ],
+      [
+       261553,
+       4
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       261550,
+       4
+      ],
+      [
+       270306,
+       1
+      ],
+      [
+       261553,
+       2
+      ]
+     ],
+     [
+      [
+       261554,
+       2
+      ]
+     ],
+     [
+      [
+       259445,
+       1
+      ]
+     ],
+     [
+      [
+       261552,
+       6
+      ],
+      [
+       261557,
+       3
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       261552,
+       2
+      ]
+     ],
+     [
+      [
+       261552,
+       2
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       261552,
+       3
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       259446,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       261557,
+       2
+      ],
+      [
+       271453,
+       1
+      ]
+     ],
+     [
+      [
+       261573,
+       1
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       263112,
+       6
+      ],
+      [
+       263109,
+       1
+      ],
+      [
+       271453,
+       6
+      ]
+     ],
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       261554,
+       1
+      ],
+      [
+       271453,
+       4
+      ]
+     ],
+     [
+      [
+       263109,
+       1
+      ],
+      [
+       271453,
+       2
+      ],
+      [
+       270306,
+       2
+      ]
+     ]
+    ],
+    "8kzueDw": [
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261560,
+       3
+      ],
+      [
+       261553,
+       9
+      ],
+      [
+       261554,
+       1
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       8
+      ],
+      [
+       261560,
+       3
+      ],
+      [
+       261553,
+       4
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       261553,
+       4
+      ],
+      [
+       270306,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       4
+      ],
+      [
+       261553,
+       2
+      ],
+      [
+       270306,
+       1
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       261554,
+       2
+      ]
+     ],
+     [
+      [
+       259445,
+       1
+      ]
+     ],
+     [
+      [
+       262011,
+       1
+      ],
+      [
+       261557,
+       2
+      ],
+      [
+       261552,
+       5
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ],
+      [
+       261552,
+       5
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       261552,
+       3
+      ],
+      [
+       261557,
+       2
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       259446,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       4
+      ],
+      [
+       271453,
+       3
+      ]
+     ],
+     [
+      [
+       261573,
+       1
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       263112,
+       6
+      ],
+      [
+       263109,
+       1
+      ],
+      [
+       271453,
+       6
+      ]
+     ],
+     [
+      [
+       261560,
+       2
+      ],
+      [
+       261554,
+       1
+      ],
+      [
+       271453,
+       4
+      ]
+     ],
+     [
+      [
+       271453,
+       2
+      ],
+      [
+       263109,
+       1
+      ],
+      [
+       270306,
+       2
+      ]
+     ]
+    ],
+    "xcU90Ho": [
+     [
+      [
+       261550,
+       5
+      ],
+      [
+       261553,
+       4
+      ],
+      [
+       270306,
+       1
+      ],
+      [
+       261560,
+       3
+      ],
+      [
+       261554,
+       1
+      ]
+     ],
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261560,
+       2
+      ]
+     ],
+     [
+      [
+       261560,
+       3
+      ],
+      [
+       270306,
+       1
+      ],
+      [
+       261553,
+       2
+      ]
+     ],
+     [
+      [
+       261550,
+       3
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       270306,
+       1
+      ],
+      [
+       261553,
+       4
+      ]
+     ],
+     [
+      [
+       261553,
+       2
+      ],
+      [
+       261554,
+       2
+      ]
+     ],
+     [
+      [
+       261550,
+       4
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       270306,
+       1
+      ],
+      [
+       261553,
+       2
+      ]
+     ],
+     [
+      [
+       259445,
+       1
+      ]
+     ],
+     [
+      [
+       262011,
+       1
+      ],
+      [
+       261557,
+       2
+      ],
+      [
+       261552,
+       6
+      ]
+     ],
+     [
+      [
+       261557,
+       1
+      ],
+      [
+       262011,
+       1
+      ],
+      [
+       261552,
+       4
+      ]
+     ],
+     [
+      [
+       261552,
+       3
+      ],
+      [
+       261557,
+       2
+      ],
+      [
+       262011,
+       1
+      ]
+     ],
+     [
+      [
+       259446,
+       1
+      ]
+     ],
+     [
+      [
+       261557,
+       4
+      ],
+      [
+       271453,
+       3
+      ]
+     ],
+     [
+      [
+       261573,
+       1
+      ],
+      [
+       271453,
+       2
+      ]
+     ],
+     [
+      [
+       263112,
+       6
+      ],
+      [
+       271453,
+       6
+      ],
+      [
+       263109,
+       1
+      ]
+     ],
+     [
+      [
+       261554,
+       1
+      ],
+      [
+       261560,
+       2
+      ],
+      [
+       271453,
+       6
+      ]
+     ],
+     [
+      [
+       263109,
+       1
+      ],
+      [
+       271453,
+       2
+      ],
+      [
+       270306,
+       2
+      ]
+     ]
+    ]
    }
   },
   {
@@ -945,7 +2022,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "den-of-nalorakk",
-    "totalRuns": 520563,
+    "totalRuns": 522316,
     "timersMs": {
      "plusOne": 1920000,
      "plusTwo": 1536000,
@@ -960,29 +2037,29 @@
     "families": [
      {
       "familyId": "rf2:6dec07777e8eb338e6da26fdbeff80524b2c9b4499e0bbc40b989286f7302ded",
-      "runs": 9522,
-      "timed": 8931,
-      "medianClearMs": 1642868.5149475525,
+      "runs": 9567,
+      "timed": 8970,
+      "medianClearMs": 1642963.341990114,
       "fastestClearMs": 741446,
       "highestKey": 22,
-      "latestAt": "2026-11-16T15:54:41.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:29:04.000Z",
+      "routeKey": "A8vZXGf"
      },
      {
       "familyId": "rf2:661ca3a9070141811ad4f656f21b044c09e249303b062b5ae660fb9c9f2ce40d",
-      "runs": 5652,
-      "timed": 5202,
-      "medianClearMs": 1520200.0860000001,
+      "runs": 5671,
+      "timed": 5220,
+      "medianClearMs": 1520025.4481559289,
       "fastestClearMs": 730518,
       "highestKey": 20,
-      "latestAt": "2026-11-16T05:45:36.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T20:21:35.000Z",
+      "routeKey": "PLdUY5o"
      },
      {
       "familyId": "rf2:f1f05081221c7de90191cdb1e6cc5a42c33f5b3e1eef89b4c70a5778a24f1110",
       "runs": 5370,
       "timed": 4982,
-      "medianClearMs": 1467709.048148148,
+      "medianClearMs": 1468332.142857143,
       "fastestClearMs": 810282,
       "highestKey": 19,
       "latestAt": "2026-11-16T04:33:43.000Z",
@@ -990,96 +2067,96 @@
      },
      {
       "familyId": "rf2:4c7bccd0ab4015084f159eb90d4767a33dceb2acfa4d7c8846d5e00ece3fd333",
-      "runs": 4566,
-      "timed": 4305,
-      "medianClearMs": 1480950.4836309527,
+      "runs": 4582,
+      "timed": 4319,
+      "medianClearMs": 1481601.2660256412,
       "fastestClearMs": 771801,
       "highestKey": 20,
-      "latestAt": "2026-11-16T04:07:23.000Z",
+      "latestAt": "2026-11-17T21:00:44.000Z",
       "routeKey": "a0Lr66S"
      },
      {
       "familyId": "rf2:987d99025377cfe1f6505d012f34e4709a134bd9f914e571afd22adc7182d0cb",
-      "runs": 3931,
-      "timed": 3662,
-      "medianClearMs": 1631009.1510594669,
+      "runs": 3955,
+      "timed": 3684,
+      "medianClearMs": 1631047.3263157895,
       "fastestClearMs": 751117,
       "highestKey": 22,
-      "latestAt": "2026-11-16T11:33:52.000Z",
-      "routeKey": "VFB1iLC"
+      "latestAt": "2026-11-17T19:47:41.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:6a28e899c0d99a2fa9e8d29b909847763fb1b1b86f079f3ad97a9467a8ea176d",
-      "runs": 3564,
-      "timed": 3317,
-      "medianClearMs": 1549962.9215225566,
+      "runs": 3580,
+      "timed": 3329,
+      "medianClearMs": 1549844.0731601731,
       "fastestClearMs": 715299,
       "highestKey": 22,
-      "latestAt": "2026-11-16T04:13:10.000Z",
+      "latestAt": "2026-11-17T20:47:37.000Z",
       "routeKey": "6Y8ITK5"
      },
      {
       "familyId": "rf2:9bda1bcb2de94fdb90c3eab4d14168683d1010fb82cfd76ed4489c9b2e4ce388",
-      "runs": 2953,
-      "timed": 2754,
-      "medianClearMs": 1563054.4659090908,
+      "runs": 2970,
+      "timed": 2771,
+      "medianClearMs": 1563921.1655518396,
       "fastestClearMs": 746373,
       "highestKey": 23,
-      "latestAt": "2026-11-16T15:45:24.000Z",
+      "latestAt": "2026-11-17T18:55:43.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:0b0bd4bbb7b107d42e59e01328d9ae9e8f8b9d8c8b42eb061ca8dcbf8f33e051",
-      "runs": 2802,
-      "timed": 2652,
-      "medianClearMs": 1555859.1136363638,
+      "runs": 2813,
+      "timed": 2661,
+      "medianClearMs": 1555953.090225564,
       "fastestClearMs": 769033,
       "highestKey": 21,
-      "latestAt": "2026-11-16T13:44:20.000Z",
+      "latestAt": "2026-11-17T19:38:23.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:a50d0db6c3f8b678d585a02f23f7119fb878580e6c732460eb99c512369c67fa",
-      "runs": 2669,
-      "timed": 2524,
-      "medianClearMs": 1432160.2727272727,
+      "runs": 2674,
+      "timed": 2529,
+      "medianClearMs": 1432265.6994949495,
       "fastestClearMs": 773515,
       "highestKey": 18,
-      "latestAt": "2026-11-16T03:50:36.000Z",
+      "latestAt": "2026-11-17T21:14:21.000Z",
       "routeKey": "RbiE2ix"
      },
      {
       "familyId": "rf2:af300a34ef3c4b7f0e107d5baf78998c9eac2ed9a125d6194c143203c6e34ec7",
-      "runs": 2640,
-      "timed": 2474,
-      "medianClearMs": 1570947.6875,
+      "runs": 2650,
+      "timed": 2483,
+      "medianClearMs": 1569970.3625418062,
       "fastestClearMs": 716283,
       "highestKey": 21,
-      "latestAt": "2026-11-16T06:25:11.000Z",
+      "latestAt": "2026-11-17T21:10:56.000Z",
       "routeKey": "e3aNCEp"
      },
      {
       "familyId": "rf2:ce88c251bcdf24edd209f0b17c7c446fd7ab181709ce993b1def2cf38aaf6f81",
-      "runs": 2569,
-      "timed": 2382,
-      "medianClearMs": 1560875.5804511276,
+      "runs": 2572,
+      "timed": 2385,
+      "medianClearMs": 1560253.401098901,
       "fastestClearMs": 869177,
       "highestKey": 19,
-      "latestAt": "2026-11-15T19:36:53.000Z",
+      "latestAt": "2026-11-17T18:48:47.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:3933b982bc49827832dd16e2b3ec43c2e9817830bb8e7e474b68ef3c0cf91ed8",
-      "runs": 2459,
+      "runs": 2460,
       "timed": 2241,
-      "medianClearMs": 1573698.8576923076,
+      "medianClearMs": 1573536.9379456327,
       "fastestClearMs": 875083,
       "highestKey": 19,
-      "latestAt": "2026-11-15T22:55:01.000Z",
+      "latestAt": "2026-11-16T17:33:35.000Z",
       "routeKey": null
      }
     ],
-    "observedAt": "2026-11-16T21:30:47.328Z",
+    "observedAt": "2026-11-17T22:18:06.090Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -1208,7 +2285,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 14316,
       "image": "npcs/14316.webp"
      },
@@ -1230,7 +2306,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 141179,
       "image": "npcs/141179.webp"
      },
@@ -1296,7 +2371,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129344
      },
      {
@@ -1325,7 +2399,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 141213,
       "image": "npcs/141213.webp"
      },
@@ -1351,7 +2424,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 128080,
       "image": "npcs/128080.webp"
      },
@@ -1373,7 +2445,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 124212,
       "image": "npcs/124212.webp"
      },
@@ -1396,7 +2467,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 128095,
       "image": "npcs/128095.webp"
      },
@@ -1415,7 +2485,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 141288,
       "image": "npcs/141288.webp"
      },
@@ -1438,7 +2507,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 141223,
       "image": "npcs/141223.webp"
      },
@@ -1464,7 +2532,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 103213,
       "image": "npcs/103213.webp"
      },
@@ -1483,7 +2550,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 73034,
       "image": "npcs/73034.webp"
      },
@@ -1521,7 +2587,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129418
      },
      {
@@ -1539,7 +2604,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 169,
       "image": "npcs/169.webp"
      },
@@ -1570,7 +2634,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 103231,
       "image": "npcs/103231.webp"
      },
@@ -1605,7 +2668,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 138584,
       "image": "npcs/138584.webp"
      },
@@ -1624,7 +2686,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129498,
       "image": "npcs/129498.webp"
      },
@@ -1647,7 +2708,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 129562,
       "image": "npcs/129562.webp"
      },
@@ -1666,7 +2726,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129563,
       "image": "npcs/129563.webp"
      },
@@ -1700,7 +2759,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129581,
       "image": "npcs/129581.webp"
      },
@@ -1723,7 +2781,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 131630,
       "image": "npcs/131630.webp"
      },
@@ -1746,7 +2803,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129564,
       "image": "npcs/129564.webp"
      },
@@ -1772,7 +2828,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 124949,
       "image": "npcs/124949.webp"
      },
@@ -1794,7 +2849,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 129707,
       "image": "npcs/129707.webp"
      },
@@ -1824,7 +2878,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 124212,
       "image": "npcs/124212.webp"
      },
@@ -1847,7 +2900,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 26857,
       "image": "npcs/26857.webp"
      },
@@ -1890,7 +2942,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129989
      },
      {
@@ -1924,7 +2975,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 125149,
       "image": "npcs/125149.webp"
      },
@@ -1957,7 +3007,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129989
      },
      {
@@ -1985,7 +3034,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 30762,
       "image": "npcs/30762.webp"
      },
@@ -2004,7 +3052,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 138885,
       "image": "npcs/138885.webp"
      },
@@ -2023,7 +3070,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 169,
       "image": "npcs/169.webp"
      },
@@ -2082,13 +3128,1326 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 30762,
       "image": "npcs/30762.webp"
      }
     ],
-    "observedAt": "2026-11-16T21:30:47.696Z",
+    "observedAt": "2026-11-17T22:18:06.564Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "A8vZXGf": [
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       241814,
+       2
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       241813,
+       7
+      ],
+      [
+       245752,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       245567,
+       2
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241813,
+       1
+      ],
+      [
+       245855,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241812,
+       1
+      ]
+     ],
+     [
+      [
+       241814,
+       3
+      ],
+      [
+       241813,
+       6
+      ],
+      [
+       241816,
+       2
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       241874,
+       5
+      ],
+      [
+       241808,
+       2
+      ],
+      [
+       241816,
+       2
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241872,
+       2
+      ],
+      [
+       241874,
+       5
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241876,
+       2
+      ],
+      [
+       241874,
+       3
+      ],
+      [
+       241872,
+       2
+      ]
+     ],
+     [
+      [
+       241872,
+       2
+      ],
+      [
+       241874,
+       5
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       250478,
+       1
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241911,
+       1
+      ],
+      [
+       241869,
+       1
+      ]
+     ],
+     [
+      [
+       244759,
+       1
+      ],
+      [
+       244100,
+       1
+      ]
+     ],
+     [
+      [
+       245190,
+       1
+      ],
+      [
+       245143,
+       2
+      ],
+      [
+       245145,
+       1
+      ],
+      [
+       245146,
+       1
+      ]
+     ],
+     [
+      [
+       245143,
+       2
+      ],
+      [
+       245190,
+       3
+      ],
+      [
+       245145,
+       3
+      ],
+      [
+       245139,
+       2
+      ]
+     ],
+     [
+      [
+       245139,
+       1
+      ],
+      [
+       245146,
+       2
+      ]
+     ],
+     [
+      [
+       244889,
+       1
+      ]
+     ]
+    ],
+    "PLdUY5o": [
+     [
+      [
+       245567,
+       2
+      ],
+      [
+       241809,
+       2
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       241813,
+       3
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       245752,
+       1
+      ],
+      [
+       245855,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       241814,
+       2
+      ],
+      [
+       241813,
+       4
+      ],
+      [
+       241808,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       245567,
+       4
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       245855,
+       3
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241813,
+       1
+      ]
+     ],
+     [
+      [
+       241812,
+       1
+      ]
+     ],
+     [
+      [
+       241813,
+       3
+      ]
+     ],
+     [
+      [
+       241814,
+       2
+      ],
+      [
+       241813,
+       3
+      ],
+      [
+       241816,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       1
+      ],
+      [
+       241808,
+       2
+      ]
+     ],
+     [
+      [
+       241809,
+       5
+      ],
+      [
+       241808,
+       2
+      ],
+      [
+       241874,
+       2
+      ]
+     ],
+     [
+      [
+       241872,
+       2
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241911,
+       1
+      ],
+      [
+       241808,
+       1
+      ]
+     ],
+     [
+      [
+       241874,
+       3
+      ],
+      [
+       241876,
+       2
+      ],
+      [
+       241869,
+       1
+      ]
+     ],
+     [
+      [
+       241874,
+       2
+      ],
+      [
+       241872,
+       2
+      ]
+     ],
+     [
+      [
+       250478,
+       1
+      ],
+      [
+       241869,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       244759,
+       1
+      ],
+      [
+       244100,
+       1
+      ]
+     ],
+     [
+      [
+       245143,
+       1
+      ],
+      [
+       245139,
+       2
+      ],
+      [
+       245146,
+       1
+      ]
+     ],
+     [
+      [
+       245145,
+       1
+      ],
+      [
+       245190,
+       1
+      ],
+      [
+       245143,
+       2
+      ]
+     ],
+     [
+      [
+       245139,
+       2
+      ],
+      [
+       245190,
+       3
+      ],
+      [
+       245145,
+       3
+      ],
+      [
+       245143,
+       2
+      ]
+     ],
+     [
+      [
+       245139,
+       1
+      ],
+      [
+       245146,
+       2
+      ]
+     ],
+     [
+      [
+       244889,
+       1
+      ]
+     ]
+    ],
+    "G6mLASJ": [
+     [
+      [
+       245567,
+       1
+      ],
+      [
+       241809,
+       2
+      ],
+      [
+       241813,
+       4
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       245855,
+       1
+      ],
+      [
+       245752,
+       1
+      ],
+      [
+       241808,
+       1
+      ]
+     ],
+     [
+      [
+       241813,
+       4
+      ],
+      [
+       241814,
+       2
+      ]
+     ],
+     [
+      [
+       245567,
+       2
+      ],
+      [
+       241809,
+       4
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       245855,
+       1
+      ],
+      [
+       241808,
+       1
+      ]
+     ],
+     [
+      [
+       245567,
+       1
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241813,
+       1
+      ],
+      [
+       245855,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       245855,
+       1
+      ],
+      [
+       241808,
+       1
+      ]
+     ],
+     [
+      [
+       241812,
+       1
+      ]
+     ],
+     [
+      [
+       241813,
+       5
+      ],
+      [
+       241814,
+       2
+      ],
+      [
+       241816,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       241874,
+       2
+      ],
+      [
+       241808,
+       2
+      ]
+     ],
+     [
+      [
+       241872,
+       2
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241874,
+       3
+      ],
+      [
+       241869,
+       1
+      ],
+      [
+       241876,
+       2
+      ]
+     ],
+     [
+      [
+       241874,
+       2
+      ],
+      [
+       241872,
+       2
+      ]
+     ],
+     [
+      [
+       250478,
+       1
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241869,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       244759,
+       1
+      ],
+      [
+       244100,
+       1
+      ]
+     ],
+     [
+      [
+       245143,
+       1
+      ],
+      [
+       245139,
+       2
+      ],
+      [
+       245146,
+       1
+      ]
+     ],
+     [
+      [
+       245190,
+       3
+      ],
+      [
+       245143,
+       2
+      ],
+      [
+       245139,
+       1
+      ],
+      [
+       245145,
+       3
+      ]
+     ],
+     [
+      [
+       245139,
+       2
+      ],
+      [
+       245190,
+       1
+      ],
+      [
+       245143,
+       2
+      ],
+      [
+       245146,
+       2
+      ],
+      [
+       245145,
+       1
+      ]
+     ],
+     [
+      [
+       244889,
+       1
+      ]
+     ]
+    ],
+    "a0Lr66S": [
+     [
+      [
+       245567,
+       2
+      ],
+      [
+       241809,
+       2
+      ],
+      [
+       241813,
+       4
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       245752,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       245855,
+       1
+      ]
+     ],
+     [
+      [
+       241814,
+       2
+      ],
+      [
+       241813,
+       4
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       245567,
+       1
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241813,
+       1
+      ],
+      [
+       245855,
+       1
+      ]
+     ],
+     [
+      [
+       245567,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241812,
+       1
+      ]
+     ],
+     [
+      [
+       241814,
+       2
+      ],
+      [
+       241813,
+       5
+      ],
+      [
+       241816,
+       1
+      ]
+     ],
+     [
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       1
+      ],
+      [
+       241813,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       241816,
+       1
+      ],
+      [
+       241874,
+       5
+      ],
+      [
+       241808,
+       3
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241876,
+       1
+      ],
+      [
+       241874,
+       2
+      ],
+      [
+       241872,
+       2
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241874,
+       5
+      ],
+      [
+       241876,
+       2
+      ],
+      [
+       241872,
+       2
+      ]
+     ],
+     [
+      [
+       241876,
+       2
+      ],
+      [
+       241869,
+       1
+      ],
+      [
+       241911,
+       2
+      ]
+     ],
+     [
+      [
+       250478,
+       1
+      ]
+     ],
+     [
+      [
+       244759,
+       1
+      ],
+      [
+       244100,
+       1
+      ]
+     ],
+     [
+      [
+       245139,
+       2
+      ],
+      [
+       245143,
+       1
+      ]
+     ],
+     [
+      [
+       245190,
+       1
+      ],
+      [
+       245145,
+       1
+      ],
+      [
+       245143,
+       2
+      ],
+      [
+       245146,
+       1
+      ]
+     ],
+     [
+      [
+       245139,
+       2
+      ],
+      [
+       245190,
+       3
+      ],
+      [
+       245143,
+       2
+      ],
+      [
+       245145,
+       3
+      ]
+     ],
+     [
+      [
+       245139,
+       1
+      ],
+      [
+       245146,
+       2
+      ]
+     ],
+     [
+      [
+       244889,
+       1
+      ]
+     ]
+    ],
+    "6Y8ITK5": [
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       245567,
+       2
+      ],
+      [
+       241813,
+       4
+      ],
+      [
+       245752,
+       1
+      ],
+      [
+       241816,
+       3
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       245855,
+       1
+      ]
+     ],
+     [
+      [
+       241813,
+       4
+      ],
+      [
+       241814,
+       2
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       245567,
+       1
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       245855,
+       1
+      ],
+      [
+       241813,
+       1
+      ],
+      [
+       241808,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       2
+      ],
+      [
+       241808,
+       1
+      ],
+      [
+       241812,
+       1
+      ]
+     ],
+     [
+      [
+       241813,
+       6
+      ],
+      [
+       241816,
+       1
+      ],
+      [
+       241814,
+       2
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       241808,
+       2
+      ],
+      [
+       241814,
+       1
+      ],
+      [
+       241816,
+       1
+      ]
+     ],
+     [
+      [
+       241809,
+       4
+      ],
+      [
+       241874,
+       7
+      ],
+      [
+       241808,
+       2
+      ],
+      [
+       241816,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241872,
+       2
+      ],
+      [
+       241876,
+       1
+      ],
+      [
+       241911,
+       1
+      ]
+     ],
+     [
+      [
+       241876,
+       2
+      ],
+      [
+       241874,
+       6
+      ],
+      [
+       241872,
+       2
+      ],
+      [
+       241869,
+       1
+      ]
+     ],
+     [
+      [
+       241874,
+       5
+      ],
+      [
+       241872,
+       4
+      ],
+      [
+       241876,
+       2
+      ],
+      [
+       241911,
+       2
+      ],
+      [
+       241869,
+       1
+      ],
+      [
+       250478,
+       1
+      ]
+     ],
+     [
+      [
+       244759,
+       1
+      ],
+      [
+       244100,
+       1
+      ]
+     ],
+     [
+      [
+       245190,
+       1
+      ],
+      [
+       245145,
+       1
+      ],
+      [
+       245143,
+       2
+      ],
+      [
+       245146,
+       1
+      ]
+     ],
+     [
+      [
+       245190,
+       2
+      ],
+      [
+       245139,
+       1
+      ],
+      [
+       245145,
+       2
+      ]
+     ],
+     [
+      [
+       245190,
+       1
+      ],
+      [
+       245139,
+       1
+      ],
+      [
+       245145,
+       1
+      ],
+      [
+       245143,
+       2
+      ]
+     ],
+     [
+      [
+       245139,
+       1
+      ],
+      [
+       245146,
+       2
+      ]
+     ],
+     [
+      [
+       244889,
+       1
+      ]
+     ]
+    ]
    }
   },
   {
@@ -2102,7 +4461,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "kings-rest",
-    "totalRuns": 21369,
+    "totalRuns": 21477,
     "timersMs": {
      "plusOne": 1980000,
      "plusTwo": 1584000,
@@ -2118,33 +4477,33 @@
     "families": [
      {
       "familyId": "rf2:49c1b96861c9e6a36767e386862e4b8689f7b1e434625ecfc74f6238d79afff2",
-      "runs": 8125,
-      "timed": 7502,
-      "medianClearMs": 1610254.761904762,
+      "runs": 8171,
+      "timed": 7548,
+      "medianClearMs": 1609516.8344547965,
       "fastestClearMs": 720845,
       "highestKey": 23,
-      "latestAt": "2026-11-16T15:52:45.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:35:14.000Z",
+      "routeKey": "3Kx6vSa"
      },
      {
       "familyId": "rf2:aaef5146f4d46fc95083851f27a6e0b1386bd10e38c8dfacdcf6f9027665f41e",
-      "runs": 7141,
-      "timed": 6707,
-      "medianClearMs": 1490539.9987739462,
+      "runs": 7175,
+      "timed": 6737,
+      "medianClearMs": 1490182.1999893733,
       "fastestClearMs": 747742,
       "highestKey": 21,
-      "latestAt": "2026-11-16T16:15:40.000Z",
+      "latestAt": "2026-11-17T20:59:27.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:ec250a95d221d9511e600b4dc496e4698d96eadee82e658087029ecd423a753c",
-      "runs": 4669,
-      "timed": 4497,
-      "medianClearMs": 1387221.2551724138,
+      "runs": 4687,
+      "timed": 4515,
+      "medianClearMs": 1387178.3308519437,
       "fastestClearMs": 733607,
       "highestKey": 21,
-      "latestAt": "2026-11-16T12:00:05.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T17:14:52.000Z",
+      "routeKey": "FvAvrt3"
      },
      {
       "familyId": "rf2:d81a7592c5c1be58146e75d688f0d57ae035bc5de42c4d494755853e7b4e0a35",
@@ -2164,7 +4523,7 @@
       "fastestClearMs": 816528,
       "highestKey": 15,
       "latestAt": "2026-11-15T23:28:00.000Z",
-      "routeKey": "QXHJTBb"
+      "routeKey": "HawQ2Ch"
      },
      {
       "familyId": "rf2:81f0f7bfa7deb5ec54bcaf4a886f607400586ad19dfba7242912793639eb204a",
@@ -2178,23 +4537,33 @@
      },
      {
       "familyId": "rf2:87fcd9e545737d0f9a841fe3fc3355236528f7ac0534c68d05a63ce836d59990",
-      "runs": 185,
-      "timed": 184,
-      "medianClearMs": 999857,
+      "runs": 186,
+      "timed": 185,
+      "medianClearMs": 1000667,
       "fastestClearMs": 700269,
       "highestKey": 15,
-      "latestAt": "2026-11-15T22:13:17.000Z",
+      "latestAt": "2026-11-17T19:24:50.000Z",
       "routeKey": "Fo40Toi"
      },
      {
       "familyId": "rf2:1d32793d8da950dbf92ba9961254084e0ea4888bd3fe98b66cbffb4a1979acb3",
-      "runs": 97,
-      "timed": 94,
-      "medianClearMs": 1249331,
+      "runs": 98,
+      "timed": 95,
+      "medianClearMs": 1252093,
       "fastestClearMs": 834889,
       "highestKey": 19,
-      "latestAt": "2026-11-10T22:59:57.000Z",
+      "latestAt": "2026-11-17T00:26:24.000Z",
       "routeKey": "ziGEB4t"
+     },
+     {
+      "familyId": "rf2:1211d875b53d4f3d27551d1821a9ebb97f0fe54f7f7d07022923dda576aa4e1e",
+      "runs": 72,
+      "timed": 64,
+      "medianClearMs": 1867811.5,
+      "fastestClearMs": 1282601,
+      "highestKey": 23,
+      "latestAt": "2026-11-17T18:30:35.000Z",
+      "routeKey": "5XLyprC"
      },
      {
       "familyId": "rf2:4f6f3492337aa83d05e4aa1a1b811b31dd6db1f8903eb9d4faf67a605d1b9b3f",
@@ -2205,16 +4574,6 @@
       "highestKey": 21,
       "latestAt": "2026-11-15T16:31:01.000Z",
       "routeKey": "IsxgRX6"
-     },
-     {
-      "familyId": "rf2:1211d875b53d4f3d27551d1821a9ebb97f0fe54f7f7d07022923dda576aa4e1e",
-      "runs": 69,
-      "timed": 61,
-      "medianClearMs": 1868908,
-      "fastestClearMs": 1282601,
-      "highestKey": 23,
-      "latestAt": "2026-11-15T20:35:47.000Z",
-      "routeKey": "5XLyprC"
      },
      {
       "familyId": "rf2:8937c24659c1dfdf76ef6041072fcdc42fd5af09e79d946330bbe6d220ef1150",
@@ -2237,7 +4596,7 @@
       "routeKey": "jRk42lZ"
      }
     ],
-    "observedAt": "2026-11-16T21:30:47.804Z",
+    "observedAt": "2026-11-17T22:18:06.802Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -2317,9 +4676,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83252,
-      "image": "npcs/83252.webp"
+      "image": "npcs/83252.webp",
+      "stunnable": false
      },
      {
       "npcId": 133943,
@@ -2339,9 +4698,9 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 76055,
-      "image": "npcs/76055.webp"
+      "image": "npcs/76055.webp",
+      "stunnable": false
      },
      {
       "npcId": 134157,
@@ -2358,9 +4717,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 83363,
-      "image": "npcs/83363.webp"
+      "image": "npcs/83363.webp",
+      "stunnable": true
      },
      {
       "npcId": 134158,
@@ -2392,9 +4751,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83364,
-      "image": "npcs/83364.webp"
+      "image": "npcs/83364.webp",
+      "stunnable": false
      },
      {
       "npcId": 134174,
@@ -2421,9 +4780,9 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 83371,
-      "image": "npcs/83371.webp"
+      "image": "npcs/83371.webp",
+      "stunnable": false
      },
      {
       "npcId": 134251,
@@ -2450,9 +4809,9 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 83517,
-      "image": "npcs/83517.webp"
+      "image": "npcs/83517.webp",
+      "stunnable": false
      },
      {
       "npcId": 134331,
@@ -2480,7 +4839,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83544,
       "image": "npcs/83544.webp"
      },
@@ -2507,9 +4865,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83836,
-      "image": "npcs/83836.webp"
+      "image": "npcs/83836.webp",
+      "stunnable": false
      },
      {
       "npcId": 134993,
@@ -2550,8 +4908,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 83529
+      "displayId": 83529,
+      "stunnable": false
      },
      {
       "npcId": 134994,
@@ -2585,9 +4943,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 84112,
-      "image": "npcs/84112.webp"
+      "image": "npcs/84112.webp",
+      "stunnable": true
      },
      {
       "npcId": 135192,
@@ -2604,9 +4962,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 84133,
-      "image": "npcs/84133.webp"
+      "image": "npcs/84133.webp",
+      "stunnable": true
      },
      {
       "npcId": 135204,
@@ -2633,9 +4991,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 84140,
-      "image": "npcs/84140.webp"
+      "image": "npcs/84140.webp",
+      "stunnable": true
      },
      {
       "npcId": 135231,
@@ -2656,9 +5014,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 85125,
-      "image": "npcs/85125.webp"
+      "image": "npcs/85125.webp",
+      "stunnable": false
      },
      {
       "npcId": 135235,
@@ -2692,9 +5050,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 84163,
-      "image": "npcs/84163.webp"
+      "image": "npcs/84163.webp",
+      "stunnable": true
      },
      {
       "npcId": 135322,
@@ -2727,8 +5085,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 84202
+      "displayId": 84202,
+      "stunnable": false
      },
      {
       "npcId": 135406,
@@ -2749,7 +5107,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 88651,
       "image": "npcs/88651.webp"
      },
@@ -2802,7 +5159,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84680,
       "image": "npcs/84680.webp"
      },
@@ -2825,7 +5181,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84933,
       "image": "npcs/84933.webp"
      },
@@ -2848,7 +5203,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84934,
       "image": "npcs/84934.webp"
      },
@@ -2887,8 +5241,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 84352
+      "displayId": 84352,
+      "stunnable": false
      },
      {
       "npcId": 136256,
@@ -2900,7 +5254,6 @@
       "health": 648651,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 76137
      },
      {
@@ -2926,7 +5279,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84274
      },
      {
@@ -2948,7 +5300,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 84273,
       "image": "npcs/84273.webp"
      },
@@ -2970,9 +5321,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 85270,
-      "image": "npcs/85270.webp"
+      "image": "npcs/85270.webp",
+      "stunnable": true
      },
      {
       "npcId": 137474,
@@ -2997,9 +5348,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 85272,
-      "image": "npcs/85272.webp"
+      "image": "npcs/85272.webp",
+      "stunnable": false
      },
      {
       "npcId": 137478,
@@ -3030,9 +5381,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 85274,
-      "image": "npcs/85274.webp"
+      "image": "npcs/85274.webp",
+      "stunnable": false
      },
      {
       "npcId": 137484,
@@ -3056,9 +5407,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 85284,
-      "image": "npcs/85284.webp"
+      "image": "npcs/85284.webp",
+      "stunnable": false
      },
      {
       "npcId": 137485,
@@ -3078,9 +5429,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 85285,
-      "image": "npcs/85285.webp"
+      "image": "npcs/85285.webp",
+      "stunnable": true
      },
      {
       "npcId": 137486,
@@ -3115,9 +5466,9 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 85287,
-      "image": "npcs/85287.webp"
+      "image": "npcs/85287.webp",
+      "stunnable": false
      },
      {
       "npcId": 137487,
@@ -3141,9 +5492,9 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 33733,
-      "image": "npcs/33733.webp"
+      "image": "npcs/33733.webp",
+      "stunnable": false
      },
      {
       "npcId": 137591,
@@ -3155,7 +5506,6 @@
       "health": 6487,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 84934
      },
      {
@@ -3185,9 +5535,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 85677,
-      "image": "npcs/85677.webp"
+      "image": "npcs/85677.webp",
+      "stunnable": false
      },
      {
       "npcId": 137989,
@@ -3211,9 +5561,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 33008,
-      "image": "npcs/33008.webp"
+      "image": "npcs/33008.webp",
+      "stunnable": true
      },
      {
       "npcId": 138250,
@@ -3248,9 +5598,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 85860,
-      "image": "npcs/85860.webp"
+      "image": "npcs/85860.webp",
+      "stunnable": false
      },
      {
       "npcId": 138493,
@@ -3270,7 +5620,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 76055,
       "image": "npcs/76055.webp"
      },
@@ -3443,7 +5792,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84269
      },
      {
@@ -3472,7 +5820,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84271
      },
      {
@@ -3504,7 +5851,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 84272
      },
      {
@@ -3525,7 +5871,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 84688,
       "image": "npcs/84688.webp"
      },
@@ -3540,8 +5885,1104 @@
       "forces": null
      }
     ],
-    "observedAt": "2026-11-16T21:30:48.285Z",
+    "observedAt": "2026-11-17T22:18:07.470Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "3Kx6vSa": [
+     [
+      [
+       133935,
+       2
+      ],
+      [
+       134157,
+       4
+      ],
+      [
+       133943,
+       5
+      ],
+      [
+       134158,
+       1
+      ],
+      [
+       134174,
+       1
+      ]
+     ],
+     [
+      [
+       134158,
+       1
+      ],
+      [
+       134157,
+       2
+      ],
+      [
+       133935,
+       1
+      ]
+     ],
+     [
+      [
+       135406,
+       5
+      ],
+      [
+       135322,
+       1
+      ]
+     ],
+     [
+      [
+       137486,
+       1
+      ],
+      [
+       137487,
+       1
+      ]
+     ],
+     [
+      [
+       137485,
+       4
+      ],
+      [
+       137484,
+       1
+      ]
+     ],
+     [
+      [
+       137474,
+       1
+      ],
+      [
+       137478,
+       1
+      ]
+     ],
+     [
+      [
+       134251,
+       1
+      ],
+      [
+       137473,
+       1
+      ],
+      [
+       134331,
+       1
+      ]
+     ],
+     [
+      [
+       270502,
+       4
+      ],
+      [
+       137989,
+       17
+      ],
+      [
+       137969,
+       2
+      ]
+     ],
+     [
+      [
+       134993,
+       1
+      ]
+     ],
+     [
+      [
+       137591,
+       2
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135204,
+       2
+      ],
+      [
+       135167,
+       2
+      ]
+     ],
+     [
+      [
+       135204,
+       1
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135192,
+       2
+      ],
+      [
+       135231,
+       1
+      ]
+     ],
+     [
+      [
+       135167,
+       1
+      ],
+      [
+       135192,
+       2
+      ]
+     ],
+     [
+      [
+       135764,
+       1
+      ],
+      [
+       135761,
+       1
+      ],
+      [
+       135765,
+       1
+      ],
+      [
+       269808,
+       1
+      ],
+      [
+       269810,
+       1
+      ],
+      [
+       269811,
+       1
+      ]
+     ],
+     [
+      [
+       136984,
+       1
+      ],
+      [
+       138489,
+       1
+      ],
+      [
+       136976,
+       1
+      ],
+      [
+       136160,
+       1
+      ]
+     ]
+    ],
+    "FvAvrt3": [
+     [
+      [
+       133943,
+       1
+      ]
+     ],
+     [
+      [
+       133935,
+       3
+      ],
+      [
+       134157,
+       4
+      ],
+      [
+       133943,
+       5
+      ],
+      [
+       134158,
+       1
+      ],
+      [
+       134174,
+       1
+      ]
+     ],
+     [
+      [
+       134157,
+       2
+      ],
+      [
+       134158,
+       1
+      ]
+     ],
+     [
+      [
+       135322,
+       1
+      ]
+     ],
+     [
+      [
+       134331,
+       1
+      ],
+      [
+       134251,
+       1
+      ],
+      [
+       137473,
+       1
+      ]
+     ],
+     [
+      [
+       137487,
+       1
+      ],
+      [
+       137486,
+       1
+      ]
+     ],
+     [
+      [
+       137474,
+       1
+      ],
+      [
+       137478,
+       1
+      ]
+     ],
+     [
+      [
+       137485,
+       4
+      ],
+      [
+       137484,
+       1
+      ]
+     ],
+     [
+      [
+       134739,
+       1
+      ],
+      [
+       137989,
+       9
+      ],
+      [
+       270502,
+       2
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       137989,
+       8
+      ],
+      [
+       270502,
+       2
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       134993,
+       1
+      ]
+     ],
+     [
+      [
+       137591,
+       2
+      ],
+      [
+       135204,
+       2
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135167,
+       2
+      ]
+     ],
+     [
+      [
+       135204,
+       1
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135192,
+       4
+      ],
+      [
+       135167,
+       1
+      ],
+      [
+       135231,
+       1
+      ]
+     ],
+     [
+      [
+       135764,
+       1
+      ],
+      [
+       135761,
+       1
+      ],
+      [
+       135765,
+       1
+      ],
+      [
+       269808,
+       1
+      ],
+      [
+       269810,
+       1
+      ],
+      [
+       269811,
+       1
+      ]
+     ],
+     [
+      [
+       138493,
+       1
+      ],
+      [
+       138489,
+       1
+      ]
+     ],
+     [
+      [
+       136984,
+       1
+      ],
+      [
+       136976,
+       1
+      ],
+      [
+       136160,
+       1
+      ]
+     ]
+    ],
+    "bhB7ykk": [
+     [
+      [
+       133935,
+       2
+      ],
+      [
+       134157,
+       2
+      ],
+      [
+       133943,
+       6
+      ],
+      [
+       134158,
+       1
+      ]
+     ],
+     [
+      [
+       134157,
+       4
+      ],
+      [
+       134174,
+       1
+      ],
+      [
+       134158,
+       1
+      ]
+     ],
+     [
+      [
+       135406,
+       5
+      ],
+      [
+       135322,
+       1
+      ]
+     ],
+     [
+      [
+       134251,
+       1
+      ],
+      [
+       137473,
+       1
+      ],
+      [
+       134331,
+       1
+      ],
+      [
+       133935,
+       1
+      ]
+     ],
+     [
+      [
+       137487,
+       1
+      ],
+      [
+       137486,
+       1
+      ]
+     ],
+     [
+      [
+       137485,
+       4
+      ],
+      [
+       137484,
+       1
+      ]
+     ],
+     [
+      [
+       137474,
+       1
+      ],
+      [
+       137478,
+       1
+      ]
+     ],
+     [
+      [
+       134739,
+       1
+      ],
+      [
+       137989,
+       9
+      ]
+     ],
+     [
+      [
+       270502,
+       2
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       270502,
+       2
+      ],
+      [
+       137989,
+       8
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       134993,
+       1
+      ]
+     ],
+     [
+      [
+       137591,
+       2
+      ],
+      [
+       135204,
+       1
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135192,
+       2
+      ],
+      [
+       135167,
+       2
+      ],
+      [
+       135231,
+       1
+      ]
+     ],
+     [
+      [
+       135167,
+       1
+      ],
+      [
+       135192,
+       2
+      ]
+     ],
+     [
+      [
+       135764,
+       1
+      ],
+      [
+       135761,
+       1
+      ],
+      [
+       135765,
+       1
+      ],
+      [
+       269808,
+       1
+      ],
+      [
+       269810,
+       1
+      ],
+      [
+       269811,
+       1
+      ]
+     ],
+     [
+      [
+       138493,
+       1
+      ],
+      [
+       138489,
+       1
+      ]
+     ],
+     [
+      [
+       136984,
+       1
+      ],
+      [
+       136976,
+       1
+      ],
+      [
+       136160,
+       1
+      ]
+     ]
+    ],
+    "HawQ2Ch": [
+     [
+      [
+       133943,
+       1
+      ]
+     ],
+     [
+      [
+       133943,
+       2
+      ]
+     ],
+     [
+      [
+       133935,
+       2
+      ]
+     ],
+     [
+      [
+       133943,
+       6
+      ],
+      [
+       134158,
+       1
+      ],
+      [
+       134157,
+       4
+      ],
+      [
+       134174,
+       1
+      ]
+     ],
+     [
+      [
+       134157,
+       2
+      ],
+      [
+       134158,
+       1
+      ]
+     ],
+     [
+      [
+       135322,
+       1
+      ]
+     ],
+     [
+      [
+       137485,
+       4
+      ],
+      [
+       137484,
+       1
+      ]
+     ],
+     [
+      [
+       137487,
+       1
+      ],
+      [
+       137486,
+       1
+      ]
+     ],
+     [
+      [
+       134251,
+       1
+      ],
+      [
+       134331,
+       1
+      ],
+      [
+       137473,
+       1
+      ]
+     ],
+     [
+      [
+       137474,
+       1
+      ],
+      [
+       137478,
+       1
+      ]
+     ],
+     [
+      [
+       134739,
+       1
+      ]
+     ],
+     [
+      [
+       270502,
+       2
+      ],
+      [
+       137989,
+       9
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       270502,
+       2
+      ],
+      [
+       137989,
+       8
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       134993,
+       1
+      ]
+     ],
+     [
+      [
+       137591,
+       2
+      ],
+      [
+       135204,
+       2
+      ],
+      [
+       135167,
+       2
+      ],
+      [
+       135239,
+       2
+      ]
+     ],
+     [
+      [
+       135239,
+       2
+      ],
+      [
+       135204,
+       1
+      ],
+      [
+       135192,
+       2
+      ]
+     ],
+     [
+      [
+       135192,
+       2
+      ],
+      [
+       135231,
+       1
+      ],
+      [
+       135167,
+       1
+      ]
+     ],
+     [
+      [
+       135764,
+       1
+      ],
+      [
+       135761,
+       1
+      ],
+      [
+       135765,
+       1
+      ],
+      [
+       269808,
+       1
+      ],
+      [
+       269810,
+       1
+      ],
+      [
+       269811,
+       1
+      ]
+     ],
+     [
+      [
+       138489,
+       1
+      ],
+      [
+       138493,
+       1
+      ]
+     ],
+     [
+      [
+       136984,
+       1
+      ],
+      [
+       136976,
+       1
+      ],
+      [
+       136160,
+       1
+      ]
+     ]
+    ],
+    "pp74OoS": [
+     [
+      [
+       133943,
+       8
+      ],
+      [
+       133935,
+       1
+      ]
+     ],
+     [
+      [
+       133935,
+       2
+      ]
+     ],
+     [
+      [
+       134157,
+       6
+      ],
+      [
+       134158,
+       2
+      ],
+      [
+       134174,
+       1
+      ],
+      [
+       133943,
+       5
+      ]
+     ],
+     [
+      [
+       135322,
+       1
+      ]
+     ],
+     [
+      [
+       137485,
+       4
+      ],
+      [
+       137484,
+       1
+      ]
+     ],
+     [
+      [
+       137474,
+       1
+      ],
+      [
+       137478,
+       1
+      ]
+     ],
+     [
+      [
+       137487,
+       1
+      ],
+      [
+       137486,
+       1
+      ]
+     ],
+     [
+      [
+       134251,
+       1
+      ],
+      [
+       134331,
+       1
+      ],
+      [
+       137473,
+       1
+      ]
+     ],
+     [
+      [
+       134739,
+       1
+      ]
+     ],
+     [
+      [
+       137989,
+       9
+      ],
+      [
+       270502,
+       2
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       137989,
+       8
+      ],
+      [
+       270502,
+       2
+      ],
+      [
+       137969,
+       1
+      ]
+     ],
+     [
+      [
+       134993,
+       1
+      ]
+     ],
+     [
+      [
+       137591,
+       2
+      ],
+      [
+       135204,
+       2
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135167,
+       2
+      ]
+     ],
+     [
+      [
+       135204,
+       1
+      ],
+      [
+       135239,
+       2
+      ],
+      [
+       135192,
+       2
+      ],
+      [
+       135231,
+       1
+      ]
+     ],
+     [
+      [
+       135167,
+       1
+      ],
+      [
+       135192,
+       2
+      ]
+     ],
+     [
+      [
+       135764,
+       1
+      ],
+      [
+       135765,
+       1
+      ],
+      [
+       269808,
+       1
+      ],
+      [
+       269810,
+       1
+      ],
+      [
+       269811,
+       1
+      ],
+      [
+       135761,
+       1
+      ]
+     ],
+     [
+      [
+       138493,
+       1
+      ],
+      [
+       138489,
+       1
+      ]
+     ],
+     [
+      [
+       136984,
+       1
+      ],
+      [
+       136976,
+       1
+      ],
+      [
+       136160,
+       1
+      ]
+     ]
+    ]
    }
   },
   {
@@ -3555,7 +6996,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "murder-row",
-    "totalRuns": 634111,
+    "totalRuns": 635763,
     "timersMs": {
      "plusOne": 2040000,
      "plusTwo": 1632000,
@@ -3571,126 +7012,126 @@
     "families": [
      {
       "familyId": "rf2:69b6258c234a881939b1588b1624acef116d0ae1ef50b30f1e0f2c5ee4b12317",
-      "runs": 55969,
-      "timed": 52750,
-      "medianClearMs": 1507641.189762114,
+      "runs": 56080,
+      "timed": 52849,
+      "medianClearMs": 1507770.5625720099,
       "fastestClearMs": 701710,
       "highestKey": 20,
-      "latestAt": "2026-11-16T16:49:15.000Z",
-      "routeKey": "beQcTjq"
+      "latestAt": "2026-11-17T21:43:40.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:181f47cdc5969ee8df0ee39a57af9c3fa665316918275bfb4a3dc6891bfd6f63",
-      "runs": 27797,
-      "timed": 26542,
-      "medianClearMs": 1469720.0010086165,
+      "runs": 27855,
+      "timed": 26597,
+      "medianClearMs": 1469678.9164678904,
       "fastestClearMs": 658496,
       "highestKey": 22,
-      "latestAt": "2026-11-16T15:48:49.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:41:25.000Z",
+      "routeKey": "xO0Ykro"
      },
      {
       "familyId": "rf2:8f21c48d2d327c19652b0805ad3c6e6f5c3e0e7d132beea826993ec29c655ee9",
-      "runs": 24351,
-      "timed": 22997,
-      "medianClearMs": 1582878.2549757932,
+      "runs": 24472,
+      "timed": 23112,
+      "medianClearMs": 1583006.2985257986,
       "fastestClearMs": 708556,
       "highestKey": 22,
-      "latestAt": "2026-11-16T16:12:33.000Z",
-      "routeKey": "LhPeAX7"
-     },
-     {
-      "familyId": "rf2:8074f0f4797fff7fb6ee257f7824425501ad18f2c891d8ca3a1715f91340fb16",
-      "runs": 23979,
-      "timed": 22411,
-      "medianClearMs": 1528644.8001538464,
-      "fastestClearMs": 737132,
-      "highestKey": 20,
-      "latestAt": "2026-11-16T14:09:41.000Z",
+      "latestAt": "2026-11-17T22:02:28.000Z",
       "routeKey": null
      },
      {
+      "familyId": "rf2:8074f0f4797fff7fb6ee257f7824425501ad18f2c891d8ca3a1715f91340fb16",
+      "runs": 24026,
+      "timed": 22452,
+      "medianClearMs": 1528915.935068363,
+      "fastestClearMs": 737132,
+      "highestKey": 20,
+      "latestAt": "2026-11-17T21:38:59.000Z",
+      "routeKey": "LEu3ubD"
+     },
+     {
       "familyId": "rf2:2cf65f8cc13eaca4e4cded9e568ccc4c9d668644bcfa56e0f3fffac03b1043ad",
-      "runs": 20469,
-      "timed": 19253,
-      "medianClearMs": 1577599.340488029,
+      "runs": 20538,
+      "timed": 19319,
+      "medianClearMs": 1577286.3595041323,
       "fastestClearMs": 726917,
       "highestKey": 23,
-      "latestAt": "2026-11-16T16:33:31.000Z",
-      "routeKey": "xP8Gbvd"
+      "latestAt": "2026-11-17T21:40:03.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:1bff306da8fc52ebdb380b00cd6047491d6dd8565a26a6afec3a99a247566119",
-      "runs": 18861,
-      "timed": 17446,
-      "medianClearMs": 1541109.960976156,
+      "runs": 18873,
+      "timed": 17457,
+      "medianClearMs": 1541072.013308265,
       "fastestClearMs": 712528,
       "highestKey": 19,
-      "latestAt": "2026-11-16T11:28:45.000Z",
+      "latestAt": "2026-11-17T19:43:54.000Z",
       "routeKey": "xMvdtGU"
      },
      {
       "familyId": "rf2:fe81d801f1285a0a93caf25164742accfd6714fb5ea5d7a73b44857524619216",
-      "runs": 14534,
-      "timed": 13918,
-      "medianClearMs": 1552355.4420874326,
+      "runs": 14587,
+      "timed": 13967,
+      "medianClearMs": 1553125.2032540194,
       "fastestClearMs": 668631,
       "highestKey": 23,
-      "latestAt": "2026-11-16T16:15:30.000Z",
-      "routeKey": "EsiGXHf"
+      "latestAt": "2026-11-17T21:37:21.000Z",
+      "routeKey": "pe3jkvm"
      },
      {
       "familyId": "rf2:510d4df56474c2fb8073696e37760ab01905b3ae94184de7f5988558933932df",
-      "runs": 12162,
-      "timed": 11486,
-      "medianClearMs": 1509199.6977142857,
+      "runs": 12206,
+      "timed": 11526,
+      "medianClearMs": 1509363.8794879639,
       "fastestClearMs": 747279,
       "highestKey": 20,
-      "latestAt": "2026-11-16T13:49:23.000Z",
-      "routeKey": "DvphApV"
+      "latestAt": "2026-11-17T21:39:59.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:ecc2706571208e9fdae37813caa3d1569ad3bcdb88f65ac7e32821692796ea23",
-      "runs": 10869,
-      "timed": 10164,
-      "medianClearMs": 1491033.867261905,
+      "runs": 10886,
+      "timed": 10178,
+      "medianClearMs": 1491717.8079478347,
       "fastestClearMs": 709696,
       "highestKey": 20,
-      "latestAt": "2026-11-16T09:06:14.000Z",
+      "latestAt": "2026-11-17T20:55:08.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:c23476b88a36ab1547445c83c1b8bbd3c6cd15edb3c1828aeb103102b68448d0",
-      "runs": 10694,
-      "timed": 10072,
-      "medianClearMs": 1499159.9887748375,
+      "runs": 10699,
+      "timed": 10076,
+      "medianClearMs": 1499160.0403623441,
       "fastestClearMs": 761556,
       "highestKey": 18,
-      "latestAt": "2026-11-16T03:26:22.000Z",
+      "latestAt": "2026-11-17T20:27:17.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:7c3beb9a75383b9625bed1e0ec9520e259f0bb5ee1d8381aafdf018944685d23",
-      "runs": 9947,
-      "timed": 9221,
-      "medianClearMs": 1525885.608391789,
+      "runs": 9966,
+      "timed": 9239,
+      "medianClearMs": 1526002.0477087954,
       "fastestClearMs": 754081,
       "highestKey": 19,
-      "latestAt": "2026-11-16T16:31:14.000Z",
+      "latestAt": "2026-11-17T21:20:23.000Z",
       "routeKey": "DjcixJx"
      },
      {
       "familyId": "rf2:7c737854cf4a4b0afe3a6c02dfb99d779b56f8cfce1dcb226b3f0b500f7cfcb7",
-      "runs": 8508,
-      "timed": 7949,
-      "medianClearMs": 1567843.6805084746,
+      "runs": 8519,
+      "timed": 7958,
+      "medianClearMs": 1567944.5186666665,
       "fastestClearMs": 817396,
       "highestKey": 20,
-      "latestAt": "2026-11-16T13:50:34.000Z",
+      "latestAt": "2026-11-17T19:28:59.000Z",
       "routeKey": null
      }
     ],
-    "observedAt": "2026-11-16T21:30:48.387Z",
+    "observedAt": "2026-11-17T22:18:07.618Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -3808,7 +7249,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140268
      },
      {
@@ -3846,7 +7286,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 124578
      },
      {
@@ -3889,7 +7328,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 124592
      },
      {
@@ -3922,7 +7360,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 126199
      },
      {
@@ -3972,7 +7409,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 124577
      },
      {
@@ -3990,7 +7426,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84426,
       "image": "npcs/84426.webp"
      },
@@ -4009,7 +7444,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 65901,
       "image": "npcs/65901.webp"
      },
@@ -4036,7 +7470,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 137176,
       "image": "npcs/137176.webp"
      },
@@ -4059,7 +7492,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140261,
       "image": "npcs/140261.webp"
      },
@@ -4086,7 +7518,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 136524,
       "image": "npcs/136524.webp"
      },
@@ -4105,7 +7536,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 77024,
       "image": "npcs/77024.webp"
      },
@@ -4131,7 +7561,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 1913,
       "image": "npcs/1913.webp"
      },
@@ -4161,7 +7590,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 124763,
       "image": "npcs/124763.webp"
      },
@@ -4187,7 +7615,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 63968,
       "image": "npcs/63968.webp"
      },
@@ -4210,7 +7637,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 124770,
       "image": "npcs/124770.webp"
      },
@@ -4241,7 +7667,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 137564,
       "image": "npcs/137564.webp"
      },
@@ -4268,7 +7693,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 76712,
       "image": "npcs/76712.webp"
      },
@@ -4291,7 +7715,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 16956,
       "image": "npcs/16956.webp"
      },
@@ -4310,7 +7733,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 105873,
       "image": "npcs/105873.webp"
      },
@@ -4333,7 +7755,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 126157,
       "image": "npcs/126157.webp"
      },
@@ -4355,7 +7776,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 136939,
       "image": "npcs/136939.webp"
      },
@@ -4377,7 +7797,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 77400,
       "image": "npcs/77400.webp"
      },
@@ -4403,7 +7822,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 129784,
       "image": "npcs/129784.webp"
      },
@@ -4429,7 +7847,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 139997,
       "image": "npcs/139997.webp"
      },
@@ -4448,7 +7865,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140207,
       "image": "npcs/140207.webp"
      },
@@ -4474,7 +7890,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 137441,
       "image": "npcs/137441.webp"
      },
@@ -4496,7 +7911,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 136524,
       "image": "npcs/136524.webp"
      },
@@ -4526,7 +7940,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 136834,
       "image": "npcs/136834.webp"
      },
@@ -4548,7 +7961,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 136657,
       "image": "npcs/136657.webp"
      },
@@ -4589,7 +8001,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 139996,
       "image": "npcs/139996.webp"
      },
@@ -4623,7 +8034,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 138787,
       "image": "npcs/138787.webp"
      },
@@ -4646,7 +8056,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 77406,
       "image": "npcs/77406.webp"
      },
@@ -4669,7 +8078,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 103096,
       "image": "npcs/103096.webp"
      },
@@ -4688,7 +8096,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 136524,
       "image": "npcs/136524.webp"
      },
@@ -4715,7 +8122,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 137450,
       "image": "npcs/137450.webp"
      },
@@ -4734,7 +8140,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 136524,
       "image": "npcs/136524.webp"
      },
@@ -4760,7 +8165,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 139997,
       "image": "npcs/139997.webp"
      },
@@ -4779,7 +8183,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 138932,
       "image": "npcs/138932.webp"
      },
@@ -4811,7 +8214,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 138981,
       "image": "npcs/138981.webp"
      },
@@ -4850,7 +8252,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129619,
       "image": "npcs/129619.webp"
      },
@@ -4869,13 +8270,1208 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 1913,
       "image": "npcs/1913.webp"
      }
     ],
-    "observedAt": "2026-11-16T21:30:48.752Z",
+    "observedAt": "2026-11-17T22:18:08.120Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "xO0Ykro": [
+     [
+      [
+       236085,
+       8
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       236071,
+       1
+      ],
+      [
+       236084,
+       4
+      ],
+      [
+       252529,
+       1
+      ]
+     ],
+     [
+      [
+       236085,
+       5
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       255604,
+       1
+      ],
+      [
+       236071,
+       1
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       236084,
+       3
+      ]
+     ],
+     [
+      [
+       236085,
+       5
+      ],
+      [
+       253324,
+       4
+      ],
+      [
+       236902,
+       1
+      ],
+      [
+       236073,
+       4
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       236084,
+       2
+      ]
+     ],
+     [
+      [
+       236073,
+       2
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       234648,
+       1
+      ]
+     ],
+     [
+      [
+       236893,
+       6
+      ],
+      [
+       236897,
+       2
+      ],
+      [
+       234649,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       3
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       235268,
+       3
+      ],
+      [
+       235267,
+       3
+      ],
+      [
+       235261,
+       4
+      ]
+     ],
+     [
+      [
+       235257,
+       20
+      ],
+      [
+       235265,
+       1
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235268,
+       2
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       236905,
+       1
+      ],
+      [
+       235261,
+       4
+      ],
+      [
+       235465,
+       1
+      ]
+     ],
+     [
+      [
+       234647,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       12
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235261,
+       5
+      ],
+      [
+       235267,
+       4
+      ],
+      [
+       235265,
+       1
+      ]
+     ],
+     [
+      [
+       235268,
+       2
+      ],
+      [
+       235322,
+       1
+      ],
+      [
+       235261,
+       2
+      ]
+     ],
+     [
+      [
+       234799,
+       1
+      ],
+      [
+       237626,
+       1
+      ],
+      [
+       234763,
+       1
+      ]
+     ]
+    ],
+    "LEu3ubD": [
+     [
+      [
+       236085,
+       9
+      ],
+      [
+       236073,
+       4
+      ],
+      [
+       236071,
+       2
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       236084,
+       5
+      ],
+      [
+       252529,
+       1
+      ]
+     ],
+     [
+      [
+       236085,
+       4
+      ],
+      [
+       255604,
+       1
+      ],
+      [
+       236084,
+       2
+      ],
+      [
+       236082,
+       1
+      ]
+     ],
+     [
+      [
+       253324,
+       4
+      ],
+      [
+       236085,
+       5
+      ],
+      [
+       236073,
+       4
+      ],
+      [
+       236902,
+       1
+      ],
+      [
+       236084,
+       2
+      ],
+      [
+       236091,
+       2
+      ]
+     ],
+     [
+      [
+       236073,
+       2
+      ],
+      [
+       236091,
+       1
+      ],
+      [
+       234648,
+       1
+      ]
+     ],
+     [
+      [
+       236893,
+       6
+      ],
+      [
+       236897,
+       2
+      ],
+      [
+       234649,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       2
+      ],
+      [
+       235257,
+       4
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235465,
+       1
+      ]
+     ],
+     [
+      [
+       235257,
+       8
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235265,
+       1
+      ]
+     ],
+     [
+      [
+       235257,
+       8
+      ],
+      [
+       235268,
+       2
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       236905,
+       1
+      ]
+     ],
+     [
+      [
+       234647,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       6
+      ],
+      [
+       235267,
+       2
+      ]
+     ],
+     [
+      [
+       234849,
+       12
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235322,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       12
+      ]
+     ],
+     [
+      [
+       235268,
+       2
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235322,
+       1
+      ]
+     ],
+     [
+      [
+       237626,
+       1
+      ],
+      [
+       234799,
+       1
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       234763,
+       1
+      ]
+     ]
+    ],
+    "xMvdtGU": [
+     [
+      [
+       236085,
+       6
+      ],
+      [
+       236084,
+       2
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       236071,
+       1
+      ],
+      [
+       252529,
+       1
+      ]
+     ],
+     [
+      [
+       253324,
+       4
+      ],
+      [
+       236085,
+       8
+      ],
+      [
+       236073,
+       4
+      ],
+      [
+       236084,
+       5
+      ],
+      [
+       236091,
+       4
+      ],
+      [
+       236902,
+       1
+      ]
+     ],
+     [
+      [
+       236085,
+       4
+      ],
+      [
+       236084,
+       2
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       255604,
+       1
+      ],
+      [
+       236071,
+       1
+      ]
+     ],
+     [
+      [
+       234648,
+       1
+      ]
+     ],
+     [
+      [
+       236893,
+       6
+      ],
+      [
+       236897,
+       2
+      ],
+      [
+       234649,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       2
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235257,
+       8
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       235267,
+       2
+      ]
+     ],
+     [
+      [
+       235257,
+       4
+      ],
+      [
+       235265,
+       1
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235268,
+       2
+      ],
+      [
+       235465,
+       1
+      ]
+     ],
+     [
+      [
+       235257,
+       4
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       235261,
+       2
+      ]
+     ],
+     [
+      [
+       235257,
+       4
+      ],
+      [
+       236905,
+       1
+      ],
+      [
+       235261,
+       2
+      ]
+     ],
+     [
+      [
+       234647,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       6
+      ],
+      [
+       235267,
+       2
+      ]
+     ],
+     [
+      [
+       234849,
+       12
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235267,
+       2
+      ]
+     ],
+     [
+      [
+       235261,
+       5
+      ],
+      [
+       235265,
+       1
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       235268,
+       2
+      ],
+      [
+       235322,
+       1
+      ]
+     ],
+     [
+      [
+       237626,
+       1
+      ],
+      [
+       234799,
+       1
+      ],
+      [
+       234763,
+       1
+      ]
+     ],
+     [
+      [
+       235465,
+       1
+      ]
+     ]
+    ],
+    "pe3jkvm": [
+     [
+      [
+       236085,
+       9
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       252529,
+       1
+      ],
+      [
+       236084,
+       5
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       236071,
+       1
+      ]
+     ],
+     [
+      [
+       236085,
+       4
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       255604,
+       1
+      ],
+      [
+       236084,
+       2
+      ],
+      [
+       236071,
+       1
+      ]
+     ],
+     [
+      [
+       253324,
+       4
+      ],
+      [
+       236085,
+       5
+      ],
+      [
+       236902,
+       1
+      ],
+      [
+       236073,
+       4
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       236084,
+       2
+      ]
+     ],
+     [
+      [
+       236073,
+       2
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       234648,
+       1
+      ]
+     ],
+     [
+      [
+       236893,
+       6
+      ],
+      [
+       236897,
+       2
+      ],
+      [
+       234649,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       3
+      ],
+      [
+       235268,
+       3
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       235261,
+       4
+      ],
+      [
+       235267,
+       3
+      ]
+     ],
+     [
+      [
+       235257,
+       12
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235265,
+       1
+      ]
+     ],
+     [
+      [
+       235257,
+       8
+      ],
+      [
+       235268,
+       2
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       236905,
+       1
+      ]
+     ],
+     [
+      [
+       234647,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       6
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235261,
+       2
+      ]
+     ],
+     [
+      [
+       234849,
+       6
+      ],
+      [
+       235267,
+       2
+      ]
+     ],
+     [
+      [
+       234849,
+       12
+      ],
+      [
+       235261,
+       3
+      ],
+      [
+       235265,
+       1
+      ]
+     ],
+     [
+      [
+       235268,
+       2
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235322,
+       1
+      ]
+     ],
+     [
+      [
+       234799,
+       1
+      ],
+      [
+       237626,
+       1
+      ],
+      [
+       234763,
+       1
+      ]
+     ]
+    ],
+    "DjcixJx": [
+     [
+      [
+       236085,
+       9
+      ],
+      [
+       236084,
+       5
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       252529,
+       1
+      ],
+      [
+       236071,
+       1
+      ]
+     ],
+     [
+      [
+       255604,
+       1
+      ],
+      [
+       236085,
+       4
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       236073,
+       2
+      ],
+      [
+       236084,
+       2
+      ],
+      [
+       236071,
+       1
+      ]
+     ],
+     [
+      [
+       236073,
+       4
+      ],
+      [
+       236085,
+       3
+      ],
+      [
+       236091,
+       2
+      ],
+      [
+       253324,
+       4
+      ],
+      [
+       236902,
+       1
+      ]
+     ],
+     [
+      [
+       236085,
+       2
+      ],
+      [
+       236084,
+       2
+      ]
+     ],
+     [
+      [
+       234648,
+       1
+      ]
+     ],
+     [
+      [
+       236893,
+       6
+      ],
+      [
+       236897,
+       2
+      ],
+      [
+       234649,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       2
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235268,
+       1
+      ],
+      [
+       235465,
+       1
+      ]
+     ],
+     [
+      [
+       235257,
+       12
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235265,
+       1
+      ]
+     ],
+     [
+      [
+       235268,
+       2
+      ],
+      [
+       236082,
+       1
+      ],
+      [
+       235257,
+       4
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235465,
+       1
+      ]
+     ],
+     [
+      [
+       235257,
+       4
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       236905,
+       1
+      ],
+      [
+       234647,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       6
+      ],
+      [
+       235267,
+       2
+      ]
+     ],
+     [
+      [
+       235322,
+       1
+      ]
+     ],
+     [
+      [
+       234849,
+       12
+      ],
+      [
+       235267,
+       2
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235268,
+       1
+      ]
+     ],
+     [
+      [
+       235261,
+       3
+      ],
+      [
+       235465,
+       1
+      ],
+      [
+       235265,
+       1
+      ]
+     ],
+     [
+      [
+       235268,
+       2
+      ],
+      [
+       235261,
+       2
+      ],
+      [
+       235322,
+       1
+      ]
+     ],
+     [
+      [
+       234799,
+       1
+      ],
+      [
+       237626,
+       1
+      ],
+      [
+       234763,
+       1
+      ]
+     ]
+    ]
    }
   },
   {
@@ -4889,7 +9485,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "ruby-life-pools",
-    "totalRuns": 463160,
+    "totalRuns": 464791,
     "timersMs": {
      "plusOne": 1680000,
      "plusTwo": 1344000,
@@ -4904,126 +9500,126 @@
     "families": [
      {
       "familyId": "rf2:edbdcd569a1dbdcbc3cac1cc5df04dc47c1283bf20a5e883c26fe1e37efe460a",
-      "runs": 48022,
-      "timed": 43657,
-      "medianClearMs": 1360661.95077338,
+      "runs": 48228,
+      "timed": 43845,
+      "medianClearMs": 1360510.087121309,
       "fastestClearMs": 592353,
       "highestKey": 23,
-      "latestAt": "2026-11-16T16:32:47.000Z",
+      "latestAt": "2026-11-17T21:44:11.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:3f8366de2ce28fd5728254e2646a6100b8ccec61ac938b06976ab94d2e679a85",
-      "runs": 42971,
-      "timed": 38587,
-      "medianClearMs": 1342145.5007428068,
+      "runs": 43158,
+      "timed": 38754,
+      "medianClearMs": 1341808.8974435262,
       "fastestClearMs": 460728,
       "highestKey": 24,
-      "latestAt": "2026-11-16T16:36:04.000Z",
-      "routeKey": "JUHqQ39"
+      "latestAt": "2026-11-17T22:00:48.000Z",
+      "routeKey": "0EL2bqI"
      },
      {
       "familyId": "rf2:cb7ee6bb6b4e2af505df6a19a5c784232635ffc76e8a725db133fabee380c6c7",
-      "runs": 17778,
-      "timed": 15526,
-      "medianClearMs": 1465876.5886793495,
+      "runs": 17828,
+      "timed": 15570,
+      "medianClearMs": 1465659.7326677619,
       "fastestClearMs": 632748,
       "highestKey": 23,
-      "latestAt": "2026-11-16T16:08:12.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:59:36.000Z",
+      "routeKey": "3oOirEq"
      },
      {
       "familyId": "rf2:13a2dd36a38036bb3570cce87a82f2d103a4d7cda5e28cd10a0268daf2988c28",
-      "runs": 14334,
-      "timed": 13146,
-      "medianClearMs": 1244296.6462603877,
+      "runs": 14346,
+      "timed": 13158,
+      "medianClearMs": 1244293.090206558,
       "fastestClearMs": 518505,
       "highestKey": 20,
-      "latestAt": "2026-11-16T10:02:00.000Z",
+      "latestAt": "2026-11-17T21:31:38.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:dec2340a73a6cf184fa018ac422fb5686e80e3a0c8c1319f78efcb2d997462b8",
-      "runs": 10641,
-      "timed": 9111,
-      "medianClearMs": 1390849.191889758,
+      "runs": 10655,
+      "timed": 9123,
+      "medianClearMs": 1390674.614832564,
       "fastestClearMs": 574873,
       "highestKey": 22,
-      "latestAt": "2026-11-16T16:39:13.000Z",
+      "latestAt": "2026-11-17T20:01:03.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:b6d074803e3f9afdcde2a489c7e4b7ed902800dbe07ce66d02b6001919c070ee",
-      "runs": 8340,
-      "timed": 7499,
-      "medianClearMs": 1381648.5869328494,
+      "runs": 8363,
+      "timed": 7521,
+      "medianClearMs": 1381792.5310399553,
       "fastestClearMs": 693520,
       "highestKey": 20,
-      "latestAt": "2026-11-16T15:05:44.000Z",
+      "latestAt": "2026-11-17T21:57:23.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:5c65b3aa66d19f94e71b44be47f900579f9013e0ef4c62b3607130984e580e53",
-      "runs": 6322,
-      "timed": 5288,
-      "medianClearMs": 1457225.6431334622,
+      "runs": 6332,
+      "timed": 5298,
+      "medianClearMs": 1457039.4599967932,
       "fastestClearMs": 700523,
       "highestKey": 21,
-      "latestAt": "2026-11-16T15:22:12.000Z",
+      "latestAt": "2026-11-17T21:04:11.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:5689fcc0fa5a24bb5eb71b5b0c04acd08c1fa2ba4df8f9aea5a11c65b2207e44",
-      "runs": 6026,
-      "timed": 5512,
-      "medianClearMs": 1329244.768907563,
+      "runs": 6046,
+      "timed": 5530,
+      "medianClearMs": 1329166.4987332863,
       "fastestClearMs": 467528,
       "highestKey": 24,
-      "latestAt": "2026-11-16T15:56:18.000Z",
-      "routeKey": "SoC1o9U"
+      "latestAt": "2026-11-17T18:04:30.000Z",
+      "routeKey": "8d1poJU"
      },
      {
       "familyId": "rf2:9a0e5741cef4b4b274d630936b0ce8df07afc31b90fcb700d4bcb21a40382f62",
-      "runs": 5474,
-      "timed": 4944,
-      "medianClearMs": 1323534.000522466,
+      "runs": 5492,
+      "timed": 4960,
+      "medianClearMs": 1323751.9244507663,
       "fastestClearMs": 560760,
       "highestKey": 20,
-      "latestAt": "2026-11-16T16:03:11.000Z",
+      "latestAt": "2026-11-17T21:46:19.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:8569527128fa9256ac1da15da7b7070355c4615c5cca42551b005e52e8da327e",
-      "runs": 5069,
-      "timed": 4802,
-      "medianClearMs": 1121049.177301315,
+      "runs": 5086,
+      "timed": 4819,
+      "medianClearMs": 1121003.4288690477,
       "fastestClearMs": 484289,
       "highestKey": 21,
-      "latestAt": "2026-11-16T16:23:34.000Z",
+      "latestAt": "2026-11-17T21:48:59.000Z",
       "routeKey": "6bo5IqZ"
      },
      {
       "familyId": "rf2:19a99fb70d16eca9514c44332381b10a66806db5094a5f998c65a6cafabf83b4",
-      "runs": 4924,
-      "timed": 4726,
-      "medianClearMs": 1006127.719047619,
+      "runs": 4947,
+      "timed": 4749,
+      "medianClearMs": 1006285.834449761,
       "fastestClearMs": 475029,
       "highestKey": 23,
-      "latestAt": "2026-11-16T15:31:37.000Z",
+      "latestAt": "2026-11-17T21:37:43.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:c456897713ff477b18047991e847c5f5ef9f2130db1066247736d239187c8591",
-      "runs": 4850,
-      "timed": 4380,
-      "medianClearMs": 1361878.3850838502,
+      "runs": 4874,
+      "timed": 4400,
+      "medianClearMs": 1361291.1527777778,
       "fastestClearMs": 551279,
       "highestKey": 21,
-      "latestAt": "2026-11-16T12:56:35.000Z",
+      "latestAt": "2026-11-17T21:06:32.000Z",
       "routeKey": null
      }
     ],
-    "observedAt": "2026-11-16T21:30:48.891Z",
+    "observedAt": "2026-11-17T22:18:08.268Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -5058,9 +9654,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 110633,
-      "image": "npcs/110633.webp"
+      "image": "npcs/110633.webp",
+      "stunnable": true
      },
      {
       "npcId": 187897,
@@ -5081,8 +9677,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 107106
+      "displayId": 107106,
+      "stunnable": false
      },
      {
       "npcId": 187969,
@@ -5103,9 +9699,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 102955,
-      "image": "npcs/102955.webp"
+      "image": "npcs/102955.webp",
+      "stunnable": true
      },
      {
       "npcId": 188011,
@@ -5126,9 +9722,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 79800,
-      "image": "npcs/79800.webp"
+      "image": "npcs/79800.webp",
+      "stunnable": true
      },
      {
       "npcId": 188067,
@@ -5153,9 +9749,9 @@
         "interrupt": true
        }
       ],
-      "stunnable": true,
       "displayId": 107397,
-      "image": "npcs/107397.webp"
+      "image": "npcs/107397.webp",
+      "stunnable": true
      },
      {
       "npcId": 188244,
@@ -5184,9 +9780,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 101209,
-      "image": "npcs/101209.webp"
+      "image": "npcs/101209.webp",
+      "stunnable": false
      },
      {
       "npcId": 188252,
@@ -5231,8 +9827,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 106891
+      "displayId": 106891,
+      "stunnable": false
      },
      {
       "npcId": 189232,
@@ -5265,8 +9861,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 106851
+      "displayId": 106851,
+      "stunnable": false
      },
      {
       "npcId": 189886,
@@ -5291,7 +9887,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 102505,
       "image": "npcs/102505.webp"
      },
@@ -5313,7 +9908,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 110633,
       "image": "npcs/110633.webp"
      },
@@ -5344,9 +9938,9 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 102505,
-      "image": "npcs/102505.webp"
+      "image": "npcs/102505.webp",
+      "stunnable": false
      },
      {
       "npcId": 190205,
@@ -5363,9 +9957,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 102535,
-      "image": "npcs/102535.webp"
+      "image": "npcs/102535.webp",
+      "stunnable": true
      },
      {
       "npcId": 190206,
@@ -5389,9 +9983,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 102969,
-      "image": "npcs/102969.webp"
+      "image": "npcs/102969.webp",
+      "stunnable": true
      },
      {
       "npcId": 190207,
@@ -5412,9 +10006,9 @@
         "interrupt": true
        }
       ],
-      "stunnable": true,
       "displayId": 102886,
-      "image": "npcs/102886.webp"
+      "image": "npcs/102886.webp",
+      "stunnable": true
      },
      {
       "npcId": 190484,
@@ -5439,8 +10033,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 107137
+      "displayId": 107137,
+      "stunnable": false
      },
      {
       "npcId": 190485,
@@ -5472,8 +10066,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 108318
+      "displayId": 108318,
+      "stunnable": false
      },
      {
       "npcId": 194622,
@@ -5490,7 +10084,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 102535,
       "image": "npcs/102535.webp"
      },
@@ -5521,9 +10114,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 108753,
-      "image": "npcs/108753.webp"
+      "image": "npcs/108753.webp",
+      "stunnable": false
      },
      {
       "npcId": 197509,
@@ -5547,9 +10140,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 102516,
-      "image": "npcs/102516.webp"
+      "image": "npcs/102516.webp",
+      "stunnable": true
      },
      {
       "npcId": 197535,
@@ -5574,8 +10167,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 110966
+      "displayId": 110966,
+      "stunnable": false
      },
      {
       "npcId": 197697,
@@ -5600,8 +10193,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 106023
+      "displayId": 106023,
+      "stunnable": false
      },
      {
       "npcId": 197698,
@@ -5633,8 +10226,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 106435
+      "displayId": 106435,
+      "stunnable": false
      },
      {
       "npcId": 197982,
@@ -5651,9 +10244,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 110964,
-      "image": "npcs/110964.webp"
+      "image": "npcs/110964.webp",
+      "stunnable": true
      },
      {
       "npcId": 197985,
@@ -5688,9 +10281,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 110967,
-      "image": "npcs/110967.webp"
+      "image": "npcs/110967.webp",
+      "stunnable": false
      },
      {
       "npcId": 217228,
@@ -5763,8 +10356,836 @@
       "forces": null
      }
     ],
-    "observedAt": "2026-11-16T21:30:49.256Z",
+    "observedAt": "2026-11-17T22:18:08.778Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "0EL2bqI": [
+     [
+      [
+       188067,
+       2
+      ],
+      [
+       188244,
+       1
+      ],
+      [
+       187969,
+       4
+      ],
+      [
+       188011,
+       3
+      ]
+     ],
+     [
+      [
+       188067,
+       2
+      ],
+      [
+       188244,
+       1
+      ],
+      [
+       188011,
+       1
+      ],
+      [
+       187969,
+       2
+      ]
+     ],
+     [
+      [
+       188067,
+       1
+      ],
+      [
+       187894,
+       3
+      ],
+      [
+       187969,
+       2
+      ],
+      [
+       188011,
+       1
+      ],
+      [
+       187897,
+       1
+      ]
+     ],
+     [
+      [
+       189893,
+       1
+      ],
+      [
+       188252,
+       1
+      ]
+     ],
+     [
+      [
+       194622,
+       1
+      ],
+      [
+       190205,
+       1
+      ],
+      [
+       190207,
+       2
+      ],
+      [
+       190034,
+       1
+      ],
+      [
+       190206,
+       2
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       197697,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       2
+      ],
+      [
+       190206,
+       3
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       189886,
+       3
+      ],
+      [
+       197698,
+       1
+      ],
+      [
+       189232,
+       1
+      ]
+     ],
+     [
+      [
+       197509,
+       18
+      ],
+      [
+       198047,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       197982,
+       6
+      ]
+     ],
+     [
+      [
+       197509,
+       4
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       198047,
+       1
+      ],
+      [
+       197982,
+       1
+      ]
+     ],
+     [
+      [
+       197982,
+       2
+      ],
+      [
+       197535,
+       1
+      ]
+     ],
+     [
+      [
+       190485,
+       1
+      ],
+      [
+       190484,
+       1
+      ]
+     ]
+    ],
+    "3oOirEq": [
+     [
+      [
+       188067,
+       1
+      ],
+      [
+       187969,
+       4
+      ],
+      [
+       188011,
+       2
+      ],
+      [
+       188244,
+       1
+      ]
+     ],
+     [
+      [
+       188067,
+       2
+      ],
+      [
+       188011,
+       2
+      ],
+      [
+       187969,
+       1
+      ],
+      [
+       188244,
+       1
+      ]
+     ],
+     [
+      [
+       188067,
+       2
+      ],
+      [
+       187969,
+       3
+      ],
+      [
+       188011,
+       1
+      ],
+      [
+       187894,
+       6
+      ],
+      [
+       187897,
+       1
+      ]
+     ],
+     [
+      [
+       189893,
+       1
+      ],
+      [
+       188252,
+       1
+      ]
+     ],
+     [
+      [
+       194622,
+       1
+      ],
+      [
+       190205,
+       1
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       2
+      ],
+      [
+       190206,
+       2
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       197697,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       2
+      ],
+      [
+       190206,
+       2
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       189886,
+       3
+      ],
+      [
+       189232,
+       1
+      ]
+     ],
+     [
+      [
+       197509,
+       10
+      ],
+      [
+       198047,
+       1
+      ],
+      [
+       197982,
+       4
+      ]
+     ],
+     [
+      [
+       197509,
+       2
+      ]
+     ],
+     [
+      [
+       197509,
+       5
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       197982,
+       3
+      ],
+      [
+       198047,
+       1
+      ]
+     ],
+     [
+      [
+       197509,
+       5
+      ]
+     ],
+     [
+      [
+       197982,
+       2
+      ],
+      [
+       197535,
+       1
+      ]
+     ],
+     [
+      [
+       190485,
+       1
+      ],
+      [
+       190484,
+       1
+      ]
+     ]
+    ],
+    "8d1poJU": [
+     [
+      [
+       188244,
+       1
+      ],
+      [
+       188067,
+       2
+      ],
+      [
+       187969,
+       4
+      ],
+      [
+       188011,
+       3
+      ]
+     ],
+     [
+      [
+       187894,
+       3
+      ],
+      [
+       187897,
+       1
+      ],
+      [
+       188067,
+       2
+      ],
+      [
+       187969,
+       3
+      ],
+      [
+       188011,
+       3
+      ]
+     ],
+     [
+      [
+       189893,
+       1
+      ],
+      [
+       188067,
+       1
+      ],
+      [
+       187969,
+       1
+      ],
+      [
+       188252,
+       1
+      ]
+     ],
+     [
+      [
+       194622,
+       1
+      ],
+      [
+       190205,
+       1
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       190034,
+       1
+      ],
+      [
+       190206,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       2
+      ],
+      [
+       190206,
+       2
+      ],
+      [
+       190034,
+       1
+      ],
+      [
+       197697,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       2
+      ],
+      [
+       190034,
+       1
+      ],
+      [
+       190206,
+       2
+      ]
+     ],
+     [
+      [
+       190207,
+       2
+      ],
+      [
+       190034,
+       1
+      ],
+      [
+       190206,
+       2
+      ]
+     ],
+     [
+      [
+       189886,
+       3
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       189232,
+       1
+      ]
+     ],
+     [
+      [
+       197509,
+       10
+      ],
+      [
+       198047,
+       1
+      ],
+      [
+       197982,
+       4
+      ]
+     ],
+     [
+      [
+       197509,
+       9
+      ],
+      [
+       198047,
+       1
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       197982,
+       3
+      ]
+     ],
+     [
+      [
+       197509,
+       3
+      ],
+      [
+       197535,
+       1
+      ],
+      [
+       197982,
+       2
+      ]
+     ],
+     [
+      [
+       190484,
+       1
+      ],
+      [
+       190485,
+       1
+      ]
+     ]
+    ],
+    "6bo5IqZ": [
+     [
+      [
+       187894,
+       5
+      ],
+      [
+       187969,
+       4
+      ],
+      [
+       188067,
+       2
+      ],
+      [
+       188011,
+       3
+      ],
+      [
+       188244,
+       2
+      ]
+     ],
+     [
+      [
+       188067,
+       3
+      ],
+      [
+       188011,
+       2
+      ],
+      [
+       187969,
+       4
+      ],
+      [
+       187897,
+       1
+      ]
+     ],
+     [
+      [
+       187894,
+       3
+      ]
+     ],
+     [
+      [
+       189893,
+       1
+      ],
+      [
+       188252,
+       1
+      ]
+     ],
+     [
+      [
+       194622,
+       1
+      ],
+      [
+       190205,
+       1
+      ],
+      [
+       190207,
+       2
+      ],
+      [
+       190206,
+       2
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       190034,
+       1
+      ],
+      [
+       197697,
+       1
+      ]
+     ],
+     [
+      [
+       190206,
+       3
+      ],
+      [
+       190207,
+       2
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       190207,
+       1
+      ],
+      [
+       190034,
+       1
+      ]
+     ],
+     [
+      [
+       189886,
+       2
+      ],
+      [
+       189232,
+       1
+      ]
+     ],
+     [
+      [
+       197509,
+       19
+      ],
+      [
+       197982,
+       9
+      ],
+      [
+       190207,
+       1
+      ],
+      [
+       198047,
+       2
+      ],
+      [
+       190206,
+       1
+      ],
+      [
+       197535,
+       1
+      ]
+     ],
+     [
+      [
+       197509,
+       3
+      ]
+     ],
+     [
+      [
+       190485,
+       1
+      ],
+      [
+       190484,
+       1
+      ]
+     ],
+     [
+      [
+       197698,
+       1
+      ]
+     ]
+    ]
    }
   },
   {
@@ -5778,7 +11199,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "temple-of-sethraliss",
-    "totalRuns": 61028,
+    "totalRuns": 61132,
     "timersMs": {
      "plusOne": 1920000,
      "plusTwo": 1536000,
@@ -5794,52 +11215,52 @@
     "families": [
      {
       "familyId": "rf2:d026185fbb91e0875e3cffad89c848e4c3e12b19956308dc76395d9d78e2c431",
-      "runs": 26152,
-      "timed": 24196,
-      "medianClearMs": 1495917.9210579626,
+      "runs": 26205,
+      "timed": 24243,
+      "medianClearMs": 1495843.5807813355,
       "fastestClearMs": 682058,
       "highestKey": 22,
-      "latestAt": "2026-11-16T16:36:48.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:38:35.000Z",
+      "routeKey": "vDbNT0a"
      },
      {
       "familyId": "rf2:9d5c36a9bfa3a1ba6423e0dfd405fa7ec4b3ff7fa48319cedc6ec3bf3c8a2266",
-      "runs": 19346,
-      "timed": 17647,
-      "medianClearMs": 1503428.1696191025,
+      "runs": 19378,
+      "timed": 17673,
+      "medianClearMs": 1503146.1210588936,
       "fastestClearMs": 681232,
       "highestKey": 22,
-      "latestAt": "2026-11-16T15:32:35.000Z",
-      "routeKey": "6hTrsqk"
+      "latestAt": "2026-11-17T21:16:08.000Z",
+      "routeKey": "JrKqzZl"
      },
      {
       "familyId": "rf2:97ea6b346ded9923ec84a40b976527bb065304d268730829eec6be92febef035",
-      "runs": 4686,
-      "timed": 4256,
-      "medianClearMs": 1539499.599222448,
+      "runs": 4687,
+      "timed": 4257,
+      "medianClearMs": 1539537.6382978724,
       "fastestClearMs": 752204,
       "highestKey": 18,
-      "latestAt": "2026-11-15T22:47:32.000Z",
+      "latestAt": "2026-11-17T04:07:58.000Z",
       "routeKey": "qHhhDa2"
      },
      {
       "familyId": "rf2:ccd82682fc7aca9cb355914b445dae4f67242a6e34d0b0861784c6c4799d7e09",
-      "runs": 2441,
-      "timed": 2251,
-      "medianClearMs": 1459334.5466666666,
+      "runs": 2446,
+      "timed": 2256,
+      "medianClearMs": 1459496.451340326,
       "fastestClearMs": 791344,
       "highestKey": 22,
-      "latestAt": "2026-11-16T09:21:55.000Z",
+      "latestAt": "2026-11-17T20:46:52.000Z",
       "routeKey": "DIxC6Gw"
      },
      {
       "familyId": "rf2:8c259430d7bb407500a37082078d45bb67d8a60ac40d30984238c99b9f48cb97",
-      "runs": 1954,
-      "timed": 1807,
-      "medianClearMs": 1462367.2487394959,
+      "runs": 1956,
+      "timed": 1809,
+      "medianClearMs": 1462222.5845238094,
       "fastestClearMs": 717321,
       "highestKey": 17,
-      "latestAt": "2026-11-16T01:03:20.000Z",
+      "latestAt": "2026-11-17T14:37:35.000Z",
       "routeKey": "JX3bWIf"
      },
      {
@@ -5864,22 +11285,22 @@
      },
      {
       "familyId": "rf2:682d05b0182baa3d108954574d9b14ccb2b786d7cf15e737028adf8312688fe7",
-      "runs": 948,
-      "timed": 885,
-      "medianClearMs": 1426938.375,
+      "runs": 955,
+      "timed": 892,
+      "medianClearMs": 1428247,
       "fastestClearMs": 668012,
       "highestKey": 19,
-      "latestAt": "2026-11-16T16:36:15.000Z",
-      "routeKey": "unYjSlo"
+      "latestAt": "2026-11-17T20:05:51.000Z",
+      "routeKey": "8d5vvYk"
      },
      {
       "familyId": "rf2:5cf09483c785a457f4c683c71c4a941f47ee8211e42ae4ae75377efac69b096b",
-      "runs": 562,
-      "timed": 538,
-      "medianClearMs": 1355885.35,
+      "runs": 563,
+      "timed": 539,
+      "medianClearMs": 1355653.8,
       "fastestClearMs": 607413,
       "highestKey": 18,
-      "latestAt": "2026-11-15T19:33:33.000Z",
+      "latestAt": "2026-11-17T02:36:32.000Z",
       "routeKey": "gP5oPVX"
      },
      {
@@ -5913,7 +11334,7 @@
       "routeKey": "GYTOUHA"
      }
     ],
-    "observedAt": "2026-11-16T21:30:49.351Z",
+    "observedAt": "2026-11-17T22:18:09.239Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -6027,8 +11448,8 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
-      "displayId": 88585
+      "displayId": 88585,
+      "stunnable": false
      },
      {
       "npcId": 133389,
@@ -6050,7 +11471,6 @@
       "health": 25946039,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 83203
      },
      {
@@ -6085,9 +11505,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 86510,
-      "image": "npcs/86510.webp"
+      "image": "npcs/86510.webp",
+      "stunnable": true
      },
      {
       "npcId": 134388,
@@ -6104,7 +11524,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83574,
       "image": "npcs/83574.webp"
      },
@@ -6126,7 +11545,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 78250,
       "image": "npcs/78250.webp"
      },
@@ -6149,7 +11567,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147087,
       "image": "npcs/147087.webp"
      },
@@ -6163,7 +11580,6 @@
       "health": 307716,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 78247
      },
      {
@@ -6199,9 +11615,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 83779,
-      "image": "npcs/83779.webp"
+      "image": "npcs/83779.webp",
+      "stunnable": true
      },
      {
       "npcId": 134600,
@@ -6222,9 +11638,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 83780,
-      "image": "npcs/83780.webp"
+      "image": "npcs/83780.webp",
+      "stunnable": true
      },
      {
       "npcId": 134602,
@@ -6248,9 +11664,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 83782,
-      "image": "npcs/83782.webp"
+      "image": "npcs/83782.webp",
+      "stunnable": true
      },
      {
       "npcId": 134616,
@@ -6267,9 +11683,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 83787,
-      "image": "npcs/83787.webp"
+      "image": "npcs/83787.webp",
+      "stunnable": true
      },
      {
       "npcId": 134617,
@@ -6308,9 +11724,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 84761,
-      "image": "npcs/84761.webp"
+      "image": "npcs/84761.webp",
+      "stunnable": true
      },
      {
       "npcId": 134686,
@@ -6331,9 +11747,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 75595,
-      "image": "npcs/75595.webp"
+      "image": "npcs/75595.webp",
+      "stunnable": true
      },
      {
       "npcId": 134691,
@@ -6354,9 +11770,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 81655,
-      "image": "npcs/81655.webp"
+      "image": "npcs/81655.webp",
+      "stunnable": false
      },
      {
       "npcId": 134990,
@@ -6373,9 +11789,9 @@
         "interrupt": true
        }
       ],
-      "stunnable": true,
       "displayId": 84024,
-      "image": "npcs/84024.webp"
+      "image": "npcs/84024.webp",
+      "stunnable": true
      },
      {
       "npcId": 134991,
@@ -6396,9 +11812,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84207,
-      "image": "npcs/84207.webp"
+      "image": "npcs/84207.webp",
+      "stunnable": false
      },
      {
       "npcId": 135007,
@@ -6423,7 +11839,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84503,
       "image": "npcs/84503.webp"
      },
@@ -6437,7 +11852,6 @@
       "health": 21621699,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 46710
      },
      {
@@ -6458,9 +11872,9 @@
         ]
        }
       ],
-      "stunnable": true,
       "displayId": 78250,
-      "image": "npcs/78250.webp"
+      "image": "npcs/78250.webp",
+      "stunnable": true
      },
      {
       "npcId": 135846,
@@ -6481,9 +11895,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": true,
       "displayId": 78247,
-      "image": "npcs/78247.webp"
+      "image": "npcs/78247.webp",
+      "stunnable": true
      },
      {
       "npcId": 135971,
@@ -6495,7 +11909,6 @@
       "health": 648651,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 147077
      },
      {
@@ -6524,9 +11937,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 65631,
-      "image": "npcs/65631.webp"
+      "image": "npcs/65631.webp",
+      "stunnable": false
      },
      {
       "npcId": 136250,
@@ -6555,9 +11968,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84676,
-      "image": "npcs/84676.webp"
+      "image": "npcs/84676.webp",
+      "stunnable": false
      },
      {
       "npcId": 139097,
@@ -6574,7 +11987,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83780,
       "image": "npcs/83780.webp"
      },
@@ -6597,7 +12009,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 51418,
       "image": "npcs/51418.webp"
      },
@@ -6616,7 +12027,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83553,
       "image": "npcs/83553.webp"
      },
@@ -6630,7 +12040,6 @@
       "health": 10000,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 46710
      },
      {
@@ -6652,9 +12061,9 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84761,
-      "image": "npcs/84761.webp"
+      "image": "npcs/84761.webp",
+      "stunnable": false
      },
      {
       "npcId": 139425,
@@ -6671,9 +12080,9 @@
         "interrupt": true
        }
       ],
-      "stunnable": true,
       "displayId": 83444,
-      "image": "npcs/83444.webp"
+      "image": "npcs/83444.webp",
+      "stunnable": true
      },
      {
       "npcId": 139946,
@@ -6800,7 +12209,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 169,
       "image": "npcs/169.webp"
      },
@@ -6871,7 +12279,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83550
      },
      {
@@ -6905,7 +12312,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83552
      },
      {
@@ -6927,7 +12333,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 55649,
       "image": "npcs/55649.webp"
      },
@@ -6941,7 +12346,6 @@
       "health": 1297302,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 7409
      },
      {
@@ -6963,7 +12367,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147355
      },
      {
@@ -6976,7 +12379,6 @@
       "health": 810814,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 83787
      },
      {
@@ -6989,9 +12391,9 @@
       "health": 648651,
       "forces": 5,
       "spells": [],
-      "stunnable": false,
       "displayId": 83553,
-      "image": "npcs/83553.webp"
+      "image": "npcs/83553.webp",
+      "stunnable": false
      },
      {
       "npcId": 268317,
@@ -7012,7 +12414,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147718,
       "image": "npcs/147718.webp"
      },
@@ -7039,7 +12440,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84761,
       "image": "npcs/84761.webp"
      },
@@ -7070,7 +12470,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 169,
       "image": "npcs/169.webp"
      },
@@ -7089,7 +12488,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 84024,
       "image": "npcs/84024.webp"
      },
@@ -7116,7 +12514,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 84676,
       "image": "npcs/84676.webp"
      },
@@ -7139,7 +12536,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147085,
       "image": "npcs/147085.webp"
      },
@@ -7153,7 +12549,6 @@
       "health": 10000,
       "forces": null,
       "spells": [],
-      "stunnable": false,
       "displayId": 169
      },
      {
@@ -7166,13 +12561,1608 @@
       "health": 1945953,
       "forces": 5,
       "spells": [],
-      "stunnable": false,
       "displayId": 80961,
       "image": "npcs/80961.webp"
      }
     ],
-    "observedAt": "2026-11-16T21:30:49.695Z",
+    "observedAt": "2026-11-17T22:18:09.824Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "vDbNT0a": [
+     [
+      [
+       134616,
+       2
+      ],
+      [
+       134600,
+       3
+      ],
+      [
+       134602,
+       3
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       134991,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ],
+      [
+       134616,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134602,
+       2
+      ],
+      [
+       134991,
+       1
+      ]
+     ],
+     [
+      [
+       262530,
+       1
+      ],
+      [
+       262822,
+       1
+      ]
+     ],
+     [
+      [
+       264785,
+       2
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       135846,
+       2
+      ],
+      [
+       135562,
+       2
+      ],
+      [
+       134600,
+       2
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ],
+      [
+       134616,
+       2
+      ],
+      [
+       139422,
+       1
+      ],
+      [
+       264785,
+       1
+      ],
+      [
+       134686,
+       1
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       264785,
+       1
+      ],
+      [
+       139425,
+       1
+      ],
+      [
+       134364,
+       2
+      ],
+      [
+       135846,
+       3
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       139425,
+       2
+      ],
+      [
+       135846,
+       2
+      ],
+      [
+       135562,
+       3
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       263383,
+       1
+      ],
+      [
+       134389,
+       2
+      ],
+      [
+       134390,
+       1
+      ],
+      [
+       133384,
+       1
+      ]
+     ],
+     [
+      [
+       265057,
+       1
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       2
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       4
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       263658,
+       1
+      ]
+     ],
+     [
+      [
+       139110,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       2
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       135971,
+       1
+      ],
+      [
+       269227,
+       1
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       135971,
+       3
+      ],
+      [
+       269227,
+       1
+      ]
+     ],
+     [
+      [
+       135971,
+       4
+      ],
+      [
+       268317,
+       4
+      ],
+      [
+       136250,
+       1
+      ]
+     ],
+     [
+      [
+       268344,
+       1
+      ]
+     ],
+     [
+      [
+       268491,
+       1
+      ],
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       268729,
+       4
+      ]
+     ],
+     [
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       133392,
+       1
+      ]
+     ]
+    ],
+    "JrKqzZl": [
+     [
+      [
+       134616,
+       1
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       134600,
+       2
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134602,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ],
+      [
+       134616,
+       2
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134602,
+       1
+      ],
+      [
+       134991,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       1
+      ],
+      [
+       134616,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134602,
+       1
+      ],
+      [
+       262530,
+       1
+      ],
+      [
+       262822,
+       1
+      ]
+     ],
+     [
+      [
+       264785,
+       2
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       135846,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       134686,
+       1
+      ],
+      [
+       134990,
+       2
+      ],
+      [
+       134616,
+       2
+      ],
+      [
+       139422,
+       1
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       135846,
+       1
+      ],
+      [
+       134600,
+       1
+      ]
+     ],
+     [
+      [
+       264785,
+       2
+      ],
+      [
+       134364,
+       1
+      ],
+      [
+       139425,
+       1
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       135846,
+       5
+      ],
+      [
+       134364,
+       1
+      ],
+      [
+       135562,
+       4
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134629,
+       2
+      ],
+      [
+       139425,
+       2
+      ]
+     ],
+     [
+      [
+       263383,
+       1
+      ]
+     ],
+     [
+      [
+       134389,
+       2
+      ]
+     ],
+     [
+      [
+       134390,
+       1
+      ],
+      [
+       134388,
+       1
+      ],
+      [
+       133384,
+       1
+      ]
+     ],
+     [
+      [
+       265057,
+       1
+      ],
+      [
+       134691,
+       2
+      ],
+      [
+       136076,
+       2
+      ],
+      [
+       134599,
+       2
+      ]
+     ],
+     [
+      [
+       134691,
+       4
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       263658,
+       1
+      ]
+     ],
+     [
+      [
+       139110,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       2
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       2
+      ],
+      [
+       135971,
+       1
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       135971,
+       7
+      ]
+     ],
+     [
+      [
+       268317,
+       4
+      ],
+      [
+       136250,
+       1
+      ]
+     ],
+     [
+      [
+       268344,
+       1
+      ]
+     ],
+     [
+      [
+       268491,
+       1
+      ],
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       268729,
+       4
+      ]
+     ],
+     [
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       133392,
+       1
+      ]
+     ]
+    ],
+    "qHhhDa2": [
+     [
+      [
+       134616,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134602,
+       2
+      ]
+     ],
+     [
+      [
+       134616,
+       3
+      ],
+      [
+       134990,
+       2
+      ],
+      [
+       134602,
+       1
+      ],
+      [
+       134600,
+       2
+      ]
+     ],
+     [
+      [
+       134602,
+       2
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       134616,
+       1
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134600,
+       2
+      ]
+     ],
+     [
+      [
+       134990,
+       1
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134602,
+       1
+      ]
+     ],
+     [
+      [
+       262530,
+       1
+      ],
+      [
+       262822,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       1
+      ],
+      [
+       264785,
+       2
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       135846,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       135846,
+       1
+      ],
+      [
+       134990,
+       2
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       135562,
+       1
+      ]
+     ],
+     [
+      [
+       139425,
+       1
+      ],
+      [
+       134364,
+       1
+      ],
+      [
+       264785,
+       2
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       134364,
+       1
+      ],
+      [
+       135846,
+       4
+      ],
+      [
+       135562,
+       2
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134629,
+       2
+      ]
+     ],
+     [
+      [
+       139425,
+       2
+      ],
+      [
+       135562,
+       2
+      ],
+      [
+       135846,
+       1
+      ]
+     ],
+     [
+      [
+       263383,
+       1
+      ],
+      [
+       134389,
+       2
+      ],
+      [
+       134390,
+       1
+      ],
+      [
+       133384,
+       1
+      ]
+     ],
+     [
+      [
+       265057,
+       1
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       2
+      ],
+      [
+       136076,
+       1
+      ],
+      [
+       134599,
+       2
+      ]
+     ],
+     [
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       2
+      ]
+     ],
+     [
+      [
+       134691,
+       1
+      ]
+     ],
+     [
+      [
+       263658,
+       1
+      ]
+     ],
+     [
+      [
+       139110,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       2
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       135007,
+       1
+      ],
+      [
+       269227,
+       2
+      ]
+     ],
+     [
+      [
+       135971,
+       2
+      ]
+     ],
+     [
+      [
+       135971,
+       3
+      ]
+     ],
+     [
+      [
+       135971,
+       3
+      ],
+      [
+       268317,
+       4
+      ],
+      [
+       136250,
+       1
+      ]
+     ],
+     [
+      [
+       268344,
+       1
+      ]
+     ],
+     [
+      [
+       268491,
+       1
+      ],
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       268729,
+       4
+      ]
+     ],
+     [
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       133392,
+       1
+      ]
+     ]
+    ],
+    "DIxC6Gw": [
+     [
+      [
+       134616,
+       4
+      ],
+      [
+       134990,
+       3
+      ],
+      [
+       134602,
+       3
+      ],
+      [
+       134600,
+       3
+      ],
+      [
+       134991,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ],
+      [
+       134616,
+       1
+      ],
+      [
+       134602,
+       2
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134600,
+       1
+      ]
+     ],
+     [
+      [
+       262530,
+       1
+      ],
+      [
+       262822,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       1
+      ],
+      [
+       264785,
+       2
+      ],
+      [
+       135846,
+       1
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ],
+      [
+       134616,
+       2
+      ],
+      [
+       134686,
+       1
+      ],
+      [
+       139422,
+       1
+      ],
+      [
+       135846,
+       1
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       134600,
+       1
+      ]
+     ],
+     [
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       139425,
+       1
+      ],
+      [
+       134364,
+       1
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       135846,
+       1
+      ],
+      [
+       264785,
+       2
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       134364,
+       1
+      ],
+      [
+       135846,
+       2
+      ],
+      [
+       139425,
+       1
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       135562,
+       2
+      ],
+      [
+       134629,
+       1
+      ]
+     ],
+     [
+      [
+       135846,
+       2
+      ],
+      [
+       135562,
+       1
+      ],
+      [
+       139425,
+       1
+      ]
+     ],
+     [
+      [
+       263383,
+       1
+      ],
+      [
+       134389,
+       2
+      ],
+      [
+       134390,
+       1
+      ],
+      [
+       133384,
+       1
+      ]
+     ],
+     [
+      [
+       265057,
+       1
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       2
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       4
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       263658,
+       1
+      ]
+     ],
+     [
+      [
+       139110,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       1
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       2
+      ],
+      [
+       135971,
+       3
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       135971,
+       5
+      ],
+      [
+       269227,
+       1
+      ],
+      [
+       268317,
+       4
+      ],
+      [
+       136250,
+       1
+      ]
+     ],
+     [
+      [
+       268344,
+       1
+      ]
+     ],
+     [
+      [
+       268491,
+       1
+      ],
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       268729,
+       4
+      ]
+     ],
+     [
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       133392,
+       1
+      ]
+     ]
+    ],
+    "JX3bWIf": [
+     [
+      [
+       134616,
+       2
+      ],
+      [
+       134602,
+       3
+      ],
+      [
+       134600,
+       3
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134990,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ],
+      [
+       134602,
+       2
+      ],
+      [
+       134991,
+       1
+      ],
+      [
+       134616,
+       1
+      ],
+      [
+       134600,
+       1
+      ]
+     ],
+     [
+      [
+       262530,
+       1
+      ],
+      [
+       262822,
+       1
+      ]
+     ],
+     [
+      [
+       264785,
+       2
+      ],
+      [
+       134990,
+       1
+      ],
+      [
+       134629,
+       2
+      ],
+      [
+       135846,
+       2
+      ],
+      [
+       134616,
+       2
+      ],
+      [
+       135562,
+       2
+      ],
+      [
+       134600,
+       2
+      ],
+      [
+       139422,
+       1
+      ],
+      [
+       134686,
+       1
+      ]
+     ],
+     [
+      [
+       134990,
+       2
+      ]
+     ],
+     [
+      [
+       134364,
+       1
+      ],
+      [
+       135562,
+       2
+      ],
+      [
+       135846,
+       3
+      ],
+      [
+       134629,
+       2
+      ],
+      [
+       264785,
+       2
+      ],
+      [
+       139425,
+       1
+      ]
+     ],
+     [
+      [
+       134364,
+       1
+      ],
+      [
+       135846,
+       2
+      ],
+      [
+       134600,
+       1
+      ],
+      [
+       139425,
+       2
+      ],
+      [
+       135562,
+       2
+      ]
+     ],
+     [
+      [
+       134388,
+       1
+      ],
+      [
+       263383,
+       1
+      ],
+      [
+       134389,
+       2
+      ],
+      [
+       134390,
+       1
+      ],
+      [
+       133384,
+       1
+      ]
+     ],
+     [
+      [
+       265057,
+       1
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       2
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       134691,
+       4
+      ],
+      [
+       134599,
+       2
+      ],
+      [
+       136076,
+       1
+      ]
+     ],
+     [
+      [
+       263658,
+       1
+      ]
+     ],
+     [
+      [
+       139110,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       1
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       2
+      ],
+      [
+       135971,
+       1
+      ],
+      [
+       135007,
+       1
+      ]
+     ],
+     [
+      [
+       269227,
+       1
+      ],
+      [
+       135971,
+       7
+      ],
+      [
+       268317,
+       4
+      ],
+      [
+       136250,
+       1
+      ]
+     ],
+     [
+      [
+       268344,
+       1
+      ]
+     ],
+     [
+      [
+       268427,
+       1
+      ],
+      [
+       268491,
+       1
+      ]
+     ],
+     [
+      [
+       268729,
+       4
+      ]
+     ],
+     [
+      [
+       268427,
+       1
+      ]
+     ],
+     [
+      [
+       133392,
+       1
+      ]
+     ]
+    ]
    }
   },
   {
@@ -7186,7 +14176,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "the-blinding-vale",
-    "totalRuns": 510970,
+    "totalRuns": 512597,
     "timersMs": {
      "plusOne": 1800000,
      "plusTwo": 1440000,
@@ -7202,126 +14192,126 @@
     "families": [
      {
       "familyId": "rf2:bcecc135aef306da2edd43ecebfc112322d21e42891973e9e91a29f1f721cb36",
-      "runs": 25111,
-      "timed": 22798,
-      "medianClearMs": 1458854.6236642546,
+      "runs": 25160,
+      "timed": 22843,
+      "medianClearMs": 1458755.3226841635,
       "fastestClearMs": 650887,
       "highestKey": 20,
-      "latestAt": "2026-11-16T14:49:59.000Z",
-      "routeKey": "UEt17JB"
-     },
-     {
-      "familyId": "rf2:857cc41aa0c675a580e6819664c7c94c910fbaacf9997ac9ed5674c1f80fcc74",
-      "runs": 21159,
-      "timed": 19101,
-      "medianClearMs": 1450411.2743806269,
-      "fastestClearMs": 625755,
-      "highestKey": 20,
-      "latestAt": "2026-11-16T16:11:01.000Z",
-      "routeKey": "WIMAuCl"
-     },
-     {
-      "familyId": "rf2:bd7e0f85aa93971fa3c2299d219964e4742ace509d7a775dbce5f8982a79076f",
-      "runs": 15285,
-      "timed": 13504,
-      "medianClearMs": 1485905.040108489,
-      "fastestClearMs": 550107,
-      "highestKey": 21,
-      "latestAt": "2026-11-16T14:23:34.000Z",
+      "latestAt": "2026-11-17T20:29:41.000Z",
       "routeKey": null
      },
      {
+      "familyId": "rf2:857cc41aa0c675a580e6819664c7c94c910fbaacf9997ac9ed5674c1f80fcc74",
+      "runs": 21209,
+      "timed": 19143,
+      "medianClearMs": 1450326.8791745002,
+      "fastestClearMs": 625755,
+      "highestKey": 20,
+      "latestAt": "2026-11-17T21:37:02.000Z",
+      "routeKey": null
+     },
+     {
+      "familyId": "rf2:bd7e0f85aa93971fa3c2299d219964e4742ace509d7a775dbce5f8982a79076f",
+      "runs": 15323,
+      "timed": 13537,
+      "medianClearMs": 1485018.4444927536,
+      "fastestClearMs": 550107,
+      "highestKey": 21,
+      "latestAt": "2026-11-17T21:08:33.000Z",
+      "routeKey": "yxa04U4"
+     },
+     {
       "familyId": "rf2:d57b4ff14c6247a951058875e2457fca6cc0a48f6bab447d71e47972f6968aa2",
-      "runs": 9585,
-      "timed": 8907,
-      "medianClearMs": 1398814.9074789726,
+      "runs": 9604,
+      "timed": 8925,
+      "medianClearMs": 1398918.413596203,
       "fastestClearMs": 595508,
       "highestKey": 22,
-      "latestAt": "2026-11-16T15:23:09.000Z",
+      "latestAt": "2026-11-17T21:45:11.000Z",
       "routeKey": "jRMBxcA"
      },
      {
       "familyId": "rf2:c4b10748b98d05d7e3a8e7ec169c5dd51ba996b09961a26479804646e90bedde",
-      "runs": 8888,
-      "timed": 7537,
-      "medianClearMs": 1550399.9641551382,
+      "runs": 8912,
+      "timed": 7558,
+      "medianClearMs": 1550442.8011114742,
       "fastestClearMs": 676629,
       "highestKey": 21,
-      "latestAt": "2026-11-16T16:09:49.000Z",
-      "routeKey": "EJivd74"
+      "latestAt": "2026-11-17T21:13:09.000Z",
+      "routeKey": "8Y8T6cD"
      },
      {
       "familyId": "rf2:cbc08b98987a5436e09bb56c7104cbdd9ab96f69714b182bb4e67ef621390bcd",
-      "runs": 6694,
-      "timed": 5983,
-      "medianClearMs": 1548770.8166666667,
+      "runs": 6709,
+      "timed": 5997,
+      "medianClearMs": 1549021.5714285716,
       "fastestClearMs": 620568,
       "highestKey": 21,
-      "latestAt": "2026-11-16T12:25:13.000Z",
+      "latestAt": "2026-11-17T21:01:42.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:5e075186466289ad324c7ae1bc8953051227044bf17424b97c41b3d70692b748",
-      "runs": 6092,
-      "timed": 5372,
-      "medianClearMs": 1504050.8551136362,
+      "runs": 6101,
+      "timed": 5380,
+      "medianClearMs": 1504291.4842712842,
       "fastestClearMs": 679325,
-      "highestKey": 20,
-      "latestAt": "2026-11-16T05:35:32.000Z",
+      "highestKey": 21,
+      "latestAt": "2026-11-17T17:14:12.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:f6d860970413950df2be75efb5fb16930660056e46df812e2ddec1e39a1c43f2",
-      "runs": 5796,
-      "timed": 5395,
-      "medianClearMs": 1406530.5176136363,
+      "runs": 5811,
+      "timed": 5408,
+      "medianClearMs": 1406404.8999775734,
       "fastestClearMs": 623746,
       "highestKey": 20,
-      "latestAt": "2026-11-16T16:16:51.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:00:22.000Z",
+      "routeKey": "BimhyjK"
      },
      {
       "familyId": "rf2:f9c9d2018901a49594f19f74c18cac4f77c14abf7be2adb8bb29dc272b842a26",
-      "runs": 5715,
-      "timed": 5124,
-      "medianClearMs": 1516619.0660368665,
+      "runs": 5729,
+      "timed": 5138,
+      "medianClearMs": 1516447.515288944,
       "fastestClearMs": 641493,
       "highestKey": 20,
-      "latestAt": "2026-11-16T15:06:20.000Z",
+      "latestAt": "2026-11-17T21:06:19.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:157ecaacaa1ece43610bb017c9ad6b8ca86b7fbfa75c1afdd045ad55b79a1ec4",
-      "runs": 5574,
-      "timed": 5134,
-      "medianClearMs": 1496112.625252525,
+      "runs": 5587,
+      "timed": 5147,
+      "medianClearMs": 1496504.8722110442,
       "fastestClearMs": 631755,
       "highestKey": 20,
-      "latestAt": "2026-11-16T12:52:04.000Z",
+      "latestAt": "2026-11-17T21:06:57.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:d67e6260521ee9b0c6b5d23538c874863edc3038ea738d39350d0d530662cafa",
-      "runs": 4385,
-      "timed": 3875,
-      "medianClearMs": 1498896.5823863635,
+      "runs": 4399,
+      "timed": 3887,
+      "medianClearMs": 1498556.912593985,
       "fastestClearMs": 656721,
       "highestKey": 19,
-      "latestAt": "2026-11-16T10:12:00.000Z",
+      "latestAt": "2026-11-17T21:41:24.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:8e07be2f36cb4b5a89be1016c8ca570cb08aae6b7a84a2d6812ce207464668af",
-      "runs": 4036,
-      "timed": 3465,
-      "medianClearMs": 1502462.6013431011,
+      "runs": 4042,
+      "timed": 3469,
+      "medianClearMs": 1502131.5772604588,
       "fastestClearMs": 560682,
       "highestKey": 20,
-      "latestAt": "2026-11-16T08:29:03.000Z",
+      "latestAt": "2026-11-17T18:55:16.000Z",
       "routeKey": "C9R2l8m"
      }
     ],
-    "observedAt": "2026-11-16T21:30:49.864Z",
+    "observedAt": "2026-11-17T22:18:10.021Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -7555,7 +14545,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129588
      },
      {
@@ -7585,7 +14574,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 139027
      },
      {
@@ -7618,7 +14606,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 139025
      },
      {
@@ -7646,7 +14633,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129261,
       "image": "npcs/129261.webp"
      },
@@ -7716,7 +14702,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129424
      },
      {
@@ -7826,7 +14811,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 127945,
       "image": "npcs/127945.webp"
      },
@@ -7848,7 +14832,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 127942,
       "image": "npcs/127942.webp"
      },
@@ -7871,7 +14854,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 125875,
       "image": "npcs/125875.webp"
      },
@@ -7898,7 +14880,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 127946,
       "image": "npcs/127946.webp"
      },
@@ -7920,7 +14901,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 104473,
       "image": "npcs/104473.webp"
      },
@@ -7943,7 +14923,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 128068,
       "image": "npcs/128068.webp"
      },
@@ -7966,7 +14945,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 122805,
       "image": "npcs/122805.webp"
      },
@@ -7989,7 +14967,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 136758,
       "image": "npcs/136758.webp"
      },
@@ -8012,7 +14989,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 142839,
       "image": "npcs/142839.webp"
      },
@@ -8038,7 +15014,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 110392,
       "image": "npcs/110392.webp"
      },
@@ -8142,7 +15117,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129856
      },
      {
@@ -8171,7 +15145,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 129858,
       "image": "npcs/129858.webp"
      },
@@ -8194,7 +15167,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 137347,
       "image": "npcs/137347.webp"
      },
@@ -8241,7 +15213,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 126929,
       "image": "npcs/126929.webp"
      },
@@ -8301,7 +15272,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 136619
      },
      {
@@ -8327,7 +15297,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 131589,
       "image": "npcs/131589.webp"
      },
@@ -8371,7 +15340,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 136026,
       "image": "npcs/136026.webp"
      },
@@ -8390,7 +15358,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 83115,
       "image": "npcs/83115.webp"
      },
@@ -8409,7 +15376,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 131772,
       "image": "npcs/131772.webp"
      },
@@ -8461,7 +15427,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 141000,
       "image": "npcs/141000.webp"
      },
@@ -8488,7 +15453,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 126462,
       "image": "npcs/126462.webp"
      },
@@ -8523,8 +15487,1288 @@
       "forces": null
      }
     ],
-    "observedAt": "2026-11-16T21:30:50.212Z",
+    "observedAt": "2026-11-17T22:18:10.572Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "yxa04U4": [
+     [
+      [
+       245410,
+       17
+      ],
+      [
+       245345,
+       4
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       5
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       3
+      ],
+      [
+       245345,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       2
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       9
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       1
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       15
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245339,
+       2
+      ]
+     ],
+     [
+      [
+       245410,
+       6
+      ],
+      [
+       245346,
+       1
+      ],
+      [
+       245345,
+       2
+      ]
+     ],
+     [
+      [
+       243029,
+       1
+      ],
+      [
+       243028,
+       1
+      ],
+      [
+       243030,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       244887,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       246871,
+       1
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245473,
+       2
+      ],
+      [
+       246871,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245912,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245484,
+       3
+      ],
+      [
+       249756,
+       1
+      ]
+     ],
+     [
+      [
+       254850,
+       1
+      ],
+      [
+       246871,
+       1
+      ]
+     ],
+     [
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245346,
+       1
+      ],
+      [
+       247676,
+       1
+      ]
+     ]
+    ],
+    "jRMBxcA": [
+     [
+      [
+       245410,
+       25
+      ],
+      [
+       245346,
+       1
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245345,
+       6
+      ],
+      [
+       245339,
+       5
+      ]
+     ],
+     [
+      [
+       245410,
+       2
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245336,
+       1
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       14
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       6
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       243028,
+       1
+      ],
+      [
+       243030,
+       1
+      ],
+      [
+       243029,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       244887,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       246871,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245473,
+       2
+      ],
+      [
+       246871,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245912,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       245484,
+       3
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       249756,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       6
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245345,
+       6
+      ],
+      [
+       245513,
+       1
+      ],
+      [
+       245339,
+       1
+      ]
+     ],
+     [
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       247676,
+       1
+      ]
+     ]
+    ],
+    "8Y8T6cD": [
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       245346,
+       1
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245345,
+       3
+      ],
+      [
+       245339,
+       2
+      ]
+     ],
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245336,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       10
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245345,
+       2
+      ]
+     ],
+     [
+      [
+       245410,
+       10
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245339,
+       3
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       4
+      ],
+      [
+       245345,
+       1
+      ]
+     ],
+     [
+      [
+       243029,
+       1
+      ],
+      [
+       243028,
+       1
+      ],
+      [
+       243030,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       244887,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       246871,
+       1
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245473,
+       2
+      ],
+      [
+       245460,
+       2
+      ],
+      [
+       246871,
+       1
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       10
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245912,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245484,
+       3
+      ],
+      [
+       249756,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       6
+      ],
+      [
+       245513,
+       1
+      ],
+      [
+       245339,
+       1
+      ],
+      [
+       245345,
+       6
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       246871,
+       1
+      ]
+     ],
+     [
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245346,
+       1
+      ],
+      [
+       247676,
+       1
+      ]
+     ]
+    ],
+    "BimhyjK": [
+     [
+      [
+       245410,
+       25
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       5
+      ],
+      [
+       245345,
+       6
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       2
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       254850,
+       2
+      ],
+      [
+       245336,
+       2
+      ]
+     ],
+     [
+      [
+       245410,
+       9
+      ],
+      [
+       245336,
+       2
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       4
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       243028,
+       1
+      ],
+      [
+       243029,
+       1
+      ],
+      [
+       243030,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       244887,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       246871,
+       2
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245473,
+       2
+      ],
+      [
+       246871,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245912,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       245484,
+       3
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       249756,
+       1
+      ]
+     ],
+     [
+      [
+       245336,
+       2
+      ],
+      [
+       246871,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       247676,
+       1
+      ]
+     ]
+    ],
+    "C9R2l8m": [
+     [
+      [
+       245410,
+       8
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245345,
+       3
+      ],
+      [
+       245346,
+       1
+      ],
+      [
+       245339,
+       2
+      ]
+     ],
+     [
+      [
+       245410,
+       10
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245345,
+       3
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       245336,
+       3
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       254850,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       9
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       245345,
+       1
+      ]
+     ],
+     [
+      [
+       243029,
+       1
+      ],
+      [
+       243028,
+       1
+      ],
+      [
+       243030,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       5
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       245345,
+       1
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       245473,
+       1
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       244887,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245484,
+       1
+      ],
+      [
+       246871,
+       2
+      ],
+      [
+       245473,
+       2
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245460,
+       1
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245460,
+       1
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       245473,
+       1
+      ]
+     ],
+     [
+      [
+       245527,
+       5
+      ],
+      [
+       245912,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       7
+      ],
+      [
+       245345,
+       2
+      ],
+      [
+       245484,
+       3
+      ],
+      [
+       254850,
+       1
+      ],
+      [
+       249756,
+       1
+      ]
+     ],
+     [
+      [
+       245336,
+       2
+      ],
+      [
+       245339,
+       2
+      ],
+      [
+       246871,
+       1
+      ],
+      [
+       245346,
+       1
+      ]
+     ],
+     [
+      [
+       245410,
+       6
+      ],
+      [
+       245336,
+       1
+      ],
+      [
+       245345,
+       6
+      ],
+      [
+       247676,
+       1
+      ]
+     ]
+    ]
    }
   },
   {
@@ -8538,7 +16782,7 @@
    "routes": {
     "season": "season-mn-2",
     "dungeon": "voidscar-arena",
-    "totalRuns": 575152,
+    "totalRuns": 577072,
     "timersMs": {
      "plusOne": 1800000,
      "plusTwo": 1440000,
@@ -8553,126 +16797,126 @@
     "families": [
      {
       "familyId": "rf2:fe1b68a2ac32576e13c87c29782b78dec5f9d090a4657b0dd7c33ec8631892bd",
-      "runs": 18543,
-      "timed": 17258,
-      "medianClearMs": 1359534.4139742986,
+      "runs": 18608,
+      "timed": 17315,
+      "medianClearMs": 1359630.9503703704,
       "fastestClearMs": 537302,
       "highestKey": 20,
-      "latestAt": "2026-11-16T16:32:05.000Z",
-      "routeKey": "tf6xssJ"
+      "latestAt": "2026-11-17T21:54:14.000Z",
+      "routeKey": "BOkjJJi"
      },
      {
       "familyId": "rf2:c432c8c84927c0d4b8c8f6af989c347b870ea6a60d004d8857fa1c555999c01e",
-      "runs": 14389,
-      "timed": 13462,
-      "medianClearMs": 1389744.4455270437,
+      "runs": 14443,
+      "timed": 13514,
+      "medianClearMs": 1389513.4867570533,
       "fastestClearMs": 635617,
       "highestKey": 20,
-      "latestAt": "2026-11-16T16:36:09.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T21:16:42.000Z",
+      "routeKey": "0K9GnOX"
      },
      {
       "familyId": "rf2:5d0f30c2607babd27f297c9c3a45becda2c46674f773500b9b85976da8368921",
-      "runs": 9598,
-      "timed": 8804,
-      "medianClearMs": 1334573.1923809524,
+      "runs": 9631,
+      "timed": 8836,
+      "medianClearMs": 1334354.1911511123,
       "fastestClearMs": 633786,
       "highestKey": 19,
-      "latestAt": "2026-11-16T15:01:51.000Z",
-      "routeKey": null
+      "latestAt": "2026-11-17T20:47:52.000Z",
+      "routeKey": "MxBBESy"
      },
      {
       "familyId": "rf2:ca0d242b50aa2571952a7fa4c94643f3cc17152d24a4efd441417cbf5a1bdd57",
-      "runs": 9485,
-      "timed": 8980,
-      "medianClearMs": 1308909.1123378782,
+      "runs": 9520,
+      "timed": 9015,
+      "medianClearMs": 1308993.1050179212,
       "fastestClearMs": 647348,
       "highestKey": 18,
-      "latestAt": "2026-11-16T11:22:47.000Z",
-      "routeKey": "wb1uhut"
+      "latestAt": "2026-11-17T20:45:06.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:8e3954207301e3c50609df9b7e1009e51b59967b9bd3fc1d9cda0a047084779b",
-      "runs": 8935,
-      "timed": 8356,
-      "medianClearMs": 1335203.4654056744,
+      "runs": 8963,
+      "timed": 8383,
+      "medianClearMs": 1335132.691991916,
       "fastestClearMs": 504731,
       "highestKey": 19,
-      "latestAt": "2026-11-16T16:16:08.000Z",
-      "routeKey": "Oa9nUcO"
+      "latestAt": "2026-11-17T20:35:54.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:6a9dc7f9ec2e6164a1a16fd11468240a1c41fed0783d0a8b5acffd4d64bf1694",
-      "runs": 8646,
-      "timed": 8075,
-      "medianClearMs": 1393661.454589372,
+      "runs": 8677,
+      "timed": 8104,
+      "medianClearMs": 1393570.961675412,
       "fastestClearMs": 607643,
       "highestKey": 20,
-      "latestAt": "2026-11-16T12:23:29.000Z",
-      "routeKey": "y6Gmx0N"
+      "latestAt": "2026-11-17T22:00:04.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:e8655b13bc8c29bd7e595d63032654172f28af5d8e10f67714c648e21ddb67b9",
-      "runs": 8394,
-      "timed": 7774,
-      "medianClearMs": 1291532.3222750223,
+      "runs": 8414,
+      "timed": 7792,
+      "medianClearMs": 1291041.171766626,
       "fastestClearMs": 521701,
       "highestKey": 20,
-      "latestAt": "2026-11-15T23:50:07.000Z",
+      "latestAt": "2026-11-17T21:07:45.000Z",
       "routeKey": "QOenTYa"
      },
      {
       "familyId": "rf2:b2d69a1b5180f22e23f5303500cb3bae675e0a5d20560dad52c7bcc6d08138b9",
-      "runs": 7431,
-      "timed": 6951,
-      "medianClearMs": 1269767.2592620444,
+      "runs": 7455,
+      "timed": 6974,
+      "medianClearMs": 1269999.4166666667,
       "fastestClearMs": 617984,
       "highestKey": 19,
-      "latestAt": "2026-11-16T13:50:46.000Z",
+      "latestAt": "2026-11-17T21:50:19.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:7f04f7b5e0bccb875c8ac18a59fdcd08769f7c42e24cbc02194fa875bce447c5",
-      "runs": 6965,
-      "timed": 6301,
-      "medianClearMs": 1406258.432123656,
+      "runs": 6991,
+      "timed": 6324,
+      "medianClearMs": 1406368.7873114122,
       "fastestClearMs": 676849,
       "highestKey": 19,
-      "latestAt": "2026-11-16T14:08:44.000Z",
-      "routeKey": "R3QmeNG"
+      "latestAt": "2026-11-17T21:00:43.000Z",
+      "routeKey": null
      },
      {
       "familyId": "rf2:690952243c6ea6869132d2df112d2179a5ba2b910834735d060599aa2ab21eb4",
-      "runs": 6029,
-      "timed": 5556,
-      "medianClearMs": 1381973.5985616816,
+      "runs": 6043,
+      "timed": 5570,
+      "medianClearMs": 1381088.6057971015,
       "fastestClearMs": 610779,
       "highestKey": 19,
-      "latestAt": "2026-11-16T16:40:46.000Z",
+      "latestAt": "2026-11-17T21:14:30.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:a59c5ff6e8641f6f87786eedb12b3b9eb089ca6f89916b650e8a4d472e34b6e3",
-      "runs": 5836,
-      "timed": 5512,
-      "medianClearMs": 1331525.1166304348,
+      "runs": 5858,
+      "timed": 5531,
+      "medianClearMs": 1331177.796599617,
       "fastestClearMs": 638400,
       "highestKey": 19,
-      "latestAt": "2026-11-16T12:14:30.000Z",
+      "latestAt": "2026-11-17T21:39:18.000Z",
       "routeKey": null
      },
      {
       "familyId": "rf2:8926dd538dfaf14a33c473febbb32cf1138138b5e60137e5da1daf118f955990",
-      "runs": 5755,
-      "timed": 5235,
-      "medianClearMs": 1379422.380455408,
+      "runs": 5761,
+      "timed": 5241,
+      "medianClearMs": 1379562.6471185065,
       "fastestClearMs": 617591,
       "highestKey": 18,
-      "latestAt": "2026-11-16T14:16:49.000Z",
+      "latestAt": "2026-11-17T21:01:18.000Z",
       "routeKey": "dM5sG9r"
      }
     ],
-    "observedAt": "2026-11-16T21:30:50.324Z",
+    "observedAt": "2026-11-17T22:18:10.781Z",
     "source": "Raider.IO"
    },
    "enemies": {
@@ -8751,7 +16995,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 130200,
       "image": "npcs/130200.webp"
      },
@@ -8786,7 +17029,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140300
      },
      {
@@ -8834,7 +17076,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 131553
      },
      {
@@ -8856,7 +17097,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140374,
       "image": "npcs/140374.webp"
      },
@@ -8891,7 +17131,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 138269
      },
      {
@@ -8913,7 +17152,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 130201,
       "image": "npcs/130201.webp"
      },
@@ -8932,7 +17170,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 141204,
       "image": "npcs/141204.webp"
      },
@@ -8951,7 +17188,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 141196,
       "image": "npcs/141196.webp"
      },
@@ -8970,7 +17206,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 141810,
       "image": "npcs/141810.webp"
      },
@@ -8999,7 +17234,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 140037,
       "image": "npcs/140037.webp"
      },
@@ -9028,7 +17262,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 140036,
       "image": "npcs/140036.webp"
      },
@@ -9054,7 +17287,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140041,
       "image": "npcs/140041.webp"
      },
@@ -9073,7 +17305,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140045,
       "image": "npcs/140045.webp"
      },
@@ -9103,7 +17334,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 140256,
       "image": "npcs/140256.webp"
      },
@@ -9141,7 +17371,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140264,
       "image": "npcs/140264.webp"
      },
@@ -9164,7 +17393,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 147460,
       "image": "npcs/147460.webp"
      },
@@ -9194,7 +17422,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 141286,
       "image": "npcs/141286.webp"
      },
@@ -9213,7 +17440,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 30762,
       "image": "npcs/30762.webp"
      },
@@ -9242,7 +17468,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 140299,
       "image": "npcs/140299.webp"
      },
@@ -9261,7 +17486,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 141195,
       "image": "npcs/141195.webp"
      },
@@ -9295,7 +17519,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 140295,
       "image": "npcs/140295.webp"
      },
@@ -9317,7 +17540,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 141194,
       "image": "npcs/141194.webp"
      },
@@ -9340,7 +17562,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 137329,
       "image": "npcs/137329.webp"
      },
@@ -9363,7 +17584,6 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 137330,
       "image": "npcs/137330.webp"
      },
@@ -9382,7 +17602,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 141207,
       "image": "npcs/141207.webp"
      },
@@ -9405,7 +17624,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147404,
       "image": "npcs/147404.webp"
      },
@@ -9424,7 +17642,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 169,
       "image": "npcs/169.webp"
      },
@@ -9443,7 +17660,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 169,
       "image": "npcs/169.webp"
      },
@@ -9489,7 +17705,6 @@
         ]
        }
       ],
-      "stunnable": false,
       "displayId": 138723,
       "image": "npcs/138723.webp"
      },
@@ -9528,7 +17743,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147378,
       "image": "npcs/147378.webp"
      },
@@ -9571,7 +17785,6 @@
         "interrupt": false
        }
       ],
-      "stunnable": false,
       "displayId": 147363,
       "image": "npcs/147363.webp"
      },
@@ -9610,13 +17823,1256 @@
         "interrupt": true
        }
       ],
-      "stunnable": false,
       "displayId": 147459,
       "image": "npcs/147459.webp"
      }
     ],
-    "observedAt": "2026-11-16T21:30:50.708Z",
+    "observedAt": "2026-11-17T22:18:11.203Z",
     "source": "Keystone Guru"
+   },
+   "pulls": {
+    "BOkjJJi": [
+     [
+      [
+       238883,
+       1
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       243985,
+       2
+      ],
+      [
+       243988,
+       1
+      ],
+      [
+       241496,
+       2
+      ],
+      [
+       252072,
+       1
+      ]
+     ],
+     [
+      [
+       267546,
+       1
+      ]
+     ],
+     [
+      [
+       243988,
+       2
+      ],
+      [
+       243985,
+       2
+      ],
+      [
+       243996,
+       3
+      ],
+      [
+       243983,
+       3
+      ]
+     ],
+     [
+      [
+       243985,
+       3
+      ],
+      [
+       243988,
+       3
+      ],
+      [
+       244260,
+       1
+      ],
+      [
+       249608,
+       1
+      ],
+      [
+       244309,
+       1
+      ],
+      [
+       243983,
+       2
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       249461,
+       1
+      ],
+      [
+       249590,
+       1
+      ],
+      [
+       249603,
+       1
+      ]
+     ],
+     [
+      [
+       238887,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243835,
+       1
+      ]
+     ],
+     [
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       238883,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       239070,
+       1
+      ],
+      [
+       239008,
+       1
+      ]
+     ],
+     [
+      [
+       243835,
+       2
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       2
+      ],
+      [
+       243996,
+       3
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       244708,
+       2
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       243835,
+       3
+      ],
+      [
+       243983,
+       3
+      ],
+      [
+       243996,
+       1
+      ]
+     ],
+     [
+      [
+       268184,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       252508,
+       10
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       263228,
+       1
+      ]
+     ],
+     [
+      [
+       239167,
+       1
+      ]
+     ]
+    ],
+    "0K9GnOX": [
+     [
+      [
+       238883,
+       1
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       243985,
+       2
+      ],
+      [
+       241496,
+       2
+      ],
+      [
+       243988,
+       1
+      ],
+      [
+       252072,
+       1
+      ]
+     ],
+     [
+      [
+       267546,
+       1
+      ]
+     ],
+     [
+      [
+       243985,
+       3
+      ],
+      [
+       243996,
+       3
+      ],
+      [
+       243988,
+       3
+      ],
+      [
+       243983,
+       3
+      ]
+     ],
+     [
+      [
+       244260,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       249608,
+       1
+      ],
+      [
+       243985,
+       2
+      ],
+      [
+       244309,
+       1
+      ],
+      [
+       249603,
+       1
+      ],
+      [
+       243983,
+       2
+      ],
+      [
+       249461,
+       1
+      ]
+     ],
+     [
+      [
+       243996,
+       2
+      ],
+      [
+       249590,
+       1
+      ]
+     ],
+     [
+      [
+       238887,
+       1
+      ]
+     ],
+     [
+      [
+       241496,
+       1
+      ],
+      [
+       243766,
+       1
+      ],
+      [
+       243835,
+       1
+      ],
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       238883,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       252053,
+       1
+      ],
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       239070,
+       1
+      ],
+      [
+       239008,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       243983,
+       3
+      ],
+      [
+       243835,
+       3
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243988,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ],
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       252508,
+       10
+      ],
+      [
+       243766,
+       1
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243835,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       252508,
+       10
+      ],
+      [
+       239167,
+       1
+      ]
+     ]
+    ],
+    "MxBBESy": [
+     [
+      [
+       243996,
+       1
+      ],
+      [
+       243988,
+       1
+      ],
+      [
+       243985,
+       2
+      ],
+      [
+       238883,
+       1
+      ],
+      [
+       241496,
+       2
+      ],
+      [
+       252072,
+       1
+      ]
+     ],
+     [
+      [
+       267546,
+       1
+      ]
+     ],
+     [
+      [
+       243985,
+       3
+      ],
+      [
+       243996,
+       3
+      ],
+      [
+       243983,
+       3
+      ],
+      [
+       243988,
+       3
+      ]
+     ],
+     [
+      [
+       244260,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       249608,
+       1
+      ]
+     ],
+     [
+      [
+       243985,
+       2
+      ],
+      [
+       243983,
+       2
+      ],
+      [
+       249461,
+       1
+      ],
+      [
+       244309,
+       1
+      ],
+      [
+       249603,
+       1
+      ]
+     ],
+     [
+      [
+       243996,
+       2
+      ],
+      [
+       249590,
+       1
+      ]
+     ],
+     [
+      [
+       238887,
+       1
+      ]
+     ],
+     [
+      [
+       241496,
+       1
+      ],
+      [
+       243766,
+       1
+      ],
+      [
+       243835,
+       1
+      ],
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       241496,
+       1
+      ],
+      [
+       238883,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       239070,
+       2
+      ],
+      [
+       239008,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       243835,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243835,
+       2
+      ],
+      [
+       243983,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       2
+      ],
+      [
+       243835,
+       2
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       243983,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       263228,
+       1
+      ],
+      [
+       238883,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243835,
+       2
+      ],
+      [
+       238883,
+       1
+      ],
+      [
+       252508,
+       10
+      ]
+     ],
+     [
+      [
+       239167,
+       1
+      ]
+     ]
+    ],
+    "QOenTYa": [
+     [
+      [
+       243988,
+       2
+      ],
+      [
+       243996,
+       3
+      ],
+      [
+       238883,
+       3
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       267545,
+       1
+      ]
+     ],
+     [
+      [
+       243988,
+       3
+      ],
+      [
+       243985,
+       3
+      ],
+      [
+       243983,
+       3
+      ],
+      [
+       243996,
+       3
+      ]
+     ],
+     [
+      [
+       244260,
+       1
+      ],
+      [
+       249608,
+       1
+      ],
+      [
+       243988,
+       2
+      ]
+     ],
+     [
+      [
+       243985,
+       2
+      ],
+      [
+       243983,
+       1
+      ],
+      [
+       249603,
+       1
+      ],
+      [
+       249461,
+       1
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       244309,
+       1
+      ],
+      [
+       249590,
+       1
+      ]
+     ],
+     [
+      [
+       243983,
+       1
+      ]
+     ],
+     [
+      [
+       238887,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243835,
+       1
+      ],
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       241496,
+       1
+      ],
+      [
+       238883,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       239070,
+       2
+      ],
+      [
+       239008,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       243835,
+       3
+      ],
+      [
+       243983,
+       3
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       243988,
+       1
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       241496,
+       1
+      ],
+      [
+       243766,
+       1
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       243835,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       243988,
+       2
+      ],
+      [
+       263228,
+       1
+      ]
+     ],
+     [
+      [
+       239167,
+       1
+      ]
+     ]
+    ],
+    "dM5sG9r": [
+     [
+      [
+       238883,
+       3
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       243996,
+       3
+      ]
+     ],
+     [
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       267545,
+       1
+      ]
+     ],
+     [
+      [
+       243985,
+       3
+      ],
+      [
+       243983,
+       3
+      ],
+      [
+       243988,
+       3
+      ],
+      [
+       243996,
+       3
+      ]
+     ],
+     [
+      [
+       244260,
+       1
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       249608,
+       1
+      ],
+      [
+       244309,
+       1
+      ],
+      [
+       243985,
+       2
+      ],
+      [
+       249603,
+       1
+      ]
+     ],
+     [
+      [
+       249461,
+       1
+      ],
+      [
+       243983,
+       2
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       249590,
+       1
+      ]
+     ],
+     [
+      [
+       238887,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243835,
+       1
+      ],
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       241496,
+       1
+      ],
+      [
+       238883,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       245950,
+       1
+      ]
+     ],
+     [
+      [
+       239070,
+       1
+      ],
+      [
+       239008,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       241496,
+       1
+      ],
+      [
+       243996,
+       2
+      ],
+      [
+       243835,
+       2
+      ],
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243766,
+       1
+      ],
+      [
+       243996,
+       1
+      ],
+      [
+       252053,
+       1
+      ]
+     ],
+     [
+      [
+       244708,
+       2
+      ],
+      [
+       243988,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243983,
+       3
+      ],
+      [
+       243835,
+       3
+      ],
+      [
+       243766,
+       1
+      ],
+      [
+       243996,
+       1
+      ]
+     ],
+     [
+      [
+       244708,
+       2
+      ],
+      [
+       268184,
+       1
+      ]
+     ],
+     [
+      [
+       243988,
+       2
+      ],
+      [
+       263228,
+       1
+      ]
+     ],
+     [
+      [
+       239167,
+       1
+      ]
+     ]
+    ]
    }
   }
  ],
