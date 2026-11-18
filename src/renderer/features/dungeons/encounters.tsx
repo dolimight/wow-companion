@@ -9,6 +9,7 @@ import { Card } from '../../components/ui/card'
 import { Badge, Button } from '../../components/ui/primitives'
 import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group'
 import { ItemIcon } from '../items/items'
+import { ItemHoverCard } from '../items/ItemHoverCard'
 import { BossCoach } from '../ai/BossCoach'
 
 export const roleLabels: Record<JournalRole, string> = { tank: 'Tank', healer: 'Healer', damage: 'Damage' }
@@ -148,11 +149,13 @@ export function LootList({ items: listed, character }: { items: LootItem[]; char
       </Card>}
       <div className="loot-items">
         {shown.map(item => (
-          <div key={item.id} className="loot-item" data-emphasis={mine.has(item) ? undefined : 'quiet'}>
-            <ItemIcon icon={item.icon} quality={item.quality} size="small" />
-            <span><b className={`quality-text-${item.quality}`}>{item.name}</b><small>{lootKind(item)}</small></span>
-            {all && mine.has(item) && <Badge tone="green">For you</Badge>}
-          </div>
+          <ItemHoverCard key={item.id} itemId={item.id} item={{ ...item, itemLevel: 0, expansion: 0, sources: [] }}>
+            <div className="loot-item" data-emphasis={mine.has(item) ? undefined : 'quiet'}>
+              <ItemIcon icon={item.icon} quality={item.quality} size="small" />
+              <span><b className={`quality-text-${item.quality}`}>{item.name}</b><small>{lootKind(item)}</small></span>
+              {all && mine.has(item) && <Badge tone="green">For you</Badge>}
+            </div>
+          </ItemHoverCard>
         ))}
       </div>
       {items.length > mine.size && <Button variant="quiet" onClick={() => setAll(!all)}>{all ? `Only gear for ${spec}` : `Show all ${items.length} drops`}</Button>}
