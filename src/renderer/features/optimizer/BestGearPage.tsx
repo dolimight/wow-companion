@@ -4,7 +4,7 @@ import { ArrowRight, Check, Cpu, RefreshCw, Sparkles, Square, Target, TriangleAl
 import type { Activity, Character, GearSlot } from '../../../shared/domain'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
 import { simulationScenarios, type SimulationScenarioId } from '../../../shared/simulation'
-import { isOwned, optimizerStages, originLabels, type OptimizerCandidate, type OptimizerCombo, type OptimizerRun } from '../../../shared/optimizer'
+import { isOwned, optimizerLoads, optimizerStages, type OptimizerLoad, originLabels, type OptimizerCandidate, type OptimizerCombo, type OptimizerRun } from '../../../shared/optimizer'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
@@ -21,6 +21,7 @@ const slotOrder: GearSlot[] = ['head', 'neck', 'shoulder', 'back', 'chest', 'wri
 const stageLabels: Record<(typeof optimizerStages)[number], string> = { gathering: 'Gathering gear', screening: 'Testing each piece', choosing: 'Choosing sets', confirming: 'Confirming the best', done: 'Done' }
 const running = (run: OptimizerRun | null | undefined) => !!run && ['gathering', 'screening', 'choosing', 'confirming'].includes(run.stage)
 const dps = (value: number) => `${value >= 0 ? '+' : '−'}${Math.abs(Math.round(value)).toLocaleString('en-US')}`
+const loadOptions = (Object.entries(optimizerLoads) as Array<[OptimizerLoad, (typeof optimizerLoads)[OptimizerLoad]]>).map(([value, load]) => ({ value, label: `${load.label} · ${load.threads ? `${load.threads} threads` : 'half your threads'}` }))
 const scenarioOptions = (Object.entries(simulationScenarios) as Array<[SimulationScenarioId, (typeof simulationScenarios)[SimulationScenarioId]]>).map(([value, scenario]) => ({ value, label: scenario.label }))
 
 /**
@@ -32,9 +33,10 @@ export function BestGearPage({ character, activity }: { character: Character; ac
   const provider = useAiProvider()
   const [scenario, setScenario] = useState<SimulationScenarioId>(activity === 'raiding' ? 'patchwerk' : 'dungeon-slice')
   const [targets, setTargets] = useState(true)
+  const [load, setLoad] = useState<OptimizerLoad>('light')
   const run = useQuery({ queryKey: ['optimizer', character.id], queryFn: () => api.optimizerRun(character.id), refetchInterval: query => running(query.state.data) ? 1500 : false })
   const workspace = useQuery({ queryKey: ['simulations', character.id], queryFn: () => api.simulationWorkspace({ characterId: character.id }), staleTime: 60_000 })
-  const start = useMutation({ mutationFn: () => api.startOptimizer({ characterId: character.id, activity, scenarioId: scenario, includeTargets: targets }), onSuccess: value => client.setQueryData(['optimizer', character.id], value) })
+  const start = useMutation({ mutationFn: () => api.startOptimizer({ characterId: character.id, activity, scenarioId: scenario, includeTargets: targets, load }), onSuccess: value => client.setQueryData(['optimizer', character.id], value) })
   const cancel = useMutation({ mutationFn: () => api.cancelOptimizer(character.id), onSuccess: () => void run.refetch() })
   const current = run.data
   const busy = running(current) || start.isPending
@@ -51,6 +53,7 @@ export function BestGearPage({ character, activity }: { character: Character; ac
         </div>
         <div className="best-gear-controls">
           <AppSelect aria-label="Fight" value={scenario} options={scenarioOptions} disabled={busy} onValueChange={value => setScenario(value as SimulationScenarioId)} />
+          <AppSelect aria-label="Processor load" value={load} options={loadOptions} disabled={busy} onValueChange={value => setLoad(value as OptimizerLoad)} />
           <Toggle type="button" variant="outline" className="workspace-toggle" pressed={targets} disabled={busy} onPressedChange={setTargets}><Target size={14} aria-hidden="true" />{targets ? 'With targets' : 'Owned only'}</Toggle>
           {running(current)
             ? <Button disabled={cancel.isPending} onClick={() => cancel.mutate()}><Square size={13} aria-hidden="true" />Stop</Button>
@@ -58,7 +61,7 @@ export function BestGearPage({ character, activity }: { character: Character; ac
         </div>
         <p className="muted small best-gear-note">
           {provider ? <><ProviderIcon id={provider.id} size={13} />{provider.name} picks which sets to test</> : 'The app picks which sets to test · connect an AI assistant in Settings to weigh set bonuses and pairs too'}
-          {' · '}Runs at low priority on half your processor threads{current ? ` (${current.threads})` : ''}, so the computer stays usable
+          {' · '}Runs at low priority. Light load is the safe default; heavier loads finish sooner but can reset a computer with unstable power or cooling
         </p>
         {start.isError && <p className="error small" role="alert">{errorMessage(start.error)}</p>}
       </Card>
