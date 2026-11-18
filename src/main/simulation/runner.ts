@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises'
+import { constants, setPriority } from 'node:os'
 import path from 'node:path'
 import { z } from 'zod'
 import type { SimulationRequest, SimulationResult } from '../../shared/simulation'
@@ -110,6 +111,8 @@ export function runSimulationProcess(options: { executable: string; directory: s
       cancelRunning = () => stop('Simulation cancelled')
       try {
         child = options.launch ? options.launch(options.executable, args, options.directory) : spawn(options.executable, args, { cwd: options.directory, shell: false, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+        // The engine runs below normal priority, so a long run never starves the rest of the computer
+        if (child.pid) try { setPriority(child.pid, constants.priority.PRIORITY_BELOW_NORMAL) } catch { /* not permitted here */ }
         child.once('error', error => finish(error))
         child.once('close', code => finish(failure || code !== 0 ? new Error(failure ?? `SimulationCraft stopped with code ${code}${tail ? ` — ${tail}` : ''}`) : undefined))
         const output = (chunk: Buffer) => { bytes += chunk.length; tail = (tail + chunk.toString('utf8')).slice(-2000); if (bytes > LOG_LIMIT) stop('Simulation output exceeded 16 MiB') }

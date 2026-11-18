@@ -23,6 +23,7 @@ import {comparisonInputSchema,reportInputSchema} from '../../shared/comparisons'
 import { TIMELINE_NAMESPACE, timelineSchema } from '../../shared/timeline'
 import { simulationScenarioSchema } from '../../shared/simulation'
 import { aiAskSchema } from '../../shared/ai'
+import { optimizerStartSchema } from '../../shared/optimizer'
 
 export type SyncStatus = { lastCheckAt:string|null;path:string|null;error:string|null }
 export type ChangeEvent = { revision:number;characterId?:string }
@@ -43,6 +44,7 @@ export type RouterServices = {
   comparisons:ComparisonService
   models:ReturnType<typeof import('../models/cache').createModelCache>
   ai:import('../ai/service').AiService
+  optimizer:import('../optimizer/service').Optimizer
   settingsChanged?(settings:import('../../shared/domain').AppSettings):void
 }
 const t=initTRPC.context<ServiceContext>().create()
@@ -75,6 +77,9 @@ export function createRouter(s:RouterServices){return t.router({
   simulationWorkspace:p.input(characterIdSchema).query(({input})=>run(()=>s.simulations.list(input.characterId))),
   aiStatus:p.input(z.object({force:z.boolean().default(false)})).query(({input})=>run(()=>s.ai.status(input.force))),
   aiAsk:p.input(aiAskSchema).mutation(({input,signal})=>run(()=>s.ai.ask(input.feature,input.input,signal))),
+  optimizerRun:p.input(characterIdSchema).query(({input})=>run(()=>s.optimizer.get(input.characterId))),
+  startOptimizer:p.input(optimizerStartSchema).mutation(({input})=>run(()=>s.optimizer.start(input))),
+  cancelOptimizer:p.input(characterIdSchema).mutation(({input})=>run(()=>s.optimizer.cancel(input.characterId))),
   getModel:p.input(characterIdSchema).query(({input})=>run(()=>s.models.get(input.characterId))),
   forgetModel:p.input(characterIdSchema).mutation(async({input})=>{await run(()=>s.models.forget(input.characterId));await s.changed(input.characterId)}),
   comparePlayers:p.input(comparisonInputSchema).query(({input})=>run(()=>s.comparisons.evaluate(input))),

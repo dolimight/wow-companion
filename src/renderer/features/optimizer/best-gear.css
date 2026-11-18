@@ -1,0 +1,105 @@
+.best-gear { display: grid; gap: 20px; }
+
+/* Setup */
+.best-gear-setup { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 24px; align-items: center; }
+.best-gear-intro h2 { display: flex; align-items: center; gap: 8px; font-size: 18px; letter-spacing: -.015em; }
+.best-gear-intro h2 svg { color: var(--accent); }
+.best-gear-intro p { margin-top: 4px; color: var(--secondary); font-size: 13px; }
+.best-gear-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.best-gear-controls .app-select-trigger { width: 190px; }
+.best-gear-note { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* The search as it runs */
+.forge { display: grid; gap: 16px; }
+.forge-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.forge-track li { position: relative; display: flex; align-items: center; gap: 8px; padding-top: 12px; font-size: 12.5px; color: var(--muted); }
+.forge-track li::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; border-radius: 2px; background: var(--surface3); }
+.forge-track li::after { content: ""; position: absolute; inset: 0 auto auto 0; height: 3px; width: 0; border-radius: 2px; background: var(--accent); transition: width .6s cubic-bezier(.16, 1, .3, 1); }
+.forge-track li[data-state="done"]::after { width: 100%; }
+.forge-track li[data-state="on"]::after { width: 45%; animation: forge-progress 2.4s cubic-bezier(.65, 0, .35, 1) infinite alternate; }
+.forge-track li[data-state="on"] { color: var(--ink); font-weight: 600; }
+.forge-track li > span { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--surface2); font-size: 11px; font-variant-numeric: tabular-nums; }
+.forge-track li[data-state="on"] > span { background: var(--accent); color: var(--on-accent); }
+.forge-track li[data-state="done"] > span { background: var(--accent-soft); color: var(--accent); }
+.forge-status { font-size: 13px; color: var(--secondary); font-variant-numeric: tabular-nums; }
+.forge-summary { font-size: 13px; color: var(--secondary); line-height: 1.55; max-width: 75ch; }
+
+.forge-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.forge-slot { display: grid; justify-items: center; gap: 6px; padding: 10px 6px; border-radius: 10px; background: var(--surface2); box-shadow: inset 0 0 0 1px transparent; transition: opacity .4s ease, box-shadow .4s ease, transform .4s cubic-bezier(.16, 1, .3, 1); }
+.forge-slot small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.forge-slot b { font-size: 11px; font-weight: 600; color: var(--secondary); font-variant-numeric: tabular-nums; }
+.forge-slot[data-empty] { opacity: .45; }
+.forge-reel { position: relative; width: 28px; height: 28px; }
+.forge-reel > span { position: absolute; inset: 0; }
+.forge-reel[data-cycling] > span { opacity: 0; }
+.forge-reel[data-cycling] > span:first-child { opacity: 1; }
+
+/* Screening: each slot's pieces take turns, slots staggered so the board ripples */
+.forge[data-stage="screening"] .forge-reel[data-cycling] > span { animation: forge-reel 3.2s cubic-bezier(.16, 1, .3, 1) infinite both; animation-delay: calc(var(--at) * 800ms + var(--delay)); }
+.forge[data-stage="screening"] .forge-slot:not([data-empty]) { animation: forge-breathe 3.2s ease-in-out infinite; animation-delay: var(--delay); }
+/* Choosing: the pieces in a proposed set light up, the rest step back */
+.forge[data-stage="choosing"] .forge-slot:not([data-picked]), .forge[data-stage="confirming"] .forge-slot:not([data-picked]) { opacity: .4; }
+.forge[data-stage="choosing"] .forge-slot[data-picked] { animation: forge-glow 1.6s ease-in-out infinite; animation-delay: var(--delay); }
+/* Confirming: picked pieces settle into place */
+.forge[data-stage="confirming"] .forge-slot[data-picked] { box-shadow: inset 0 0 0 1.5px var(--accent); animation: forge-settle .7s cubic-bezier(.16, 1, .3, 1) both; animation-delay: var(--delay); }
+.forge[data-stage="confirming"] .forge-reel[data-cycling] > span { animation: forge-reel 4.8s cubic-bezier(.16, 1, .3, 1) infinite both; animation-delay: calc(var(--at) * 1200ms); }
+
+@keyframes forge-reel {
+  0% { opacity: 0; transform: translateY(8px) scale(.86); filter: blur(3px); }
+  6%, 22% { opacity: 1; transform: none; filter: none; }
+  28%, 100% { opacity: 0; transform: translateY(-8px) scale(.94); filter: blur(2px); }
+}
+@keyframes forge-breathe { 0%, 100% { box-shadow: inset 0 0 0 1px transparent; } 50% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); } }
+@keyframes forge-glow { 0%, 100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); } 50% { box-shadow: inset 0 0 0 1.5px var(--accent), 0 6px 18px color-mix(in srgb, var(--accent) 22%, transparent); } }
+@keyframes forge-settle { from { transform: scale(.9); } to { transform: none; } }
+@keyframes forge-progress { from { width: 15%; } to { width: 85%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .forge *, .forge-track li::after { animation: none !important; transition: none !important; }
+  .forge-reel[data-cycling] > span:first-child { opacity: 1; }
+}
+
+/* Results */
+.best-gear-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.best-gear-set-card { display: grid; align-content: start; gap: 12px; }
+.best-gear-set-card h3 { font-size: 15px; font-weight: 600; }
+.best-gear-headline { display: flex; align-items: baseline; gap: 8px; }
+.best-gear-headline b { font-size: 29px; font-weight: 650; letter-spacing: -.025em; font-variant-numeric: tabular-nums; color: var(--green); }
+.best-gear-set-card[data-kind="chase"] .best-gear-headline b { color: var(--accent); }
+.best-gear-headline span { font-size: 13px; color: var(--secondary); }
+.best-gear-changes { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.best-gear-changes li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); }
+.best-gear-changes li > small { font-size: 12px; color: var(--muted); }
+.best-gear-item { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; border-radius: 6px; }
+.best-gear-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.best-gear-item > span { display: grid; min-width: 0; }
+.best-gear-item b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.best-gear-item small { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.best-gear-changes .badge { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.best-gear-summary p { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; line-height: 1.55; }
+.best-gear-summary svg { flex: none; margin-top: 3px; color: var(--accent); }
+.best-gear-sets { display: grid; }
+.best-gear-set { display: grid; grid-template-columns: minmax(0, 1fr) auto 120px; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.best-gear-set > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.best-gear-set b { font-size: 13.5px; }
+.best-gear-set small { font-size: 12px; color: var(--secondary); }
+.best-gear-set[data-best] b { color: var(--accent); }
+.best-gear-gain { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.best-gear-gain[data-sign="up"] { color: var(--green); }
+.best-gear-gain small { font-weight: 400; color: var(--muted); }
+.best-gear-notes { margin-top: 12px; font-size: 12.5px; color: var(--secondary); }
+.best-gear-notes ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+@media (max-width: 1100px) {
+  .forge-board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .best-gear-setup { grid-template-columns: minmax(0, 1fr); }
+  .best-gear-controls { justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+  .forge-track { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .best-gear-set { grid-template-columns: minmax(0, 1fr) auto; }
+  .best-gear-set .badge { display: none; }
+}
+
+/* The app setting turns motion off the same way the system preference does */
+:root[data-reduced-motion="true"] .forge *, :root[data-reduced-motion="true"] .forge-track li::after { animation: none !important; transition: none !important; }

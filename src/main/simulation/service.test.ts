@@ -87,6 +87,22 @@ describe('simulation workspace and job lifecycle', () => {
     expect(input).toMatch(/^profileset\."companion_reference"\+=\w+=,id=/m)
     expect(input.match(/^profileset\."companion_candidate_\d"\+=/gm)).toHaveLength(2)
   })
+  it('runs whole sets, skipping ones that cannot be worn, and resolves a waiter when the job ends', async () => {
+    const { character, service } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [104_000]))}));`)
+    await service.configureExecutable(process.execPath)
+    const [first, second] = character.gear
+    const { job, labels, skipped } = await service.startSets({ characterId: character.id, iterations: 100, threads: 1, label: 'Best gear · confirming', sets: [
+      { label: 'Two upgrades', items: [{ ...first!, itemLevel: first!.itemLevel! + 13 }, { ...second!, itemLevel: second!.itemLevel! + 6 }] },
+      { label: 'Cloth hat', items: [{ ...first!, itemLevel: first!.itemLevel! + 13, classId: 4, subclassId: 1 }] },
+    ] })
+    expect(labels).toEqual(['Two upgrades'])
+    expect(skipped).toEqual([expect.objectContaining({ label: 'Cloth hat' })])
+    const done = await service.waitForJob(character.id, job.id)
+    expect(done).toMatchObject({ state: 'completed', label: 'Best gear · confirming', request: { candidateLabels: ['Two upgrades'], options: { threads: 1 } } })
+    expect(done.result!.values.map(value => value.mean)).toEqual([100_200, 104_000])
+    // A finished job resolves at once
+    expect((await service.waitForJob(character.id, job.id)).state).toBe('completed')
+  })
   it('refuses a swap the character cannot wear or that breaks unique-equipped limits', async () => {
     const { character, service } = await fixture()
     await service.configureExecutable(process.execPath)

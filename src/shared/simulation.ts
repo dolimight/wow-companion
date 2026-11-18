@@ -50,6 +50,15 @@ export const simulationSwapsStartSchema = simulationStartSchema.omit({ comparePl
   label: z.string().min(1).max(200).default('Gear swaps'),
 })
 export type SimulationSwapsStart = z.input<typeof simulationSwapsStartSchema>
+/**
+ * Whole gear sets, owned or planned, each run against current gear in one profileset job. A set that can't be worn or
+ * described to the engine is skipped with its reason, so one bad combination never fails the rest
+ */
+export const simulationSetsStartSchema = simulationStartSchema.omit({ comparePlan: true }).extend({
+  sets: z.array(z.object({ label: z.string().min(1).max(200), items: z.array(gearItemSchema).min(1).max(16) })).min(1).max(PROFILESET_LIMIT),
+  label: z.string().min(1).max(200).default('Gear sets'),
+})
+export type SimulationSetsStart = z.input<typeof simulationSetsStartSchema>
 /** Your character run with the sampled top players' items and talents, as a reference point for your own number */
 export const simulationBenchmarkStartSchema = simulationStartSchema.omit({ comparePlan: true })
 export type SimulationBenchmarkStart = z.input<typeof simulationBenchmarkStartSchema>
