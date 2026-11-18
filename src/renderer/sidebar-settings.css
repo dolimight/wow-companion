@@ -119,12 +119,6 @@
   max-width: 52ch;
   line-height: 1.65;
 }
-.provider-settings-body { padding: 22px; display: grid; gap: 16px; margin-top: 14px; }
-.provider-settings-body > h3 { border-top: 1px solid var(--line); padding-top: 22px; font-size: 13px; margin-top: 6px; }
-.provider-settings-body > div:first-child { display: grid; gap: 10px; justify-items: start; }
-.provider-settings-body p { font-size: 13px; line-height: 1.65; max-width: 65ch; }
-.provider-settings-body > .field { max-width: 560px; }
-.provider-settings-body > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
 .settings-section .setting-row .actions {
   flex-wrap: wrap;
   justify-content: flex-end;

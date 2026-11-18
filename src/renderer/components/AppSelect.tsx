@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import "./app-select.css";
 
-export type AppSelectOption = { value: string; label: string; disabled?: boolean; image?: string };
+/** An option may carry an image (a URL) or an icon element, shown in the list and in the closed control */
+export type AppSelectOption = { value: string; label: string; disabled?: boolean; image?: string; icon?: ReactNode };
 
 export function AppSelect({
   value,
@@ -33,7 +35,9 @@ export function AppSelect({
         data-option-count={options.length}
         className={`app-select-trigger ${className}`}
       >
-        <SelectValue />
+        {options.some(option => option.icon) ? (
+          <SelectValue>{(selected: string) => { const option = options.find(entry => entry.value === selected); return <>{option?.icon}<span>{option?.label}</span></> }}</SelectValue>
+        ) : <SelectValue />}
       </SelectTrigger>
       <SelectContent className={`app-select-content ${options.some(option => option.image) ? 'app-select-with-images' : ''}`} align="start" alignItemWithTrigger={false}>
         {options.map((option) => (
@@ -44,6 +48,7 @@ export function AppSelect({
             disabled={option.disabled}
           >
             {option.image && <img className="app-select-option-image" src={option.image} width={28} height={28} alt="" />}
+            {option.icon}
             <span>{option.label}</span>
           </SelectItem>
         ))}

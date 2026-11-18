@@ -22,6 +22,7 @@ import type { ComparisonService } from '../comparisons/service'
 import {comparisonInputSchema,reportInputSchema} from '../../shared/comparisons'
 import { TIMELINE_NAMESPACE, timelineSchema } from '../../shared/timeline'
 import { simulationScenarioSchema } from '../../shared/simulation'
+import { aiAskSchema } from '../../shared/ai'
 
 export type SyncStatus = { lastCheckAt:string|null;path:string|null;error:string|null }
 export type ChangeEvent = { revision:number;characterId?:string }
@@ -41,6 +42,7 @@ export type RouterServices = {
   simulations:SimulationService
   comparisons:ComparisonService
   models:ReturnType<typeof import('../models/cache').createModelCache>
+  ai:import('../ai/service').AiService
   settingsChanged?(settings:import('../../shared/domain').AppSettings):void
 }
 const t=initTRPC.context<ServiceContext>().create()
@@ -71,6 +73,8 @@ export function createRouter(s:RouterServices){return t.router({
   undoSessionDisposition:p.input(characterIdSchema.extend({key:z.string().min(1).max(500)})).mutation(async({input})=>{const result=await run(()=>s.session.undo(input.characterId,input.key));await s.changed(input.characterId);return result}),
   setSessionDuration:p.input(characterIdSchema.extend({key:z.string().min(1).max(500),minutes:z.number().int().min(1).max(1440),completed:z.boolean().default(false)})).mutation(async({input})=>{const result=await run(()=>s.session.duration(input.characterId,input.key,input.minutes,input.completed));await s.changed(input.characterId);return result}),
   simulationWorkspace:p.input(characterIdSchema).query(({input})=>run(()=>s.simulations.list(input.characterId))),
+  aiStatus:p.input(z.object({force:z.boolean().default(false)})).query(({input})=>run(()=>s.ai.status(input.force))),
+  aiAsk:p.input(aiAskSchema).mutation(({input,signal})=>run(()=>s.ai.ask(input.feature,input.input,signal))),
   getModel:p.input(characterIdSchema).query(({input})=>run(()=>s.models.get(input.characterId))),
   forgetModel:p.input(characterIdSchema).mutation(async({input})=>{await run(()=>s.models.forget(input.characterId));await s.changed(input.characterId)}),
   comparePlayers:p.input(comparisonInputSchema).query(({input})=>run(()=>s.comparisons.evaluate(input))),

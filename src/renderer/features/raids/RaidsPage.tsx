@@ -16,6 +16,7 @@ import { ItemIcon, useGameData } from '../items/items'
 import { Ability, BossCard, RolePicker, StrategySource, StrategyView, useDungeonRole } from '../dungeons/encounters'
 import { bundledRaid, useEncounterJournal } from '../dungeons/bundled'
 import { raidStrategy } from './strategy'
+import { BossCoach } from '../ai/BossCoach'
 import '../dungeons/dungeons.css'
 import './raids.css'
 
@@ -118,7 +119,7 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
   const week = useLockouts(character, raid)
   const plan = (boss: JournalBoss) => strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)
 
-  if (playing) return <RaidPlay raid={raid} bosses={bosses} strategy={strategy} role={role} difficulty={difficulty} onRole={setRole} onExit={() => onPlay(false)} />
+  if (playing) return <RaidPlay character={character} raid={raid} bosses={bosses} strategy={strategy} role={role} difficulty={difficulty} onRole={setRole} onExit={() => onPlay(false)} />
   return (
     <div className="dungeons">
       <Button variant="quiet" className="back-link" onClick={onBack}><ArrowLeft size={14} />All raids</Button>
@@ -159,7 +160,7 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
         {journal.isPending && gameReady ? <p className="muted small" role="status">Reading the Encounter Journal…</p>
           : journal.isError ? <p className="muted small" role="alert">{errorMessage(journal.error)}</p>
             : !bosses.length ? <p className="muted small">Prepare local game data to read this raid's bosses</p>
-              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={plan(boss)} defaultOpen={index === 0} showMythic={difficulty === 'mythic'} character={character} />)}
+              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={plan(boss)} defaultOpen={index === 0} showMythic={difficulty === 'mythic'} character={character} coach={{ character, instance: raid.name, difficulty: raidDifficultyLabels[difficulty] }} />)}
         <p className="muted small dungeon-note">Mechanics that need your role's attention are marked; the rest are dimmed. Damage numbers are left out: the server scales them, and the game files hold placeholders</p>
         {strategy && <StrategySource strategy={strategy} />}
       </Card>
@@ -168,7 +169,7 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
 }
 
 /** One boss at a time with the strategy for your role and the mechanics you must handle */
-function RaidPlay({ raid, bosses, strategy, role, difficulty, onRole, onExit }: { raid: RaidInfo; bosses: JournalBoss[]; strategy: RaidStrategy | null; role: JournalRole; difficulty: RaidDifficulty; onRole: (role: JournalRole) => void; onExit: () => void }) {
+function RaidPlay({ character, raid, bosses, strategy, role, difficulty, onRole, onExit }: { character: Character; raid: RaidInfo; bosses: JournalBoss[]; strategy: RaidStrategy | null; role: JournalRole; difficulty: RaidDifficulty; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const [step, setStep] = useState(0)
   useEffect(() => {
     const keys = (event: KeyboardEvent) => {
@@ -198,6 +199,7 @@ function RaidPlay({ raid, bosses, strategy, role, difficulty, onRole, onExit }: 
           <div><small>Boss {step + 1} of {bosses.length}</small><h2>{boss.name}</h2></div>
         </div>
         {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} showMythic={difficulty === 'mythic'} />}
+        <BossCoach character={character} instance={raid.name} difficulty={raidDifficultyLabels[difficulty]} boss={boss} role={role} plan={plan} mythic={difficulty === 'mythic'} />
         {warned.length > 0 && <div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div>}
       </Card>
       <div className="play-nav">

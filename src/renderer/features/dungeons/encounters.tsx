@@ -10,6 +10,7 @@ import { Badge, Button } from '../../components/ui/primitives'
 import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group'
 import { ItemIcon } from '../items/items'
 import { ItemHoverCard } from '../items/ItemHoverCard'
+import { BossCoach } from '../ai/BossCoach'
 
 export const roleLabels: Record<JournalRole, string> = { tank: 'Tank', healer: 'Healer', damage: 'Damage' }
 export const roleIcons: Record<JournalRole, typeof Shield> = { tank: Shield, healer: HeartPulse, damage: Swords }
@@ -42,7 +43,7 @@ export const flagLabels: Partial<Record<JournalFlag, { label: string; tone: 'neu
   tank: { label: 'Tank', tone: 'neutral' }, healer: { label: 'Healer', tone: 'neutral' }, damage: { label: 'Damage', tone: 'neutral' },
 }
 
-export function BossCard({ boss, index, role, plan, defaultOpen, showMythic = false, character }: { boss: JournalBoss; index: number; role: JournalRole; plan: StrategyNotes | undefined; defaultOpen: boolean; showMythic?: boolean; /** Shows the boss's loot for this character, as raids drop it per boss */ character?: Character }) {
+export function BossCard({ boss, index, role, plan, defaultOpen, showMythic = false, character, coach }: { boss: JournalBoss; index: number; role: JournalRole; plan: StrategyNotes | undefined; defaultOpen: boolean; showMythic?: boolean; /** Shows the boss's loot for this character, as raids drop it per boss */ character?: Character; /** Offers tips for this character's spec from the connected AI assistant */ coach?: { character: Character; instance: string; difficulty: string } }) {
   const [open, setOpen] = useState(defaultOpen)
   const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
   const keyCount = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role)).length
@@ -56,6 +57,7 @@ export function BossCard({ boss, index, role, plan, defaultOpen, showMythic = fa
       {open && <div className="boss-body">
         {boss.overview && <p className="boss-overview">{boss.overview}</p>}
         <StrategyView notes={plan} role={role} journalTips={tips} showMythic={showMythic} />
+        {coach && <BossCoach {...coach} boss={boss} role={role} plan={plan} mythic={showMythic} />}
         <div className="boss-abilities">{boss.abilities.map(ability => <Ability key={ability.id} ability={ability} role={role} />)}</div>
         {character && boss.loot?.length ? <div className="boss-loot"><h4><Gem size={14} aria-hidden="true" />Loot</h4><LootList items={boss.loot} character={character} /></div> : null}
       </div>}
