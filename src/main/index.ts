@@ -1,4 +1,5 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, net, Notification, protocol, safeStorage, screen, shell, Tray } from 'electron'
+import { createLog, log, useLog } from './log'
 import { mkdirSync } from 'node:fs'
 import { readFile, writeFile, mkdir, realpath, stat, rename } from 'node:fs/promises'
 import { dirname, extname, join, resolve, sep } from 'node:path'
@@ -52,6 +53,14 @@ const CSP="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inlin
 async function main(){
   const userDir=process.env.WOW_COMPANION_DATA_DIR?resolve(process.env.WOW_COMPANION_DATA_DIR):app.getPath('userData')
   await mkdir(userDir,{recursive:true})
+  // Daily log files for troubleshooting, kept for today and yesterday; older ones are purged at start and every few hours
+  const appLog=createLog({directory:resolve(userDir,'logs')});useLog(appLog);void appLog.purge()
+  setInterval(()=>void appLog.purge(),6*3_600_000).unref()
+  log.info('app',`WOW Companion ${app.getVersion()} started`,{platform:process.platform,arch:process.arch,electron:process.versions.electron,packaged:app.isPackaged})
+  process.on('uncaughtException',error=>log.error('app','Uncaught error',error))
+  process.on('unhandledRejection',reason=>log.error('app','Unhandled rejection',reason))
+  app.on('render-process-gone',(_event,_contents,details)=>log.error('app','The window process stopped',details))
+  app.on('child-process-gone',(_event,details)=>log.error('app','A helper process stopped',details))
   const db=new DatabaseClient(resolve(userDir,'companion.sqlite'))
   const settings=await db.call('getSettings')
   nativeTheme.themeSource=settings.theme
@@ -175,6 +184,7 @@ async function main(){
   handle('companion:import-backup',async()=>{const path=await selectedFile([{name:'JSON backup',extensions:['json']}]);if(!path)return null;const input=JSON.parse(await smallText(path));const result=await db.call('importBackup',input);await service.changed();return {imported:(input.characters as {id:string}[]).map(c=>c.id),unchanged:[],errors:[],revision:result.revision}})
   handle('companion:choose-wow-folder',async()=>{const result=await dialog.showOpenDialog(window!,{title:'Choose your World of Warcraft folder',properties:['openDirectory']});if(result.canceled||!result.filePaths[0])return null;return service.connections.useInstallPath(result.filePaths[0])})
   handle('companion:choose-simulation-executable',async()=>{const local=process.env.LOCALAPPDATA,roots=process.platform==='win32'?[...(local?[join(local,'Programs','SimulationCraft'),join(local,'Programs')]:[]),join(process.env.ProgramFiles??'C:/Program Files','SimulationCraft'),process.env.ProgramFiles??'C:/Program Files',app.getPath('downloads')]:process.platform==='darwin'?['/Applications',app.getPath('downloads')]:['/usr/local/bin','/usr/bin',app.getPath('downloads')];const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft engine (simc.exe)',extensions:['exe']}]:[{name:'SimulationCraft engine (simc)',extensions:['*']}],{title:'Choose the SimulationCraft engine',defaultPath:await service.simulations.engineFolder(roots)});return selected?service.simulations.configureExecutable(await realpath(selected)):null})
+  handle('companion:open-logs',async()=>{await mkdir(resolve(userDir,'logs'),{recursive:true});const failure=await shell.openPath(resolve(userDir,'logs'));if(failure)throw new Error(failure)})
   handle('companion:copy-text',async(value:unknown)=>{if(typeof value!=='string'||value.length>1_000_000)throw new Error('Nothing to copy');clipboard.writeText(value)})
   handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=externalLink(value);if(!url)throw new Error('This external link is not supported');await shell.openExternal(url.href)})
   const iconRoot=resolve(app.isPackaged?rendererRoot:app.getAppPath(),app.isPackaged?'assets':'public/assets')
@@ -264,5 +274,5 @@ app.on('before-quit',event=>{quitting=true;saveWindowPlacement?.();if(cleanup&&!
 if(!app.requestSingleInstanceLock())app.quit()
 else{
 app.on('second-instance',()=>{if(!window)return;if(window.isMinimized())window.restore();window.show();window.focus()})
-app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);void splash?.close();splash=null;process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})
+app.whenReady().then(main).catch(error=>{console.error('WOW Companion could not start',error);log.error('app','WOW Companion could not start',error);void splash?.close();splash=null;process.exitCode=1;if(process.env.WOW_COMPANION_HEADLESS!=='1')dialog.showErrorBox('WOW Companion could not start',error instanceof Error?error.message:String(error));app.quit()})
 }

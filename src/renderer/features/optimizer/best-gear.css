@@ -103,3 +103,9 @@
 
 /* The app setting turns motion off the same way the system preference does */
 :root[data-reduced-motion="true"] .forge *, :root[data-reduced-motion="true"] .forge-track li::after { animation: none !important; transition: none !important; }
+
+.best-gear-warning { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--amber) 12%, var(--surface)); color: var(--ink); font-size: 13px; line-height: 1.5; }
+.best-gear-warning svg { flex: none; margin-top: 2px; color: var(--amber); }
+.best-gear-meta { margin-top: -8px; font-variant-numeric: tabular-nums; }
+.best-gear-set b { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.forge-slot b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }

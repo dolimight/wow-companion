@@ -62,6 +62,8 @@ export type OptimizerRun = {
   wearNow: string | null
   chase: string | null
   summary: string | null
+  /** Something about the inputs that makes the result less trustworthy, such as gear saved before a level squish */
+  warning?: string | null
   notes: string[]
   failure: string | null
 }
@@ -88,7 +90,10 @@ export function trimPool(pool: OptimizerCandidate[], character: Pick<Character, 
   for (const candidate of pool) bySlot.set(candidate.slot, [...(bySlot.get(candidate.slot) ?? []), candidate])
   for (const [slot, list] of bySlot) {
     const worn = equipped.get(slot)
-    const floor = (worn?.itemLevel ?? 0) - below
+    // Measured from the lower of what you wear and the best piece on offer, so gear saved above this season's levels,
+    // such as from before an item level squish, never empties a slot
+    const best = Math.max(0, ...list.map(candidate => candidate.item.itemLevel ?? 0))
+    const floor = Math.min(worn?.itemLevel ?? 0, best) - below
     const usable = list.filter(candidate => {
       const item = candidate.item
       if (worn && worn.itemId === item.itemId && (worn.itemLevel ?? 0) >= (item.itemLevel ?? 0)) return false

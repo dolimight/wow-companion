@@ -97,11 +97,11 @@ describe('simulation workspace and job lifecycle', () => {
     ] })
     expect(labels).toEqual(['Two upgrades'])
     expect(skipped).toEqual([expect.objectContaining({ label: 'Cloth hat' })])
-    const done = await service.waitForJob(character.id, job.id)
+    const done = await service.waitForJob(character.id, job!.id)
     expect(done).toMatchObject({ state: 'completed', label: 'Best gear · confirming', request: { candidateLabels: ['Two upgrades'], options: { threads: 1 } } })
     expect(done.result!.values.map(value => value.mean)).toEqual([100_200, 104_000])
     // A finished job resolves at once
-    expect((await service.waitForJob(character.id, job.id)).state).toBe('completed')
+    expect((await service.waitForJob(character.id, job!.id)).state).toBe('completed')
   })
   it('refuses a swap the character cannot wear or that breaks unique-equipped limits', async () => {
     const { character, service } = await fixture()

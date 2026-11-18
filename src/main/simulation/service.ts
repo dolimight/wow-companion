@@ -20,6 +20,7 @@ import { capTopLevels, type TopPlayers } from '../../shared/top-players'
 import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, simulationSetsStartSchema, type SimulationSetsStart, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
 import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, slots as engineSlots, tankSpecs } from './profiles'
 import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
+import { log } from '../log'
 
 type SimulationDatabase = Pick<DatabaseClient, 'call'>
 type Executable = { path: string; name: string; hash: string }
@@ -100,6 +101,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
           if (selected.hash !== queued.executable.hash) throw new Error('The selected SimulationCraft executable changed — choose it again')
           if (closed) break
           await updateJob(queued.characterId, queued.id, value => { value.state = 'running'; value.startedAt = now() })
+          log.info('simulation', `Started ${job.label}`, { job: queued.id, candidates: job.request.candidates.length, iterations: job.request.options.iterations, threads: job.request.options.threads })
           if (closed) break
           const process = runSimulationProcess({ executable: selected.path, directory: path.join(options.artifactDir, queued.id), profile: queued.profile, request: job.request, ...options.execution })
           active = { characterId: queued.characterId, id: queued.id, process }
@@ -109,7 +111,9 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
           const result = parseSimulationReport(json, job.request, selected.hash, queued.id, now(), queued.complete)
           if (characterBaselineHash(latest) !== job.request.baselineHash) { result.applicability = 'stale'; result.reasons.push('Gear, talents, specialization, or character context changed while the simulation ran') }
           await updateJob(queued.characterId, queued.id, value => { if (value.state === 'cancelled') return; value.state = 'completed'; value.finishedAt = now(); value.result = result })
+          log.info('simulation', `Finished ${job.label}`, { job: queued.id })
         } catch (error) {
+          log.error('simulation', 'A SimulationCraft job failed', { job: queued.id, error })
           await updateJob(queued.characterId, queued.id, value => { if (value.state === 'cancelled') return; value.state = 'failed'; value.finishedAt = now(); value.result = null; value.failure = error instanceof Error ? error.message : 'The simulation failed' }).catch(() => {})
         } finally { active = undefined; knownJobs.delete(queued.id) }
       }
@@ -478,7 +482,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
      * Sets of owned or planned items, each run against current gear. Planned items resolve like a gear plan's: enchants
      * and gems by name, bonus lists from a known copy. A set that can't be worn or described is skipped with its reason
      */
-    async startSets(input: SimulationSetsStart, top: TopPlayers | null = null): Promise<{ job: SimulationJob; labels: string[]; skipped: Array<{ label: string; reason: string }> }> {
+    async startSets(input: SimulationSetsStart, top: TopPlayers | null = null): Promise<{ job: SimulationJob | null; labels: string[]; skipped: Array<{ label: string; reason: string }> }> {
       if (closed) throw new Error('The simulation service is closing')
       const start = simulationSetsStartSchema.parse(input)
       const prepared = await prepare(start)
@@ -495,7 +499,8 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
           runnable.push({ label: set.label, items: planned.swaps, lines })
         } catch (error) { skipped.push({ label: set.label, reason: error instanceof Error ? error.message : 'This set is not allowed' }) }
       }
-      if (!runnable.length) throw new Error(skipped[0]?.reason ?? 'No set could be simulated')
+      // Nothing left to run is an answer, not an error: every set says why it was skipped
+      if (!runnable.length) return { job: null, labels: [], skipped }
       const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
       if (!reference) throw new Error('No equipped item could be described to the engine')
       const lines = [`profileset."${REFERENCE_PROFILESET}"+=${reference}`, ...runnable.flatMap((set, index) => set.lines.map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))]

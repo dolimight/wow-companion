@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Check, Cpu, RefreshCw, Sparkles, Square, Target, WandSparkles } from 'lucide-react'
+import { ArrowRight, Check, Cpu, RefreshCw, Sparkles, Square, Target, TriangleAlert, WandSparkles } from 'lucide-react'
 import type { Activity, Character, GearSlot } from '../../../shared/domain'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
 import { simulationScenarios, type SimulationScenarioId } from '../../../shared/simulation'
@@ -51,7 +51,7 @@ export function BestGearPage({ character, activity }: { character: Character; ac
         </div>
         <div className="best-gear-controls">
           <AppSelect aria-label="Fight" value={scenario} options={scenarioOptions} disabled={busy} onValueChange={value => setScenario(value as SimulationScenarioId)} />
-          <Toggle type="button" variant="outline" className="workspace-toggle" pressed={targets} disabled={busy} onPressedChange={setTargets} aria-label="Include targets"><Target size={14} aria-hidden="true" />{targets ? 'With targets' : 'Owned only'}</Toggle>
+          <Toggle type="button" variant="outline" className="workspace-toggle" pressed={targets} disabled={busy} onPressedChange={setTargets}><Target size={14} aria-hidden="true" />{targets ? 'With targets' : 'Owned only'}</Toggle>
           {running(current)
             ? <Button disabled={cancel.isPending} onClick={() => cancel.mutate()}><Square size={13} aria-hidden="true" />Stop</Button>
             : <Button variant="primary" disabled={busy} onClick={() => start.mutate()}>{current?.stage === 'done' ? <RefreshCw size={14} aria-hidden="true" /> : <Sparkles size={14} aria-hidden="true" />}{current?.stage === 'done' ? 'Run again' : 'Find my best gear'}</Button>}
@@ -69,6 +69,8 @@ export function BestGearPage({ character, activity }: { character: Character; ac
     </div>
   )
 }
+
+const minutes = (ms: number) => ms < 60_000 ? `${Math.max(1, Math.round(ms / 1000))} s` : `${Math.round(ms / 60_000)} min`
 
 /** Time since a moment, ticking each second while a stage runs */
 function useElapsed(since: string, live: boolean) {
@@ -94,11 +96,12 @@ export function Forge({ run }: { run: OptimizerRun }) {
         {optimizerStages.slice(0, 4).map((stage, index) => <li key={stage} data-state={index < at ? 'done' : index === at ? 'on' : 'next'}><span>{index < at ? <Check size={12} aria-hidden="true" /> : index + 1}</span>{stageLabels[stage]}</li>)}
       </ol>
       <p className="forge-status">
-        {run.stage === 'failed' ? <span className="error" role="alert">{run.failure}</span>
+        {run.stage === 'failed' ? <span className="error" role="alert">{(run.failure ?? 'The search stopped').split(' — ')[0]} · the troubleshooting log in Settings → Local data has the details</span>
           : run.stage === 'cancelled' ? 'Stopped'
-            : <>{stageLabels[run.stage as (typeof optimizerStages)[number]]} · {elapsed}{run.stage === 'screening' ? ` · ${run.pool.length} pieces` : run.stage === 'confirming' ? ` · ${run.combos.length} sets` : ''}{run.stage === 'choosing' && run.provider ? ` with ${run.provider}` : ''}</>}
+            : <>{stageLabels[run.stage as (typeof optimizerStages)[number]]} · {elapsed}{run.stage === 'screening' ? ` · ${run.pool.length} pieces on ${run.threads} threads` : run.stage === 'confirming' ? ` · ${run.combos.length} sets on ${run.threads} threads` : ''}{run.stage === 'choosing' && run.provider ? ` with ${run.provider}` : ''}</>}
       </p>
-      <div className="forge-board">
+      {/* The board is the picture of the search; the status line above says the same in words */}
+      <div className="forge-board" aria-hidden="true">
         {slotOrder.map((slot, index) => {
           const list = bySlot.get(slot) ?? []
           const chosen = list.filter(candidate => picked.has(candidate.key))
@@ -107,12 +110,13 @@ export function Forge({ run }: { run: OptimizerRun }) {
             <div key={slot} className="forge-slot" data-empty={list.length ? undefined : true} data-picked={chosen.length ? true : undefined} style={{ '--delay': `${index * 90}ms` } as React.CSSProperties}>
               <small>{gearSlotLabels[slot]}</small>
               <span className="forge-reel" data-cycling={shown.length > 1 ? true : undefined}>{(shown.length > 1 ? [0, 1, 2, 3].map(at => shown[at % shown.length]!) : shown).map((candidate, at) => <span key={`${candidate.key}-${at}`} style={{ '--at': at } as React.CSSProperties}><ItemIcon icon={candidate.icon} quality={candidate.quality ?? undefined} size="small" /></span>)}</span>
-              <b>{list.length ? `${list.length}` : '—'}</b>
+              <b>{!list.length ? 'Nothing to test' : chosen.length && (run.stage === 'choosing' || run.stage === 'confirming') ? `${chosen.length} in a set` : `${list.length} to test`}</b>
             </div>
           )
         })}
       </div>
       {run.summary && run.stage !== 'done' && <p className="forge-summary">{run.summary}</p>}
+      {run.warning && <p className="best-gear-warning" role="status"><TriangleAlert size={14} aria-hidden="true" />{run.warning}</p>}
     </Card>
   )
 }
@@ -124,19 +128,22 @@ export function Results({ run, character }: { run: OptimizerRun; character: Char
   const chase = run.combos.find(combo => combo.key === run.chase)
   return (
     <>
+      {run.warning && <p className="best-gear-warning" role="status"><TriangleAlert size={14} aria-hidden="true" />{run.warning}</p>}
       <div className="best-gear-results">
         <SetCard title="Wear now" empty="Nothing you own beats what you wear in this fight" combo={wearNow} run={run} byKey={byKey} character={character} />
         {run.includeTargets && <SetCard title="Worth chasing" empty="No target beat the best of what you own" combo={chase} run={run} byKey={byKey} character={character} />}
       </div>
+      <p className="muted small best-gear-meta">{simulationScenarios[run.scenarioId].label} · ran {new Date(run.startedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}{run.finishedAt ? ` · took ${minutes(Date.parse(run.finishedAt) - Date.parse(run.startedAt))}` : ''} · {Object.keys(run.screen).length} of {run.pool.length} pieces measured</p>
       {run.summary && <Card className="best-gear-summary"><p>{run.provider ? <ProviderIcon id={run.provider.toLowerCase()} size={14} /> : <Sparkles size={14} aria-hidden="true" />}{run.summary}</p></Card>}
       <Card as="section" aria-labelledby="best-gear-sets">
         <div className="surface-heading"><h2 id="best-gear-sets">Every set tested</h2><p>{simulationScenarios[run.scenarioId].label} · gain over what you wear now, with its margin of error</p></div>
+        {!sets.length && <p className="muted small">No set beat what you wear, so none needed a precise run</p>}
         <div className="best-gear-sets">
           {sets.map(combo => {
             const result = run.results[combo.key]!
             return (
               <div key={combo.key} className="best-gear-set" data-best={combo.key === run.wearNow || combo.key === run.chase ? true : undefined}>
-                <span><b>{combo.label}</b>{combo.why && <small>{combo.why}</small>}</span>
+                <span><b>{combo.label}{combo.key === run.wearNow && <Badge tone="green">Wear now</Badge>}{combo.key === run.chase && <Badge tone="blue">Worth chasing</Badge>}</b>{combo.why && <small>{combo.why}</small>}</span>
                 <Badge tone={combo.by === 'ai' ? 'blue' : 'neutral'}>{combo.by === 'ai' ? run.provider ?? 'AI' : 'App'}</Badge>
                 <span className="best-gear-gain" data-sign={result.gain >= 0 ? 'up' : 'down'}>{dps(result.gain)}<small>{result.error != null ? ` ±${Math.round(result.error * 1.96).toLocaleString('en-US')}` : ''}</small></span>
               </div>

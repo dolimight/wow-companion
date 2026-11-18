@@ -46,5 +46,6 @@ const bridge:NativeBridge={
   chooseModelFile:(characterId)=>ipcRenderer.invoke('companion:choose-model-file',characterId),
   openExternal:(url)=>ipcRenderer.invoke('companion:open-external',url),
   copyText:(text)=>ipcRenderer.invoke('companion:copy-text',text),
+  openLogs:()=>ipcRenderer.invoke('companion:open-logs'),
 }
 contextBridge.exposeInMainWorld('companion',bridge)

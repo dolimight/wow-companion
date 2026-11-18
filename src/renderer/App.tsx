@@ -43,6 +43,7 @@ import {
   Download,
   ExternalLink,
   FlaskConical,
+  FolderOpen,
   FileText,
   History,
   Info,
@@ -2447,6 +2448,18 @@ function SettingsPage() {
                   </Button>
                 </div>
               </div>
+              {window.companion && (
+                <div className="setting-row">
+                  <div>
+                    <h3>Troubleshooting logs</h3>
+                    <p>A log file for each day records what the app did, such as syncs, simulations, and errors, so problems can be traced. Logs stay on this computer, leave out keys and passwords, and are deleted after two days</p>
+                  </div>
+                  <Button onClick={() => void window.companion!.openLogs().catch((error) => notify(errorMessage(error)))}>
+                    <FolderOpen />
+                    Open logs folder
+                  </Button>
+                </div>
+              )}
               <div className="help-box">
                 Public-profile refresh uses an online provider
                 <br />

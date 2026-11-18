@@ -103,6 +103,8 @@ Stable and Nightly use the same local user-data directory. Stable builds don't a
 
 Your roster, imported snapshots, plans, and preferences live in a local SQLite database under Electron's user-data directory. JSON backup export/import is available in Settings; attached model files need a separate backup. Connection secrets stay outside exported backups
 
+Troubleshooting logs go to a `logs` folder in the same user-data directory, one `companion-YYYY-MM-DD.log` file per day. They record syncs, simulations, AI requests, and errors, leave out keys and passwords, and are deleted after two days. **Settings → Local data → Open logs folder** opens the folder
+
 Development builds and isolated acceptance profiles don't fetch desktop updates. See [release channels and publishing](docs/releases.md) for the schedule, verification, and release process
 
 ## Scope and current limits
