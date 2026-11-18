@@ -3,13 +3,14 @@ import path from 'node:path'
 import { aiFeatures, type AiAnswer, type AiFeatureId, type AiFeatureInput, type AiFeatureOutput, type AiProviderInfo, type AiStatus } from '../../shared/ai'
 import type { Character } from '../../shared/domain'
 import { bossCoach } from './features/boss-coach'
+import { gearCombos } from './features/gear-combos'
 import { claudeProvider } from './providers/claude'
 import { codexProvider } from './providers/codex'
 import type { AiFeature, AiProvider } from './types'
 
 /** The providers and features the app ships with; another plugin is one more entry in either list */
 export const builtinProviders = (): AiProvider[] => [codexProvider(), claudeProvider()]
-export const builtinFeatures: { [Id in AiFeatureId]: AiFeature<Id> } = { bossCoach }
+export const builtinFeatures: { [Id in AiFeatureId]: AiFeature<Id> } = { bossCoach, gearCombos }
 
 export type AiServiceOptions = {
   providers: AiProvider[]

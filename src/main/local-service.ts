@@ -20,6 +20,7 @@ import { createSimulationService } from './simulation/service'
 import { createComparisonService } from './comparisons/service'
 import {createModelCache} from './models/cache'
 import { builtinProviders, createAiService } from './ai/service'
+import { createOptimizer } from './optimizer/service'
 import { mkdir } from 'node:fs/promises'
 import type { SecretStore } from './secrets'
 import { createSeasonWatch } from './season-watch'
@@ -76,8 +77,10 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   // AI help runs through the player's own assistant CLI, in a scratch folder of its own
   const aiDir=path.join(options.assetsDir,'ai');await mkdir(aiDir,{recursive:true})
   const ai=createAiService({providers:builtinProviders(),selected:async()=>(await db.call('getSettings')).aiProvider,character:id=>db.call('getCharacter',id),scratchDir:aiDir})
+  // The gear optimizer runs the engine in stages and asks the AI assistant, when one is connected, which sets to test
+  const optimizer=createOptimizer({db,simulations,ai,changed,items:ids=>gameData.call('items',ids),topPlayers:async character=>{if(!character.specId||!character.specName)return null;const region=character.region==='us'||character.region==='eu'?character.region:'world';return insights.topPlayers({specId:character.specId,specName:character.specName,className:character.className,region,uncapped:true})}})
   const sync=createSync({db,refreshCharacter,discover:()=>connections.discover(!!options.autoSync),checkAddonFile:async()=>{await watcher?.check()},addonFile:()=>status,changed:()=>changed()})
-  const router=createRouter({db,events,changed,importText,syncStatus:()=>status,refreshCharacter,gameData,connections,insights,sync,progression,session,simulations,comparisons,models,ai,settingsChanged:settings=>options.onSettings?.(settings)})
+  const router=createRouter({db,events,changed,importText,syncStatus:()=>status,refreshCharacter,gameData,connections,insights,sync,progression,session,simulations,comparisons,models,ai,optimizer,settingsChanged:settings=>options.onSettings?.(settings)})
   const server=createServer((_req,res)=>{res.writeHead(404,{'X-Content-Type-Options':'nosniff'});res.end()})
   const wss=new WebSocketServer({server,maxPayload:17*1024*1024,verifyClient:({origin},done)=>done(options.origins.includes(origin),403,'Untrusted origin')})
   const handler=applyWSSHandler({wss,router,createContext:async({info})=>({authorized:matchesToken(info.connectionParams?.token,token)}),keepAlive:{enabled:true,pingMs:30000,pongWaitMs:5000}})

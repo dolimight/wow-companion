@@ -27,9 +27,10 @@ To add a provider, write one more `AiProvider` and add it to `builtinProviders()
 A feature implements `AiFeature`: fixed instructions, the JSON Schema the answer follows, and a `prompt()` built from its input and the character. Its input and output schemas live in `aiFeatures` in `src/shared/ai.ts`, and `aiAskSchema` lists the features the router accepts
 
 - `bossCoach` gives spec-specific tips and cooldown timings for one boss, on top of the strategy the Dungeons and Raids pages already show. It's asked only when the player presses the button, and the answer is cached for the session
+- `gearCombos` proposes whole gear sets for the Best gear search from each piece's screening gain. It runs in the main process during a search and isn't exposed to the renderer. The engine measures every set it proposes
 
 To add a feature, add its schemas to `aiFeatures` and `aiAskSchema`, write the plugin under `src/main/ai/features`, and add it to `builtinFeatures`
 
 ## What leaves the app
 
-Only what a feature's prompt holds. For boss tips, that is the boss, instance, difficulty, the player's class, spec, and role, and the strategy lines on the page. Settings says this next to the assistant list
+Only what a feature's prompt holds. For boss tips, that is the boss, instance, difficulty, the player's class, spec, and role, and the strategy lines on the page. For Best gear, it is your class and spec, the fight, what you wear, and each candidate piece's name, level, source, and screening gain. Settings says this next to the assistant list

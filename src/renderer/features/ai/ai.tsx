@@ -79,7 +79,7 @@ export function AiSettings() {
         <div className="setting-row">
           <div>
             <h3>What gets sent</h3>
-            <p>Only what a question needs: for boss tips, the boss, your class, spec, and role, and the strategy already on the page. The assistant runs with its tools off in an empty folder, and each question counts toward your plan's limits</p>
+            <p>Only what a question needs. Boss tips send the boss, your class, spec, and role, and the strategy already on the page. Best gear sends your gear and each candidate piece with its tested gain. The assistant runs with its tools off in an empty folder, and each question counts toward your plan's limits</p>
           </div>
           <Button disabled={checking} onClick={() => void check()}><RefreshCw size={14} aria-hidden="true" />{checking ? 'Checking…' : 'Check again'}</Button>
         </div>
