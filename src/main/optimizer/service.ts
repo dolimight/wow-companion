@@ -238,7 +238,18 @@ export function createOptimizer(options: OptimizerOptions) {
 
   return {
     async get(characterId: string): Promise<OptimizerRun | null> {
-      return active.get(characterId)?.run ?? (await options.db.call('getFeatureState', characterId, 'optimizer') as OptimizerRun | null) ?? null
+      const live = active.get(characterId)?.run
+      if (live) return live
+      const saved = (await options.db.call('getFeatureState', characterId, 'optimizer') as OptimizerRun | null) ?? null
+      // A run saved mid-search that this session isn't running was cut off when the app or computer stopped
+      if (saved && ['gathering', 'screening', 'choosing', 'confirming'].includes(saved.stage)) {
+        saved.stage = 'failed'
+        saved.failure = 'The app closed before this search finished. Run it again'
+        saved.finishedAt = now()
+        log.warn('optimizer', 'Best gear run was cut off when the app closed', { run: saved.id })
+        await save(saved)
+      }
+      return saved
     },
     async start(input: OptimizerStart): Promise<OptimizerRun> {
       const start = optimizerStartSchema.parse(input)

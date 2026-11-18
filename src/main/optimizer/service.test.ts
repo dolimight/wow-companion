@@ -128,4 +128,15 @@ describe('gear optimizer', () => {
     expect(optimizerThreads('medium', 4)).toBe(2)
     expect(optimizerThreads('light', 1)).toBe(1)
   })
+
+  it('marks a run cut off by an app or computer restart as stopped, so it can run again', async () => {
+    const { optimizer, state } = harness()
+    state.set('c1', { id: 'old', characterId: 'c1', stage: 'screening', failure: null, finishedAt: null })
+    const run = await optimizer.get('c1')
+    expect(run?.stage).toBe('failed')
+    expect(run?.failure).toContain('closed before this search finished')
+    expect((state.get('c1') as OptimizerRun).stage).toBe('failed')
+    await optimizer.start({ characterId: 'c1' })
+    expect((await finished(optimizer)).stage).toBe('done')
+  })
 })
