@@ -30,7 +30,7 @@ function SimulationContent({ character, activity, jobId, onOpenJob }: { characte
   const queryClient = useQueryClient()
   const [scenario, setScenario] = useState<SimulationScenarioId>(activity === 'mythicPlus' ? 'big-pulls' : 'patchwerk')
   const [planActivity, setPlanActivity] = useState<Activity>(activity === 'raiding' ? 'raiding' : 'mythicPlus')
-  const [threads, setThreads] = useState(4)
+  const [threads, setThreads] = useState(2)
   const [timeoutMinutes, setTimeoutMinutes] = useState(30)
   const [text, setText] = useState<string | null>(null)
   const [savedProfileText, setSavedProfileText] = useState<string | null>(null)

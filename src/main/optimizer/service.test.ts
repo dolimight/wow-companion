@@ -3,7 +3,7 @@ import { characterSchema, gearItemSchema, type GearSlot } from '../../shared/dom
 import type { LootItem } from '../../shared/dungeons'
 import type { OptimizerRun } from '../../shared/optimizer'
 import type { SimulationJob } from '../../shared/simulation'
-import { createOptimizer, type OptimizerOptions } from './service'
+import { createOptimizer, optimizerThreads, type OptimizerOptions } from './service'
 
 const gear = (slot: GearSlot, itemId: number, itemLevel: number, extra: object = {}) => gearItemSchema.parse({ slot, itemId, name: `Item ${itemId}`, itemLevel, ...extra })
 const mage = characterSchema.parse({
@@ -59,7 +59,7 @@ describe('gear optimizer', () => {
     const run: OptimizerRun = await finished(optimizer)
     expect(run.stage).toBe('done')
     expect(started.map(entry => entry.label)).toEqual(['Best gear · screening', 'Best gear · confirming'])
-    expect(started[0]?.threads).toBeGreaterThan(0)
+    expect(started[0]?.threads).toBe(optimizerThreads('light'))
     expect(run.pool.map(candidate => [candidate.item.itemId, candidate.origin])).toEqual([[3, 'bags'], [4, 'vault'], [5, 'drop']])
     // A bag piece takes the enchant used in its slot
     expect(run.pool[0]?.item.enchantId).toBe(7)
@@ -120,5 +120,12 @@ describe('gear optimizer', () => {
     await optimizer.start({ characterId: 'c1' })
     await expect(optimizer.start({ characterId: 'c1' })).rejects.toThrow('already running')
     await finished(optimizer)
+  })
+  it('runs light by default and never past half the processor threads', () => {
+    expect(optimizerThreads('light', 16)).toBe(2)
+    expect(optimizerThreads('medium', 16)).toBe(4)
+    expect(optimizerThreads('heavy', 16)).toBe(8)
+    expect(optimizerThreads('medium', 4)).toBe(2)
+    expect(optimizerThreads('light', 1)).toBe(1)
   })
 })

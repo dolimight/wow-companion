@@ -8,7 +8,7 @@ import { gearItemSchema, type Character, type GearItem, type GearSlot } from '..
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, candidateKey, greedyCombos, isOwned, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart } from '../../shared/optimizer'
+import { bestCombos, candidateKey, greedyCombos, isOwned, optimizerLoads, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -50,8 +50,11 @@ export function engineFailure(failure: string | null, set: string | null): strin
 
 const screenIterations = 1500
 const confirmIterations = 6000
-/** Half the processor threads, so the computer stays usable while the engine runs */
-export const optimizerThreads = () => Math.max(1, Math.floor(availableParallelism() / 2))
+/** Threads for a load: light and medium are fixed counts, heavy is half the processor threads; never more than half */
+export const optimizerThreads = (load: OptimizerLoad = 'light', available = availableParallelism()) => {
+  const half = Math.max(1, Math.floor(available / 2))
+  return Math.min(half, optimizerLoads[load].threads ?? half)
+}
 
 export type OptimizerOptions = {
   db: Pick<DatabaseClient, 'call'>
@@ -240,7 +243,7 @@ export function createOptimizer(options: OptimizerOptions) {
     async start(input: OptimizerStart): Promise<OptimizerRun> {
       const start = optimizerStartSchema.parse(input)
       if (active.has(start.characterId)) throw new Error('Gear optimization is already running for this character')
-      const run: OptimizerRun = { id: randomUUID(), characterId: start.characterId, activity: start.activity, stage: 'gathering', startedAt: now(), finishedAt: null, stageStartedAt: now(), scenarioId: start.scenarioId, includeTargets: start.includeTargets, threads: optimizerThreads(), provider: null, baseline: null, pool: [], screen: {}, combos: [], results: {}, wearNow: null, chase: null, summary: null, notes: [], failure: null }
+      const run: OptimizerRun = { id: randomUUID(), characterId: start.characterId, activity: start.activity, stage: 'gathering', startedAt: now(), finishedAt: null, stageStartedAt: now(), scenarioId: start.scenarioId, includeTargets: start.includeTargets, threads: optimizerThreads(start.load), provider: null, baseline: null, pool: [], screen: {}, combos: [], results: {}, wearNow: null, chase: null, summary: null, notes: [], failure: null }
       active.set(run.characterId, { run, cancelled: false, job: null })
       await save(run)
       void execute(run, start).catch(async error => {

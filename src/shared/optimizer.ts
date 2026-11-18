@@ -13,7 +13,15 @@ export const optimizerStartSchema = z.object({
   activity: activitySchema.default('mythicPlus'),
   scenarioId: simulationScenarioSchema.default('dungeon-slice'),
   includeTargets: z.boolean().default(true),
+  /** How hard SimulationCraft may push the processor: sustained all-core load can reset a computer with unstable power or cooling */
+  load: z.enum(['light', 'medium', 'heavy']).default('light'),
 })
+export type OptimizerLoad = z.output<typeof optimizerStartSchema>['load']
+export const optimizerLoads: Record<OptimizerLoad, { label: string; threads: number | null }> = {
+  light: { label: 'Light load', threads: 2 },
+  medium: { label: 'Medium load', threads: 4 },
+  heavy: { label: 'Heavy load', threads: null },
+}
 export type OptimizerStart = z.input<typeof optimizerStartSchema>
 
 export type OptimizerOrigin = 'equipped' | 'bags' | 'bank' | 'vault' | 'drop' | 'top'

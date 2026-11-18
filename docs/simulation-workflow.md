@@ -20,7 +20,7 @@ The parser deliberately does not support every SimulationCraft directive. Additi
 
 - Choose the installed command-line executable through the native file picker
 - Select Patchwerk or Dungeon Slice, the activity, CPU threads, and a time limit
-- The defaults request at most four threads, reserve two available CPU threads where possible, and allow thirty minutes
+- The defaults request two threads, reserve two available CPU threads where possible, and allow thirty minutes
 - Time limits range from one to 120 minutes
 - One local job runs at a time, with up to ten waiting requests
 - Cancellation and timeout terminate the process and never publish partial output as a completed result
@@ -50,7 +50,7 @@ Gear → Best gear searches for the best combination of gear in three Simulation
 
 An engine failure never ends a search. When SimulationCraft crashes, its log names the profileset it was building, so that set is left out and the rest run again. When the log doesn't name one, the batch is split in half until the failing set is found. Every skipped piece or set gets a note on the page and a line in the troubleshooting log. Only a setup problem, such as no engine chosen, or the player stopping the run ends it early. Gear saved above this season's highest item level (for example, from before an item level squish) raises a warning, and a slot is never emptied because of it. Older item IDs that a returning dungeon lists beside their reissue are dropped
 
-Every stage runs at below-normal process priority on half the processor threads, so the computer stays usable. Owned pieces take the enchant used in their slot. A set that can't be worn or described to the engine is skipped with its reason, never failing the run. The AI assistant only proposes sets; every number on the page comes from SimulationCraft
+Every stage runs at below-normal process priority. The processor load defaults to light (two threads); medium uses four and heavy uses half the processor threads. Sustained all-core load can reset a computer whose power, voltage, or cooling isn't stable under it, so raise the load only on a machine that passes a stress test. Owned pieces take the enchant used in their slot. A set that can't be worn or described to the engine is skipped with its reason, never failing the run. The AI assistant only proposes sets; every number on the page comes from SimulationCraft
 
 ## Validation and remaining release gate
 
