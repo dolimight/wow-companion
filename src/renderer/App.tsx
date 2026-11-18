@@ -134,6 +134,7 @@ import { SyncButton, SyncSheet, useSyncOnFocus } from "./features/sync/sync";
 import { RealmStatusButton, RealmStatusSheet } from "./features/realms/realms";
 import { AppSelect } from "./components/AppSelect";
 import { Toggle } from "./components/ui/toggle";
+import { AiSettings } from "./features/ai/ai";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./components/ui/tooltip";
 import { DEFAULT_SIDEBAR_WIDTH, useSidebarLayout } from "./components/SidebarResize";
@@ -2208,6 +2209,7 @@ function SettingsRedirect() {
 const settingsSections = [
   ['connections-heading', 'Connections'],
   ['integrations-heading', 'Integrations'],
+  ['ai-heading', 'AI assistants'],
   ['updates-heading', 'Updates'],
   ['appearance-heading', 'Appearance'],
   ['workspace-heading', 'Workspace'],
@@ -2287,6 +2289,7 @@ function SettingsPage() {
           </nav>
           <ConnectionsSection />
           <ProviderSettings />
+          <AiSettings />
           <UpdateSettings />
           <section className="settings-section" aria-labelledby="appearance-heading">
             <h2 id="appearance-heading">Appearance</h2>

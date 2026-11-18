@@ -97,6 +97,8 @@ export const api={
  dungeonRoutes:async(dungeon:string,force=false)=>(await client()).dungeonRoutes.query({dungeon,force}),
  raids:async()=>(await client()).raids.query(),
  routeMdt:async(dungeon:string,routeKey:string)=>(await client()).routeMdt.query({dungeon,routeKey}),
+ aiStatus:async(force=false)=>(await client()).aiStatus.query({force}),
+ aiAsk:async<F extends import('../../shared/ai').AiAsk>(ask:F)=>(await client()).aiAsk.mutate(ask) as Promise<import('../../shared/ai').AiAnswer<import('../../shared/ai').AiFeatureOutput<F['feature']>>>,
  routePulls:async(dungeon:string,routeKey:string)=>(await client()).routePulls.query({dungeon,routeKey}),
  dungeonEnemies:async(dungeon:string)=>(await client()).dungeonEnemies.query({dungeon}),
  dungeonJournal:async(name:string,encounterIds:number[],difficulty:'mythicPlus'|'lfr'|'normal'|'heroic'|'mythic'='mythicPlus')=>(await client()).dungeonJournal.query({name,encounterIds,difficulty}),

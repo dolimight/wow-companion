@@ -14,6 +14,7 @@ import { ItemIcon, useGameData } from '../items/items'
 import { dungeonStrategy } from './strategy'
 import { Ability, BossCard, flagLabels, LootList, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole } from './encounters'
 import { bundledSpell, useDungeonJournal } from './bundled'
+import { BossCoach } from '../ai/BossCoach'
 import './dungeons.css'
 
 function bestLine(best: SeasonDungeon | undefined) {
@@ -97,7 +98,7 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
   const gameReady = useGameData().data?.state === 'ready'
   const strategy = dungeonStrategy(dungeon.slug)
 
-  if (playing) return <PlayMode dungeon={dungeon} family={family} familyIndex={family ? families.indexOf(family) : -1} timers={timers} bosses={bosses} strategy={strategy} role={role} onRole={setRole} onExit={() => onPlay(false)} />
+  if (playing) return <PlayMode character={character} dungeon={dungeon} family={family} familyIndex={family ? families.indexOf(family) : -1} timers={timers} bosses={bosses} strategy={strategy} role={role} onRole={setRole} onExit={() => onPlay(false)} />
   return (
     <div className="dungeons">
       <Button variant="quiet" className="back-link" onClick={onBack}><ArrowLeft size={14} />All dungeons</Button>
@@ -155,7 +156,7 @@ function DungeonDetail({ character, dungeon, best, playing, onPlay, onBack }: { 
         {journal.isPending && gameReady ? <p className="muted small" role="status">Reading the Encounter Journal…</p>
           : journal.isError ? <p className="muted small" role="alert">{errorMessage(journal.error)}</p>
             : !bosses.length ? <p className="muted small">Prepare local game data to read this dungeon's bosses</p>
-              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)} defaultOpen={index === 0} />)}
+              : bosses.map((boss, index) => <BossCard key={boss.encounterId} boss={boss} index={index} role={role} plan={strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)} defaultOpen={index === 0} coach={{ character, instance: dungeon.name, difficulty: 'Mythic+' }} />)}
         <p className="muted small dungeon-note">Mechanics that need your role's attention are marked; the rest are dimmed. Damage numbers are left out: the server scales them for each key level, and the game files hold placeholders</p>
         {strategy && <StrategySource strategy={strategy} />}
       </Card>
@@ -364,7 +365,7 @@ function PullList({ boss, groups, enemies, strategy, role, routed }: { boss: Jou
 }
 
 /** One boss at a time with the trash before it, the advice for your role, a rough pace for each upgrade, and the route map beside it */
-function PlayMode({ dungeon, family, familyIndex, timers, bosses, strategy, role, onRole, onExit }: { dungeon: SeasonDungeonInfo; family: RouteFamily | null; familyIndex: number; timers: NonNullable<DungeonRoutes['timersMs']>; bosses: JournalBoss[]; strategy: DungeonStrategy | null; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
+function PlayMode({ character, dungeon, family, familyIndex, timers, bosses, strategy, role, onRole, onExit }: { character: Character; dungeon: SeasonDungeonInfo; family: RouteFamily | null; familyIndex: number; timers: NonNullable<DungeonRoutes['timersMs']>; bosses: JournalBoss[]; strategy: DungeonStrategy | null; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const [step, setStep] = useState(0)
   const enemies = useQuery({ queryKey: ['dungeon-enemies', dungeon.slug], queryFn: () => api.dungeonEnemies(dungeon.slug), staleTime: 6 * 3_600_000, retry: false })
   const routeKey = family?.routeKey ?? null
@@ -403,6 +404,7 @@ function PlayMode({ dungeon, family, familyIndex, timers, bosses, strategy, role
             : routeKey && !stretches ? <p className="muted small" role="status">Loading the route's pulls…</p>
               : <PullList boss={boss} groups={stretches?.get(boss.encounterId) ?? []} enemies={enemies.data?.enemies ?? []} strategy={strategy} role={role} routed={!!routeKey} />}
           {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} />}
+          <BossCoach character={character} instance={dungeon.name} difficulty="Mythic+" boss={boss} role={role} plan={plan} />
           {warned.length > 0 && <div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div>}
           <div className="play-targets">
             <Card size="sm"><small>Kill by for +3</small><b>{clock(pace.plusThree)}</b></Card>

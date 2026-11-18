@@ -19,6 +19,8 @@ import { createSessionService } from './session/service'
 import { createSimulationService } from './simulation/service'
 import { createComparisonService } from './comparisons/service'
 import {createModelCache} from './models/cache'
+import { builtinProviders, createAiService } from './ai/service'
+import { mkdir } from 'node:fs/promises'
 import type { SecretStore } from './secrets'
 import { createSeasonWatch } from './season-watch'
 import type { Alert } from '../shared/alerts'
@@ -71,8 +73,11 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   const simulations=createSimulationService({db,artifactDir:path.join(options.assetsDir,'simulations'),onChanged:()=>changed(),enhancementIds:requests=>gameData.call('enhancementIds',requests),bonusInfo:ids=>gameData.call('bonusInfo',ids),catalystSources:itemId=>gameData.call('catalystSources',itemId),itemPower:(itemId,itemLevel)=>gameData.call('itemPower',itemId,itemLevel),embellishmentBonusLists:async()=>(await gameData.call('embellishments',null,null)).flatMap(option=>option.bonusLists??[])})
   const models=createModelCache({db,rootDir:path.join(options.assetsDir,'models')})
   const comparisons=createComparisonService({db,insights,blizzardApi:()=>connections.blizzardApi(),secrets:options.secrets})
+  // AI help runs through the player's own assistant CLI, in a scratch folder of its own
+  const aiDir=path.join(options.assetsDir,'ai');await mkdir(aiDir,{recursive:true})
+  const ai=createAiService({providers:builtinProviders(),selected:async()=>(await db.call('getSettings')).aiProvider,character:id=>db.call('getCharacter',id),scratchDir:aiDir})
   const sync=createSync({db,refreshCharacter,discover:()=>connections.discover(!!options.autoSync),checkAddonFile:async()=>{await watcher?.check()},addonFile:()=>status,changed:()=>changed()})
-  const router=createRouter({db,events,changed,importText,syncStatus:()=>status,refreshCharacter,gameData,connections,insights,sync,progression,session,simulations,comparisons,models,settingsChanged:settings=>options.onSettings?.(settings)})
+  const router=createRouter({db,events,changed,importText,syncStatus:()=>status,refreshCharacter,gameData,connections,insights,sync,progression,session,simulations,comparisons,models,ai,settingsChanged:settings=>options.onSettings?.(settings)})
   const server=createServer((_req,res)=>{res.writeHead(404,{'X-Content-Type-Options':'nosniff'});res.end()})
   const wss=new WebSocketServer({server,maxPayload:17*1024*1024,verifyClient:({origin},done)=>done(options.origins.includes(origin),403,'Untrusted origin')})
   const handler=applyWSSHandler({wss,router,createContext:async({info})=>({authorized:matchesToken(info.connectionParams?.token,token)}),keepAlive:{enabled:true,pingMs:30000,pongWaitMs:5000}})

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { appIconSchema } from './app-icons'
+import { aiProviderIdSchema } from './ai'
 import { weeklySchema } from './weekly'
 
 export const activitySchema = z.enum(['mythicPlus', 'raiding', 'pvp'])
@@ -140,7 +141,9 @@ export const outfitSchema = z.object({ id: z.string(), characterId: z.string(), 
 export type Outfit = z.infer<typeof outfitSchema>
 export const appSettingsSchema = z.object({ appIcon: appIconSchema.default('auto'), theme: z.enum(['system', 'light', 'dark']).default('system'), lastCharacterId: z.string().nullable().default(null), tonightAnchorCharacterId: z.string().nullable().default(null), activity: activitySchema.default('mythicPlus'), characterActivities: z.record(z.string(),activitySchema).default({}), addonPath: z.string().nullable().default(null), reducedMotion: z.boolean().default(false), sidebarWidth: z.number().int().min(220).max(360).default(240), wowInstallPath: z.string().max(1000).nullable().default(null), setupDismissed: z.boolean().default(false), desktopAlerts: z.boolean().default(true), keepInTray: z.boolean().default(false),
   // The plan each character last opened per activity, as `characterId:activity`
-  activePlans: z.record(z.string(), z.object({ specId: z.number().int().nullable(), plan: z.string().min(1).max(64) })).default({}) })
+  activePlans: z.record(z.string(), z.object({ specId: z.number().int().nullable(), plan: z.string().min(1).max(64) })).default({}),
+  // The AI assistant CLI questions go to, or null while AI help is off
+  aiProvider: aiProviderIdSchema.nullable().default(null) })
 export type AppSettings = z.infer<typeof appSettingsSchema>
 export const appSettingsPatchSchema = z.object({
   appIcon: appSettingsSchema.shape.appIcon.removeDefault().optional(),
@@ -156,6 +159,7 @@ export const appSettingsPatchSchema = z.object({
   desktopAlerts: appSettingsSchema.shape.desktopAlerts.removeDefault().optional(),
   keepInTray: appSettingsSchema.shape.keepInTray.removeDefault().optional(),
   activePlans: appSettingsSchema.shape.activePlans.removeDefault().optional(),
+  aiProvider: appSettingsSchema.shape.aiProvider.removeDefault().optional(),
 })
 export type ImportReport = { imported: string[]; unchanged: string[]; errors: Array<{ recordKey: string; reason: string }>; revision: number }
 export type CharacterChanged = { characterId: string; revision: number }

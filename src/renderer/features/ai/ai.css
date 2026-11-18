@@ -1,0 +1,17 @@
+/* Settings: one row per assistant CLI */
+.ai-provider { display: flex; align-items: center; }
+.ai-provider-icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface); color: var(--secondary); }
+.ai-provider h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ai-provider h3 small { font-weight: 500; color: var(--muted); }
+.ai-provider .badge svg { margin-right: 3px; vertical-align: -1px; }
+.ai-settings-status { padding-block: 18px; }
+
+/* Boss tips from the connected assistant */
+.ai-coach-ask { justify-self: start; }
+.ai-coach { display: grid; gap: 10px; }
+.ai-coach h4 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--accent); }
+.ai-coach-error { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ai-coach-cooldowns { display: grid; gap: 6px; margin: 0; }
+.ai-coach-cooldowns div { display: grid; grid-template-columns: minmax(120px, max-content) minmax(0, 1fr); gap: 12px; font-size: 13.5px; }
+.ai-coach-cooldowns dt { font-weight: 600; }
+.ai-coach-cooldowns dd { margin: 0; color: var(--secondary); }
