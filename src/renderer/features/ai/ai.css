@@ -1,9 +1,8 @@
 /* Settings: one row per assistant CLI */
 .ai-provider { display: flex; align-items: center; }
+.settings-dialog .ai-provider { gap: 14px; }
+.ai-provider > div { flex: 1; min-width: 0; }
 .ai-provider-icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface); color: var(--secondary); }
-.ai-provider h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ai-provider h3 small { font-weight: 500; color: var(--muted); }
-.ai-provider .badge svg { margin-right: 3px; vertical-align: -1px; }
 .ai-settings-status { padding-block: 18px; }
 
 /* Boss tips from the connected assistant */
@@ -15,3 +14,7 @@
 .ai-coach-cooldowns div { display: grid; grid-template-columns: minmax(120px, max-content) minmax(0, 1fr); gap: 12px; font-size: 13.5px; }
 .ai-coach-cooldowns dt { font-weight: 600; }
 .ai-coach-cooldowns dd { margin: 0; color: var(--secondary); }
+
+/* Brand marks: Claude keeps its coral, Codex follows the text color */
+.ai-mark-claude { color: #d97757; }
+.setting-row .app-select-trigger.ai-select { width: 170px; }

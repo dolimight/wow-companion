@@ -103,18 +103,22 @@ main h1[tabindex]:focus, main h1[tabindex]:focus-visible { outline: none; }
 .settings-dialog .settings-page { max-width: none; }
 .settings-dialog .settings-section h2[id] { scroll-margin-top: 76px; }
 .settings-dialog .settings-section + .settings-section { margin-top: 28px; }
-.settings-dialog :is(.settings-section-body, .provider-settings-body) { background: var(--surface2); }
+.settings-dialog .settings-section-body { background: var(--surface2); }
 .settings-dialog .settings-section-body:not(.updates-settings) { padding: 0 20px; }
 .settings-dialog .setting-row { min-height: 80px; padding-block: 18px; gap: 24px; }
 .settings-dialog .setting-row > div:first-child { flex: 1; min-width: 0; }
-.settings-dialog .setting-row h3 { font-weight: 600; }
+.settings-dialog .setting-row h3 { font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.settings-dialog .setting-row h3 small { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.settings-dialog .setting-row h3 .badge svg { margin-right: 3px; vertical-align: -1px; }
+/* A row that carries its own form, such as the Warcraft Logs keys, keeps its fields beside the description */
+.settings-dialog .integrations-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 560px; margin-top: 14px; }
 .settings-dialog .setting-row p { line-height: 1.55; }
 .settings-dialog .setting-row :is(.app-select-trigger, .workspace-toggle) { min-height: 36px; }
 .settings-dialog .setting-row > :is(.app-select-trigger, .workspace-toggle, .app-icon-control, .sidebar-width-control) { flex: none; }
 .settings-dialog .app-icon-preview { width: 40px; height: 40px; }
-.settings-dialog .provider-settings-body { padding: 20px; }
 @media (max-width: 700px) {
   .settings-dialog { width: calc(100vw - 24px); height: calc(100vh - 32px); max-height: calc(100vh - 32px); }
   .settings-dialog .setting-row { align-items: flex-start; flex-direction: column; gap: 12px; }
   .settings-dialog .setting-row .actions { justify-content: flex-start; }
+  .settings-dialog .integrations-fields { grid-template-columns: minmax(0, 1fr); }
 }

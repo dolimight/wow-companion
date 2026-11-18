@@ -2212,6 +2212,7 @@ const settingsSections = [
   ['ai-heading', 'AI assistants'],
   ['updates-heading', 'Updates'],
   ['appearance-heading', 'Appearance'],
+  ['alerts-heading', 'Alerts'],
   ['workspace-heading', 'Workspace'],
   ['data-heading', 'Local data'],
 ] as const;

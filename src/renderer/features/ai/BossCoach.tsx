@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Bot, RefreshCw, Sparkles } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
 import { strategyFor, whyItMatters, type JournalBoss, type JournalRole, type StrategyNotes } from '../../../shared/dungeons'
 import type { BossCoachInput } from '../../../shared/ai'
@@ -9,6 +9,7 @@ import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Button } from '../../components/ui/primitives'
 import { useAiProvider } from './ai'
+import { ProviderIcon } from './icons'
 
 /** The strategy lines and role-relevant mechanics already on the page, which the answer builds on */
 function pageNotes(boss: JournalBoss, plan: StrategyNotes | undefined, role: JournalRole, mythic: boolean) {
@@ -28,10 +29,10 @@ export function BossCoach({ character, instance, difficulty, boss, role, plan, m
   const answer = useQuery({ queryKey: ['ai', 'bossCoach', provider?.id, input], queryFn: () => api.aiAsk({ feature: 'bossCoach', input }), enabled: asked && !!provider, staleTime: Infinity, gcTime: 60 * 60_000, retry: false })
   if (!provider) return null
   const spec = character.specName && character.specName !== 'Unknown' ? `${character.specName} ${character.className}` : character.className
-  if (!asked && !answer.data) return <Button className="ai-coach-ask" onClick={() => setAsked(true)}><Sparkles size={14} aria-hidden="true" />Ask {provider.name} for {spec} tips</Button>
+  if (!asked && !answer.data) return <Button className="ai-coach-ask" onClick={() => setAsked(true)}><ProviderIcon id={provider.id} size={14} />Ask {provider.name} for {spec} tips</Button>
   return (
     <Card size="sm" className="ai-coach" aria-live="polite">
-      <h4><Bot size={14} aria-hidden="true" />{spec} tips from {provider.name}</h4>
+      <h4><ProviderIcon id={provider.id} size={14} />{spec} tips from {provider.name}</h4>
       {answer.isFetching && !answer.data ? <p className="muted small" role="status">Asking {provider.name}… this can take up to a minute</p>
         : answer.isError ? <div className="ai-coach-error"><p className="muted small" role="alert">{errorMessage(answer.error)}</p><Button variant="quiet" onClick={() => void answer.refetch()}><RefreshCw size={13} aria-hidden="true" />Try again</Button></div>
           : answer.data && <>

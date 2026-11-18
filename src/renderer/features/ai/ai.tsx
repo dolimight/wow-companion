@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, RefreshCw, SquareTerminal, X } from 'lucide-react'
+import { Check, CircleOff, RefreshCw, X } from 'lucide-react'
 import type { AiProviderInfo } from '../../../shared/ai'
 import { api } from '../../lib/client'
 import { errorMessage, notify } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Badge, Button } from '../../components/ui/primitives'
-import { Toggle } from '../../components/ui/toggle'
+import { AppSelect } from '../../components/AppSelect'
+import { ProviderIcon } from './icons'
 import './ai.css'
 
 /** Which assistant CLIs are installed and signed in, and the one the player picked */
@@ -51,24 +52,30 @@ export function AiSettings() {
       <Card className="settings-section-body">
         {status.isPending ? <p className="muted small ai-settings-status" role="status">Looking for assistants…</p>
           : status.isError ? <p className="muted small ai-settings-status" role="alert">{errorMessage(status.error)}</p>
-            : status.data.providers.map(provider => {
-              const selected = status.data.selected === provider.id
-              return (
+            : <>
+              <div className="setting-row">
+                <div>
+                  <h3>Assistant</h3>
+                  <p>Questions go to this tool and use the plan it's signed in with. Only a signed-in tool can be chosen</p>
+                </div>
+                <AppSelect className="ai-select" aria-label="AI assistant" value={status.data.selected ?? 'off'} disabled={choose.isPending}
+                  onValueChange={value => choose.mutate(value === 'off' ? null : value)}
+                  options={[
+                    { value: 'off', label: 'Off', icon: <CircleOff size={16} aria-hidden="true" /> },
+                    ...status.data.providers.map(provider => ({ value: provider.id, label: provider.name, icon: <ProviderIcon id={provider.id} />, disabled: !provider.installed || !provider.signedIn })),
+                  ]} />
+              </div>
+              {status.data.providers.map(provider => (
                 <div key={provider.id} className="setting-row ai-provider">
-                  <span className="ai-provider-icon"><SquareTerminal size={18} aria-hidden="true" /></span>
+                  <span className="ai-provider-icon"><ProviderIcon id={provider.id} size={20} /></span>
                   <div>
-                    <h3>{provider.name}{provider.version && <small> {provider.version}</small>} <ProviderState provider={provider} /></h3>
+                    <h3>{provider.name}{provider.version && <small>{provider.version}</small>}<ProviderState provider={provider} /></h3>
                     <p>{provider.description}</p>
                     {provider.detail && <p className="muted small">{provider.detail}</p>}
                   </div>
-                  <Toggle type="button" variant="outline" className="workspace-toggle" aria-label={`Use ${provider.name}`}
-                    pressed={selected} disabled={choose.isPending || (!selected && !provider.signedIn)}
-                    onPressedChange={pressed => choose.mutate(pressed ? provider.id : null)}>
-                    {selected ? 'In use' : 'Use'}
-                  </Toggle>
                 </div>
-              )
-            })}
+              ))}
+            </>}
         <div className="setting-row">
           <div>
             <h3>What gets sent</h3>
