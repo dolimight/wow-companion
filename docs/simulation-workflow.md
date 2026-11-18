@@ -40,6 +40,16 @@ Results describe modeled damage in a scenario. They do not measure PvP performan
 
 External report links are bookmarks with baseline provenance and user notes, not structured imported evidence
 
+## Best gear
+
+Gear → Best gear searches for the best combination of gear in three SimulationCraft stages, in `src/main/optimizer`:
+
+1. **Screening:** every candidate runs alone in place of what is equipped in its slot, at 1,500 iterations. Candidates are the pieces in the bags, bank, and Great Vault. With targets on, they also include this season's drops for the spec and the top players' most worn items, at the top regular upgrade level. Rings and trinkets are tried in both of their slots
+2. **Choosing:** the app builds sets from each slot's best single gain. Paired slots are chosen together, and a set takes at most one vault choice. A connected AI assistant (the `gearCombos` feature in `docs/ai-assistants.md`) can add sets that weigh tier bonuses, pairs, and what top players wear. Its picks are kept only when every key is a real candidate for that slot
+3. **Confirming:** every set runs at 6,000 iterations. The page names the best owned set as Wear now, and the best set with targets as Worth chasing when it beats the owned one
+
+Every stage runs at below-normal process priority on half the processor threads, so the computer stays usable. Owned pieces take the enchant used in their slot. A set that can't be worn or described to the engine is skipped with its reason, never failing the run. The AI assistant only proposes sets; every number on the page comes from SimulationCraft
+
 ## Validation and remaining release gate
 
 Focused tests exercise real fixture child processes for timeout, cancellation, output bounds, argument isolation, and report parsing, plus persistence, character deletion, baseline invalidation, and uncertainty comparisons

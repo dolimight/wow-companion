@@ -17,7 +17,7 @@ import type { TopPlayerItem } from '../../shared/top-players'
 import { catalyzedBase, engineStats, primaryStatOf } from '../../shared/catalyst'
 import { type PlannedItem, benchmarkLabels, benchmarkPlan, describedItem, gearSlotLabels, loadoutPattern, planSwaps } from '../../shared/simulation-benchmark'
 import { capTopLevels, type TopPlayers } from '../../shared/top-players'
-import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
+import { PROFILESET_LIMIT, classifySimulationResult, resolveScenario, simulationBenchmarkStartSchema, simulationPlanStartSchema, simulationStartSchema, simulationStoredWorkspaceSchema, simulationSwapsStartSchema, simulationSetsStartSchema, type SimulationSetsStart, type SimulationJob, type SimulationRequest, type SimulationWorkspace, type SimulationStart, type SimulationSwapsStart, type SimulationBenchmarkStart, type SimulationPlanStart } from '../../shared/simulation'
 import { characterBaselineHash, classToken, exportCharacterProfile, hash, healerSpecs, importCharacterProfile, itemLine, parseSimulationProfile, slots as engineSlots, tankSpecs } from './profiles'
 import { parseSimulationReport, REFERENCE_PROFILESET, runSimulationProcess, type SimulationProcess } from './runner'
 
@@ -77,8 +77,12 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     loaded = true
     try { const value = JSON.parse(await readFile(configFile, 'utf8')) as { path?: unknown }; if (typeof value.path === 'string') executable = await inspectExecutable(value.path) } catch { executable = null }
   }
+  // Callers waiting on a job, such as the gear optimizer, hear about it once it completes, fails, or is cancelled
+  const waiters = new Map<string, Set<(job: SimulationJob) => void>>()
   async function updateJob(characterId: string, id: string, transform: (job: SimulationJob) => void) {
-    return mutate(characterId, state => { const job = state.jobs.find(value => value.id === id); if (!job) throw new Error('The simulation job no longer exists'); transform(job); return job })
+    const job = await mutate(characterId, state => { const job = state.jobs.find(value => value.id === id); if (!job) throw new Error('The simulation job no longer exists'); transform(job); return job })
+    if (job.state === 'completed' || job.state === 'failed' || job.state === 'cancelled') { for (const notify of waiters.get(id) ?? []) notify(job); waiters.delete(id) }
+    return job
   }
   async function pump() {
     if (pumping || closed) return
@@ -469,6 +473,44 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       }
       const job = request(prepared, start, candidates, { mode: 'profileset', candidateLabels: plan.kinds.map(kind => benchmarkLabels[kind]), benchmark }, { talents: plan.talents })
       return enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, 'Compared with top players')
+    },
+    /**
+     * Sets of owned or planned items, each run against current gear. Planned items resolve like a gear plan's: enchants
+     * and gems by name, bonus lists from a known copy. A set that can't be worn or described is skipped with its reason
+     */
+    async startSets(input: SimulationSetsStart, top: TopPlayers | null = null): Promise<{ job: SimulationJob; labels: string[]; skipped: Array<{ label: string; reason: string }> }> {
+      if (closed) throw new Error('The simulation service is closing')
+      const start = simulationSetsStartSchema.parse(input)
+      const prepared = await prepare(start)
+      const bonusIds = await planBonusIds(prepared.current, top)
+      const skipped: Array<{ label: string; reason: string }> = []
+      const runnable: Array<{ label: string; items: GearItem[]; lines: string[] }> = []
+      for (const set of start.sets) {
+        try {
+          const planned = planSwaps(prepared.current, await resolveEnhancements(set.items), bonusIds)
+          if (planned.skipped.length) throw new Error(planned.skipped[0])
+          if (!planned.swaps.length) throw new Error('This set matches what you wear now')
+          swapIn(prepared.current, planned.swaps)
+          const lines = planned.swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(line.reasons[0] ?? `${item.name} could not be described to the engine`); return line.text })
+          runnable.push({ label: set.label, items: planned.swaps, lines })
+        } catch (error) { skipped.push({ label: set.label, reason: error instanceof Error ? error.message : 'This set is not allowed' }) }
+      }
+      if (!runnable.length) throw new Error(skipped[0]?.reason ?? 'No set could be simulated')
+      const reference = prepared.current.gear.map(item => itemLine(item).text).find(Boolean)
+      if (!reference) throw new Error('No equipped item could be described to the engine')
+      const lines = [`profileset."${REFERENCE_PROFILESET}"+=${reference}`, ...runnable.flatMap((set, index) => set.lines.map(text => `profileset."companion_candidate_${index + 1}"+=${text}`))]
+      const job = request(prepared, start, runnable.map(set => set.items.map(item => toItemVariant(item))), { mode: 'profileset', candidateLabels: runnable.map(set => set.label) })
+      return { job: await enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label), labels: runnable.map(set => set.label), skipped }
+    },
+    /** Resolves once the job completes, fails, or is cancelled */
+    async waitForJob(characterId: string, jobId: string): Promise<SimulationJob> {
+      let notify!: (job: SimulationJob) => void
+      const done = new Promise<SimulationJob>(resolve => { notify = resolve })
+      waiters.set(jobId, new Set([...(waiters.get(jobId) ?? []), notify]))
+      const job = (await read(characterId)).jobs.find(value => value.id === jobId)
+      if (!job) { waiters.get(jobId)?.delete(notify); throw new Error('The simulation job no longer exists') }
+      if (job.state !== 'queued' && job.state !== 'running') { waiters.get(jobId)?.delete(notify); return job }
+      return done
     },
     async cancelJob(characterId: string, jobId: string) {
       const job = await updateJob(characterId, jobId, value => { if (value.state !== 'queued' && value.state !== 'running') throw new Error('Only queued or running jobs can be cancelled'); value.state = 'cancelled'; value.finishedAt = now(); value.result = null; value.failure = 'Simulation cancelled' })

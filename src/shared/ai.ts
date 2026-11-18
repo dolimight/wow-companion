@@ -45,9 +45,30 @@ export const bossCoachOutputSchema = z.object({
 })
 export type BossCoachOutput = z.infer<typeof bossCoachOutputSchema>
 
+/**
+ * The gear optimizer's screening results, for choosing which whole sets are worth a precise run. Gains are each piece
+ * alone against current gear, so the answer has to judge how pieces combine: set bonuses, paired slots, and stats
+ */
+export const gearCombosInputSchema = z.object({
+  characterId: z.string().min(1).max(100),
+  scenario: z.string().min(1).max(120),
+  equipped: z.array(z.object({ slot: z.string().max(20), name: z.string().max(200), itemLevel: z.number().nullable() })).max(16),
+  candidates: z.array(z.object({ key: z.string().max(80), slot: z.string().max(20), name: z.string().max(200), itemLevel: z.number().nullable(), origin: z.string().max(40), gainPercent: z.number(), popularity: z.number().nullable() })).max(240),
+  rules: z.array(z.string().max(300)).max(12),
+})
+export type GearCombosInput = z.infer<typeof gearCombosInputSchema>
+export const gearCombosOutputSchema = z.object({
+  combos: z.array(z.object({ label: z.string(), picks: z.array(z.object({ slot: z.string(), key: z.string() })), why: z.string() }))
+    .transform(list => list.map(combo => ({ label: combo.label.trim().slice(0, 80), picks: combo.picks.slice(0, 16), why: combo.why.trim().slice(0, 400) })).filter(combo => combo.label && combo.picks.length).slice(0, 8))
+    .refine(list => list.length > 0, 'The answer had no sets'),
+  summary: z.string().transform(text => text.trim().slice(0, 600)),
+})
+export type GearCombosOutput = z.infer<typeof gearCombosOutputSchema>
+
 /** Every feature's input and output, so the renderer, the router, and the feature plugins agree */
 export const aiFeatures = {
   bossCoach: { input: bossCoachInputSchema, output: bossCoachOutputSchema },
+  gearCombos: { input: gearCombosInputSchema, output: gearCombosOutputSchema },
 } as const
 export type AiFeatureId = keyof typeof aiFeatures
 export type AiFeatureInput<Id extends AiFeatureId> = z.infer<(typeof aiFeatures)[Id]['input']>
