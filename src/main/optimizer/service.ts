@@ -7,10 +7,12 @@ import { ladderCeiling } from '../item-tracks'
 import { gearItemSchema, type Character, type GearItem, type GearSlot } from '../../shared/domain'
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
-import { inLootTable, isGearDrop } from '../../shared/loot'
+import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
 import { bestCombos, candidateKey, greedyCombos, isOwned, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
+import { gearSlotLabels } from '../../shared/simulation-benchmark'
+import { log } from '../log'
 
 /** This season's boss loot, bundled by scripts/encounter-data.ts, newest season first */
 const encounterFiles = import.meta.glob<EncounterBundle>('../../../data/dungeons/encounters/season-*.json', { eager: true, import: 'default' })
@@ -21,11 +23,29 @@ export function seasonDrops(activity: string, bundle: EncounterBundle | undefine
   if (!bundle) return []
   const journals = activity === 'raiding' ? Object.values(bundle.raids).map(raid => raid.heroic ?? Object.values(raid)[0]).filter(journal => !!journal) : Object.values(bundle.dungeons)
   const seen = new Set<number>()
-  return journals.flatMap(journal => journal!.bosses.flatMap(boss => (boss.loot ?? []).filter(isGearDrop).flatMap(loot => {
-    if (seen.has(loot.id)) return []
-    seen.add(loot.id)
-    return [{ loot, source: activity === 'raiding' ? `${boss.name} · ${journal!.name}` : journal!.name }]
-  })))
+  return journals.flatMap(journal => {
+    const all = journal!.bosses.flatMap(boss => (boss.loot ?? []).map(loot => ({ loot, boss: boss.name })))
+    // A dungeon from an older expansion lists the old item beside its reissue; only the reissue drops this season
+    const current = new Set(uniqueDrops(all.map(entry => entry.loot)))
+    return all.filter(entry => current.has(entry.loot) && isGearDrop(entry.loot) && !seen.has(entry.loot.id)).map(entry => {
+      seen.add(entry.loot.id)
+      return { loot: entry.loot, source: activity === 'raiding' ? `${entry.boss} · ${journal!.name}` : journal!.name }
+    })
+  })
+}
+
+/** The set the engine was building when it stopped, from the last profileset its log names */
+export function crashedSet(failure: string | null, labels: string[]): string | null {
+  const names = [...(failure ?? '').matchAll(/companion_candidate_(\d+)/g)]
+  const index = names.length ? Number(names.at(-1)![1]) - 1 : -1
+  return labels[index] ?? null
+}
+
+/** One readable line for a failed engine run, without the progress log it ends with */
+export function engineFailure(failure: string | null, set: string | null): string {
+  const code = failure?.match(/stopped with code (\d+)/)?.[1]
+  if (code === '3221225477' || code === '139') return `SimulationCraft crashed${set ? ` while testing ${set}` : ''}. Update SimulationCraft, or try again without targets`
+  return (failure ?? 'The simulation did not finish').split(' — ')[0]!.slice(0, 300)
 }
 
 const screenIterations = 1500
@@ -52,7 +72,7 @@ export function createOptimizer(options: OptimizerOptions) {
     await options.db.call('saveFeatureState', run.characterId, 'optimizer', run)
     await options.changed(run.characterId)
   }
-  async function stage(run: OptimizerRun, next: OptimizerRun['stage']) { run.stage = next; run.stageStartedAt = now(); await save(run) }
+  async function stage(run: OptimizerRun, next: OptimizerRun['stage']) { run.stage = next; run.stageStartedAt = now(); log.info('optimizer', `Best gear: ${next}`, { run: run.id }); await save(run) }
 
   /** Owned pieces from bags, bank, and the vault, plus drops and top-player items when targets are on */
   async function gather(character: Character, start: ReturnType<typeof optimizerStartSchema.parse>, top: TopPlayers | null): Promise<OptimizerCandidate[]> {
@@ -106,21 +126,48 @@ export function createOptimizer(options: OptimizerOptions) {
     return trimmed.map(candidate => { const info = found.get(candidate.item.itemId!); return info ? { ...candidate, icon: info.icon, quality: info.quality } : candidate })
   }
 
-  /** Runs sets through SimulationCraft in jobs within its profileset limit, returning each label's measure */
-  async function measure(run: OptimizerRun, character: Character, sets: Array<{ label: string; items: GearItem[] }>, iterations: number, label: string, top: TopPlayers | null) {
+  /**
+   * Runs sets through SimulationCraft in jobs within its profileset limit, returning each label's measure. An engine
+   * failure never ends the run: when its log names the set it was building, that set is left out and the rest run
+   * again; otherwise the batch is split in half until the failing set is found. Each skipped set gets a note and a log
+   * line. Only a setup problem, such as no engine chosen, or the player stopping the run ends it early
+   */
+  async function measure(run: OptimizerRun, character: Character, sets: Array<{ label: string; items: GearItem[] }>, iterations: number, label: string, top: TopPlayers | null, describe: (label: string) => string) {
     const measures: Record<string, OptimizerMeasure> = {}
-    for (let at = 0; at < sets.length; at += PROFILESET_LIMIT - 1) {
+    const queue: Array<typeof sets> = []
+    for (let at = 0; at < sets.length; at += PROFILESET_LIMIT - 1) queue.push(sets.slice(at, at + PROFILESET_LIMIT - 1))
+    const skip = (set: { label: string }, reason: string) => { run.notes.push(`${describe(set.label)}: ${reason}`); log.warn('optimizer', `${label}: skipped ${describe(set.label)}`, { reason }) }
+    // Splitting can't go on forever: past this many engine runs, whatever is left is noted as skipped
+    let budget = 40
+    while (queue.length) {
+      const batch = queue.shift()!
       const state = active.get(run.characterId)
       if (state?.cancelled) throw new Error('Cancelled')
-      const { job, labels, skipped } = await options.simulations.startSets({ characterId: character.id, activity: run.activity, scenarioId: run.scenarioId, iterations, threads: run.threads, timeoutMinutes: 60, label, sets: sets.slice(at, at + PROFILESET_LIMIT - 1) }, top)
-      for (const entry of skipped) run.notes.push(`${entry.label}: ${entry.reason}`)
+      if (budget-- <= 0) { for (const set of batch) skip(set, 'Left out after repeated SimulationCraft failures'); continue }
+      const { job, labels, skipped } = await options.simulations.startSets({ characterId: character.id, activity: run.activity, scenarioId: run.scenarioId, iterations, threads: run.threads, timeoutMinutes: 60, label, sets: batch }, top)
+      for (const entry of skipped) skip(entry, entry.reason)
+      if (!job) continue
       if (state) state.job = job.id
       const done: SimulationJob = await options.simulations.waitForJob(character.id, job.id)
       if (state) state.job = null
-      if (done.state !== 'completed' || !done.result) throw new Error(done.failure ?? 'The simulation did not finish')
-      const [base, ...values] = done.result.values
-      run.baseline ??= base!.mean
-      labels.forEach((name, index) => { const value = values[index]; if (value) measures[name] = { mean: value.mean, error: value.standardError, gain: value.mean - base!.mean } })
+      if (done.state === 'completed' && done.result) {
+        const [base, ...values] = done.result.values
+        run.baseline ??= base!.mean
+        labels.forEach((name, index) => { const value = values[index]; if (value) measures[name] = { mean: value.mean, error: value.standardError, gain: value.mean - base!.mean } })
+        continue
+      }
+      if (state?.cancelled || done.state === 'cancelled') throw new Error('Cancelled')
+      log.error('optimizer', `${label}: SimulationCraft failed on a batch of ${labels.length}`, { job: job.id, failure: done.failure })
+      const runnable = batch.filter(set => labels.includes(set.label))
+      const crashed = crashedSet(done.failure, labels)
+      if (crashed) {
+        skip({ label: crashed }, 'SimulationCraft crashed while testing it, so it was left out')
+        const rest = runnable.filter(set => set.label !== crashed)
+        if (rest.length) queue.unshift(rest)
+      } else if (runnable.length > 1) {
+        const half = Math.ceil(runnable.length / 2)
+        queue.unshift(runnable.slice(0, half), runnable.slice(half))
+      } else if (runnable[0]) skip(runnable[0], engineFailure(done.failure, null))
     }
     return measures
   }
@@ -154,25 +201,35 @@ export function createOptimizer(options: OptimizerOptions) {
     if (!character) throw new Error('Character was not found')
     const top = await options.topPlayers(character).catch(() => null)
     const capped = top ? capTopLevels(top, ladderCeiling) : null
+    // Gear saved above anything this season offers is out of date, so every comparison against it is too
+    const stale = ladderCeiling != null ? character.gear.filter(item => (item.itemLevel ?? 0) > ladderCeiling!) : []
+    if (stale.length) run.warning = `Your saved ${stale.slice(0, 3).map(item => `${gearSlotLabels[item.slot].toLowerCase()} (${item.itemLevel})`).join(', ')} ${stale.length === 1 ? 'is' : 'are'} above this season's highest item level ${ladderCeiling}, so your saved gear is out of date. Refresh the character, then run this again`
     run.pool = await gather(character, start, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
-    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped)
+    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key })
     await stage(run, 'choosing')
     const byKey = new Map(run.pool.map(candidate => [candidate.key, candidate]))
-    const fromAi = await aiCombos(run, character).catch(error => { run.notes.push(`The AI assistant couldn't choose sets: ${(error as Error).message}`); return { combos: [], summary: null } })
+    const fromAi = await aiCombos(run, character).catch(error => { run.notes.push(`The AI assistant couldn't choose sets, so the app chose them: ${(error as Error).message}`); log.warn('optimizer', 'AI set choice failed', error); return { combos: [], summary: null } })
     const combos = [...greedyCombos(run.pool, run.screen), ...fromAi.combos]
     run.combos = combos.filter((combo, index) => combos.findIndex(other => JSON.stringify(other.picks) === JSON.stringify(combo.picks)) === index).slice(0, 24)
     run.summary = fromAi.summary
-    if (!run.combos.length) throw new Error('No piece beat what you wear in screening')
+    // Nothing worth confirming is a finished search, not a failed one
+    if (!run.combos.length) return finish(run, Object.keys(run.screen).length ? 'Nothing beat what you wear in this fight' : 'SimulationCraft couldn\'t measure any piece this time · the notes below say why')
     await stage(run, 'confirming')
-    run.results = await measure(run, character, run.combos.map(combo => ({ label: combo.key, items: Object.values(combo.picks).map(key => byKey.get(key!)!.item) })), confirmIterations, 'Best gear · confirming', capped)
+    run.results = await measure(run, character, run.combos.map(combo => ({ label: combo.key, items: Object.values(combo.picks).map(key => byKey.get(key!)!.item) })), confirmIterations, 'Best gear · confirming', capped, key => run.combos.find(combo => combo.key === key)?.label ?? key)
     Object.assign(run, bestCombos(run.combos, run.results, byKey))
     if (!run.summary) {
       const owned = run.combos.find(combo => combo.key === run.wearNow)
       run.summary = owned ? `${owned.label} gains ${Math.round(run.results[owned.key]!.gain).toLocaleString('en-US')} damage per second from gear you own` : 'Nothing you own beats what you wear now in this fight'
     }
+    await finish(run, run.summary)
+  }
+
+  async function finish(run: OptimizerRun, summary: string | null) {
+    run.summary = summary
     run.finishedAt = now()
+    log.info('optimizer', 'Best gear finished', { run: run.id, pieces: run.pool.length, measured: Object.keys(run.screen).length, sets: run.combos.length, skipped: run.notes.length, wearNow: run.wearNow, chase: run.chase })
     await stage(run, 'done')
   }
 
@@ -188,6 +245,7 @@ export function createOptimizer(options: OptimizerOptions) {
       await save(run)
       void execute(run, start).catch(async error => {
         const cancelled = active.get(run.characterId)?.cancelled
+        if (!cancelled) log.error('optimizer', 'Best gear stopped', error)
         run.stage = cancelled ? 'cancelled' : 'failed'
         run.failure = cancelled ? null : (error as Error).message
         run.finishedAt = now()

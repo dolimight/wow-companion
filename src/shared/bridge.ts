@@ -43,5 +43,7 @@ export type NativeBridge = {
   openExternal(url:string):Promise<void>
   /** Writes plain text to the system clipboard from the main process, which works whether or not the page has focus */
   copyText(text:string):Promise<void>
+  /** Opens the folder of daily log files kept for troubleshooting */
+  openLogs():Promise<void>
 }
 declare global { interface Window { companion?: NativeBridge } }

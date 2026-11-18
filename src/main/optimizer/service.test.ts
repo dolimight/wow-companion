@@ -14,7 +14,8 @@ const mage = characterSchema.parse({
 const cloth: LootItem = { id: 5, name: 'Drop Cloak', quality: 4, slot: 'Back', inventoryType: 16, armor: null, icon: 99, requiredLevel: 0, classId: 4, subclassId: 1, allowableClassMask: -1, specIds: [], primaryStats: ['intellect'] }
 const gains: Record<string, number> = { 3: 500, 4: 300, 5: 900 }
 
-function harness(selected: string | null = 'fake') {
+/** crash names an item that makes the engine fail: with its profileset in the log, or silently */
+function harness(selected: string | null = 'fake', crash: { itemId: number; named: boolean } | null = null) {
   const state = new Map<string, unknown>()
   const started: Array<{ label: string; sets: number; threads: number }> = []
   const jobs = new Map<string, SimulationJob>()
@@ -26,7 +27,10 @@ function harness(selected: string | null = 'fake') {
         started.push({ label: input.label ?? '', sets: sets.length, threads: input.threads ?? 0 })
         const id = `job-${started.length}`
         const values = [{ name: 'companion_baseline', mean: 100_000, standardError: 50, samples: 100, damageTaken: null }, ...sets.map((set, index) => ({ name: `companion_candidate_${index + 1}`, mean: 100_000 + set.items.reduce((sum, item) => sum + (gains[item.itemId ?? 0] ?? 0), 0), standardError: 40, samples: 100, damageTaken: null }))]
-        jobs.set(id, { id, state: 'completed', result: { values }, failure: null } as unknown as SimulationJob)
+        const bad = crash ? sets.findIndex(set => set.items.some(item => item.itemId === crash.itemId)) : -1
+        jobs.set(id, bad >= 0
+          ? { id, state: 'failed', result: null, failure: crash!.named ? `SimulationCraft stopped with code 3221225477 — Generating Profileset: companion_candidate_${bad + 1} 60/73 [====>] 658/1500` : 'SimulationCraft stopped with code 1' } as unknown as SimulationJob
+          : { id, state: 'completed', result: { values }, failure: null } as unknown as SimulationJob)
         return { job: { id } as SimulationJob, labels: sets.map(set => set.label), skipped: [] }
       },
       waitForJob: async (_character, id) => jobs.get(id)!,
@@ -82,6 +86,33 @@ describe('gear optimizer', () => {
     expect(run.pool.every(candidate => candidate.origin !== 'drop')).toBe(true)
     expect(run.chase).toBeNull()
     expect(run.summary).toContain('gains 800 damage per second')
+  })
+
+  it('leaves out a piece the engine crashes on, by the profileset its log names, and keeps going', async () => {
+    const { optimizer, started } = harness('fake', { itemId: 4, named: true })
+    await optimizer.start({ characterId: 'c1' })
+    const run = await finished(optimizer)
+    expect(run.stage).toBe('done')
+    expect(run.notes).toEqual(expect.arrayContaining([expect.stringContaining('Item 4 (272) in Cloak: SimulationCraft crashed while testing it')]))
+    expect(Object.keys(run.screen)).toHaveLength(2)
+    expect(started.filter(entry => entry.label === 'Best gear · screening').map(entry => entry.sets)).toEqual([3, 2])
+  })
+
+  it('finds a silently failing piece by splitting the batch, without failing the run', async () => {
+    const { optimizer } = harness(null, { itemId: 5, named: false })
+    await optimizer.start({ characterId: 'c1' })
+    const run = await finished(optimizer)
+    expect(run.stage).toBe('done')
+    expect(run.notes).toEqual(expect.arrayContaining([expect.stringContaining('Drop Cloak (334) in Cloak: SimulationCraft stopped with code 1')]))
+    expect(run.screen[run.pool.find(candidate => candidate.item.itemId === 3)!.key]?.gain).toBe(500)
+  })
+
+  it('finishes with a note, not a failure, when nothing could be measured', async () => {
+    const { optimizer } = harness(null, { itemId: 3, named: false })
+    await optimizer.start({ characterId: 'c1', includeTargets: false })
+    const run = await finished(optimizer)
+    expect(run.stage).toBe('done')
+    expect(run.failure).toBeNull()
   })
 
   it('refuses a second run for the same character while one runs', async () => {

@@ -7,6 +7,7 @@ import { gearCombos } from './features/gear-combos'
 import { claudeProvider } from './providers/claude'
 import { codexProvider } from './providers/codex'
 import type { AiFeature, AiProvider } from './types'
+import { log } from '../log'
 
 /** The providers and features the app ships with; another plugin is one more entry in either list */
 export const builtinProviders = (): AiProvider[] => [codexProvider(), claudeProvider()]
@@ -59,7 +60,11 @@ export function createAiService(options: AiServiceOptions) {
       const answer = await provider.run({ instructions: feature.instructions, prompt: feature.prompt(input, { character }), schema: feature.schema, workDir, signal })
       const parsed = shape.output.safeParse(answer)
       if (!parsed.success) throw new Error(`${provider.name} answered in a shape the app can't use`)
+      log.info('ai', `${provider.name} answered ${id}`, { durationMs: Date.now() - started })
       return { provider: provider.name, value: parsed.data as AiFeatureOutput<Id>, durationMs: Date.now() - started }
+    } catch (error) {
+      log.warn('ai', `${provider.name} failed ${id}`, { durationMs: Date.now() - started, error })
+      throw error
     } finally {
       await rm(workDir, { recursive: true, force: true }).catch(() => {})
     }

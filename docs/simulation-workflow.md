@@ -48,6 +48,8 @@ Gear → Best gear searches for the best combination of gear in three Simulation
 2. **Choosing:** the app builds sets from each slot's best single gain. Paired slots are chosen together, and a set takes at most one vault choice. A connected AI assistant (the `gearCombos` feature in `docs/ai-assistants.md`) can add sets that weigh tier bonuses, pairs, and what top players wear. Its picks are kept only when every key is a real candidate for that slot
 3. **Confirming:** every set runs at 6,000 iterations. The page names the best owned set as Wear now, and the best set with targets as Worth chasing when it beats the owned one
 
+An engine failure never ends a search. When SimulationCraft crashes, its log names the profileset it was building, so that set is left out and the rest run again. When the log doesn't name one, the batch is split in half until the failing set is found. Every skipped piece or set gets a note on the page and a line in the troubleshooting log. Only a setup problem, such as no engine chosen, or the player stopping the run ends it early. Gear saved above this season's highest item level (for example, from before an item level squish) raises a warning, and a slot is never emptied because of it. Older item IDs that a returning dungeon lists beside their reissue are dropped
+
 Every stage runs at below-normal process priority on half the processor threads, so the computer stays usable. Owned pieces take the enchant used in their slot. A set that can't be worn or described to the engine is skipped with its reason, never failing the run. The AI assistant only proposes sets; every number on the page comes from SimulationCraft
 
 ## Validation and remaining release gate
