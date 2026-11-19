@@ -489,13 +489,16 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const bonusIds = await planBonusIds(prepared.current, top)
       const skipped: Array<{ label: string; reason: string }> = []
       const runnable: Array<{ label: string; items: GearItem[]; lines: string[] }> = []
+      const worn = prepared.current.talents?.loadout ?? null
       for (const set of start.sets) {
         try {
           const planned = planSwaps(prepared.current, await resolveEnhancements(set.items), bonusIds)
           if (planned.skipped.length) throw new Error(planned.skipped[0])
-          if (!planned.swaps.length) throw new Error('This set matches what you wear now')
+          const talents = set.talents && set.talents !== worn ? set.talents : null
+          if (set.talents && !talents && !planned.swaps.length) throw new Error('This is the build you use now')
+          if (!planned.swaps.length && !talents) throw new Error('This set matches what you wear now')
           swapIn(prepared.current, planned.swaps)
-          const lines = planned.swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(line.reasons[0] ?? `${item.name} could not be described to the engine`); return line.text })
+          const lines = [...planned.swaps.map(item => { const line = itemLine(item); if (!line.text || line.reasons.length) throw new Error(line.reasons[0] ?? `${item.name} could not be described to the engine`); return line.text }), ...(talents ? [`talents=${talents}`] : [])]
           runnable.push({ label: set.label, items: planned.swaps, lines })
         } catch (error) { skipped.push({ label: set.label, reason: error instanceof Error ? error.message : 'This set is not allowed' }) }
       }

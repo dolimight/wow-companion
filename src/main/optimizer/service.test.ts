@@ -26,7 +26,7 @@ function harness(selected: string | null = 'fake', crash: { itemId: number; name
         const sets = input.sets
         started.push({ label: input.label ?? '', sets: sets.length, threads: input.threads ?? 0 })
         const id = `job-${started.length}`
-        const values = [{ name: 'companion_baseline', mean: 100_000, standardError: 50, samples: 100, damageTaken: null }, ...sets.map((set, index) => ({ name: `companion_candidate_${index + 1}`, mean: 100_000 + set.items.reduce((sum, item) => sum + (gains[item.itemId ?? 0] ?? 0), 0), standardError: 40, samples: 100, damageTaken: null }))]
+        const values = [{ name: 'companion_baseline', mean: 100_000, standardError: 50, samples: 100, damageTaken: null }, ...sets.map((set, index) => ({ name: `companion_candidate_${index + 1}`, mean: 100_000 + set.items.reduce((sum, item) => sum + (gains[item.itemId ?? 0] ?? 0), 0) + (set.talents === 'R09PRA==' ? 600 : 0), standardError: 40, samples: 100, damageTaken: null }))]
         const bad = crash ? sets.findIndex(set => set.items.some(item => item.itemId === crash.itemId)) : -1
         jobs.set(id, bad >= 0
           ? { id, state: 'failed', result: null, failure: crash!.named ? `SimulationCraft stopped with code 3221225477 — Generating Profileset: companion_candidate_${bad + 1} 60/73 [====>] 658/1500` : 'SimulationCraft stopped with code 1' } as unknown as SimulationJob
@@ -208,5 +208,18 @@ describe('gear optimizer', () => {
       expect(started.map(entry => entry.label)).toEqual(['Upgrade advisor · screening'])
       expect(run?.summary).toContain('Upgrade Item 1 first: 700 damage per second for 20 crests')
     } finally { mage.gear = worn; delete gains[1] }
+  })
+
+  it('runs the top player builds on your gear and names one only when it clearly wins', async () => {
+    const { optimizer, started, options } = harness(null)
+    options.topPlayers = async () => ({ players: Array.from({ length: 12 }, () => ({})), slots: {}, gearPlayers: 0, averageItemLevel: null, builds: [{ loadout: 'R09PRA==', count: 7, players: ['Ana', 'Bo'] }, { loadout: 'U0FNRQ==', count: 3, players: ['Cy'] }] }) as never
+    await optimizer.start({ characterId: 'c1', mode: 'talents' })
+    let run = await optimizer.get('c1', 'talents')
+    for (let at = 0; at < 50 && run && run.stage !== 'done'; at++) { await new Promise(resolve => setTimeout(resolve, 5)); run = await optimizer.get('c1', 'talents') }
+        expect(run?.failure).toBeNull()
+    expect(run?.stage).toBe('done')
+    expect(started.map(entry => [entry.label, entry.sets])).toEqual([['Best talents', 2]])
+    expect(run?.combos.map(combo => combo.talents)).toEqual(['R09PRA==', 'U0FNRQ=='])
+    expect(run?.summary).toBe('The build used by 7 top players adds 600 damage per second over yours')
   })
 })

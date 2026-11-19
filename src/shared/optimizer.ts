@@ -18,9 +18,9 @@ export const optimizerStartSchema = z.object({
   /**
    * Best gear weighs everything you could wear; the loot finder measures only this season's drops, by where they
    * drop; the vault advisor compares each Great Vault choice worn with the best of what you own; the upgrade advisor
-   * measures each equipped piece one crest rank higher
+   * measures each equipped piece one crest rank higher; best talents runs the top players' builds on your gear
    */
-  mode: z.enum(['gear', 'loot', 'vault', 'upgrades']).default('gear'),
+  mode: z.enum(['gear', 'loot', 'vault', 'upgrades', 'talents']).default('gear'),
   /** The loot finder measures drops at the first rank of this upgrade track */
   track: z.enum(['champion', 'hero', 'myth']).default('hero'),
 })
@@ -59,7 +59,7 @@ export type OptimizerCandidate = {
 }
 
 export type OptimizerMeasure = { mean: number; error: number | null; gain: number }
-export type OptimizerCombo = { key: string; label: string; picks: Partial<Record<GearSlot, string>>; why: string | null; by: 'ai' | 'app' }
+export type OptimizerCombo = { key: string; label: string; picks: Partial<Record<GearSlot, string>>; why: string | null; by: 'ai' | 'app'; talents?: string; players?: number }
 export const optimizerStages = ['gathering', 'screening', 'choosing', 'confirming', 'done'] as const
 export type OptimizerStage = (typeof optimizerStages)[number] | 'failed' | 'cancelled'
 
@@ -349,4 +349,14 @@ export function upgradeAdvice(run: Pick<OptimizerRun, 'pool' | 'screen'>, curren
     if (affordable) left.set(crestId, balance - crests)
     return { ...entry, affordable }
   })
+}
+
+export type TalentBuild = { combo: OptimizerCombo; gain: number; error: number | null; clear: boolean }
+
+/** The top players' builds on your gear, best first, each marked when its gain over your build clears the noise */
+export function talentBuilds(run: Pick<OptimizerRun, 'combos' | 'results'>): TalentBuild[] {
+  return run.combos.flatMap(combo => {
+    const result = run.results[combo.key]
+    return combo.talents && result ? [{ combo, gain: result.gain, error: result.error, clear: isGain(result) }] : []
+  }).sort((a, b) => b.gain - a.gain)
 }

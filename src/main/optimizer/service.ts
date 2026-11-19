@@ -9,7 +9,7 @@ import { gearItemSchema, type Character, type GearItem, type GearSlot } from '..
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, lootSources, optimizerTrackNames, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
+import { bestCombos, lootSources, optimizerTrackNames, talentBuilds, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -71,7 +71,7 @@ export type OptimizerOptions = {
 
 /** Best gear and the loot finder keep their last runs apart */
 const space = (mode: OptimizerMode | undefined) => mode && mode !== 'gear' ? `optimizer-${mode}` : 'optimizer'
-const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor', upgrades: 'The upgrade advisor' }
+const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor', upgrades: 'The upgrade advisor', talents: 'Best talents' }
 
 export function createOptimizer(options: OptimizerOptions) {
   const now = () => (options.now?.() ?? new Date()).toISOString()
@@ -144,7 +144,7 @@ export function createOptimizer(options: OptimizerOptions) {
    * line. Only a setup problem, such as no engine chosen, or the player stopping the run ends it early
    */
   /** Screening results saved from earlier runs, by what each depends on; null when there is no engine to key them by */
-  async function cachedScreen(run: OptimizerRun, character: Character, sets: Array<{ label: string; items: GearItem[] }>, iterations: number) {
+  async function cachedScreen(run: OptimizerRun, character: Character, sets: Array<{ label: string; items: GearItem[]; talents?: string }>, iterations: number) {
     const engine = await options.simulations.engineHash?.().catch(() => null) ?? null
     if (!engine) return null
     const cache = (await options.db.call('getFeatureState', character.id, 'optimizer-cache') as ScreenCache | null) ?? { entries: {} }
@@ -152,7 +152,7 @@ export function createOptimizer(options: OptimizerOptions) {
     return { cache, keys }
   }
 
-  async function measure(run: OptimizerRun, character: Character, allSets: Array<{ label: string; items: GearItem[] }>, iterations: number, label: string, top: TopPlayers | null, describe: (label: string) => string, reuse = false) {
+  async function measure(run: OptimizerRun, character: Character, allSets: Array<{ label: string; items: GearItem[]; talents?: string }>, iterations: number, label: string, top: TopPlayers | null, describe: (label: string) => string, reuse = false) {
     const measures: Record<string, OptimizerMeasure> = {}
     // A piece measured before against the same gear, talents, fight, and engine isn't run again
     const saved = reuse ? await cachedScreen(run, character, allSets, iterations) : null
@@ -247,6 +247,7 @@ export function createOptimizer(options: OptimizerOptions) {
     if (start.mode === 'loot') return findLoot(run, character, capped)
     if (start.mode === 'vault') return adviseVault(run, character, capped)
     if (start.mode === 'upgrades') return adviseUpgrades(run, character, capped)
+    if (start.mode === 'talents') return compareTalents(run, character, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
     run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
@@ -309,6 +310,17 @@ export function createOptimizer(options: OptimizerOptions) {
     run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Upgrade advisor · screening', top, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} at ${candidate.item.itemLevel}` : key }, true)
     const best = upgradeAdvice(run, character.progressionResources?.currencies ?? null)[0]
     await finish(run, best?.clear ? `Upgrade ${best.candidate.item.name} first: ${Math.round(best.gain).toLocaleString('en-US')} damage per second for ${best.candidate.upgrade!.crests ? `${best.candidate.upgrade!.crests} crests` : 'no crests'}` : 'No single upgrade rank clearly adds damage on its own · upgrade toward the pieces Best gear keeps')
+  }
+
+  /** Best talents: the top players' most used builds, each run on your gear at the confirming precision */
+  async function compareTalents(run: OptimizerRun, character: Character, top: TopPlayers | null) {
+    const builds = (top?.builds ?? []).filter(build => build.loadout && build.loadout !== character.talents?.loadout).slice(0, 5)
+    if (!builds.length) throw new Error(top ? 'Every top player build is the one you use now' : 'Top players could not be read for your specialization right now')
+    run.combos = builds.map((build, index) => ({ key: `talents-${index + 1}`, label: `Used by ${build.count} of ${top!.players.length} top players`, picks: {}, why: build.players.slice(0, 3).join(', ') || null, by: 'app' as const, talents: build.loadout, players: build.count }))
+    await stage(run, 'confirming')
+    run.results = await measure(run, character, run.combos.map(combo => ({ label: combo.key, items: [], talents: combo.talents })), confirmIterations, 'Best talents', top, key => run.combos.find(combo => combo.key === key)?.label ?? key)
+    const best = talentBuilds(run)[0]
+    await finish(run, best?.clear ? `The build used by ${best.combo.players} top players adds ${Math.round(best.gain).toLocaleString('en-US')} damage per second over yours` : 'No top player build clearly beats yours on your gear')
   }
 
   async function finish(run: OptimizerRun, summary: string | null) {
