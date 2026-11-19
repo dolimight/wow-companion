@@ -193,4 +193,20 @@ describe('gear optimizer', () => {
     expect(run?.summary).toContain('Take Item 4')
     expect(await optimizer.get('c1')).toBeNull()
   })
+
+  it('measures each equipped piece one crest rank higher and ranks them by damage per crest', async () => {
+    const worn = mage.gear
+    mage.gear = [gear('head', 1, 305, { upgradeTrackId: 'client-group-617', upgradeRank: 1 }), gear('back', 2, 260)]
+    gains[1] = 700
+    try {
+      const { optimizer, started } = harness(null)
+      await optimizer.start({ characterId: 'c1', mode: 'upgrades' })
+      let run = await optimizer.get('c1', 'upgrades')
+      for (let at = 0; at < 50 && run && run.stage !== 'done'; at++) { await new Promise(resolve => setTimeout(resolve, 5)); run = await optimizer.get('c1', 'upgrades') }
+      expect(run?.stage).toBe('done')
+      expect(run?.pool.map(candidate => [candidate.slot, candidate.item.itemLevel, candidate.upgrade?.crests])).toEqual([['head', 308, 20]])
+      expect(started.map(entry => entry.label)).toEqual(['Upgrade advisor · screening'])
+      expect(run?.summary).toContain('Upgrade Item 1 first: 700 damage per second for 20 crests')
+    } finally { mage.gear = worn; delete gains[1] }
+  })
 })

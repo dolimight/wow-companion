@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto'
 import type { AiService } from '../ai/service'
 import type { DatabaseClient } from '../database'
 import type { SimulationService } from '../simulation/service'
-import { ladderCeiling, trackStartLevel } from '../item-tracks'
+import { ladderCeiling, seasonUpgradeTracks, trackStartLevel } from '../item-tracks'
+import { crestPlan } from '../../shared/crest-plan'
 import { gearItemSchema, type Character, type GearItem, type GearSlot } from '../../shared/domain'
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, lootSources, optimizerTrackNames, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
+import { bestCombos, lootSources, optimizerTrackNames, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -69,8 +70,8 @@ export type OptimizerOptions = {
 }
 
 /** Best gear and the loot finder keep their last runs apart */
-const space = (mode: OptimizerMode | undefined) => mode === 'loot' ? 'optimizer-loot' : mode === 'vault' ? 'optimizer-vault' : 'optimizer'
-const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor' }
+const space = (mode: OptimizerMode | undefined) => mode && mode !== 'gear' ? `optimizer-${mode}` : 'optimizer'
+const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor', upgrades: 'The upgrade advisor' }
 
 export function createOptimizer(options: OptimizerOptions) {
   const now = () => (options.now?.() ?? new Date()).toISOString()
@@ -245,6 +246,7 @@ export function createOptimizer(options: OptimizerOptions) {
     run.pool = await gather(character, start, capped)
     if (start.mode === 'loot') return findLoot(run, character, capped)
     if (start.mode === 'vault') return adviseVault(run, character, capped)
+    if (start.mode === 'upgrades') return adviseUpgrades(run, character, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
     run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
@@ -288,6 +290,25 @@ export function createOptimizer(options: OptimizerOptions) {
     run.results = await measure(run, character, run.combos.map(combo => ({ label: combo.key, items: Object.values(combo.picks).map(key => byKey.get(key!)!.item) })), confirmIterations, 'Vault advisor · confirming', top, key => run.combos.find(combo => combo.key === key)?.label ?? key)
     const { take, choices } = vaultChoices(run)
     await finish(run, take ? `Take ${take.candidate.item.name}: it adds ${Math.round(take.over).toLocaleString('en-US')} damage per second over skipping the vault` : choices.length ? 'No vault choice clearly beats the best of what you own · take the one you can upgrade furthest, or sell it for gold' : 'SimulationCraft could not measure the vault choices this time · the notes below say why')
+  }
+
+  /** The upgrade advisor: each equipped piece at its next crest rank, measured alone, ranked by damage per crest */
+  async function adviseUpgrades(run: OptimizerRun, character: Character, top: TopPlayers | null) {
+    const steps = crestPlan(character.gear, seasonUpgradeTracks, null).steps
+    run.pool = steps.flatMap(step => {
+      const worn = character.gear.find(item => item.slot === step.slot)
+      if (!worn?.itemId) return []
+      const item = { ...worn, itemLevel: step.toLevel }
+      return [{ key: candidateKey(step.slot, item, 'upgrade'), slot: step.slot, item, origin: 'upgrade' as const, source: `${step.track} ${step.fromLevel} → ${step.toLevel}`, icon: null, quality: null, popularity: null, upgrade: { track: step.track, fromLevel: step.fromLevel, toLevel: step.toLevel, crestId: step.crestId, crests: step.crests, gold: step.gold } }]
+    })
+    if (!run.pool.length) throw new Error('Nothing you wear has an upgrade rank left, or its track is unknown')
+    const missing = [...new Set(run.pool.map(candidate => candidate.item.itemId!))]
+    const found = options.items ? new Map((await options.items(missing).catch(() => [])).map(info => [info.id, info])) : new Map()
+    run.pool = run.pool.map(candidate => { const info = found.get(candidate.item.itemId!); return info ? { ...candidate, icon: info.icon, quality: info.quality } : candidate })
+    await stage(run, 'screening')
+    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Upgrade advisor · screening', top, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} at ${candidate.item.itemLevel}` : key }, true)
+    const best = upgradeAdvice(run, character.progressionResources?.currencies ?? null)[0]
+    await finish(run, best?.clear ? `Upgrade ${best.candidate.item.name} first: ${Math.round(best.gain).toLocaleString('en-US')} damage per second for ${best.candidate.upgrade!.crests ? `${best.candidate.upgrade!.crests} crests` : 'no crests'}` : 'No single upgrade rank clearly adds damage on its own · upgrade toward the pieces Best gear keeps')
   }
 
   async function finish(run: OptimizerRun, summary: string | null) {

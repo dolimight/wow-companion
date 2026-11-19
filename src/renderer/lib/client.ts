@@ -97,7 +97,7 @@ export const api={
  dungeonRoutes:async(dungeon:string,force=false)=>(await client()).dungeonRoutes.query({dungeon,force}),
  raids:async()=>(await client()).raids.query(),
  routeMdt:async(dungeon:string,routeKey:string)=>(await client()).routeMdt.query({dungeon,routeKey}),
- optimizerRun:async(characterId:string,mode?:'gear'|'loot'|'vault')=>(await client()).optimizerRun.query({characterId,mode}),
+ optimizerRun:async(characterId:string,mode?:import('../../shared/optimizer').OptimizerMode)=>(await client()).optimizerRun.query({characterId,mode}),
  startOptimizer:async(input:import('../../shared/optimizer').OptimizerStart)=>(await client()).startOptimizer.mutate(input),
  cancelOptimizer:async(characterId:string)=>(await client()).cancelOptimizer.mutate({characterId}),
  aiStatus:async(force=false)=>(await client()).aiStatus.query({force}),

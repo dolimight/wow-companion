@@ -3,6 +3,7 @@ import candidatesJson from '../../data/season-rules/candidates.json'
 import type { AscensionItem, ItemAscension, ItemTrackGroup, ItemTracks, ItemTrackRange } from '../shared/gamedata'
 import type { SocketRules } from '../shared/sockets'
 import type { EmbellishmentRules } from '../shared/item-enhancements'
+import type { SeasonRuleset } from '../shared/season-rules'
 
 type Candidate = { itemId: number; upgradeTrackId: string | null; source: { activity: string } }
 type Track = { id: string; name: string; ranks: Array<{ rank: number; itemLevel: number }>; beyondRanks?: Array<{ rank: number; itemLevel: number; via?: ItemAscension | null }> }
@@ -26,6 +27,9 @@ export function trackStartLevel(name: string): number | null {
   }
   return null
 }
+
+/** The current season's upgrade tracks with their crest and gold costs, for the crest planner and upgrade advisor */
+export const seasonUpgradeTracks = ((catalogJson as unknown as { rulesets: SeasonRuleset[] }).rulesets[0]?.upgradeTracks ?? []) as SeasonRuleset['upgradeTracks']
 
 /** The current season's socket bonuses, or null when the catalog has none reviewed */
 export const socketRules: SocketRules | null = rulesets.find(ruleset => ruleset.sockets)?.sockets ?? null

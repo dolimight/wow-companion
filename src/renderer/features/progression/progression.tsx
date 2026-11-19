@@ -7,6 +7,7 @@ import type { ItemVariant } from "../../../shared/gear-variants";
 import type { ProgressionResult } from "../../../shared/progression-evaluation";
 import { CurrencyLabel } from "../../components/CurrencyLabel";
 import { CrestBudget } from "../season/season";
+import { UpgradeAdvisor } from "../optimizer/UpgradeAdvisor";
 import { defaultContentPreferences, type ContentPreferences } from "../../../shared/season-rules";
 import { AppSelect } from "../../components/AppSelect";
 import { GearSlotIcon } from "../../components/GearSlotIcon";
@@ -484,6 +485,7 @@ export function ProgressionPage({
             </div>
           )}
           {result.seasonReference&&<CrestBudget character={character} tracks={result.seasonReference.tracks} />}
+          {result.seasonReference&&<UpgradeAdvisor character={character} activity={activity} />}
           {result.seasonReference&&<Card as="details" className="progression-season-reference"><summary>Installed-client seasonal reference · {result.seasonReference.candidateCount.toLocaleString()} item variants</summary><p className="secondary small">Build-specific base tracks and costs · Personal vendor quotes take precedence over undiscounted prices</p><div className="table-wrap"><table className="data-table"><thead><tr><th>Track</th><th>Ranks</th><th>Base cost per rank</th></tr></thead><tbody>{result.seasonReference.tracks.map(track=><tr key={track.id}><td>{track.name}</td><td>{track.ranks[0]?.itemLevel}–{track.ranks.at(-1)?.itemLevel}</td><td>{track.ranks[1]?.cost?.length?track.ranks[1].cost.map((cost,index)=><span key={cost.currencyId}>{index?' + ':''}<CurrencyLabel id={cost.currencyId} amount={cost.amount} /></span>):'Unknown'}</td></tr>)}</tbody></table></div><ul className="secondary small">{result.seasonReference.limitations.map(reason=><li key={reason}>{reason}</li>)}</ul></Card>}
           <div className="progression-layout">
             <section className="progression-slots" aria-label="Per-slot progression">

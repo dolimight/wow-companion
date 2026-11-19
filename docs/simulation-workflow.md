@@ -64,6 +64,10 @@ Gear → Loot finder ranks where to farm. It is the same engine in `mode: 'loot'
 
 When the addon has seen this week's Great Vault choices, Best gear shows a Great Vault card. Its comparison is the optimizer in `mode: 'vault'`: owned pieces are screened (reusing the cache), `vaultSets` builds the best owned set without the vault, then that set with each choice in its slot, and every set is confirmed. `vaultChoices` ranks each choice once by its gain over skipping the vault and names one to take only when that difference clears the noise. Runs are saved in `optimizer-vault`
 
+## Upgrade advisor
+
+Gear → Progress shows What to upgrade first under the crest budget. It is the optimizer in `mode: 'upgrades'`: each equipped piece with a crest rank left (from `crestPlan` over `seasonUpgradeTracks`) is measured alone at its next rank's item level, reusing the screening cache. `upgradeAdvice` ranks clear gains by damage per crest, ranks that cost no crest first, and spends the crests the addon saw on the best value first, one rank per piece. Runs are saved in `optimizer-upgrades`
+
 ## Validation and remaining release gate
 
 Focused tests exercise real fixture child processes for timeout, cancellation, output bounds, argument isolation, and report parsing, plus persistence, character deletion, baseline invalidation, and uncertainty comparisons
