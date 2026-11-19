@@ -58,7 +58,7 @@ Every stage runs at below-normal process priority. The processor load defaults t
 
 Focused tests exercise real fixture child processes for timeout, cancellation, output bounds, argument isolation, and report parsing, plus persistence, character deletion, baseline invalidation, and uncertainty comparisons
 
-Those fixtures are synthetic and do not establish a real engine/client round-trip
+Those fixtures are synthetic. The real engine round trip runs only in GitHub Actions (`.github/workflows/simulationcraft.yml`): `src/main/simulation/engine.e2e.test.ts` takes a sample Blood Death Knight profile from the official `simulationcraftorg/simc` Docker image, adds profileset lines written by the app's `itemLine`, runs the engine through `runSimulationProcess`, and reads the report with `parseSimulationReport`. It runs on pull requests that touch simulation or optimizer code, nightly, and on demand. Locally it is skipped, because SIMC_IMAGE is unset, so it never runs on a player's computer
 
 Current-game validation requires the user-selected SimulationCraft executable and a complete real character profile. No executable is downloaded automatically
 
