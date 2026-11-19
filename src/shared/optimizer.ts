@@ -18,9 +18,10 @@ export const optimizerStartSchema = z.object({
   /**
    * Best gear weighs everything you could wear; the loot finder measures only this season's drops, by where they
    * drop; the vault advisor compares each Great Vault choice worn with the best of what you own; the upgrade advisor
-   * measures each equipped piece one crest rank higher; best talents runs the top players' builds on your gear
+   * measures each equipped piece one crest rank higher; best talents runs the top players' builds on your gear;
+   * enchants tries the top players' enchants and gems on what you wear
    */
-  mode: z.enum(['gear', 'loot', 'vault', 'upgrades', 'talents']).default('gear'),
+  mode: z.enum(['gear', 'loot', 'vault', 'upgrades', 'talents', 'enchants']).default('gear'),
   /** The loot finder measures drops at the first rank of this upgrade track */
   track: z.enum(['champion', 'hero', 'myth']).default('hero'),
 })
@@ -59,7 +60,7 @@ export type OptimizerCandidate = {
 }
 
 export type OptimizerMeasure = { mean: number; error: number | null; gain: number }
-export type OptimizerCombo = { key: string; label: string; picks: Partial<Record<GearSlot, string>>; why: string | null; by: 'ai' | 'app'; talents?: string; players?: number }
+export type OptimizerCombo = { key: string; label: string; picks: Partial<Record<GearSlot, string>>; why: string | null; by: 'ai' | 'app'; talents?: string; players?: number; enhancement?: { kind: 'enchant' | 'gem'; slot: GearSlot | null; name: string; current: string | null } }
 export const optimizerStages = ['gathering', 'screening', 'choosing', 'confirming', 'done'] as const
 export type OptimizerStage = (typeof optimizerStages)[number] | 'failed' | 'cancelled'
 
@@ -359,4 +360,19 @@ export function talentBuilds(run: Pick<OptimizerRun, 'combos' | 'results'>): Tal
     const result = run.results[combo.key]
     return combo.talents && result ? [{ combo, gain: result.gain, error: result.error, clear: isGain(result) }] : []
   }).sort((a, b) => b.gain - a.gain)
+}
+
+export type EnhancementOption = { combo: OptimizerCombo; gain: number; error: number | null; clear: boolean }
+
+/** Each slot's best enchant swap and the best gem, ranked by gain; one is worth making only when it clears the noise */
+export function enhancementAdvice(run: Pick<OptimizerRun, 'combos' | 'results'>): EnhancementOption[] {
+  const best = new Map<string, EnhancementOption>()
+  for (const combo of run.combos) {
+    const result = run.results[combo.key]
+    if (!combo.enhancement || !result) continue
+    const group = combo.enhancement.kind === 'gem' ? 'gems' : combo.enhancement.slot!
+    const option = { combo, gain: result.gain, error: result.error, clear: isGain(result) }
+    if (!best.has(group) || option.gain > best.get(group)!.gain) best.set(group, option)
+  }
+  return [...best.values()].sort((a, b) => Number(b.clear) - Number(a.clear) || b.gain - a.gain)
 }

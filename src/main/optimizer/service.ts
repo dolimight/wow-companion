@@ -9,7 +9,7 @@ import { gearItemSchema, type Character, type GearItem, type GearSlot } from '..
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, lootSources, optimizerTrackNames, talentBuilds, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
+import { bestCombos, enhancementAdvice, lootSources, optimizerTrackNames, talentBuilds, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -71,7 +71,7 @@ export type OptimizerOptions = {
 
 /** Best gear and the loot finder keep their last runs apart */
 const space = (mode: OptimizerMode | undefined) => mode && mode !== 'gear' ? `optimizer-${mode}` : 'optimizer'
-const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor', upgrades: 'The upgrade advisor', talents: 'Best talents' }
+const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor', upgrades: 'The upgrade advisor', talents: 'Best talents', enchants: 'The enchant and gem check' }
 
 export function createOptimizer(options: OptimizerOptions) {
   const now = () => (options.now?.() ?? new Date()).toISOString()
@@ -248,6 +248,7 @@ export function createOptimizer(options: OptimizerOptions) {
     if (start.mode === 'vault') return adviseVault(run, character, capped)
     if (start.mode === 'upgrades') return adviseUpgrades(run, character, capped)
     if (start.mode === 'talents') return compareTalents(run, character, capped)
+    if (start.mode === 'enchants') return compareEnhancements(run, character, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
     run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
@@ -321,6 +322,45 @@ export function createOptimizer(options: OptimizerOptions) {
     run.results = await measure(run, character, run.combos.map(combo => ({ label: combo.key, items: [], talents: combo.talents })), confirmIterations, 'Best talents', top, key => run.combos.find(combo => combo.key === key)?.label ?? key)
     const best = talentBuilds(run)[0]
     await finish(run, best?.clear ? `The build used by ${best.combo.players} top players adds ${Math.round(best.gain).toLocaleString('en-US')} damage per second over yours` : 'No top player build clearly beats yours on your gear')
+  }
+
+  /**
+   * Enchants and gems: the top players' three most used enchants for each slot you wear, and their three most used gems
+   * in every socket you have, each tried on your gear at the confirming precision
+   */
+  async function compareEnhancements(run: OptimizerRun, character: Character, top: TopPlayers | null) {
+    if (!top) throw new Error('Top players could not be read for your specialization right now')
+    const same = (a: string | null | undefined, b: string | null | undefined) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
+    const sets: Array<{ label: string; items: GearItem[] }> = []
+    run.combos = []
+    for (const group of topSlotGroups) {
+      const choices = (top.slots[group.group]?.enchants ?? []).slice(0, 3)
+      for (const slot of group.slots) {
+        const worn = character.gear.find(item => item.slot === slot)
+        if (!worn?.itemId) continue
+        choices.filter(choice => !same(choice.name, worn.enchant)).forEach((choice, index) => {
+          const key = `enchant-${slot}-${index + 1}`
+          run.combos.push({ key, label: choice.name, picks: {}, why: `Used by ${choice.count} of ${top.gearPlayers} top players`, by: 'app', enhancement: { kind: 'enchant', slot, name: choice.name, current: worn.enchant } })
+          sets.push({ label: key, items: [{ ...worn, enchant: choice.name, enchantId: null }] })
+        })
+      }
+    }
+    // Gems are compared across every socket at once, as players usually socket the same gem everywhere
+    const gems = new Map<string, number>()
+    for (const slot of Object.values(top.slots)) for (const gem of slot?.gems ?? []) gems.set(gem.name, (gems.get(gem.name) ?? 0) + gem.count)
+    const socketed = character.gear.filter(item => (item.gemIds ?? []).some(Boolean))
+    if (socketed.length) [...gems.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).forEach(([name], index) => {
+      if (socketed.every(item => item.gems.length > 0 && item.gems.every(gem => same(gem, name)))) return
+      const key = `gems-${index + 1}`
+      run.combos.push({ key, label: name, picks: {}, why: `In all ${socketed.length} of your sockets`, by: 'app', enhancement: { kind: 'gem', slot: null, name, current: null } })
+      sets.push({ label: key, items: socketed.map(item => ({ ...item, gems: (item.gemIds ?? []).filter(Boolean).map(() => name), gemIds: null })) })
+    })
+    if (!sets.length) throw new Error('You already use the top players\' enchants and gems everywhere')
+    await stage(run, 'confirming')
+    run.results = await measure(run, character, sets, confirmIterations, 'Enchants and gems', top, key => run.combos.find(combo => combo.key === key)?.label ?? key)
+    const best = enhancementAdvice(run)[0]
+    const where = best?.combo.enhancement?.slot ? ` on your ${gearSlotLabels[best.combo.enhancement.slot].toLowerCase()}` : ' in your sockets'
+    await finish(run, best?.clear ? `Use ${best.combo.label}${where}: ${Math.round(best.gain).toLocaleString('en-US')} damage per second` : 'Your enchants and gems are as good as the top players\' in this fight')
   }
 
   async function finish(run: OptimizerRun, summary: string | null) {
