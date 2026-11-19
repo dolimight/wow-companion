@@ -60,6 +60,10 @@ Every stage runs at below-normal process priority. The processor load defaults t
 
 Gear → Loot finder ranks where to farm. It is the same engine in `mode: 'loot'`: the pool is only this season's drops that fit the character (dungeons for Mythic+, Heroic raid bosses for Raiding), each measured alone at the first rank of the chosen upgrade track (Champion, Hero, or Myth, from `trackStartLevel` in `src/main/item-tracks.ts`). `lootSources` in `src/shared/optimizer.ts` groups the clear gains by dungeon or by raid boss, counting the best piece per slot and a ring or trinket once. Runs are saved apart from Best gear (feature state `optimizer-loot`) and reuse the screening cache
 
+## Great Vault advisor
+
+When the addon has seen this week's Great Vault choices, Best gear shows a Great Vault card. Its comparison is the optimizer in `mode: 'vault'`: owned pieces are screened (reusing the cache), `vaultSets` builds the best owned set without the vault, then that set with each choice in its slot, and every set is confirmed. `vaultChoices` ranks each choice once by its gain over skipping the vault and names one to take only when that difference clears the noise. Runs are saved in `optimizer-vault`
+
 ## Validation and remaining release gate
 
 Focused tests exercise real fixture child processes for timeout, cancellation, output bounds, argument isolation, and report parsing, plus persistence, character deletion, baseline invalidation, and uncertainty comparisons

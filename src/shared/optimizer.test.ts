@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { characterSchema, gearItemSchema, type GearSlot } from './domain'
-import { bestCombos, gearChanged, lootSources, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
+import { bestCombos, gearChanged, lootSources, vaultChoices, vaultSets, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
 
 const item = (slot: GearSlot, itemId: number, itemLevel: number) => gearItemSchema.parse({ slot, itemId, name: `Item ${itemId}`, itemLevel })
 const candidate = (key: string, slot: GearSlot, itemId: number, itemLevel: number, origin: OptimizerOrigin = 'bags'): OptimizerCandidate => ({ key, slot, item: item(slot, itemId, itemLevel), origin, source: null, icon: null, quality: 4, popularity: null })
@@ -81,5 +81,16 @@ describe('gear optimizer sets', () => {
     const m = (gain: number) => ({ mean: 0, error: 10, gain })
     const sources = lootSources({ pool, screen: { a: m(500), b: m(900), c: m(300), d: m(400), e: m(1500), f: m(20) } })
     expect(sources.map(source => [source.instance, Math.round(source.total), source.pieces.length])).toEqual([['Rest', 1500, 1], ['Vale', 1300, 2]])
+  })
+
+  it('builds one set per vault choice on the best owned set, and takes one only past the noise', () => {
+    const pool = [candidate('h', 'head', 1, 300, 'bags'), candidate('v1', 'back', 2, 310, 'vault'), candidate('v2', 'trinket1', 3, 310, 'vault')]
+    const m = (gain: number) => ({ mean: 0, error: 40, gain })
+    const sets = vaultSets(pool, { h: m(500), v1: m(300), v2: m(-50) })
+    expect(sets.map(set => [set.key, set.picks])).toEqual([['vault-skip', { head: 'h' }], ['vault-1', { head: 'h', back: 'v1' }], ['vault-2', { head: 'h', trinket1: 'v2' }]])
+    const clear = vaultChoices({ pool, combos: sets, results: { 'vault-skip': m(500), 'vault-1': m(820), 'vault-2': m(450) } })
+    expect(clear.take?.candidate.key).toBe('v1')
+    expect(clear.choices.map(choice => Math.round(choice.over))).toEqual([320, -50])
+    expect(vaultChoices({ pool, combos: sets, results: { 'vault-skip': m(500), 'vault-1': m(560), 'vault-2': m(450) } }).take).toBeNull()
   })
 })
