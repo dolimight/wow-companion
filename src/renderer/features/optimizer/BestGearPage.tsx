@@ -101,7 +101,7 @@ export function Forge({ run }: { run: OptimizerRun }) {
       <p className="forge-status">
         {run.stage === 'failed' ? <span className="error" role="alert">{(run.failure ?? 'The search stopped').split(' — ')[0]} · the troubleshooting log in Settings → Local data has the details</span>
           : run.stage === 'cancelled' ? 'Stopped'
-            : <>{stageLabels[run.stage as (typeof optimizerStages)[number]]} · {elapsed}{run.stage === 'screening' ? ` · ${run.pool.length} pieces on ${run.threads} threads` : run.stage === 'confirming' ? ` · ${run.combos.length} sets on ${run.threads} threads` : ''}{run.stage === 'choosing' && run.provider ? ` with ${run.provider}` : ''}</>}
+            : <>{stageLabels[run.stage as (typeof optimizerStages)[number]]} · {elapsed}{run.stage === 'screening' ? ` · ${run.pool.length} pieces on ${run.threads} threads${run.reused ? `, ${run.reused} already measured` : ''}` : run.stage === 'confirming' ? ` · ${run.combos.length} sets on ${run.threads} threads` : ''}{run.stage === 'choosing' && run.provider ? ` with ${run.provider}` : ''}</>}
       </p>
       {/* The board is the picture of the search; the status line above says the same in words */}
       <div className="forge-board" aria-hidden="true">
@@ -137,7 +137,7 @@ export function Results({ run, character }: { run: OptimizerRun; character: Char
         <SetCard title="Wear now" empty="Nothing you own beats what you wear in this fight" combo={wearNow} run={run} byKey={byKey} character={character} />
         {run.includeTargets && <UpgradeCard run={run} character={character} />}
       </div>
-      <p className="muted small best-gear-meta">{simulationScenarios[run.scenarioId].label} · ran {new Date(run.startedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}{run.finishedAt ? ` · took ${minutes(Date.parse(run.finishedAt) - Date.parse(run.startedAt))}` : ''} · {Object.keys(run.screen).length} of {run.pool.length} pieces measured</p>
+      <p className="muted small best-gear-meta">{simulationScenarios[run.scenarioId].label} · ran {new Date(run.startedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}{run.finishedAt ? ` · took ${minutes(Date.parse(run.finishedAt) - Date.parse(run.startedAt))}` : ''} · {Object.keys(run.screen).length} of {run.pool.length} pieces measured{run.reused ? ` · ${run.reused} reused from earlier runs` : ''}</p>
       {run.summary && <Card className="best-gear-summary"><p>{run.provider ? <ProviderIcon id={run.provider.toLowerCase()} size={14} /> : <Sparkles size={14} aria-hidden="true" />}{run.summary}</p></Card>}
       <Card as="section" aria-labelledby="best-gear-sets">
         <div className="surface-heading"><h2 id="best-gear-sets">Every set tested</h2><p>{simulationScenarios[run.scenarioId].label} · gain over what you wear now, with its margin of error</p></div>
