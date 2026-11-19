@@ -168,13 +168,13 @@ export function LootList({ items: listed, character }: { items: LootItem[]; char
  * Play mode's sticky bar: where you are, your role, and the step controls up top, so moving to the next boss never
  * needs a scroll. The track under it names every boss and jumps to one on a click
  */
-export function PlayBar({ title, detail, bosses, step, onStep, role, onRole, onExit }: { title: string; detail?: string; bosses: JournalBoss[]; step: number; onStep: (step: number) => void; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
+export function PlayBar({ title, detail, extra, bosses, step, onStep, role, onRole, onExit }: { title: string; detail?: string; extra?: React.ReactNode; bosses: JournalBoss[]; step: number; onStep: (step: number) => void; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const previous = bosses[step - 1], next = bosses[step + 1]
   return (
     <Card as="header" className="play-bar">
       <div className="play-bar-row">
         <Button variant="quiet" className="play-exit" onClick={onExit} aria-label="Exit play mode"><X size={14} aria-hidden="true" />Exit</Button>
-        <span className="play-bar-title"><b>{title}</b>{detail && <small>{detail}</small>}</span>
+        <span className="play-bar-title"><b>{title}</b>{detail && <small>{detail}</small>}{extra}</span>
         <RolePicker role={role} onChange={onRole} />
         <div className="play-bar-steps">
           <Button disabled={!previous} onClick={() => onStep(step - 1)} aria-label={previous ? `Back to ${previous.name}` : 'Back'} title={previous ? `Back to ${previous.name} (←)` : undefined}><ArrowLeft size={14} aria-hidden="true" /></Button>

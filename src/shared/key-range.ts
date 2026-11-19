@@ -34,6 +34,7 @@ export function seasonDungeons(character: Pick<Character, 'seasonRuns'>) {
       timeLimitMs: current.timeLimitMs ?? dungeon.timeLimitMs,
       timed,
       overtime: better(current.overtime, dungeon.overtime),
+      score: Math.max(current.score ?? 0, dungeon.score ?? 0) || null,
       ...(timed !== current.timed ? { source: snapshot.source, observedAt: snapshot.observedAt } : {}),
     })
   }

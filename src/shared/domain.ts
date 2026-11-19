@@ -85,6 +85,8 @@ export const seasonDungeonSchema = z.object({
   timeLimitMs: z.number().int().positive().nullable().default(null),
   timed: z.object({ level: z.number().int().min(2).max(40), durationMs: z.number().int().positive().nullable().default(null), upgrades: z.number().int().min(1).max(3).nullable().default(null), completedAt: z.string().datetime().nullable().default(null) }).nullable().default(null),
   overtime: z.object({ level: z.number().int().min(2).max(40), durationMs: z.number().int().positive().nullable().default(null) }).nullable().default(null),
+  /** The Mythic+ score this dungeon counts for, from its best run, when the source reports one */
+  score: z.number().nonnegative().nullable().default(null),
 })
 export type SeasonDungeon = z.infer<typeof seasonDungeonSchema>
 export const seasonRunsSnapshotSchema = z.object({ source: z.string().max(60), observedAt: z.string().datetime(), dungeons: z.array(seasonDungeonSchema).max(30) })

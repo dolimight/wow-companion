@@ -12,8 +12,8 @@ const profileSchema = z.object({
   gear:z.object({item_level_equipped:z.number().nonnegative().optional(),items:z.record(z.string(),z.unknown()).optional()}).nullable().optional(),
   mythic_plus_scores_by_season:z.array(z.object({season:z.string(),scores:z.object({all:z.number().nonnegative()})})).nullable().optional(),
   mythic_plus_ranks:z.object({overall:rankGroup.optional(),class:rankGroup.optional()}).nullable().optional(),
-  mythic_plus_best_runs:z.array(z.object({dungeon:z.string().min(1).max(120),mythic_level:z.number().int(),clear_time_ms:z.number().int().positive().optional(),par_time_ms:z.number().int().positive().optional(),num_keystone_upgrades:z.number().int().optional(),completed_at:z.string().optional()})).nullable().optional(),
-  mythic_plus_alternate_runs:z.array(z.object({dungeon:z.string().min(1).max(120),mythic_level:z.number().int(),clear_time_ms:z.number().int().positive().optional(),par_time_ms:z.number().int().positive().optional(),num_keystone_upgrades:z.number().int().optional(),completed_at:z.string().optional()})).nullable().optional(),
+  mythic_plus_best_runs:z.array(z.object({dungeon:z.string().min(1).max(120),mythic_level:z.number().int(),clear_time_ms:z.number().int().positive().optional(),par_time_ms:z.number().int().positive().optional(),num_keystone_upgrades:z.number().int().optional(),completed_at:z.string().optional(),score:z.number().nonnegative().optional()})).nullable().optional(),
+  mythic_plus_alternate_runs:z.array(z.object({dungeon:z.string().min(1).max(120),mythic_level:z.number().int(),clear_time_ms:z.number().int().positive().optional(),par_time_ms:z.number().int().positive().optional(),num_keystone_upgrades:z.number().int().optional(),completed_at:z.string().optional(),score:z.number().nonnegative().optional()})).nullable().optional(),
   mythic_plus_weekly_highest_level_runs:z.array(z.object({dungeon:z.string(),mythic_level:z.number().int().nonnegative(),completed_at:z.string().optional(),num_keystone_upgrades:z.number().int().optional()})).nullable().optional(),
   talentLoadout:z.object({loadout_text:z.string().min(1).max(400),loadout_spec_id:z.number().int().optional()}).nullable().optional(),
   raid_progression:z.record(z.string(),z.object({summary:z.string(),total_bosses:z.number().int().nonnegative().optional(),normal_bosses_killed:z.number().int().nonnegative().optional(),heroic_bosses_killed:z.number().int().nonnegative().optional(),mythic_bosses_killed:z.number().int().nonnegative().optional()})).nullable().optional(),
@@ -46,7 +46,9 @@ function seasonRuns(data:z.infer<typeof profileSchema>,observedAt:string){
   const byDungeon=new Map<string,SeasonDungeon>()
   for(const run of [...(data.mythic_plus_best_runs??[]),...(data.mythic_plus_alternate_runs??[])]){
     if(run.mythic_level<2||run.mythic_level>40)continue
-    const current=byDungeon.get(run.dungeon)??{dungeon:run.dungeon,timeLimitMs:run.par_time_ms??null,timed:null,overtime:null}
+    const current=byDungeon.get(run.dungeon)??{dungeon:run.dungeon,timeLimitMs:run.par_time_ms??null,timed:null,overtime:null,score:null}
+    // A dungeon counts for its best run's score
+    if(run.score!=null)current.score=Math.max(current.score??0,run.score)
     const upgrades=run.num_keystone_upgrades??null
     if(upgrades!=null&&upgrades>0){if(!current.timed||run.mythic_level>current.timed.level)current.timed={level:run.mythic_level,durationMs:run.clear_time_ms??null,upgrades:Math.min(3,upgrades),completedAt:parseTime(run.completed_at)}}
     else if(upgrades===0&&(!current.overtime||run.mythic_level>current.overtime.level))current.overtime={level:run.mythic_level,durationMs:run.clear_time_ms??null}

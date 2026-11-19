@@ -6,6 +6,7 @@ import { AppSelect } from '../../components/AppSelect'
 import { Button, EmptyState } from '../../components/ui/primitives'
 import { TonightKeys } from '../season/season'
 import { compareWithTop } from '../../../shared/top-compare'
+import { keyGains, scoreModel } from '../../../shared/key-score'
 import type { TopPlayers } from '../../../shared/top-players'
 import './key-range.css'
 import { Card } from '../../components/ui/card'
@@ -54,6 +55,11 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
   const result = focus ? { verdict: dungeonVerdict(focus, level), counts: null, withData: focus.timed ? 1 : 0 } : overallVerdict(dungeons, level)
   const best = highestTimed(scope)
   const low = lowestDungeon(dungeons)
+  // Rating each dungeon's next timed level would add, estimated from your own run scores
+  const model = useMemo(() => scoreModel(dungeons), [dungeons])
+  const gains = useMemo(() => model ? keyGains(dungeons, model) : [], [model, dungeons])
+  const gainFor = new Map(gains.map(entry => [entry.dungeon, entry]))
+  const bestGain = gains[0] && gains[0].gain >= 1 ? gains[0] : null
   const missingEnchants = character.gear.filter(item => ['mainHand', 'finger1', 'finger2'].includes(item.slot) && item.enchantCoverage === 'complete' && !item.enchant)
   const versus = useMemo(() => top ? compareWithTop(character.gear, character.itemLevel, top) : null, [top, character.gear, character.itemLevel])
   const ilvlGap = versus?.itemLevel && versus.itemLevel.yours != null ? versus.itemLevel.yours - versus.itemLevel.average : null
@@ -152,6 +158,7 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
                 <span className="key-dungeon-name">{dungeon.dungeon}</span>
                 <span className="key-dungeon-best">{dungeon.timed ? <>+{dungeon.timed.level}<small>timed</small></> : <small>No timed key</small>}</span>
                 <span className="key-dungeon-meta">{runSummary(dungeon)}</span>
+                {gainFor.get(dungeon.dungeon) && <span className="key-dungeon-gain">Time +{gainFor.get(dungeon.dungeon)!.level} for about +{Math.round(gainFor.get(dungeon.dungeon)!.gain)} rating</span>}
                 <span className={`key-chip kv-${verdict}`}>+{level} · {verdictLabels[verdict]}</span>
               </button>
             )
@@ -162,6 +169,9 @@ export function KeyRangePage({ character, refreshing, onRefresh, gearPlanLink, t
       <Card as="section" aria-labelledby="key-next-title">
         <div className="surface-heading"><h2 id="key-next-title">What would move you up</h2><p>Toward +{level}</p></div>
         <div className="key-next">
+          {bestGain && (
+            <div><div><h3>Time +{bestGain.level} {bestGain.dungeon} for about +{Math.round(bestGain.gain)} rating</h3><p>The most rating for one key. Estimated from your own runs' scores, about {Math.round(model!.perLevel)} per key level, so it moves as you run more</p></div>{tonightLink(<>Plan tonight</>)}</div>
+          )}
           {low && low.timed && (
             <div><div><h3>Time +{low.timed.level + 1} {low.dungeon}</h3><p>It's your lowest dungeon, so another timed level there adds more score than one in a dungeon you've already pushed</p></div>{tonightLink(<>Plan tonight</>)}</div>
           )}
