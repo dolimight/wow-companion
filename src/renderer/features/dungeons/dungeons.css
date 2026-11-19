@@ -120,28 +120,10 @@
 .dungeon-enemy-tags .badge svg { margin-right: 3px; vertical-align: -1px; }
 .dungeon-enemy-forces { font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }
 .dungeon-enemy-forces small { font-size: 11.5px; font-weight: 500; color: var(--muted); }
-.play-top .dungeon-role { margin-left: auto; }
 
-.dungeon-play { display: grid; gap: 14px; }
-.play-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--secondary); }
-.play-steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
-.play-steps i { height: 6px; border-radius: 3px; background: var(--surface2); }
-.play-steps i[data-state="done"] { background: var(--green); }
-.play-steps i[data-state="on"] { background: var(--accent); }
-.play-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 42%); gap: 16px; }
-.play-card { display: grid; align-content: start; gap: 14px; }
-.play-boss { display: flex; align-items: center; gap: 14px; }
-.play-boss small { font-size: 12px; color: var(--muted); }
-.play-boss h2 { font-size: 24px; letter-spacing: -.02em; }
-.play-card .boss-tips { font-size: 15px; gap: 6px; }
-.play-targets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.play-targets small { display: block; font-size: 11.5px; color: var(--muted); }
-.play-targets b { font-size: 20px; font-variant-numeric: tabular-nums; }
-.play-map { padding: 10px; display: grid; }
-.play-nav { display: flex; justify-content: space-between; gap: 12px; }
 
 @media (max-width: 1000px) {
-  .dungeon-route-row, .play-main { grid-template-columns: minmax(0, 1fr); }
+  .dungeon-route-row { grid-template-columns: minmax(0, 1fr); }
   .dungeon-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .boss-body { padding-left: 16px; }
   .dungeon-enemy-body, .dungeon-enemy-body[data-image] { grid-template-columns: minmax(0, 1fr); padding-left: 16px; }
@@ -173,9 +155,64 @@
 
 /* Play mode: the trash a route pulls before the boss on screen */
 .play-pulls { display: grid; gap: 8px; }
-.play-pulls h4 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--secondary); }
-.play-pull-rows { display: grid; gap: 4px; }
+.play-pull-rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 20px; }
 .play-pull { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; padding: 4px 0; }
 .play-pull .dungeon-enemy-icon { width: 36px; height: 36px; border-radius: 8px; }
 .play-pull b small { font-weight: 500; color: var(--muted); }
 .play-pull[data-emphasis="quiet"] { opacity: .6; }
+
+/* Play mode: a sticky bar with the step controls, the boss on screen, then one card per part of the fight */
+.dungeon-play { display: grid; gap: 14px; }
+.play-bar { position: sticky; top: 0; z-index: 5; display: grid; gap: 12px; padding: 12px 16px 10px; box-shadow: 0 10px 24px -18px rgb(0 0 0 / .55); }
+.play-bar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.play-exit { margin-left: -6px; }
+.play-bar-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin-right: auto; }
+.play-bar-title b { font-size: 14px; white-space: nowrap; }
+.play-bar-title small { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.play-bar-steps { display: flex; gap: 6px; }
+.play-next { max-width: 300px; }
+.play-next span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.play-track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.play-track button { display: grid; gap: 6px; width: 100%; padding: 2px 0 0; border: 0; border-radius: 4px; background: none; color: var(--muted); font: inherit; font-size: 11.5px; text-align: left; cursor: pointer; }
+.play-track i { height: 4px; border-radius: 2px; background: var(--surface2); transition: background-color .2s ease; }
+.play-track span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .2s ease; }
+.play-track [data-state="done"] i { background: var(--green); }
+.play-track [data-state="done"] span { color: var(--secondary); }
+.play-track [data-state="on"] i { background: var(--accent); }
+.play-track [data-state="on"] span { color: var(--ink); font-weight: 600; }
+.play-track button:hover span { color: var(--ink); }
+.play-track button:hover i { filter: brightness(1.25); }
+.play-track button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.play-hero { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; }
+.play-hero-name { display: grid; gap: 2px; min-width: 0; }
+.play-hero-name small { font-size: 12px; color: var(--muted); }
+.play-hero-name h2 { font-size: 24px; letter-spacing: -.02em; }
+.play-pace { display: grid; grid-template-columns: repeat(3, auto); gap: 0 18px; text-align: right; }
+.play-pace span { display: grid; gap: 1px; }
+.play-pace span small { font-size: 11.5px; color: var(--muted); }
+.play-pace b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.play-pace-note { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-bottom: 2px; font-size: 11.5px; color: var(--muted); }
+
+.play-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 40%); align-items: start; gap: 16px; }
+.play-column { display: grid; gap: 14px; min-width: 0; }
+/* The map stays in view under the bar while the column beside it scrolls */
+.play-map { position: sticky; top: 112px; display: grid; padding: 10px; }
+.play-section { display: grid; align-content: start; gap: 12px; }
+.play-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.play-section-head h3 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 14px; }
+.play-section .boss-tips { font-size: 14.5px; gap: 6px; }
+.play-raid { display: grid; align-items: start; gap: 14px; }
+.play-raid[data-split] { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+
+@media (max-width: 1000px) {
+  .play-main, .play-raid[data-split] { grid-template-columns: minmax(0, 1fr); }
+  .play-map { position: static; }
+  .play-hero { grid-template-columns: auto minmax(0, 1fr); }
+  .play-pace { grid-column: 1 / -1; justify-content: start; text-align: left; }
+  .play-pace-note { justify-content: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-track i, .play-track span { transition: none; }
+}

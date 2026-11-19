@@ -1,6 +1,6 @@
 // Boss cards, strategy, and the role picker shared by the Dungeons and Raids pages
-import { useMemo, useState } from 'react'
-import { BookOpen, ChevronDown, ExternalLink, Gem, HeartPulse, Move, Shield, Skull, Sparkles, Swords, Users } from 'lucide-react'
+import { useEffect, useId, useMemo, useState } from 'react'
+import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ExternalLink, Gem, HeartPulse, Move, Shield, Skull, Sparkles, Swords, Users, X } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
 import { specRole, strategyFor, whyItMatters, type DungeonStrategy, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type LootItem, type StrategyNotes } from '../../../shared/dungeons'
 import { inLootTable, isGearDrop, lootKind, uniqueDrops, voidcoreShare } from '../../../shared/loot'
@@ -161,5 +161,72 @@ export function LootList({ items: listed, character }: { items: LootItem[]; char
       {items.length > mine.size && <Button variant="quiet" onClick={() => setAll(!all)}>{all ? `Only gear for ${spec}` : `Show all ${items.length} drops`}</Button>}
       <p className="muted small">Loot from the Encounter Journal. Blizzard doesn't publish drop rates, so only the Voidcore's odds are shown</p>
     </div>
+  )
+}
+
+/**
+ * Play mode's sticky bar: where you are, your role, and the step controls up top, so moving to the next boss never
+ * needs a scroll. The track under it names every boss and jumps to one on a click
+ */
+export function PlayBar({ title, detail, bosses, step, onStep, role, onRole, onExit }: { title: string; detail?: string; bosses: JournalBoss[]; step: number; onStep: (step: number) => void; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
+  const previous = bosses[step - 1], next = bosses[step + 1]
+  return (
+    <Card as="header" className="play-bar">
+      <div className="play-bar-row">
+        <Button variant="quiet" className="play-exit" onClick={onExit} aria-label="Exit play mode"><X size={14} aria-hidden="true" />Exit</Button>
+        <span className="play-bar-title"><b>{title}</b>{detail && <small>{detail}</small>}</span>
+        <RolePicker role={role} onChange={onRole} />
+        <div className="play-bar-steps">
+          <Button disabled={!previous} onClick={() => onStep(step - 1)} aria-label={previous ? `Back to ${previous.name}` : 'Back'} title={previous ? `Back to ${previous.name} (←)` : undefined}><ArrowLeft size={14} aria-hidden="true" /></Button>
+          <Button variant="primary" className="play-next" disabled={!next} onClick={() => onStep(step + 1)} title={next ? 'Next boss (→)' : undefined}>{next ? <><span>Next · {next.name}</span><ArrowRight size={14} aria-hidden="true" /></> : 'Last boss'}</Button>
+        </div>
+      </div>
+      <ol className="play-track" aria-label="Bosses">
+        {bosses.map((entry, index) => (
+          <li key={entry.encounterId}>
+            <button type="button" data-state={index < step ? 'done' : index === step ? 'on' : 'next'} aria-current={index === step ? 'step' : undefined} title={entry.name} onClick={() => onStep(index)}>
+              <i aria-hidden="true" /><span>{entry.name}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  )
+}
+
+/** The boss on screen: portrait, name, and where it falls in the run, with room on the right for a pace or other facts */
+export function PlayHero({ boss, step, total, children }: { boss: JournalBoss; step: number; total: number; children?: React.ReactNode }) {
+  return (
+    <Card as="section" className="play-hero" aria-label={boss.name}>
+      <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
+      <div className="play-hero-name"><small>Boss {step + 1} of {total}</small><h2>{boss.name}</h2></div>
+      {children}
+    </Card>
+  )
+}
+
+/** The arrow keys step through bosses and Escape leaves, unless focus is in a text field */
+export function usePlayKeys(count: number, setStep: (update: (value: number) => number) => void, onExit: () => void) {
+  useEffect(() => {
+    const keys = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('input, textarea, [contenteditable="true"], [role="listbox"], [role="menu"]')) return
+      if (event.key === 'ArrowRight') setStep(value => Math.min(count - 1, value + 1))
+      if (event.key === 'ArrowLeft') setStep(value => Math.max(0, value - 1))
+      if (event.key === 'Escape') onExit()
+    }
+    window.addEventListener('keydown', keys)
+    return () => window.removeEventListener('keydown', keys)
+  }, [count, setStep, onExit])
+}
+
+/** The parts under the boss, each in its own card with a heading, so play mode reads in sections instead of one long card */
+export function PlaySection({ icon: Icon, title, aside, className = '', children }: { icon: React.ComponentType<{ size?: number; 'aria-hidden'?: boolean | 'true' }>; title: string; aside?: React.ReactNode; className?: string; children: React.ReactNode }) {
+  const id = useId()
+  return (
+    <Card as="section" className={`play-section ${className}`} aria-labelledby={id}>
+      <div className="play-section-head"><h3 id={id}><Icon size={15} aria-hidden="true" />{title}</h3>{aside}</div>
+      {children}
+    </Card>
   )
 }

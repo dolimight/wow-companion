@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, CalendarCheck, Crown, Play, RefreshCw, Skull, Trophy, X } from 'lucide-react'
+import { ArrowLeft, BookOpen, CalendarCheck, Crown, Play, RefreshCw, Skull, Trophy } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
 import { journalDifficultyIds, whyItMatters, type DungeonJournal, type JournalBoss, type JournalRole } from '../../../shared/dungeons'
 import { raidDifficulties, raidDifficultyLabels, raidLockouts, raidSummary, type RaidDifficulty, type RaidInfo, type RaidStrategy } from '../../../shared/raids'
@@ -12,8 +12,8 @@ import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Badge, Button, EmptyState } from '../../components/ui/primitives'
 import { ToggleGroup, ToggleGroupItem } from '../../components/ui/toggle-group'
-import { ItemIcon, useGameData } from '../items/items'
-import { Ability, BossCard, RolePicker, StrategySource, StrategyView, useDungeonRole } from '../dungeons/encounters'
+import { useGameData } from '../items/items'
+import { Ability, BossCard, PlayBar, PlayHero, PlaySection, RolePicker, StrategySource, StrategyView, useDungeonRole, usePlayKeys } from '../dungeons/encounters'
 import { bundledRaid, useEncounterJournal } from '../dungeons/bundled'
 import { raidStrategy } from './strategy'
 import { BossCoach } from '../ai/BossCoach'
@@ -171,15 +171,7 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
 /** One boss at a time with the strategy for your role and the mechanics you must handle */
 function RaidPlay({ character, raid, bosses, strategy, role, difficulty, onRole, onExit }: { character: Character; raid: RaidInfo; bosses: JournalBoss[]; strategy: RaidStrategy | null; role: JournalRole; difficulty: RaidDifficulty; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const [step, setStep] = useState(0)
-  useEffect(() => {
-    const keys = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowRight') setStep(value => Math.min(bosses.length - 1, value + 1))
-      if (event.key === 'ArrowLeft') setStep(value => Math.max(0, value - 1))
-      if (event.key === 'Escape') onExit()
-    }
-    window.addEventListener('keydown', keys)
-    return () => window.removeEventListener('keydown', keys)
-  }, [bosses.length, onExit])
+  usePlayKeys(bosses.length, setStep, onExit)
   const boss = bosses[step]
   if (!boss) return null
   const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
@@ -187,24 +179,14 @@ function RaidPlay({ character, raid, bosses, strategy, role, difficulty, onRole,
   const warned = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role))
   return (
     <div className="dungeon-play" role="region" aria-label={`${raid.name} play mode`}>
-      <div className="play-top">
-        <span>{raid.name} · {raidDifficultyLabels[difficulty]}</span>
-        <RolePicker role={role} onChange={onRole} />
-        <Button variant="quiet" onClick={onExit}><X size={14} />Exit</Button>
-      </div>
-      <div className="play-steps" aria-hidden="true">{bosses.map((entry, index) => <i key={entry.encounterId} data-state={index < step ? 'done' : index === step ? 'on' : 'next'} />)}</div>
-      <Card className="play-card">
-        <div className="play-boss">
-          <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
-          <div><small>Boss {step + 1} of {bosses.length}</small><h2>{boss.name}</h2></div>
-        </div>
-        {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} showMythic={difficulty === 'mythic'} />}
-        <BossCoach character={character} instance={raid.name} difficulty={raidDifficultyLabels[difficulty]} boss={boss} role={role} plan={plan} mythic={difficulty === 'mythic'} />
-        {warned.length > 0 && <div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div>}
-      </Card>
-      <div className="play-nav">
-        <Button disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={14} />{step > 0 ? bosses[step - 1]!.name : 'Start'}</Button>
-        <Button variant="primary" disabled={step >= bosses.length - 1} onClick={() => setStep(step + 1)}>{step < bosses.length - 1 ? bosses[step + 1]!.name : 'Last boss'}<ArrowRight size={14} /></Button>
+      <PlayBar title={raid.name} detail={raidDifficultyLabels[difficulty]} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
+      <PlayHero boss={boss} step={step} total={bosses.length} />
+      <div className="play-raid" data-split={warned.length ? true : undefined}>
+        <PlaySection icon={BookOpen} title="How to play it">
+          {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} showMythic={difficulty === 'mythic'} />}
+          <BossCoach character={character} instance={raid.name} difficulty={raidDifficultyLabels[difficulty]} boss={boss} role={role} plan={plan} mythic={difficulty === 'mythic'} />
+        </PlaySection>
+        {warned.length > 0 && <PlaySection icon={Skull} title="Watch for"><div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div></PlaySection>}
       </div>
     </div>
   )

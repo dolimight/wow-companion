@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, Castle, ChevronDown, Compass, Copy, Crosshair, ExternalLink, Gem, HeartPulse, Map as MapIcon, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, X, Zap } from 'lucide-react'
+import { ArrowLeft, BookOpen, Castle, ChevronDown, Compass, Copy, Crosshair, ExternalLink, Gem, HeartPulse, Map as MapIcon, Play, RefreshCw, Shield, ShieldOff, Skull, Sparkles, Swords, Timer, Users, WandSparkles, Zap } from 'lucide-react'
 import type { Character, SeasonDungeon } from '../../../shared/domain'
 import { bestFamily, bossPace, clock, dungeonKey, enemyNote, keystoneTimers, pullsBeforeBosses, routeEmbedUrl, routeUrl, whyItMatters, wowheadNpcUrl, type DungeonEnemy, type LootItem, type PullGroup, type DungeonStrategy, type EnemySpell, type EnemySpellRef, type EnemyStrategy, type DungeonJournal, type DungeonRoutes, type JournalBoss, type JournalRole, type RouteFamily, type SeasonDungeonInfo } from '../../../shared/dungeons'
 import { lowestDungeon, seasonDungeons, timeToSpareMs, upgradesFor } from '../../../shared/key-range'
@@ -12,7 +12,7 @@ import { Card } from '../../components/ui/card'
 import { Badge, Button, EmptyState } from '../../components/ui/primitives'
 import { ItemIcon, useGameData } from '../items/items'
 import { dungeonStrategy } from './strategy'
-import { Ability, BossCard, flagLabels, LootList, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole } from './encounters'
+import { Ability, BossCard, flagLabels, LootList, PlayBar, PlayHero, PlaySection, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole, usePlayKeys } from './encounters'
 import { bundledSpell, useDungeonJournal } from './bundled'
 import { BossCoach } from '../ai/BossCoach'
 import './dungeons.css'
@@ -333,10 +333,8 @@ function PullList({ boss, groups, enemies, strategy, role, routed }: { boss: Jou
     const order = new Map((strategy?.enemies ?? []).map((entry, at) => [entry.name, at]))
     return [...byName.values()].sort((a, b) => (order.get(a.enemy.name) ?? 1e3) - (order.get(b.enemy.name) ?? 1e3) || Number(b.enemy.dangerous) - Number(a.enemy.dangerous) || b.count - a.count)
   }, [groups, byId, strategy])
-  const first = groups[0]?.pull, last = groups[groups.length - 1]?.pull
   return (
     <div className="play-pulls">
-      <h4><Users size={14} aria-hidden="true" />Before {boss.name}{first != null ? ` · ${first === last ? `pull ${first}` : `pulls ${first}–${last}`}` : ''}</h4>
       {!routed ? <p className="muted small">Pick a route with a map to see the pulls before each boss</p>
         : !rows.length ? <p className="muted small">This route pulls no trash before {boss.name}</p>
           : <div className="play-pull-rows">{rows.map(({ enemy, count }) => {
@@ -371,53 +369,38 @@ function PlayMode({ character, dungeon, family, familyIndex, timers, bosses, str
   const routeKey = family?.routeKey ?? null
   const pulls = useQuery({ queryKey: ['route-pulls', dungeon.slug, routeKey], queryFn: () => api.routePulls(dungeon.slug, routeKey!), enabled: !!routeKey, staleTime: Infinity, retry: false })
   const stretches = useMemo(() => pulls.data && enemies.data ? pullsBeforeBosses(pulls.data, enemies.data.enemies, bosses) : null, [pulls.data, enemies.data, bosses])
-  useEffect(() => {
-    const keys = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowRight') setStep(value => Math.min(bosses.length - 1, value + 1))
-      if (event.key === 'ArrowLeft') setStep(value => Math.max(0, value - 1))
-      if (event.key === 'Escape') onExit()
-    }
-    window.addEventListener('keydown', keys)
-    return () => window.removeEventListener('keydown', keys)
-  }, [bosses.length, onExit])
+  usePlayKeys(bosses.length, setStep, onExit)
   const boss = bosses[step]
   if (!boss) return null
   const pace = bossPace(timers, step, bosses.length)
   const tips = boss.tips.filter(tip => tip.role === role).map(tip => tip.text)
   const plan = strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)
   const warned = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role))
+  const groups = stretches?.get(boss.encounterId) ?? []
+  const first = groups[0]?.pull, last = groups[groups.length - 1]?.pull
   return (
     <div className="dungeon-play" role="region" aria-label={`${dungeon.name} play mode`}>
-      <div className="play-top">
-        <span>{dungeon.name}{familyIndex >= 0 ? ` · Route ${String.fromCharCode(65 + familyIndex)}` : ''}</span>
-        <RolePicker role={role} onChange={onRole} />
-        <Button variant="quiet" onClick={onExit}><X size={14} />Exit</Button>
-      </div>
-      <div className="play-steps" aria-hidden="true">{bosses.map((entry, index) => <i key={entry.encounterId} data-state={index < step ? 'done' : index === step ? 'on' : 'next'} />)}</div>
+      <PlayBar title={dungeon.name} detail={familyIndex >= 0 ? `Route ${String.fromCharCode(65 + familyIndex)}` : 'No route picked'} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
       <div className="play-main">
-        <Card className="play-card">
-          <div className="play-boss">
-            <ItemIcon icon={boss.portrait} size="large" label={boss.name} />
-            <div><small>Step {step + 1} of {bosses.length} · Boss {step + 1}</small><h2>{boss.name}</h2></div>
-          </div>
-          {pulls.isError ? <p className="muted small" role="alert">{errorMessage(pulls.error)}</p>
-            : routeKey && !stretches ? <p className="muted small" role="status">Loading the route's pulls…</p>
-              : <PullList boss={boss} groups={stretches?.get(boss.encounterId) ?? []} enemies={enemies.data?.enemies ?? []} strategy={strategy} role={role} routed={!!routeKey} />}
-          {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} />}
-          <BossCoach character={character} instance={dungeon.name} difficulty="Mythic+" boss={boss} role={role} plan={plan} />
-          {warned.length > 0 && <div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div>}
-          <div className="play-targets">
-            <Card size="sm"><small>Kill by for +3</small><b>{clock(pace.plusThree)}</b></Card>
-            <Card size="sm"><small>Kill by for +2</small><b>{clock(pace.plusTwo)}</b></Card>
-            <Card size="sm"><small>Kill by for +1</small><b>{clock(pace.plusOne)}</b></Card>
-          </div>
-          <p className="muted small">A rough pace: each timer split evenly across the bosses, not route data</p>
-        </Card>
-        <Card className="play-map"><RouteMap dungeon={dungeon.slug} family={family} /></Card>
-      </div>
-      <div className="play-nav">
-        <Button disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={14} />{step > 0 ? bosses[step - 1]!.name : 'Start'}</Button>
-        <Button variant="primary" disabled={step >= bosses.length - 1} onClick={() => setStep(step + 1)}>{step < bosses.length - 1 ? bosses[step + 1]!.name : 'Last boss'}<ArrowRight size={14} /></Button>
+        <div className="play-column">
+          <PlayHero boss={boss} step={step} total={bosses.length}>
+            <div className="play-pace" title="A rough pace: each timer split evenly across the bosses, not route data">
+              {([['+3', pace.plusThree], ['+2', pace.plusTwo], ['+1', pace.plusOne]] as const).map(([label, ms]) => <span key={label} aria-label={`Kill by ${clock(ms)} for ${label}`}><small>{label}</small><b>{clock(ms)}</b></span>)}
+              <small className="play-pace-note"><Timer size={12} aria-hidden="true" />Kill by, a rough pace</small>
+            </div>
+          </PlayHero>
+          <PlaySection icon={Users} title={`Before ${boss.name}`} aside={first != null && <Badge>{first === last ? `Pull ${first}` : `Pulls ${first}–${last}`}</Badge>}>
+            {pulls.isError ? <p className="muted small" role="alert">{errorMessage(pulls.error)}</p>
+              : routeKey && !stretches ? <p className="muted small" role="status">Loading the route's pulls…</p>
+                : <PullList boss={boss} groups={groups} enemies={enemies.data?.enemies ?? []} strategy={strategy} role={role} routed={!!routeKey} />}
+          </PlaySection>
+          <PlaySection icon={BookOpen} title="How to play it">
+            {!tips.length && !plan && boss.overview ? <p className="boss-overview">{boss.overview}</p> : <StrategyView notes={plan} role={role} journalTips={tips} />}
+            <BossCoach character={character} instance={dungeon.name} difficulty="Mythic+" boss={boss} role={role} plan={plan} />
+          </PlaySection>
+          {warned.length > 0 && <PlaySection icon={Skull} title="Watch for"><div className="boss-abilities">{warned.map(ability => <Ability key={ability.id} ability={{ ...ability, children: [] }} role={role} />)}</div></PlaySection>}
+        </div>
+        <Card as="aside" className="play-map" aria-label="Route map"><RouteMap dungeon={dungeon.slug} family={family} /></Card>
       </div>
     </div>
   )
