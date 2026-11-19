@@ -64,3 +64,25 @@ export function decodeLoadout(text: string, order: number[], maxRanks: (nodeId: 
   }
   return { version, specId, picks }
 }
+
+/**
+ * The talents a build takes in the specialization and hero trees, by name, and its hero tree, for a short written
+ * summary such as an AI prompt. The shared class tree is left out: it is mostly the same across builds
+ */
+export function talentSummary(tree: TalentTree, loadout: string): { hero: string | null; names: string[] } | null {
+  try {
+    const byId = new Map(tree.nodes.map(node => [node.id, node]))
+    const decoded = decodeLoadout(loadout, tree.order, id => byId.get(id)?.entries[0]?.maxRanks ?? 1)
+    if (decoded.specId !== tree.specId) return null
+    let hero: string | null = null
+    const names: string[] = []
+    for (const pick of decoded.picks) {
+      const node = byId.get(pick.nodeId)
+      if (!node || (!pick.purchased && !node.granted)) continue
+      const entry = node.entries[pick.entryIndex ?? 0] ?? node.entries[0]
+      if (node.section === 'selection') { hero = tree.subTrees.find(sub => sub.id === entry?.subTreeId)?.name ?? hero; continue }
+      if ((node.section === 'spec' || node.section === 'hero') && entry?.name && !names.includes(entry.name)) names.push(entry.name)
+    }
+    return { hero, names: names.slice(0, 60) }
+  } catch { return null }
+}

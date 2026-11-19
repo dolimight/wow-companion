@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { decodeLoadout } from './talents'
+import { decodeLoadout, talentSummary, type TalentTree } from './talents'
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 /** Writes bits least significant first, six per character, the way the game exports talents */
@@ -40,5 +40,22 @@ describe('talent export strings', () => {
     expect(() => decodeLoadout('not a string!', [1], () => 1)).toThrow('This isn’t a talent string from the game')
     expect(() => decodeLoadout(encode(header(9, 62)), [1], () => 1)).toThrow('version 9')
     expect(() => decodeLoadout('C', [1], () => 1)).toThrow('cut short')
+  })
+})
+
+describe('talent summary', () => {
+  it('names the specialization and hero talents a build takes, and its hero tree', () => {
+    const entry = (id: number, name: string, subTreeId = 0) => ({ id, spellId: id, name, icon: null, maxRanks: 1, subTreeId })
+    const node = (id: number, section: 'class' | 'spec' | 'hero' | 'selection', entries: ReturnType<typeof entry>[]) => ({ id, x: 0, y: 0, type: 0, section, subTreeId: 0, entries, granted: false, currency: null })
+    const tree = { treeId: 1, specId: 250, build: 'x', order: [11, 13, 15], edges: [], caps: {}, gates: [], spells: {},
+      nodes: [node(11, 'spec', [entry(1, 'Heart Strike')]), node(13, 'hero', [entry(2, 'First'), entry(3, 'Second')]), node(15, 'selection', [entry(4, 'San', 99), entry(5, 'Rider', 98)])],
+      subTrees: [{ id: 99, name: "San'layn", description: '', icon: null }, { id: 98, name: 'Rider', description: '', icon: null }] } as unknown as TalentTree
+    const text = encode([...header(2, 250),
+      [1, 1], [1, 1], [0, 1], [0, 1], // 11: bought
+      [1, 1], [1, 1], [0, 1], [1, 1], [1, 2], // 13: choice, second entry
+      [1, 1], [1, 1], [0, 1], [1, 1], [0, 2], // 15: hero tree, first entry
+    ])
+    expect(talentSummary(tree, text)).toEqual({ hero: "San'layn", names: ['Heart Strike', 'Second'] })
+    expect(talentSummary(tree, 'not a string!')).toBeNull()
   })
 })

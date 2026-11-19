@@ -24,7 +24,8 @@ export interface AiProvider {
 }
 
 /** What a feature may read about the player beyond its own input */
-export type AiFeatureContext = { character: Character | null }
+/** What a feature's prompt may use: the character the question is about, and its build's talents by name when known */
+export type AiFeatureContext = { character: Character | null; talents?: { hero: string | null; names: string[] } | null }
 
 /**
  * A feature plugin: builds the prompt for its input and gives the schema its answer follows. The answer is checked

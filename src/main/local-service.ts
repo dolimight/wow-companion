@@ -76,7 +76,7 @@ export async function startLocalService(options:{db:DatabaseClient;origins:strin
   const comparisons=createComparisonService({db,insights,blizzardApi:()=>connections.blizzardApi(),secrets:options.secrets})
   // AI help runs through the player's own assistant CLI, in a scratch folder of its own
   const aiDir=path.join(options.assetsDir,'ai');await mkdir(aiDir,{recursive:true})
-  const ai=createAiService({providers:builtinProviders(),selected:async()=>(await db.call('getSettings')).aiProvider,character:id=>db.call('getCharacter',id),scratchDir:aiDir})
+  const ai=createAiService({providers:builtinProviders(),selected:async()=>(await db.call('getSettings')).aiProvider,character:id=>db.call('getCharacter',id),scratchDir:aiDir,talentTree:specId=>gameData.call('talentTree',specId) as Promise<import('../shared/talents').TalentTree|null>})
   // The gear optimizer runs the engine in stages and asks the AI assistant, when one is connected, which sets to test
   const optimizer=createOptimizer({db,simulations,ai,changed,items:ids=>gameData.call('items',ids),topPlayers:async character=>{if(!character.specId||!character.specName)return null;const region=character.region==='us'||character.region==='eu'?character.region:'world';return insights.topPlayers({specId:character.specId,specName:character.specName,className:character.className,region,uncapped:true})}})
   const sync=createSync({db,refreshCharacter,discover:()=>connections.discover(!!options.autoSync),checkAddonFile:async()=>{await watcher?.check()},addonFile:()=>status,changed:()=>changed()})

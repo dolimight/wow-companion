@@ -29,10 +29,12 @@ export function BossCoach({ character, instance, difficulty, boss, role, plan, m
   const provider = useAiProvider()
   const client = useQueryClient()
   const input: BossCoachInput = { characterId: character.id, instance, difficulty, boss: boss.name, role, notes: pageNotes(boss, plan, role, mythic) }
-  const key = ['ai', 'bossCoach', provider?.id, input]
+  // A new build or new gear allows a new answer, since the prompt includes them
+  const build = [character.talents?.loadout ?? null, character.itemLevel ?? null]
+  const key = ['ai', 'bossCoach', provider?.id, input, ...build]
   // Reads the cache only: with no query function and enabled off, this never calls the assistant
   const saved = useQuery<CoachAnswer>({ queryKey: key, queryFn: skipToken, staleTime: Infinity, gcTime: 60 * 60_000 })
-  const ask = useMutation({ mutationFn: (question: BossCoachInput) => api.aiAsk({ feature: 'bossCoach', input: question }), onSuccess: (value, question) => client.setQueryData(['ai', 'bossCoach', provider?.id, question], value) })
+  const ask = useMutation({ mutationFn: (question: BossCoachInput) => api.aiAsk({ feature: 'bossCoach', input: question }), onSuccess: (value, question) => client.setQueryData(['ai', 'bossCoach', provider?.id, question, ...build], value) })
   const asking = ask.isPending && JSON.stringify(ask.variables) === JSON.stringify(input)
   const failed = ask.isError && JSON.stringify(ask.variables) === JSON.stringify(input)
   if (!provider) return null
