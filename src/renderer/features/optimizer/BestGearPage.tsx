@@ -17,6 +17,7 @@ import { useAiProvider } from '../ai/ai'
 import { ProviderIcon } from '../ai/icons'
 import { VaultAdvisor } from './VaultAdvisor'
 import { BestTalents } from './BestTalents'
+import { EnchantsCheck } from './EnchantsCheck'
 import './best-gear.css'
 
 const slotOrder: GearSlot[] = ['head', 'neck', 'shoulder', 'back', 'chest', 'wrist', 'hands', 'waist', 'legs', 'feet', 'finger1', 'finger2', 'trinket1', 'trinket2', 'mainHand', 'offHand']
@@ -70,6 +71,7 @@ export function BestGearPage({ character, activity }: { character: Character; ac
 
       <VaultAdvisor character={character} activity={activity} scenario={scenario} load={load} />
       <BestTalents character={character} activity={activity} scenario={scenario} load={load} />
+      <EnchantsCheck character={character} activity={activity} scenario={scenario} load={load} />
 
       {current && (running(current) || current.stage === 'failed' || current.stage === 'cancelled') && <Forge run={current} />}
       {current?.stage === 'done' && <Results run={current} character={character} />}

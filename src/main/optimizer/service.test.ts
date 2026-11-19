@@ -26,7 +26,7 @@ function harness(selected: string | null = 'fake', crash: { itemId: number; name
         const sets = input.sets
         started.push({ label: input.label ?? '', sets: sets.length, threads: input.threads ?? 0 })
         const id = `job-${started.length}`
-        const values = [{ name: 'companion_baseline', mean: 100_000, standardError: 50, samples: 100, damageTaken: null }, ...sets.map((set, index) => ({ name: `companion_candidate_${index + 1}`, mean: 100_000 + set.items.reduce((sum, item) => sum + (gains[item.itemId ?? 0] ?? 0), 0) + (set.talents === 'R09PRA==' ? 600 : 0), standardError: 40, samples: 100, damageTaken: null }))]
+        const values = [{ name: 'companion_baseline', mean: 100_000, standardError: 50, samples: 100, damageTaken: null }, ...sets.map((set, index) => ({ name: `companion_candidate_${index + 1}`, mean: 100_000 + set.items.reduce((sum, item) => sum + (gains[item.itemId ?? 0] ?? 0), 0) + (set.talents === 'R09PRA==' ? 600 : 0) + set.items.reduce((sum, item) => sum + (item.enchant === 'Fierce Strike' ? 400 : 0), 0), standardError: 40, samples: 100, damageTaken: null }))]
         const bad = crash ? sets.findIndex(set => set.items.some(item => item.itemId === crash.itemId)) : -1
         jobs.set(id, bad >= 0
           ? { id, state: 'failed', result: null, failure: crash!.named ? `SimulationCraft stopped with code 3221225477 — Generating Profileset: companion_candidate_${bad + 1} 60/73 [====>] 658/1500` : 'SimulationCraft stopped with code 1' } as unknown as SimulationJob
@@ -221,5 +221,16 @@ describe('gear optimizer', () => {
     expect(started.map(entry => [entry.label, entry.sets])).toEqual([['Best talents', 2]])
     expect(run?.combos.map(combo => combo.talents)).toEqual(['R09PRA==', 'U0FNRQ=='])
     expect(run?.summary).toBe('The build used by 7 top players adds 600 damage per second over yours')
+  })
+
+  it('tries the top players’ enchants on what you wear and names the one that clearly wins', async () => {
+    const { optimizer, started, options } = harness(null)
+    options.topPlayers = async () => ({ players: [], gearPlayers: 12, averageItemLevel: null, builds: [], slots: { head: { items: [], gems: [], enchants: [{ id: 1, name: 'Fierce Strike', count: 8 }, { id: 2, name: 'Gentle Touch', count: 2 }] } } }) as never
+    await optimizer.start({ characterId: 'c1', mode: 'enchants' })
+    let run = await optimizer.get('c1', 'enchants')
+    for (let at = 0; at < 50 && run && run.stage !== 'done'; at++) { await new Promise(resolve => setTimeout(resolve, 5)); run = await optimizer.get('c1', 'enchants') }
+    expect(run?.failure).toBeNull()
+    expect(started.map(entry => [entry.label, entry.sets])).toEqual([['Enchants and gems', 2]])
+    expect(run?.summary).toBe('Use Fierce Strike on your head: 400 damage per second')
   })
 })

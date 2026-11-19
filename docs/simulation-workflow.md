@@ -72,6 +72,10 @@ Gear → Progress shows What to upgrade first under the crest budget. It is the 
 
 Best gear's Best talents card runs the top players' five most used builds (`TopPlayers.builds`, other than your own) on your gear at confirming precision, in `mode: 'talents'`. `startSets` takes a set with `talents` and no items, writing `profileset."name"+=talents=...`, and skips the build already in use. `talentBuilds` ranks them, marking gains inside the noise, and each build has a copy button for the in-game import. Runs are saved in `optimizer-talents`
 
+## Enchants and gems
+
+Best gear's Enchants and gems card runs `mode: 'enchants'`: for each slot you wear, the top players' three most used enchants other than yours, and their three most used gems in every socket you have, each tried on your gear at confirming precision. Enchants and gems are named and resolved to ids by `startSets` from the game files; one the game files name differently is noted and skipped. `enhancementAdvice` keeps each slot's best swap and the best gem, marking gains inside the noise. Runs are saved in `optimizer-enchants`
+
 ## Validation and remaining release gate
 
 Focused tests exercise real fixture child processes for timeout, cancellation, output bounds, argument isolation, and report parsing, plus persistence, character deletion, baseline invalidation, and uncertainty comparisons
