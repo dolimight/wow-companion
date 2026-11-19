@@ -180,4 +180,17 @@ describe('gear optimizer', () => {
     expect(run?.summary).toContain("Kings' Rest")
     expect(await optimizer.get('c1')).toBeNull()
   })
+
+  it('advises on the Great Vault: each choice in the best owned set, beside skipping it', async () => {
+    const { optimizer, started } = harness(null)
+    await optimizer.start({ characterId: 'c1', mode: 'vault' })
+    let run = await optimizer.get('c1', 'vault')
+    for (let at = 0; at < 50 && run && run.stage !== 'done'; at++) { await new Promise(resolve => setTimeout(resolve, 5)); run = await optimizer.get('c1', 'vault') }
+    expect(run?.stage).toBe('done')
+    expect(run?.pool.every(candidate => candidate.origin !== 'drop')).toBe(true)
+    expect(started.map(entry => entry.label)).toEqual(['Vault advisor · screening', 'Vault advisor · confirming'])
+    expect(run?.combos.map(combo => combo.key)).toEqual(['vault-skip', 'vault-1'])
+    expect(run?.summary).toContain('Take Item 4')
+    expect(await optimizer.get('c1')).toBeNull()
+  })
 })

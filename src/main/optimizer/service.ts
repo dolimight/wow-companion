@@ -8,7 +8,7 @@ import { gearItemSchema, type Character, type GearItem, type GearSlot } from '..
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, lootSources, optimizerTrackNames, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
+import { bestCombos, lootSources, optimizerTrackNames, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -69,7 +69,8 @@ export type OptimizerOptions = {
 }
 
 /** Best gear and the loot finder keep their last runs apart */
-const space = (mode: OptimizerMode | undefined) => mode === 'loot' ? 'optimizer-loot' : 'optimizer'
+const space = (mode: OptimizerMode | undefined) => mode === 'loot' ? 'optimizer-loot' : mode === 'vault' ? 'optimizer-vault' : 'optimizer'
+const modeNames: Record<OptimizerMode, string> = { gear: 'Best gear', loot: 'The loot finder', vault: 'The vault advisor' }
 
 export function createOptimizer(options: OptimizerOptions) {
   const now = () => (options.now?.() ?? new Date()).toISOString()
@@ -105,7 +106,7 @@ export function createOptimizer(options: OptimizerOptions) {
         add(item, observation.location, observation.location === 'vault' ? 'Claim it from the Great Vault' : null, slots.length ? slots : [item.slot])
       }
     }
-    if (start.includeTargets || start.mode === 'loot') {
+    if ((start.includeTargets && start.mode === 'gear') || start.mode === 'loot') {
       const level = start.mode === 'loot' ? trackStartLevel(optimizerTrackNames[start.track]) : ladderCeiling
       const popular = new Map<number, number>()
       if (top?.gearPlayers) for (const group of Object.values(top.slots)) for (const entry of group?.items ?? []) popular.set(entry.id, Math.max(popular.get(entry.id) ?? 0, entry.count / top.gearPlayers))
@@ -243,6 +244,7 @@ export function createOptimizer(options: OptimizerOptions) {
     if (tankSpecs.includes(character.specName)) run.warning = [run.warning, `SimulationCraft measures damage, not survival. As a ${character.specName} tank, keep the defensive trinkets and pieces you rely on, even where a swap shows more damage`].filter(Boolean).join(' · ')
     run.pool = await gather(character, start, capped)
     if (start.mode === 'loot') return findLoot(run, character, capped)
+    if (start.mode === 'vault') return adviseVault(run, character, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
     run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
@@ -274,6 +276,20 @@ export function createOptimizer(options: OptimizerOptions) {
     await finish(run, best ? `${best.boss ? `${best.boss} in ${best.instance}` : best.instance} has the most for you: ${best.pieces.length} ${best.pieces.length === 1 ? 'piece' : 'pieces'} worth ${Math.round(best.total).toLocaleString('en-US')} damage per second together` : 'No drop at this level clearly beats what you wear')
   }
 
+  /** The vault advisor: what you own screened, then each vault choice confirmed in the best owned set, beside skipping it */
+  async function adviseVault(run: OptimizerRun, character: Character, top: TopPlayers | null) {
+    if (!run.pool.some(candidate => candidate.origin === 'vault')) throw new Error('No Great Vault choices seen yet · open the Great Vault in game, then /reload so the addon saves them')
+    await stage(run, 'screening')
+    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Vault advisor · screening', top, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
+    await stage(run, 'choosing')
+    run.combos = vaultSets(run.pool, run.screen)
+    await stage(run, 'confirming')
+    const byKey = new Map(run.pool.map(candidate => [candidate.key, candidate]))
+    run.results = await measure(run, character, run.combos.map(combo => ({ label: combo.key, items: Object.values(combo.picks).map(key => byKey.get(key!)!.item) })), confirmIterations, 'Vault advisor · confirming', top, key => run.combos.find(combo => combo.key === key)?.label ?? key)
+    const { take, choices } = vaultChoices(run)
+    await finish(run, take ? `Take ${take.candidate.item.name}: it adds ${Math.round(take.over).toLocaleString('en-US')} damage per second over skipping the vault` : choices.length ? 'No vault choice clearly beats the best of what you own · take the one you can upgrade furthest, or sell it for gold' : 'SimulationCraft could not measure the vault choices this time · the notes below say why')
+  }
+
   async function finish(run: OptimizerRun, summary: string | null) {
     run.summary = summary
     run.finishedAt = now()
@@ -298,7 +314,7 @@ export function createOptimizer(options: OptimizerOptions) {
     },
     async start(input: OptimizerStart): Promise<OptimizerRun> {
       const start = optimizerStartSchema.parse(input)
-      if (active.has(start.characterId)) throw new Error(`${active.get(start.characterId)!.run.mode === 'loot' ? 'The loot finder' : 'Best gear'} is already running for this character`)
+      if (active.has(start.characterId)) throw new Error(`${modeNames[active.get(start.characterId)!.run.mode ?? 'gear']} is already running for this character`)
       const run: OptimizerRun = { id: randomUUID(), characterId: start.characterId, activity: start.activity, stage: 'gathering', startedAt: now(), finishedAt: null, stageStartedAt: now(), scenarioId: start.scenarioId, includeTargets: start.includeTargets, mode: start.mode, track: start.track, trackLevel: start.mode === 'loot' ? trackStartLevel(optimizerTrackNames[start.track]) : null, threads: optimizerThreads(start.load), provider: null, baseline: null, pool: [], screen: {}, combos: [], results: {}, wearNow: null, chase: null, summary: null, notes: [], failure: null }
       active.set(run.characterId, { run, cancelled: false, job: null })
       await save(run)

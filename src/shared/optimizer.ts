@@ -15,8 +15,11 @@ export const optimizerStartSchema = z.object({
   includeTargets: z.boolean().default(true),
   /** How hard SimulationCraft may push the processor: sustained all-core load can reset a computer with unstable power or cooling */
   load: z.enum(['light', 'medium', 'heavy']).default('light'),
-  /** Best gear weighs everything you could wear; the loot finder measures only this season's drops, by where they drop */
-  mode: z.enum(['gear', 'loot']).default('gear'),
+  /**
+   * Best gear weighs everything you could wear; the loot finder measures only this season's drops, by where they
+   * drop; the vault advisor compares each Great Vault choice worn with the best of what you own
+   */
+  mode: z.enum(['gear', 'loot', 'vault']).default('gear'),
   /** The loot finder measures drops at the first rank of this upgrade track */
   track: z.enum(['champion', 'hero', 'myth']).default('hero'),
 })
@@ -277,4 +280,44 @@ export function lootSources(run: Pick<OptimizerRun, 'pool' | 'screen'>): LootSou
     const pieces = [...bySlot.values()].sort((a, b) => b.gain - a.gain)
     return { ...source, pieces, total: pieces.reduce((sum, piece) => sum + piece.gain, 0) }
   }).sort((a, b) => b.total - a.total)
+}
+
+/**
+ * The Great Vault advisor's sets: the best of what you own without the vault, then that set with each vault choice
+ * in its slot. Every choice is measured, even one that screened poorly, so the advice can say to skip them all
+ */
+export function vaultSets(pool: OptimizerCandidate[], screen: Record<string, OptimizerMeasure>): OptimizerCombo[] {
+  const byKey = new Map(pool.map(candidate => [candidate.key, candidate]))
+  const base = greedyCombos(pool.filter(candidate => isOwned(candidate) && candidate.origin !== 'vault'), screen).find(set => set.key === 'app-owned')?.picks ?? {}
+  const sets: OptimizerCombo[] = []
+  if (Object.keys(base).length) sets.push({ key: 'vault-skip', label: 'Skip the vault', picks: base, why: 'The best of what you own without a vault choice', by: 'app' })
+  pool.filter(candidate => candidate.origin === 'vault').forEach((candidate, index) => {
+    const picks = { ...base, [candidate.slot]: candidate.key }
+    if (wearable(picks, byKey)) sets.push({ key: `vault-${index + 1}`, label: candidate.item.name, picks, why: `${candidate.item.name} in your ${candidate.slot}, with the best of what you own`, by: 'app' })
+  })
+  return sets
+}
+
+export type VaultChoice = { candidate: OptimizerCandidate; combo: OptimizerCombo; gain: number; error: number | null; over: number }
+
+/**
+ * Each vault choice once, in its better slot, ranked by what it adds over skipping the vault. The first one is the
+ * pick only when that difference clears the noise
+ */
+export function vaultChoices(run: Pick<OptimizerRun, 'pool' | 'combos' | 'results'>): { choices: VaultChoice[]; take: VaultChoice | null } {
+  const byKey = new Map(run.pool.map(candidate => [candidate.key, candidate]))
+  const skip = run.results['vault-skip']?.gain ?? 0
+  const best = new Map<string, VaultChoice>()
+  for (const combo of run.combos) {
+    const result = run.results[combo.key]
+    if (!combo.key.startsWith('vault-') || combo.key === 'vault-skip' || !result) continue
+    const candidate = Object.values(combo.picks).map(key => byKey.get(key!)).find(entry => entry?.origin === 'vault')
+    if (!candidate) continue
+    const identity = `${candidate.item.itemId}:${candidate.item.itemLevel}`
+    const choice = { candidate, combo, gain: result.gain, error: result.error, over: result.gain - skip }
+    if (!best.has(identity) || choice.gain > best.get(identity)!.gain) best.set(identity, choice)
+  }
+  const choices = [...best.values()].sort((a, b) => b.gain - a.gain)
+  const top = choices[0]
+  return { choices, take: top && top.over > noise({ error: top.error }) ? top : null }
 }
