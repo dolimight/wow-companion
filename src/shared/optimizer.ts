@@ -59,7 +59,8 @@ export type OptimizerCandidate = {
   boss?: string | null
 }
 
-export type OptimizerMeasure = { mean: number; error: number | null; gain: number }
+/** taken is a tank's change in damage taken per second over what is worn, from the same run */
+export type OptimizerMeasure = { mean: number; error: number | null; gain: number; taken?: { change: number; error: number | null } | null }
 export type OptimizerCombo = { key: string; label: string; picks: Partial<Record<GearSlot, string>>; why: string | null; by: 'ai' | 'app'; talents?: string; players?: number; enhancement?: { kind: 'enchant' | 'gem'; slot: GearSlot | null; name: string; current: string | null } }
 export const optimizerStages = ['gathering', 'screening', 'choosing', 'confirming', 'done'] as const
 export type OptimizerStage = (typeof optimizerStages)[number] | 'failed' | 'cancelled'
@@ -94,6 +95,8 @@ export type OptimizerRun = {
   /** The loot finder's upgrade track and the item level its drops were measured at */
   track?: OptimizerTrack
   trackLevel?: number | null
+  /** For a healer, no engine run: picks come from what top healers of the spec wear */
+  healer?: boolean
   /** How many screening results came from earlier runs instead of the engine */
   reused?: number
   /** What was equipped when the run started, so the page can tell when the gear has changed since */
@@ -107,10 +110,10 @@ export type OptimizerRun = {
  * error. A screening run at 1,500 iterations is about ±260 damage per second, so a +126 swap is noise, not an upgrade
  */
 export const noise = (measure: Pick<OptimizerMeasure, 'error'>) => 2 * Math.SQRT2 * (measure.error ?? 0)
-export const isGain = (measure: OptimizerMeasure | undefined): measure is OptimizerMeasure => !!measure && measure.gain > noise(measure)
+export const isGain = (measure: OptimizerMeasure | undefined): measure is OptimizerMeasure => !!measure && measure.gain > noise(measure) && !tankRisk(measure)
+/** A tank's pick that takes more damage past the noise isn't an upgrade, however much damage it adds */
+export const tankRisk = (measure: OptimizerMeasure) => !!measure.taken && measure.taken.change > noise({ error: measure.taken.error })
 
-/** SimulationCraft measures damage, which is only part of what a tank's gear is for */
-export const tankSpecs: readonly string[] = ['Blood', 'Protection', 'Guardian', 'Brewmaster', 'Vengeance']
 
 /** True when what's equipped now differs from what the run measured against */
 export function gearChanged(run: Pick<OptimizerRun, 'equipped'>, gear: Array<Pick<GearItem, 'slot' | 'itemId' | 'itemLevel'>>): boolean {
@@ -375,4 +378,23 @@ export function enhancementAdvice(run: Pick<OptimizerRun, 'combos' | 'results'>)
     if (!best.has(group) || option.gain > best.get(group)!.gain) best.set(group, option)
   }
   return [...best.values()].sort((a, b) => Number(b.clear) - Number(a.clear) || b.gain - a.gain)
+}
+
+export type HealerPick = { candidate: OptimizerCandidate; reason: string }
+
+/**
+ * A healer's picks without SimulationCraft, which can't model healing: per slot, the piece top healers of the spec wear
+ * most when it's a clear step from what you wear, or a piece you own well above what you wear
+ */
+export function healerPicks(pool: OptimizerCandidate[], gear: Array<{ slot: GearSlot; itemId: number | null; itemLevel: number | null }>): HealerPick[] {
+  const picks: HealerPick[] = []
+  for (const slot of [...new Set(pool.map(candidate => candidate.slot))]) {
+    const worn = gear.find(item => item.slot === slot)
+    const options = pool.filter(candidate => candidate.slot === slot && candidate.item.itemId !== worn?.itemId)
+    const popular = options.filter(candidate => (candidate.popularity ?? 0) >= 0.25).sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0) || (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0))[0]
+    const owned = options.filter(candidate => isOwned(candidate) && (candidate.item.itemLevel ?? 0) >= (worn?.itemLevel ?? 0) + 7).sort((a, b) => (b.item.itemLevel ?? 0) - (a.item.itemLevel ?? 0))[0]
+    if (owned) picks.push({ candidate: owned, reason: `${(owned.item.itemLevel ?? 0) - (worn?.itemLevel ?? 0)} item levels above what you wear` })
+    if (popular && popular !== owned) picks.push({ candidate: popular, reason: `Worn by ${Math.round((popular.popularity ?? 0) * 100)}% of top healers of your specialization` })
+  }
+  return picks.sort((a, b) => Number(isOwned(b.candidate)) - Number(isOwned(a.candidate)) || (b.candidate.popularity ?? 0) - (a.candidate.popularity ?? 0))
 }

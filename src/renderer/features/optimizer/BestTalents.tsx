@@ -5,6 +5,7 @@ import type { Activity, Character } from '../../../shared/domain'
 import type { SimulationScenarioId } from '../../../shared/simulation'
 import { talentBuilds, type OptimizerLoad, type OptimizerRun } from '../../../shared/optimizer'
 import { api } from '../../lib/client'
+import { specRole } from '../../../shared/roles'
 import { errorMessage, notify } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Badge, Button } from '../../components/ui/primitives'
@@ -22,6 +23,8 @@ export function BestTalents({ character, activity, scenario, load }: { character
   const builds = useMemo(() => current?.stage === 'done' ? talentBuilds(current) : [], [current])
   const busy = running(current) || start.isPending
   const copy = (loadout: string) => void api.copyText(loadout).then(() => notify('Talent build copied · import it in game from the talent screen'), () => notify('Could not copy the build'))
+  // SimulationCraft can't model healing, so a healer has no engine run here
+  if (specRole(character.specId) === 'healer') return null
   return (
     <Card as="section" className="vault-advisor" aria-labelledby="best-talents-title">
       <div className="vault-advisor-head">

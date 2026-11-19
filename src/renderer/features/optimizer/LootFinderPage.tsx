@@ -6,6 +6,7 @@ import { gearSlotLabels } from '../../../shared/simulation-benchmark'
 import { simulationScenarios, type SimulationScenarioId } from '../../../shared/simulation'
 import { lootSources, optimizerLoads, optimizerTrackNames, type OptimizerLoad, type OptimizerRun, type OptimizerTrack } from '../../../shared/optimizer'
 import { api } from '../../lib/client'
+import { specRole } from '../../../shared/roles'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Badge, Button, EmptyState } from '../../components/ui/primitives'
@@ -37,6 +38,7 @@ export function LootFinderPage({ character, activity }: { character: Character; 
   const current = run.data
   const busy = running(current) || start.isPending
 
+  if (specRole(character.specId) === 'healer') return <EmptyState icon={Gem} title="The loot finder needs a damage or tank specialization" description="SimulationCraft models damage, not healing. Best gear shows what top healers of your specialization wear" />
   if (activity === 'pvp') return <EmptyState icon={Gem} title="The loot finder is for PvE" description="It ranks dungeons and raid bosses, so switch the activity to Mythic+ or Raiding" />
   if (workspace.data && !workspace.data.configured) return <EmptyState icon={Cpu} title="Choose SimulationCraft first" description="The loot finder runs SimulationCraft on this computer. Pick its program in Settings → Integrations, then come back" />
 

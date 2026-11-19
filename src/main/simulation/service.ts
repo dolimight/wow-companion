@@ -279,7 +279,7 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
     if (jobs.length >= 10) throw new Error('Wait for queued simulations to finish before adding more')
     const current = await character(start.characterId)
     if (start.activity === 'pvp') throw new Error('PvP combat simulation is not supported by this workflow')
-    if (!current.specId || healerSpecs.has(current.specId)) throw new Error('This workflow supports damage modeling for known damage and tank specializations')
+    if (!current.specId || healerSpecs.has(current.specId)) throw new Error('SimulationCraft models damage, not healing, so this needs a damage or tank specialization')
     const generated = exportCharacterProfile(current, now())
     if (!generated.text.startsWith('#') || !classToken(current)) throw new Error('The character baseline is unsupported')
     const workspace = await read(current.id)

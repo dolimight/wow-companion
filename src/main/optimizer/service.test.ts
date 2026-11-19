@@ -233,4 +233,21 @@ describe('gear optimizer', () => {
     expect(started.map(entry => [entry.label, entry.sets])).toEqual([['Enchants and gems', 2]])
     expect(run?.summary).toBe('Use Fierce Strike on your head: 400 damage per second')
   })
+
+  it('gives a healer picks from top healers without running the engine, and refuses engine-only modes', async () => {
+    const spec = mage.specId
+    mage.specId = 256
+    try {
+      const { optimizer, started } = harness(null)
+      await optimizer.start({ characterId: 'c1' })
+      const run = await finished(optimizer)
+      expect(run.stage).toBe('done')
+      expect(run.healer).toBe(true)
+      expect(started).toHaveLength(0)
+      await optimizer.start({ characterId: 'c1', mode: 'loot' })
+      let loot = await optimizer.get('c1', 'loot')
+      for (let at = 0; at < 50 && loot && !['done', 'failed'].includes(loot.stage); at++) { await new Promise(resolve => setTimeout(resolve, 5)); loot = await optimizer.get('c1', 'loot') }
+      expect(loot?.failure).toContain('not healing')
+    } finally { mage.specId = spec }
+  })
 })
