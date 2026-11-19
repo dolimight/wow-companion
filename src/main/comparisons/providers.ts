@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import type { Character } from '../../shared/domain'
-import { logsCredentialsSchema,reportSummarySchema,type LogsStatus,type PvpBracketIndex,type ReportSummary } from '../../shared/comparisons'
+import { logsCredentialsSchema,reportSummarySchema,type LogsStatus,type PvpBracketIndex,type ReportSummary,fightSummarySchema,tableAbilities,tableDeaths,type FightSummary} from '../../shared/comparisons'
 import { BlizzardError,realmSlug,type BlizzardApi,type BlizzardRegion } from '../providers/blizzard'
 import type { SecretStore } from '../secrets'
 
@@ -99,7 +99,26 @@ export const REPORT_SUMMARY_QUERY=`query CompanionReportSummary($code: String!) 
   rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
 }`
 
-/** User-owned OAuth credentials, fixed public endpoint, and a fixed read-only summary query */
+export const FIGHT_ACTORS_QUERY=`query CompanionFightActors($code: String!, $fight: Int!) {
+  reportData { report(code: $code, allowUnlisted: false) {
+    code visibility
+    masterData { gameVersion actors(type: "Player") { id name server type subType } }
+    fights(fightIDs: [$fight]) { id encounterID name difficulty kill keystoneLevel startTime endTime friendlyPlayers }
+  } }
+}`
+export const FIGHT_TABLES_QUERY=`query CompanionFightTables($code: String!, $fight: Int!, $actor: Int!) {
+  reportData { report(code: $code, allowUnlisted: false) {
+    done: table(fightIDs: [$fight], dataType: DamageDone, sourceID: $actor)
+    taken: table(fightIDs: [$fight], dataType: DamageTaken, sourceID: $actor)
+    casts: table(fightIDs: [$fight], dataType: Casts, sourceID: $actor)
+    deaths: table(fightIDs: [$fight], dataType: Deaths)
+  } }
+  rateLimitData { limitPerHour pointsSpentThisHour pointsResetIn }
+}`
+const fightActorsSchema=z.object({errors:z.array(z.object({message:z.string().optional()})).optional(),data:z.object({reportData:z.object({report:z.object({code:z.string(),visibility:z.string(),masterData:z.object({gameVersion:finite.int().nullable(),actors:z.array(actorSchema).max(500).nullable()}).nullable(),fights:z.array(z.object({id:positive,encounterID:finite.int().nonnegative(),name:z.string().max(200),difficulty:finite.int().nullable(),kill:z.boolean().nullable(),keystoneLevel:finite.int().nullable().optional(),startTime:finite.nonnegative(),endTime:finite.nonnegative(),friendlyPlayers:z.array(finite.int()).max(500).nullable()})).max(1).nullable()}).nullable()}).nullable()}).nullable().optional()})
+const fightTablesSchema=z.object({errors:z.array(z.object({message:z.string().optional()})).optional(),data:z.object({reportData:z.object({report:z.object({done:z.unknown(),taken:z.unknown(),casts:z.unknown(),deaths:z.unknown()}).nullable()}).nullable(),rateLimitData:z.object({limitPerHour:finite,pointsSpentThisHour:finite,pointsResetIn:finite}).nullable().optional()}).nullable().optional()})
+
+/** User-owned OAuth credentials, fixed public endpoint, and fixed read-only summary and fight queries */
 export function createLogsProvider(options:{secrets:SecretStore;now?:()=>Date;fetcher?:typeof fetch}){
   const clock=options.now??time,fetcher=options.fetcher??fetch
   let generation=0,retryAt=0,token:{value:string;expiresAt:number;key:string}|null=null
@@ -156,5 +175,43 @@ export function createLogsProvider(options:{secrets:SecretStore;now?:()=>Date;fe
     inflight.set(key,task)
     try{return await task}finally{if(inflight.get(key)===task)inflight.delete(key)}
   }
-  return {status,configure,clear,fetchReport,revision:()=>generation}
+  /** One fixed query against the public client endpoint with the player's own token */
+  async function graphql(query:string,variables:Record<string,unknown>){
+    const value=await credentials()
+    if(!value)throw new ComparisonProviderError('Connect your Warcraft Logs API credentials in Settings first')
+    const bearer=await access(value)
+    return request('https://www.warcraftlogs.com/api/v2/client',{method:'POST',headers:{Authorization:`Bearer ${bearer}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({query,variables})})
+  }
+  /**
+   * One fight of a public report for this character: their damage done and taken by ability, casts, and deaths. The
+   * character is matched by name and realm, and only fights they were in can be read
+   */
+  async function fetchFight(input:{character:Character;url:string;fightId:number}):Promise<FightSummary>{
+    const target=reportCode(input.url)
+    const first=fightActorsSchema.parse(await graphql(FIGHT_ACTORS_QUERY,{code:target.code,fight:input.fightId}))
+    if(first.errors?.length)throw new ComparisonProviderError('Warcraft Logs could not read this fight')
+    const report=first.data?.reportData?.report
+    if(!report||report.code!==target.code||report.visibility!=='public')throw new ComparisonProviderError('The public report was not found or is private',404)
+    if(report.masterData?.gameVersion!=null&&report.masterData.gameVersion!==1)throw new ComparisonProviderError('This report is not from Retail WoW')
+    const fight=report.fights?.[0]
+    if(!fight||fight.id!==input.fightId)throw new ComparisonProviderError('That fight is not in this report')
+    const actors=(report.masterData?.actors??[]).filter(actor=>actor.type==='Player'&&actor.name&&actor.server&&canonical(actor.name)===canonical(input.character.name)&&canonical(actor.server)===canonical(input.character.realm))
+    if(actors.length!==1||actors[0]!.id==null)throw new ComparisonProviderError(actors.length>1?'More than one player in this report matches the character':'The character is not in this report')
+    const actor=actors[0]!
+    if(fight.friendlyPlayers&&!fight.friendlyPlayers.includes(actor.id!))throw new ComparisonProviderError('The character was not in this fight')
+    const second=fightTablesSchema.parse(await graphql(FIGHT_TABLES_QUERY,{code:target.code,fight:input.fightId,actor:actor.id}))
+    const quota=second.data?.rateLimitData
+    if(quota&&quota.pointsSpentThisHour>=quota.limitPerHour)retryAt=clock().getTime()+quota.pointsResetIn*1000
+    const tables=second.data?.reportData?.report
+    if(second.errors?.length||!tables)throw new ComparisonProviderError('Warcraft Logs could not read this fight')
+    const durationMs=Math.max(0,fight.endTime-fight.startTime)
+    const done=tableAbilities(tables.done),taken=tableAbilities(tables.taken)
+    const total=(rows:Array<{total:number}>)=>rows.reduce((sum,row)=>sum+row.total,0)
+    return fightSummarySchema.parse({fightId:fight.id,name:fight.name,kill:fight.kill,durationMs,difficulty:fight.difficulty,keystoneLevel:fight.keystoneLevel??null,
+      damage:{total:total(done),perSecond:durationMs?total(done)/(durationMs/1000):0,top:done.slice(0,10)},
+      taken:{total:total(taken),top:taken.slice(0,10)},
+      casts:tableAbilities(tables.casts).slice(0,15).map(row=>({name:row.name,count:Math.round(row.total)})),
+      deaths:tableDeaths(tables.deaths,actor.name!,fight.startTime)})
+  }
+  return {status,configure,clear,fetchReport,fetchFight,revision:()=>generation}
 }

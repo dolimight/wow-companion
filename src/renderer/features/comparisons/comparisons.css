@@ -50,3 +50,18 @@
 @media(max-width:1100px){.comparison-filter-fields{grid-template-columns:100px minmax(120px,1fr)}.comparison-heading{flex-wrap:wrap}.comparison-metrics{gap:10px}.comparison-chart-row{grid-template-columns:105px minmax(30px,1fr) 60px}.comparison-gear-list>div{flex-wrap:wrap}}
 @media(max-width:600px){.comparison-heading-actions{justify-content:flex-start;flex-wrap:wrap;flex:initial}.comparison-metrics{grid-template-columns:minmax(0,1fr);gap:16px}.comparison-metrics>div{border-right:0;border-bottom:1px solid var(--line);padding:0 0 16px}.comparison-metrics>div:last-child{border-bottom:0}.comparison-source-meta dl{gap:12px 20px}.comparison-filter-fields{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.comparison-page *{scroll-behavior:auto}}
+
+/* A fight from a report: the player's numbers, then the assistant's review when asked */
+.comparison-report-fights { display: grid; gap: 8px; padding: 0; list-style: none; }
+.comparison-report-fights > li { display: grid; gap: 8px; }
+.fight-review-start { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.fight-review { display: grid; gap: 12px; }
+.fight-review-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.fight-review-head span { font-size: 12.5px; color: var(--muted); }
+.fight-review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.fight-review-grid h4, .fight-review-findings h4 { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 13px; }
+.fight-review-grid ol { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: 12.5px; }
+.fight-review-grid li { display: flex; justify-content: space-between; gap: 8px; }
+.fight-review-grid li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fight-review-grid li small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.fight-review-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

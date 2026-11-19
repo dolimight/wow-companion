@@ -128,6 +128,7 @@ export function createComparisonService(options:{db:Pick<DatabaseClient,'call'>;
   return {evaluate,saveReport,reports,
     pvpBrackets:async(input:{characterId:string;region:'us'|'eu'})=>pvp.brackets({character:await character(input.characterId),region:input.region}),
     configureLogs:logs.configure,clearLogs:logs.clear,logsStatus:logs.status,
+    async fightSummary(input:{characterId:string;url:string;fightId:number}){return logs.fetchFight({character:await character(input.characterId),url:input.url,fightId:input.fightId})},
     async reportSummary(input:{characterId:string;url:string}){const current=await character(input.characterId),summary=await logs.fetchReport({character:current,url:input.url});if(sig(await character(current.id),'raiding')!==sig(current,'raiding'))throw Error('Character changed during report import');const old=await options.db.call('getFeatureState',current.id,'report-summaries');const summaries=z.array(reportSummarySchema).max(100).parse(old??[]);await options.db.call('saveFeatureState',current.id,'report-summaries',[summary,...summaries.filter(s=>s.url!==summary.url)].slice(0,100));return summary},
   }
 }
