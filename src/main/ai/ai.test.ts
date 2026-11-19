@@ -85,6 +85,8 @@ describe('boss coach', () => {
     expect(prompt).toContain('Player: Arcane Mage, playing as a damage dealer')
     expect(prompt).toContain("Fight: The Golden Serpent in Kings' Rest, Mythic+")
     expect(bossCoach.prompt({ ...input, notes: [] }, { character: null })).toContain('no written strategy')
+    // With the build known, the prompt names its hero tree and talents so tips fit the player's own build
+    expect(bossCoach.prompt(input, { character: mage, talents: { hero: 'Sunfury', names: ['Arcane Echo', 'Touch of the Magi'] } })).toContain('Their build: Sunfury hero talents; talents taken Arcane Echo, Touch of the Magi')
   })
 
   it('caps a long answer instead of refusing it', () => {

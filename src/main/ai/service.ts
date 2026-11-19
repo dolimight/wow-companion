@@ -1,3 +1,4 @@
+import { talentSummary, type TalentTree } from '../../shared/talents'
 import { mkdtemp, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { aiFeatures, type AiAnswer, type AiFeatureId, type AiFeatureInput, type AiFeatureOutput, type AiProviderInfo, type AiStatus } from '../../shared/ai'
@@ -21,6 +22,8 @@ export type AiServiceOptions = {
   character: (id: string) => Promise<Character | null>
   /** Where each question gets its own empty folder */
   scratchDir: string
+  /** The installed game's talent tree for a specialization, to name a build's talents in a prompt */
+  talentTree?: (specId: number) => Promise<TalentTree | null>
 }
 
 export function createAiService(options: AiServiceOptions) {
@@ -54,10 +57,13 @@ export function createAiService(options: AiServiceOptions) {
     if (!feature || !shape) throw new Error('Unknown AI feature')
     const input = shape.input.parse(raw) as AiFeatureInput<Id>
     const character = 'characterId' in input && typeof input.characterId === 'string' ? await options.character(input.characterId) : null
+    // The build's talents by name, from the installed game's tree, so answers can speak to the player's own build
+    const tree = character?.talents?.loadout && character.specId && options.talentTree ? await options.talentTree(character.specId).catch(() => null) : null
+    const talents = tree && character?.talents?.loadout ? talentSummary(tree, character.talents.loadout) : null
     const workDir = await mkdtemp(path.join(options.scratchDir, `${id}-`))
     const started = Date.now()
     try {
-      const answer = await provider.run({ instructions: feature.instructions, prompt: feature.prompt(input, { character }), schema: feature.schema, workDir, signal })
+      const answer = await provider.run({ instructions: feature.instructions, prompt: feature.prompt(input, { character, talents }), schema: feature.schema, workDir, signal })
       const parsed = shape.output.safeParse(answer)
       if (!parsed.success) throw new Error(`${provider.name} answered in a shape the app can't use`)
       log.info('ai', `${provider.name} answered ${id}`, { durationMs: Date.now() - started })

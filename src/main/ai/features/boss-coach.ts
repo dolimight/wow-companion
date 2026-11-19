@@ -11,6 +11,7 @@ export const bossCoach: AiFeature<'bossCoach'> = {
   instructions: [
     'You coach World of Warcraft players on a single boss fight.',
     'Answer for the player\'s exact class and specialization, naming that spec\'s own abilities, talents, and utility.',
+    'When their build and trinkets are listed, tailor tips to them: only suggest talents they take, and use their trinkets where they help.',
     'Build on the strategy you are given: don\'t repeat it, and never contradict it.',
     'Keep each tip to one or two short sentences, written as a direct instruction.',
     'If you aren\'t sure a detail is right for the current season, leave it out rather than guess.',
@@ -29,10 +30,13 @@ export const bossCoach: AiFeature<'bossCoach'> = {
       },
     },
   },
-  prompt(input, { character }) {
+  prompt(input, { character, talents }) {
     const who = character && character.specName !== 'Unknown' ? `${character.specName} ${character.className}` : character?.className ?? 'player'
+    const trinkets = (character?.gear ?? []).filter(item => item.slot === 'trinket1' || item.slot === 'trinket2').map(item => `${item.name}${item.itemLevel ? ` (${item.itemLevel})` : ''}`)
     return [
-      `Player: ${who}, playing as a ${roleNames[input.role]}`,
+      `Player: ${who}, playing as a ${roleNames[input.role]}${character?.itemLevel ? `, item level ${Math.round(character.itemLevel)}` : ''}`,
+      ...(talents ? [`Their build: ${talents.hero ? `${talents.hero} hero talents; ` : ''}${talents.names.length ? `talents taken ${talents.names.join(', ')}` : 'talents unknown'}`] : []),
+      ...(trinkets.length ? [`Trinkets: ${trinkets.join(', ')}`] : []),
       `Fight: ${input.boss} in ${input.instance}, ${input.difficulty}`,
       input.notes.length ? `Strategy the player already has:\n${input.notes.map(line => `- ${line}`).join('\n')}` : 'The player has no written strategy for this fight yet',
     ].join('\n\n')

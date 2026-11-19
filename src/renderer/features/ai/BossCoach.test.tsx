@@ -30,7 +30,7 @@ describe('boss coach', () => {
   it('shows an answer already given for this boss and role without asking again', () => {
     const client = new QueryClient()
     const input = { characterId: 'c1', instance: "Kings' Rest", difficulty: 'Mythic+', boss: 'The Golden Serpent', role: 'tank', notes: [] }
-    client.setQueryData(['ai', 'bossCoach', 'claude', input], { provider: 'Claude', durationMs: 9000, value: { tips: ['Face the boss away'], cooldowns: [] } })
+    client.setQueryData(['ai', 'bossCoach', 'claude', input, null, null], { provider: 'Claude', durationMs: 9000, value: { tips: ['Face the boss away'], cooldowns: [] } })
     const html = renderToStaticMarkup(<QueryClientProvider client={client}><BossCoach character={knight} instance="Kings' Rest" difficulty="Mythic+" boss={boss} role="tank" plan={undefined} /></QueryClientProvider>)
     expect(html).toContain('Face the boss away')
     expect(api.aiAsk).not.toHaveBeenCalled()
