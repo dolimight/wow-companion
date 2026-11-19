@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { characterSchema, gearItemSchema, type GearSlot } from './domain'
-import { bestCombos, gearChanged, lootSources, vaultChoices, vaultSets, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
+import { bestCombos, gearChanged, lootSources, upgradeAdvice, vaultChoices, vaultSets, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
 
 const item = (slot: GearSlot, itemId: number, itemLevel: number) => gearItemSchema.parse({ slot, itemId, name: `Item ${itemId}`, itemLevel })
 const candidate = (key: string, slot: GearSlot, itemId: number, itemLevel: number, origin: OptimizerOrigin = 'bags'): OptimizerCandidate => ({ key, slot, item: item(slot, itemId, itemLevel), origin, source: null, icon: null, quality: 4, popularity: null })
@@ -92,5 +92,14 @@ describe('gear optimizer sets', () => {
     expect(clear.take?.candidate.key).toBe('v1')
     expect(clear.choices.map(choice => Math.round(choice.over))).toEqual([320, -50])
     expect(vaultChoices({ pool, combos: sets, results: { 'vault-skip': m(500), 'vault-1': m(560), 'vault-2': m(450) } }).take).toBeNull()
+  })
+
+  it('ranks upgrades by clear damage per crest and spends the crests held on the best first', () => {
+    const up = (key: string, slot: GearSlot, crests: number) => ({ ...candidate(key, slot, crests, 308, 'upgrade'), upgrade: { track: 'Hero', fromLevel: 305, toLevel: 308, crestId: '3445', crests, gold: 40 } })
+    const pool = [up('a', 'head', 20), up('b', 'back', 10), up('c', 'chest', 20)]
+    const m = (gain: number) => ({ mean: 0, error: 40, gain })
+    const advice = upgradeAdvice({ pool, screen: { a: m(1000), b: m(400), c: m(50) } }, { 3445: 25 })
+    expect(advice.map(entry => [entry.candidate.key, entry.clear, entry.affordable])).toEqual([['a', true, true], ['b', true, false], ['c', false, false]])
+    expect(upgradeAdvice({ pool, screen: { a: m(1000) } }, null).map(entry => entry.affordable)).toEqual([null])
   })
 })

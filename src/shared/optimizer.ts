@@ -17,9 +17,10 @@ export const optimizerStartSchema = z.object({
   load: z.enum(['light', 'medium', 'heavy']).default('light'),
   /**
    * Best gear weighs everything you could wear; the loot finder measures only this season's drops, by where they
-   * drop; the vault advisor compares each Great Vault choice worn with the best of what you own
+   * drop; the vault advisor compares each Great Vault choice worn with the best of what you own; the upgrade advisor
+   * measures each equipped piece one crest rank higher
    */
-  mode: z.enum(['gear', 'loot', 'vault']).default('gear'),
+  mode: z.enum(['gear', 'loot', 'vault', 'upgrades']).default('gear'),
   /** The loot finder measures drops at the first rank of this upgrade track */
   track: z.enum(['champion', 'hero', 'myth']).default('hero'),
 })
@@ -34,9 +35,9 @@ export const optimizerLoads: Record<OptimizerLoad, { label: string; threads: num
 }
 export type OptimizerStart = z.input<typeof optimizerStartSchema>
 
-export type OptimizerOrigin = 'equipped' | 'bags' | 'bank' | 'vault' | 'drop' | 'top'
+export type OptimizerOrigin = 'equipped' | 'bags' | 'bank' | 'vault' | 'drop' | 'top' | 'upgrade'
 export const ownedOrigins: readonly OptimizerOrigin[] = ['equipped', 'bags', 'bank', 'vault']
-export const originLabels: Record<OptimizerOrigin, string> = { equipped: 'Equipped', bags: 'In your bags', bank: 'In your bank', vault: 'Great Vault choice', drop: 'Drops this season', top: 'Worn by top players' }
+export const originLabels: Record<OptimizerOrigin, string> = { equipped: 'Equipped', bags: 'In your bags', bank: 'In your bank', vault: 'Great Vault choice', drop: 'Drops this season', top: 'Worn by top players', upgrade: 'Upgrade with crests' }
 
 /** One piece for one slot: a ring or trinket is a candidate for each of its two slots */
 export type OptimizerCandidate = {
@@ -50,6 +51,8 @@ export type OptimizerCandidate = {
   quality: number | null
   /** Share of sampled top players who wear it, from 0 to 1 */
   popularity: number | null
+  /** For an upgrade, the crest rank it costs */
+  upgrade?: { track: string; fromLevel: number; toLevel: number; crestId: string | null; crests: number; gold: number }
   /** For a drop, the dungeon or raid and the boss it drops from */
   instance?: string | null
   boss?: string | null
@@ -320,4 +323,30 @@ export function vaultChoices(run: Pick<OptimizerRun, 'pool' | 'combos' | 'result
   const choices = [...best.values()].sort((a, b) => b.gain - a.gain)
   const top = choices[0]
   return { choices, take: top && top.over > noise({ error: top.error }) ? top : null }
+}
+
+export type UpgradeAdvice = { candidate: OptimizerCandidate; gain: number; error: number | null; perCrest: number; clear: boolean; affordable: boolean | null }
+
+/**
+ * Each equipped piece's next crest rank, ranked by damage gained per crest spent (ranks that cost no crest first).
+ * With crest balances known, spends them on the best value first, one rank per piece, as crestPlan does for item level
+ */
+export function upgradeAdvice(run: Pick<OptimizerRun, 'pool' | 'screen'>, currencies: Record<string, number> | null): UpgradeAdvice[] {
+  const ranked = run.pool.flatMap(candidate => {
+    const measure = run.screen[candidate.key]
+    if (!candidate.upgrade || !measure) return []
+    const perCrest = candidate.upgrade.crests ? measure.gain / candidate.upgrade.crests : Infinity
+    return [{ candidate, gain: measure.gain, error: measure.error, perCrest, clear: isGain(measure), affordable: null as boolean | null }]
+  }).sort((a, b) => Number(b.clear) - Number(a.clear) || b.perCrest - a.perCrest || b.gain - a.gain)
+  if (!currencies) return ranked
+  const left = new Map(Object.entries(currencies))
+  return ranked.map(entry => {
+    const { crestId, crests } = entry.candidate.upgrade!
+    if (!crestId) return { ...entry, affordable: true }
+    const balance = left.get(crestId)
+    if (balance == null) return entry
+    const affordable = entry.clear && balance >= crests
+    if (affordable) left.set(crestId, balance - crests)
+    return { ...entry, affordable }
+  })
 }

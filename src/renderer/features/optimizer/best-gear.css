@@ -132,7 +132,7 @@
 }
 
 /* Great Vault advisor: the week's choices, then each one's gain over skipping the vault */
-.vault-advisor { display: grid; gap: 12px; }
+.vault-advisor, .upgrade-advisor { display: grid; gap: 12px; }
 .vault-advisor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .vault-advisor-head h3 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 15px; font-weight: 600; }
 .vault-advice { font-size: 13.5px; }
@@ -141,3 +141,4 @@
 .vault-choices li:first-child { border-top: 0; }
 .vault-choices li[data-take] .best-gear-item b { color: var(--green); }
 .vault-choices .best-gear-gain small { font-size: 11.5px; }
+.vault-advisor-head p { margin-top: 2px; }
