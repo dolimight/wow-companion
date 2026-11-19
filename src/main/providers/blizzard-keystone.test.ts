@@ -12,8 +12,8 @@ it('reads each dungeon best timed and overtime key with the upgrades its time ea
   ] }
   const snapshot = parseKeystoneSeason(season, { 1: timer(30), 2: timer(30) }, '2026-11-04T12:00:00.000Z')
   expect(snapshot).toEqual({ source: 'Blizzard', observedAt: '2026-11-04T12:00:00.000Z', dungeons: [
-    { dungeon: 'Fixture Halls', timeLimitMs: 1_800_000, timed: { level: 12, durationMs: 1_440_000, upgrades: 2, completedAt: '2026-11-03T20:00:00.000Z' }, overtime: { level: 14, durationMs: 2_040_000 } },
-    { dungeon: 'Fixture Vault', timeLimitMs: 1_800_000, timed: { level: 9, durationMs: 1_740_000, upgrades: 1, completedAt: null }, overtime: null },
+    { dungeon: 'Fixture Halls', timeLimitMs: 1_800_000, timed: { level: 12, durationMs: 1_440_000, upgrades: 2, completedAt: '2026-11-03T20:00:00.000Z' }, overtime: { level: 14, durationMs: 2_040_000 }, score: null },
+    { dungeon: 'Fixture Vault', timeLimitMs: 1_800_000, timed: { level: 9, durationMs: 1_740_000, upgrades: 1, completedAt: null }, overtime: null, score: null },
   ] })
 })
 it('leaves upgrades unknown without a dungeon timer and returns nothing for an empty season', () => {

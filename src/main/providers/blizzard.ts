@@ -219,7 +219,7 @@ export function parseKeystoneSeason(season: unknown, timers: Record<number, unkn
     if (run.keystone_level < 2 || run.keystone_level > 40) continue
     const thresholds = keystoneDungeonSchema.safeParse(timers[run.dungeon.id] ?? {}).data?.keystone_upgrades ?? []
     const limit = thresholds.find(entry => entry.upgrade_level === 1)?.qualifying_duration ?? null
-    const current = dungeons.get(run.dungeon.id) ?? { dungeon: run.dungeon.name, timeLimitMs: limit, timed: null, overtime: null }
+    const current = dungeons.get(run.dungeon.id) ?? { dungeon: run.dungeon.name, timeLimitMs: limit, timed: null, overtime: null, score: null }
     const timed = run.is_completed_within_time ?? (limit != null && run.duration != null ? run.duration <= limit : null)
     if (timed === true && (!current.timed || run.keystone_level > current.timed.level)) {
       const upgrades = run.duration != null && thresholds.length ? Math.max(1, Math.min(3, thresholds.filter(entry => run.duration! <= entry.qualifying_duration).length)) : null

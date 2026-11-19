@@ -43,6 +43,17 @@ export function AffixList({ region }: { region: string }) {
   );
 }
 
+/** This week's affixes as small chips, each with its description on hover, for tight spaces like play mode */
+export function AffixChips({ region }: { region: string }) {
+  const affixes = useAffixes(region);
+  if (!affixes.data?.affixes.length) return null;
+  return (
+    <span className="affix-chips" aria-label="This week's affixes">
+      {affixes.data.affixes.map((affix) => <span key={affix.id} title={affix.description ?? undefined}><Badge>{affix.name}</Badge></span>)}
+    </span>
+  );
+}
+
 export function AffixesSurface({ region }: { region: string }) {
   return (
     <Card as="section" >

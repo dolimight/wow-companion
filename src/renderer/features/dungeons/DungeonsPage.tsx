@@ -15,6 +15,7 @@ import { dungeonStrategy } from './strategy'
 import { Ability, BossCard, flagLabels, LootList, PlayBar, PlayHero, PlaySection, RolePicker, roleLabels, StrategySource, StrategyView, useDungeonRole, usePlayKeys } from './encounters'
 import { bundledSpell, useDungeonJournal } from './bundled'
 import { BossCoach } from '../ai/BossCoach'
+import { AffixChips } from '../season/season'
 import './dungeons.css'
 
 function bestLine(best: SeasonDungeon | undefined) {
@@ -380,7 +381,7 @@ function PlayMode({ character, dungeon, family, familyIndex, timers, bosses, str
   const first = groups[0]?.pull, last = groups[groups.length - 1]?.pull
   return (
     <div className="dungeon-play" role="region" aria-label={`${dungeon.name} play mode`}>
-      <PlayBar title={dungeon.name} detail={familyIndex >= 0 ? `Route ${String.fromCharCode(65 + familyIndex)}` : 'No route picked'} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
+      <PlayBar title={dungeon.name} detail={familyIndex >= 0 ? `Route ${String.fromCharCode(65 + familyIndex)}` : 'No route picked'} extra={<AffixChips region={character.region} />} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
       <div className="play-main">
         <div className="play-column">
           <PlayHero boss={boss} step={step} total={bosses.length}>
