@@ -1,15 +1,16 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
 import { strategyFor, whyItMatters, type JournalBoss, type JournalRole, type StrategyNotes } from '../../../shared/dungeons'
-import type { BossCoachInput } from '../../../shared/ai'
+import type { AiAnswer, BossCoachInput, BossCoachOutput } from '../../../shared/ai'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Button } from '../../components/ui/primitives'
 import { useAiProvider } from './ai'
 import { ProviderIcon } from './icons'
+
+type CoachAnswer = AiAnswer<BossCoachOutput>
 
 /** The strategy lines and role-relevant mechanics already on the page, which the answer builds on */
 function pageNotes(boss: JournalBoss, plan: StrategyNotes | undefined, role: JournalRole, mythic: boolean) {
@@ -19,29 +20,34 @@ function pageNotes(boss: JournalBoss, plan: StrategyNotes | undefined, role: Jou
 }
 
 /**
- * Tips for the player's own spec on this boss from their connected assistant, asked only when they press the button.
+ * Tips for the player's own spec on this boss from their connected assistant. The assistant is called only from the
+ * button: a press is a mutation, never a query, so focus, remounts, reconnects, and new bosses or roles can't ask on
+ * their own. An answer is kept in the query cache by boss and role, so stepping back to a boss shows it again.
  * Hidden while no assistant is connected
  */
 export function BossCoach({ character, instance, difficulty, boss, role, plan, mythic = false }: { character: Character; instance: string; difficulty: string; boss: JournalBoss; role: JournalRole; plan: StrategyNotes | undefined; mythic?: boolean }) {
   const provider = useAiProvider()
+  const client = useQueryClient()
   const input: BossCoachInput = { characterId: character.id, instance, difficulty, boss: boss.name, role, notes: pageNotes(boss, plan, role, mythic) }
-  // Asking covers this boss and role only: stepping to another boss or role shows the button again instead of asking
-  // on its own, so the assistant is never called without a press
-  const [askedFor, setAskedFor] = useState<string | null>(null)
-  const asked = askedFor === JSON.stringify(input)
-  const answer = useQuery({ queryKey: ['ai', 'bossCoach', provider?.id, input], queryFn: () => api.aiAsk({ feature: 'bossCoach', input }), enabled: asked && !!provider, staleTime: Infinity, gcTime: 60 * 60_000, retry: false })
+  const key = ['ai', 'bossCoach', provider?.id, input]
+  // Reads the cache only: with no query function and enabled off, this never calls the assistant
+  const saved = useQuery<CoachAnswer>({ queryKey: key, queryFn: skipToken, staleTime: Infinity, gcTime: 60 * 60_000 })
+  const ask = useMutation({ mutationFn: (question: BossCoachInput) => api.aiAsk({ feature: 'bossCoach', input: question }), onSuccess: (value, question) => client.setQueryData(['ai', 'bossCoach', provider?.id, question], value) })
+  const asking = ask.isPending && JSON.stringify(ask.variables) === JSON.stringify(input)
+  const failed = ask.isError && JSON.stringify(ask.variables) === JSON.stringify(input)
   if (!provider) return null
   const spec = character.specName && character.specName !== 'Unknown' ? `${character.specName} ${character.className}` : character.className
-  if (!asked && !answer.data) return <Button className="ai-coach-ask" onClick={() => setAskedFor(JSON.stringify(input))}><ProviderIcon id={provider.id} size={14} />Ask {provider.name} for {spec} tips</Button>
+  const answer = saved.data
+  if (!answer && !asking && !failed) return <Button className="ai-coach-ask" onClick={() => ask.mutate(input)}><ProviderIcon id={provider.id} size={14} />Ask {provider.name} for {spec} tips</Button>
   return (
     <Card size="sm" className="ai-coach" aria-live="polite">
       <h4><ProviderIcon id={provider.id} size={14} />{spec} tips from {provider.name}</h4>
-      {answer.isFetching && !answer.data ? <p className="muted small" role="status">Asking {provider.name}… this can take up to a minute</p>
-        : answer.isError ? <div className="ai-coach-error"><p className="muted small" role="alert">{errorMessage(answer.error)}</p><Button variant="quiet" onClick={() => void answer.refetch()}><RefreshCw size={13} aria-hidden="true" />Try again</Button></div>
-          : answer.data && <>
-            <ul className="boss-tips">{answer.data.value.tips.map((tip, at) => <li key={at}>{tip}</li>)}</ul>
-            {answer.data.value.cooldowns.length > 0 && <dl className="ai-coach-cooldowns">{answer.data.value.cooldowns.map((entry, at) => <div key={at}><dt>{entry.ability}</dt><dd>{entry.when}</dd></div>)}</dl>}
-            <p className="muted small">Written by {provider.name} for this fight in {Math.max(1, Math.round(answer.data.durationMs / 1000))} s · AI answers can be wrong, so check them against the strategy above</p>
+      {asking && !answer ? <p className="muted small" role="status">Asking {provider.name}… this can take up to a minute</p>
+        : failed && !answer ? <div className="ai-coach-error"><p className="muted small" role="alert">{errorMessage(ask.error)}</p><Button variant="quiet" onClick={() => ask.mutate(input)}><RefreshCw size={13} aria-hidden="true" />Try again</Button></div>
+          : answer && <>
+            <ul className="boss-tips">{answer.value.tips.map((tip, at) => <li key={at}>{tip}</li>)}</ul>
+            {answer.value.cooldowns.length > 0 && <dl className="ai-coach-cooldowns">{answer.value.cooldowns.map((entry, at) => <div key={at}><dt>{entry.ability}</dt><dd>{entry.when}</dd></div>)}</dl>}
+            <p className="muted small">Written by {provider.name} for this fight in {Math.max(1, Math.round(answer.durationMs / 1000))} s · AI answers can be wrong, so check them against the strategy above</p>
           </>}
     </Card>
   )
