@@ -1,6 +1,6 @@
 // Boss cards, strategy, and the role picker shared by the Dungeons and Raids pages
-import { useEffect, useId, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ExternalLink, Gem, HeartPulse, Move, Shield, Skull, Sparkles, Swords, Users, X } from 'lucide-react'
+import { createContext, useContext, useEffect, useId, useMemo, useState } from 'react'
+import { ArrowLeft, ArrowRight, BookOpen, PictureInPicture2, ChevronDown, ExternalLink, Gem, HeartPulse, Move, Shield, Skull, Sparkles, Swords, Users, X } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
 import { specRole, strategyFor, whyItMatters, type DungeonStrategy, type JournalAbility, type JournalBoss, type JournalFlag, type JournalRole, type LootItem, type StrategyNotes } from '../../../shared/dungeons'
 import { inLootTable, isGearDrop, lootKind, uniqueDrops, voidcoreShare } from '../../../shared/loot'
@@ -168,14 +168,20 @@ export function LootList({ items: listed, character }: { items: LootItem[]; char
  * Play mode's sticky bar: where you are, your role, and the step controls up top, so moving to the next boss never
  * needs a scroll. The track under it names every boss and jumps to one on a click
  */
-export function PlayBar({ title, detail, extra, bosses, step, onStep, role, onRole, onExit }: { title: string; detail?: string; extra?: React.ReactNode; bosses: JournalBoss[]; step: number; onStep: (step: number) => void; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
+/** True inside play mode's own small window, where Exit closes the window and there is nothing to pop out */
+export const MiniPlayContext = createContext(false)
+
+export function PlayBar({ title, detail, extra, popout, bosses, step, onStep, role, onRole, onExit }: { title: string; detail?: string; extra?: React.ReactNode; popout?: string; bosses: JournalBoss[]; step: number; onStep: (step: number) => void; role: JournalRole; onRole: (role: JournalRole) => void; onExit: () => void }) {
   const previous = bosses[step - 1], next = bosses[step + 1]
+  const mini = useContext(MiniPlayContext)
+  const canPop = !mini && !!popout && !!window.companion?.openMiniPlay
   return (
     <Card as="header" className="play-bar">
       <div className="play-bar-row">
-        <Button variant="quiet" className="play-exit" onClick={onExit} aria-label="Exit play mode"><X size={14} aria-hidden="true" />Exit</Button>
+        <Button variant="quiet" className="play-exit" onClick={mini ? () => window.close() : onExit} aria-label={mini ? 'Close the play window' : 'Exit play mode'}><X size={14} aria-hidden="true" />{mini ? 'Close' : 'Exit'}</Button>
         <span className="play-bar-title"><b>{title}</b>{detail && <small>{detail}</small>}{extra}</span>
         <RolePicker role={role} onChange={onRole} />
+        {canPop && <Button variant="quiet" onClick={() => void window.companion!.openMiniPlay(popout!).catch(() => {})} title={`A small window that stays on top of the game · ${navigator.platform.startsWith('Mac') ? '⌘' : 'Ctrl'}+Shift+→ and ← step bosses from inside the game`}><PictureInPicture2 size={14} aria-hidden="true" />Pop out</Button>}
         <div className="play-bar-steps">
           <Button disabled={!previous} onClick={() => onStep(step - 1)} aria-label={previous ? `Back to ${previous.name}` : 'Back'} title={previous ? `Back to ${previous.name} (←)` : undefined}><ArrowLeft size={14} aria-hidden="true" /></Button>
           <Button variant="primary" className="play-next" disabled={!next} onClick={() => onStep(step + 1)} title={next ? 'Next boss (→)' : undefined}>{next ? <><span>Next · {next.name}</span><ArrowRight size={14} aria-hidden="true" /></> : 'Last boss'}</Button>
@@ -216,7 +222,9 @@ export function usePlayKeys(count: number, setStep: (update: (value: number) => 
       if (event.key === 'Escape') onExit()
     }
     window.addEventListener('keydown', keys)
-    return () => window.removeEventListener('keydown', keys)
+    // In the play window, global keys step bosses from inside the game
+    const off = window.companion?.onPlayStep?.(delta => setStep(value => Math.max(0, Math.min(count - 1, value + delta))))
+    return () => { window.removeEventListener('keydown', keys); off?.() }
   }, [count, setStep, onExit])
 }
 

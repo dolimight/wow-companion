@@ -19,6 +19,7 @@ import { isUpdateChannel } from '../shared/updates'
 import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from './window-placement'
 import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
 import { openSplash } from './splash'
+import { createMiniWindow } from './mini-window'
 import { alignShortcutActivator, appIdentity, persistWindowsIcon, refreshPinnedShellItems, registerToastIdentity, taskbarDetails, updatePinnedAppIcons } from './windows-app-icon'
 
 // Development runs are their own app: own name and data folder, so they never share the installed app's database
@@ -39,6 +40,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 const root=dirname(fileURLToPath(import.meta.url))
 let window:BrowserWindow|null=null
+let miniPlay:ReturnType<typeof createMiniWindow>|null=null
 let cleanup:(()=>Promise<void>)|undefined
 let closing=false
 let installingUpdate=false
@@ -150,7 +152,7 @@ async function main(){
     if(url.host==='renders'){const name=url.pathname.slice(1);if(!/^[\w-]+\.(png|jpg|webp)$/.test(name))return new Response('Not found',{status:404});try{return assetHeaders(await net.fetch(pathToFileURL(resolve(service.connections.rendersDir(),name)).href),name.endsWith('png')?'image/png':name.endsWith('webp')?'image/webp':'image/jpeg')}catch{return new Response('Not found',{status:404})}}
     return new Response('Not found',{status:404})
   })
-  const trusted=(event:Electron.IpcMainInvokeEvent)=>{const url=event.senderFrame?.url;if(!url||!origins.includes(rendererOrigin(url)??'')||event.sender!==window?.webContents)throw new Error('Untrusted application frame')}
+  const trusted=(event:Electron.IpcMainInvokeEvent)=>{const url=event.senderFrame?.url;if(!url||!origins.includes(rendererOrigin(url)??'')||(event.sender!==window?.webContents&&event.sender!==miniPlay?.window?.webContents))throw new Error('Untrusted application frame')}
   function handle(channel:string,fn:(...args:any[])=>unknown){ipcMain.handle(channel,async(event,...args)=>{
     trusted(event)
     if(installingUpdate&&!['companion:update-state','companion:update-blockers'].includes(channel))throw new Error('The app is restarting to install an update')
@@ -184,6 +186,7 @@ async function main(){
   handle('companion:import-backup',async()=>{const path=await selectedFile([{name:'JSON backup',extensions:['json']}]);if(!path)return null;const input=JSON.parse(await smallText(path));const result=await db.call('importBackup',input);await service.changed();return {imported:(input.characters as {id:string}[]).map(c=>c.id),unchanged:[],errors:[],revision:result.revision}})
   handle('companion:choose-wow-folder',async()=>{const result=await dialog.showOpenDialog(window!,{title:'Choose your World of Warcraft folder',properties:['openDirectory']});if(result.canceled||!result.filePaths[0])return null;return service.connections.useInstallPath(result.filePaths[0])})
   handle('companion:choose-simulation-executable',async()=>{const local=process.env.LOCALAPPDATA,roots=process.platform==='win32'?[...(local?[join(local,'Programs','SimulationCraft'),join(local,'Programs')]:[]),join(process.env.ProgramFiles??'C:/Program Files','SimulationCraft'),process.env.ProgramFiles??'C:/Program Files',app.getPath('downloads')]:process.platform==='darwin'?['/Applications',app.getPath('downloads')]:['/usr/local/bin','/usr/bin',app.getPath('downloads')];const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft engine (simc.exe)',extensions:['exe']}]:[{name:'SimulationCraft engine (simc)',extensions:['*']}],{title:'Choose the SimulationCraft engine',defaultPath:await service.simulations.engineFolder(roots)});return selected?service.simulations.configureExecutable(await realpath(selected)):null})
+  handle('companion:open-mini',(route:unknown)=>{if(typeof route!=='string')throw new Error('Not a play mode page');return miniPlay?.open(route)})
   handle('companion:open-logs',async()=>{await mkdir(resolve(userDir,'logs'),{recursive:true});const failure=await shell.openPath(resolve(userDir,'logs'));if(failure)throw new Error(failure)})
   handle('companion:copy-text',async(value:unknown)=>{if(typeof value!=='string'||value.length>1_000_000)throw new Error('Nothing to copy');clipboard.writeText(value)})
   handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=externalLink(value);if(!url)throw new Error('This external link is not supported');await shell.openExternal(url.href)})
@@ -234,6 +237,16 @@ async function main(){
   window.webContents.on('will-navigate',(event,url)=>{if(!origins.includes(rendererOrigin(url)??''))event.preventDefault()})
   // The only embedded page is Keystone Guru's route map; its frame may never leave keystone.guru
   window.webContents.on('will-frame-navigate',event=>{if(event.isMainFrame)return;try{if(new URL(event.url).origin!=='https://keystone.guru')event.preventDefault()}catch{event.preventDefault()}})
+  // Play mode's small always-on-top window shares the page's rules: no other origins, links open in the browser
+  const mainWindow=window
+  miniPlay=createMiniWindow({file:resolve(userDir,'mini-window-placement.json'),base:devUrl??'app://companion/index.html',
+    window:{title:`${identity.displayName} · Play`,backgroundColor:nativeTheme.shouldUseDarkColors?'#000000':'#f7f8fa',autoHideMenuBar:true,icon:windowIcon,...(process.platform==='darwin'?{titleBarStyle:'hiddenInset' as const,trafficLightPosition:{x:14,y:16}}:{titleBarStyle:'hidden' as const,titleBarOverlay:titleBarOverlay()}),webPreferences:{preload:resolve(root,'../preload/index.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true}},
+    harden:mini=>{
+      mini.webContents.setWindowOpenHandler(({url})=>{const link=externalLink(url);if(link)void shell.openExternal(link.href);return{action:'deny'}})
+      mini.webContents.on('will-navigate',(event,url)=>{if(!origins.includes(rendererOrigin(url)??''))event.preventDefault()})
+      mini.webContents.on('will-frame-navigate',event=>{if(event.isMainFrame)return;try{if(new URL(event.url).origin!=='https://keystone.guru')event.preventDefault()}catch{event.preventDefault()}})
+      mini.on('closed',()=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('companion:mini-closed')})
+    }})
   // Every permission is refused except clipboard writes from the route map, so its Copy MDT button works
   window.webContents.session.setPermissionRequestHandler((_contents,permission,callback,details)=>{let origin='';try{origin=new URL(details.requestingUrl).origin}catch{}callback(permission==='clipboard-sanitized-write'&&origin==='https://keystone.guru')})
   // Dev pages come from Vite, so they get the release CSP too and eval fails in dev exactly as it does in a release build.
@@ -269,7 +282,7 @@ async function main(){
   if(process.argv.includes('--smoke')){const result=await window.webContents.executeJavaScript(`new Promise(resolve=>{let n=0;const t=setInterval(()=>{if(document.querySelector('h1')||++n>100){clearInterval(t);resolve({title:document.title,heading:document.querySelector('h1')?.textContent,body:document.body.innerText.slice(0,500)})}},100)})`);console.log('COMPANION_SMOKE',JSON.stringify(result));app.quit()}
 }
 app.on('window-all-closed',()=>app.quit())
-app.on('before-quit',event=>{quitting=true;saveWindowPlacement?.();if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
+app.on('before-quit',event=>{quitting=true;saveWindowPlacement?.();miniPlay?.dispose();if(cleanup&&!closing){event.preventDefault();closing=true;void cleanup().finally(()=>{cleanup=undefined;app.exit(Number(process.exitCode??0))})}})
 // One copy per data folder: a second launch focuses the open window instead of sharing the database and item data files
 if(!app.requestSingleInstanceLock())app.quit()
 else{

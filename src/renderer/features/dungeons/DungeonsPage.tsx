@@ -381,7 +381,7 @@ function PlayMode({ character, dungeon, family, familyIndex, timers, bosses, str
   const first = groups[0]?.pull, last = groups[groups.length - 1]?.pull
   return (
     <div className="dungeon-play" role="region" aria-label={`${dungeon.name} play mode`}>
-      <PlayBar title={dungeon.name} detail={familyIndex >= 0 ? `Route ${String.fromCharCode(65 + familyIndex)}` : 'No route picked'} extra={<AffixChips region={character.region} />} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
+      <PlayBar title={dungeon.name} detail={familyIndex >= 0 ? `Route ${String.fromCharCode(65 + familyIndex)}` : 'No route picked'} extra={<AffixChips region={character.region} />} popout={`#/mini/${character.id}/dungeons?dungeon=${dungeon.slug}&play=1`} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
       <div className="play-main">
         <div className="play-column">
           <PlayHero boss={boss} step={step} total={bosses.length}>
