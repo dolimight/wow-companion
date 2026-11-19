@@ -87,6 +87,8 @@
 .best-gear-gain { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .best-gear-gain[data-sign="up"] { color: var(--green); }
 .best-gear-gain small { font-weight: 400; color: var(--muted); }
+.best-gear-changes .best-gear-gain { display: grid; gap: 1px; font-size: 13px; }
+.best-gear-changes .best-gear-gain small { font-size: 11.5px; }
 .best-gear-notes { margin-top: 12px; font-size: 12.5px; color: var(--secondary); }
 .best-gear-notes ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 

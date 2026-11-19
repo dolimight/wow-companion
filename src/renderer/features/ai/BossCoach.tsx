@@ -24,12 +24,15 @@ function pageNotes(boss: JournalBoss, plan: StrategyNotes | undefined, role: Jou
  */
 export function BossCoach({ character, instance, difficulty, boss, role, plan, mythic = false }: { character: Character; instance: string; difficulty: string; boss: JournalBoss; role: JournalRole; plan: StrategyNotes | undefined; mythic?: boolean }) {
   const provider = useAiProvider()
-  const [asked, setAsked] = useState(false)
   const input: BossCoachInput = { characterId: character.id, instance, difficulty, boss: boss.name, role, notes: pageNotes(boss, plan, role, mythic) }
+  // Asking covers this boss and role only: stepping to another boss or role shows the button again instead of asking
+  // on its own, so the assistant is never called without a press
+  const [askedFor, setAskedFor] = useState<string | null>(null)
+  const asked = askedFor === JSON.stringify(input)
   const answer = useQuery({ queryKey: ['ai', 'bossCoach', provider?.id, input], queryFn: () => api.aiAsk({ feature: 'bossCoach', input }), enabled: asked && !!provider, staleTime: Infinity, gcTime: 60 * 60_000, retry: false })
   if (!provider) return null
   const spec = character.specName && character.specName !== 'Unknown' ? `${character.specName} ${character.className}` : character.className
-  if (!asked && !answer.data) return <Button className="ai-coach-ask" onClick={() => setAsked(true)}><ProviderIcon id={provider.id} size={14} />Ask {provider.name} for {spec} tips</Button>
+  if (!asked && !answer.data) return <Button className="ai-coach-ask" onClick={() => setAskedFor(JSON.stringify(input))}><ProviderIcon id={provider.id} size={14} />Ask {provider.name} for {spec} tips</Button>
   return (
     <Card size="sm" className="ai-coach" aria-live="polite">
       <h4><ProviderIcon id={provider.id} size={14} />{spec} tips from {provider.name}</h4>

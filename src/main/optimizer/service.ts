@@ -8,7 +8,7 @@ import { gearItemSchema, type Character, type GearItem, type GearSlot } from '..
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, candidateKey, greedyCombos, isOwned, optimizerLoads, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart } from '../../shared/optimizer'
+import { bestCombos, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -186,8 +186,8 @@ export function createOptimizer(options: OptimizerOptions) {
       characterId: character.id,
       scenario: simulationScenarios[run.scenarioId].label,
       equipped: character.gear.map(item => ({ slot: item.slot, name: item.name, itemLevel: item.itemLevel })),
-      candidates: run.pool.filter(candidate => run.screen[candidate.key]).slice(0, 240).map(candidate => ({ key: candidate.key, slot: candidate.slot, name: candidate.item.name, itemLevel: candidate.item.itemLevel, origin: candidate.source ?? candidate.origin, gainPercent: run.screen[candidate.key]!.gain / base * 100, popularity: candidate.popularity })),
-      rules: ['At most one Great Vault choice per set', 'The same ring or trinket can\'t fill both of its slots', 'Unique-equipped items can\'t be worn together', 'Leave a slot out to keep what is equipped there'],
+      candidates: run.pool.filter(candidate => run.screen[candidate.key]).slice(0, 240).map(candidate => ({ key: candidate.key, slot: candidate.slot, name: candidate.item.name, itemLevel: candidate.item.itemLevel, origin: `${isOwned(candidate) ? 'owned' : 'target'}: ${candidate.source ?? candidate.origin}`.slice(0, 120), gainPercent: run.screen[candidate.key]!.gain / base * 100, noisePercent: noise(run.screen[candidate.key]!) / base * 100, popularity: candidate.popularity })),
+      rules: ['At most one Great Vault choice per set', 'The same ring or trinket can\'t fill both of its slots', 'Unique-equipped items can\'t be worn together', 'Leave a slot out to keep what is equipped there', ...(tankSpecs.includes(character.specName) ? ['This is a tank: never swap out a defensive trinket for damage alone'] : [])],
     })
     run.provider = answer.provider
     const combos: OptimizerCombo[] = []
@@ -206,7 +206,10 @@ export function createOptimizer(options: OptimizerOptions) {
     const capped = top ? capTopLevels(top, ladderCeiling) : null
     // Gear saved above anything this season offers is out of date, so every comparison against it is too
     const stale = ladderCeiling != null ? character.gear.filter(item => (item.itemLevel ?? 0) > ladderCeiling!) : []
+    run.equipped = character.gear.map(item => ({ slot: item.slot, itemId: item.itemId, itemLevel: item.itemLevel }))
     if (stale.length) run.warning = `Your saved ${stale.slice(0, 3).map(item => `${gearSlotLabels[item.slot].toLowerCase()} (${item.itemLevel})`).join(', ')} ${stale.length === 1 ? 'is' : 'are'} above this season's highest item level ${ladderCeiling}, so your saved gear is out of date. Refresh the character, then run this again`
+    // A tank's gear also keeps them alive, which a damage simulation can't see
+    if (tankSpecs.includes(character.specName)) run.warning = [run.warning, `SimulationCraft measures damage, not survival. As a ${character.specName} tank, keep the defensive trinkets and pieces you rely on, even where a swap shows more damage`].filter(Boolean).join(' · ')
     run.pool = await gather(character, start, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
