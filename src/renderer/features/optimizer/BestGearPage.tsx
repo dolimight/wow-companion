@@ -4,7 +4,7 @@ import { ArrowRight, Check, Cpu, RefreshCw, Sparkles, Square, Target, TriangleAl
 import type { Activity, Character, GearSlot } from '../../../shared/domain'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
 import { simulationScenarios, type SimulationScenarioId } from '../../../shared/simulation'
-import { gearChanged, isOwned, optimizerLoads, upgradesToChase, optimizerStages, type OptimizerLoad, originLabels, type OptimizerCandidate, type OptimizerCombo, type OptimizerRun } from '../../../shared/optimizer'
+import { gearChanged, healerPicks, isOwned, optimizerLoads, upgradesToChase, optimizerStages, type OptimizerLoad, originLabels, type OptimizerCandidate, type OptimizerCombo, type OptimizerRun } from '../../../shared/optimizer'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
@@ -18,6 +18,7 @@ import { ProviderIcon } from '../ai/icons'
 import { VaultAdvisor } from './VaultAdvisor'
 import { BestTalents } from './BestTalents'
 import { EnchantsCheck } from './EnchantsCheck'
+import { specRole } from '../../../shared/roles'
 import './best-gear.css'
 
 const slotOrder: GearSlot[] = ['head', 'neck', 'shoulder', 'back', 'chest', 'wrist', 'hands', 'waist', 'legs', 'feet', 'finger1', 'finger2', 'trinket1', 'trinket2', 'mainHand', 'offHand']
@@ -63,7 +64,7 @@ export function BestGearPage({ character, activity }: { character: Character; ac
             : <Button variant="primary" disabled={busy} onClick={() => start.mutate()}>{current?.stage === 'done' ? <RefreshCw size={14} aria-hidden="true" /> : <Sparkles size={14} aria-hidden="true" />}{current?.stage === 'done' ? 'Run again' : 'Find my best gear'}</Button>}
         </div>
         <p className="muted small best-gear-note">
-          {provider ? <><ProviderIcon id={provider.id} size={13} />{provider.name} picks which sets to test</> : 'The app picks which sets to test · connect an AI assistant in Settings to weigh set bonuses and pairs too'}
+          {specRole(character.specId) === 'healer' ? 'SimulationCraft can\'t model healing, so Best gear picks from what top healers of your specialization wear and what you own' : provider ? <><ProviderIcon id={provider.id} size={13} />{provider.name} picks which sets to test</> : 'The app picks which sets to test · connect an AI assistant in Settings to weigh set bonuses and pairs too'}
           {' · '}Runs at low priority. Light load is the safe default; heavier loads finish sooner but can reset a computer with unstable power or cooling
         </p>
         {start.isError && <p className="error small" role="alert">{errorMessage(start.error)}</p>}
@@ -132,6 +133,10 @@ export function Forge({ run }: { run: OptimizerRun }) {
 }
 
 export function Results({ run, character }: { run: OptimizerRun; character: Character }) {
+  return run.healer ? <HealerResults run={run} character={character} /> : <SimResults run={run} character={character} />
+}
+
+function SimResults({ run, character }: { run: OptimizerRun; character: Character }) {
   const byKey = useMemo(() => new Map(run.pool.map(candidate => [candidate.key, candidate])), [run.pool])
   const sets = [...run.combos].filter(combo => run.results[combo.key]).sort((a, b) => run.results[b.key]!.gain - run.results[a.key]!.gain)
   const wearNow = run.combos.find(combo => combo.key === run.wearNow)
@@ -156,7 +161,7 @@ export function Results({ run, character }: { run: OptimizerRun; character: Char
               <div key={combo.key} className="best-gear-set" data-best={combo.key === run.wearNow || combo.key === run.chase ? true : undefined}>
                 <span><b>{combo.label}{combo.key === run.wearNow && <Badge tone="green">Wear now</Badge>}{combo.key === run.chase && <Badge tone="blue">Worth chasing</Badge>}</b>{combo.why && <small>{combo.why}</small>}</span>
                 <Badge tone={combo.by === 'ai' ? 'blue' : 'neutral'}>{combo.by === 'ai' ? run.provider ?? 'AI' : 'App'}</Badge>
-                <span className="best-gear-gain" data-sign={result.gain >= 0 ? 'up' : 'down'}>{dps(result.gain)}<small>{result.error != null ? ` ±${Math.round(result.error * 1.96).toLocaleString('en-US')}` : ''}</small></span>
+                <span className="best-gear-gain" data-sign={result.gain >= 0 ? 'up' : 'down'}>{dps(result.gain)}<small>{result.error != null ? ` ±${Math.round(result.error * 1.96).toLocaleString('en-US')}` : ''}{result.taken ? ` · taken ${dps(result.taken.change)}` : ''}</small></span>
               </div>
             )
           })}
@@ -229,6 +234,36 @@ function UpgradeCard({ run, character }: { run: OptimizerRun; character: Charact
         </ul>
         {together && <p className="muted small"><ArrowRight size={12} aria-hidden="true" /> The best set with targets measured {dps(together.gain)} damage per second</p>}
       </>}
+    </Card>
+  )
+}
+
+/** A healer's results: pieces top healers of the spec wear and owned pieces well above what is worn, no engine numbers */
+function HealerResults({ run, character }: { run: OptimizerRun; character: Character }) {
+  const picks = useMemo(() => healerPicks(run.pool, character.gear), [run.pool, character.gear])
+  return (
+    <Card as="section" className="best-gear-set-card" aria-labelledby="healer-picks">
+      <h3 id="healer-picks">Worth a look</h3>
+      <p className="muted small">{run.summary}</p>
+      {!picks.length ? <p className="muted">Nothing clearly beats what you wear, by what top healers wear</p> : (
+        <ul className="best-gear-changes">
+          {picks.map(({ candidate, reason }) => {
+            const from = character.gear.find(item => item.slot === candidate.slot)
+            return (
+              <li key={candidate.key}>
+                <small>{gearSlotLabels[candidate.slot]}</small>
+                <ItemHoverCard itemId={candidate.item.itemId} name={candidate.item.name}>
+                  <span className="best-gear-item" tabIndex={0}>
+                    <ItemIcon icon={candidate.icon} quality={candidate.quality ?? undefined} size="small" />
+                    <span><b className={`quality-text-${candidate.quality ?? 4}`}>{candidate.item.name}</b><small>{candidate.item.itemLevel} · {reason}{from ? ` · replaces ${from.name} (${from.itemLevel})` : ''}</small></span>
+                  </span>
+                </ItemHoverCard>
+                <Badge tone={isOwned(candidate) ? 'green' : 'amber'}>{candidate.source ?? originLabels[candidate.origin]}</Badge>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </Card>
   )
 }

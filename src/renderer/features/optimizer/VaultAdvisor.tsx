@@ -6,6 +6,7 @@ import { gearSlotLabels } from '../../../shared/simulation-benchmark'
 import type { SimulationScenarioId } from '../../../shared/simulation'
 import { vaultChoices, type OptimizerLoad, type OptimizerRun } from '../../../shared/optimizer'
 import { api } from '../../lib/client'
+import { specRole } from '../../../shared/roles'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
 import { Badge, Button } from '../../components/ui/primitives'
@@ -35,6 +36,8 @@ export function VaultAdvisor({ character, activity, scenario, load }: { characte
   const advice = useMemo(() => current?.stage === 'done' ? vaultChoices(current) : null, [current])
   if (!vault.length) return null
   const busy = running(current) || start.isPending
+  // SimulationCraft can't model healing, so a healer has no engine run here
+  if (specRole(character.specId) === 'healer') return null
   return (
     <Card as="section" className="vault-advisor" aria-labelledby="vault-advisor-title">
       <div className="vault-advisor-head">

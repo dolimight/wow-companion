@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { characterSchema, gearItemSchema, type GearSlot } from './domain'
-import { bestCombos, gearChanged, lootSources, upgradeAdvice, vaultChoices, vaultSets, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
+import { bestCombos, gearChanged, healerPicks, lootSources, upgradeAdvice, vaultChoices, vaultSets, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
 
 const item = (slot: GearSlot, itemId: number, itemLevel: number) => gearItemSchema.parse({ slot, itemId, name: `Item ${itemId}`, itemLevel })
 const candidate = (key: string, slot: GearSlot, itemId: number, itemLevel: number, origin: OptimizerOrigin = 'bags'): OptimizerCandidate => ({ key, slot, item: item(slot, itemId, itemLevel), origin, source: null, icon: null, quality: 4, popularity: null })
@@ -101,5 +101,19 @@ describe('gear optimizer sets', () => {
     const advice = upgradeAdvice({ pool, screen: { a: m(1000), b: m(400), c: m(50) } }, { 3445: 25 })
     expect(advice.map(entry => [entry.candidate.key, entry.clear, entry.affordable])).toEqual([['a', true, true], ['b', true, false], ['c', false, false]])
     expect(upgradeAdvice({ pool, screen: { a: m(1000) } }, null).map(entry => entry.affordable)).toEqual([null])
+  })
+
+  it('never counts a tank pick that raises damage taken past its noise', () => {
+    expect(isGain({ mean: 0, error: 40, gain: 900, taken: { change: 50, error: 40 } })).toBe(true)
+    expect(isGain({ mean: 0, error: 40, gain: 900, taken: { change: 900, error: 40 } })).toBe(false)
+  })
+
+  it('picks healer gear from what top healers wear and owned pieces well above what is worn', () => {
+    const pool = [
+      { ...candidate('p', 'head', 2, 318, 'top'), popularity: 0.6 }, { ...candidate('q', 'head', 3, 334, 'drop'), popularity: 0.1 },
+      candidate('o', 'back', 4, 320, 'bags'), candidate('n', 'neck', 5, 302, 'bags'),
+    ]
+    const picks = healerPicks(pool, [{ slot: 'head', itemId: 1, itemLevel: 310 }, { slot: 'back', itemId: 9, itemLevel: 300 }, { slot: 'neck', itemId: 8, itemLevel: 300 }])
+    expect(picks.map(pick => [pick.candidate.key, pick.reason])).toEqual([['o', '20 item levels above what you wear'], ['p', 'Worn by 60% of top healers of your specialization']])
   })
 })

@@ -72,7 +72,7 @@ describe('simulation workspace and job lifecycle', () => {
     const partial = database.addCharacter({ name: 'Partial', region: 'us', realm: 'Fixture', className: 'Mage', specId: 62 })
     await expect(service.startJob({ characterId: partial.id })).rejects.toThrow('Complete the character baseline')
     const healer = database.addCharacter({ name: 'Healer', region: 'us', realm: 'Fixture', className: 'Priest', specId: 257 })
-    await expect(service.startJob({ characterId: healer.id })).rejects.toThrow('damage modeling')
+    await expect(service.startJob({ characterId: healer.id })).rejects.toThrow('not healing')
   })
   it('runs many swaps as profilesets and keeps each candidate label with its result', async () => {
     const { character, service, root } = await fixture(`await fs.writeFile('args.json',JSON.stringify(process.argv.slice(2)));await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1', 'companion_candidate_2'], [103_000, 99_500]))}));`)

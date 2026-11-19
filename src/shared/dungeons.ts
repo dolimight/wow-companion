@@ -1,4 +1,5 @@
 /** Mythic+ dungeons for the season: the list, the routes players actually run, and each boss from the Dungeon Journal */
+import { specRole as roleOf } from './roles'
 import type { ItemPrimaryStat } from './gamedata'
 
 export type SeasonDungeonInfo = {
@@ -171,14 +172,8 @@ export function bestFamily(families: RouteFamily[]) {
 /** Dungeon names compared loosely, since Raider.IO and the game sometimes differ in punctuation */
 export const dungeonKey = (name: string) => name.normalize('NFKC').toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
 
-const tankSpecs = new Set([250, 104, 268, 66, 73, 581])
-const healerSpecs = new Set([65, 105, 256, 257, 264, 270, 1468])
 /** The role a specialization plays, which picks the journal advice shown first */
-export function specRole(specId: number | null | undefined): JournalRole {
-  if (specId && tankSpecs.has(specId)) return 'tank'
-  if (specId && healerSpecs.has(specId)) return 'healer'
-  return 'damage'
-}
+export function specRole(specId: number | null | undefined): JournalRole { return roleOf(specId) }
 
 /** A rough pace: each timer split evenly across the bosses, so boss N should die by N/bosses of it */
 export function bossPace(timersMs: { plusOne: number; plusTwo: number; plusThree: number }, bossIndex: number, bosses: number) {

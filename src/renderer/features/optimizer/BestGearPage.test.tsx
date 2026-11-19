@@ -54,4 +54,13 @@ describe('Best gear page', () => {
     const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><Results run={done} character={mage} /></QueryClientProvider>)
     expect(html).toContain('Your gear changed since this run')
   })
+
+  it('shows a healer what top healers wear instead of engine numbers', () => {
+    const priest = { ...mage, className: 'Priest', specName: 'Holy', specId: 257 }
+    const healer: OptimizerRun = { ...run, stage: 'done', healer: true, summary: '1 piece worth a look', pool: [{ ...run.pool[1]!, popularity: 0.5 }] }
+    const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><Results run={healer} character={priest} /></QueryClientProvider>)
+    expect(html).toContain('Worth a look')
+    expect(html).toContain('Worn by 50% of top healers')
+    expect(html).not.toContain('Every set tested')
+  })
 })

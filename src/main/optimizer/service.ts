@@ -9,11 +9,12 @@ import { gearItemSchema, type Character, type GearItem, type GearSlot } from '..
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, enhancementAdvice, lootSources, optimizerTrackNames, talentBuilds, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
+import { bestCombos, enhancementAdvice, healerPicks, lootSources, optimizerTrackNames, talentBuilds, upgradeAdvice, vaultChoices, vaultSets, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
 import { log } from '../log'
+import { specRole } from '../../shared/roles'
 import { pruneCache, screenKey, type ScreenCache } from './cache'
 
 /** This season's boss loot, bundled by scripts/encounter-data.ts, newest season first */
@@ -159,7 +160,7 @@ export function createOptimizer(options: OptimizerOptions) {
     const sets = allSets.filter(set => {
       const hit = saved?.cache.entries[saved.keys.get(set.label)!]
       if (!hit) return true
-      measures[set.label] = { mean: hit.mean, error: hit.error, gain: hit.gain }
+      measures[set.label] = { mean: hit.mean, error: hit.error, gain: hit.gain, taken: hit.taken ?? null }
       run.baseline ??= hit.mean - hit.gain
       run.reused = (run.reused ?? 0) + 1
       return false
@@ -184,7 +185,7 @@ export function createOptimizer(options: OptimizerOptions) {
       if (done.state === 'completed' && done.result) {
         const [base, ...values] = done.result.values
         run.baseline ??= base!.mean
-        labels.forEach((name, index) => { const value = values[index]; if (value) measures[name] = { mean: value.mean, error: value.standardError, gain: value.mean - base!.mean } })
+        labels.forEach((name, index) => { const value = values[index]; if (value) measures[name] = { mean: value.mean, error: value.standardError, gain: value.mean - base!.mean, taken: value.damageTaken && base!.damageTaken ? { change: value.damageTaken.mean - base!.damageTaken.mean, error: value.damageTaken.standardError } : null } })
         continue
       }
       if (state?.cancelled || done.state === 'cancelled') throw new Error('Cancelled')
@@ -220,7 +221,7 @@ export function createOptimizer(options: OptimizerOptions) {
       scenario: simulationScenarios[run.scenarioId].label,
       equipped: character.gear.map(item => ({ slot: item.slot, name: item.name, itemLevel: item.itemLevel })),
       candidates: run.pool.filter(candidate => run.screen[candidate.key]).slice(0, 240).map(candidate => ({ key: candidate.key, slot: candidate.slot, name: candidate.item.name, itemLevel: candidate.item.itemLevel, origin: `${isOwned(candidate) ? 'owned' : 'target'}: ${candidate.source ?? candidate.origin}`.slice(0, 120), gainPercent: run.screen[candidate.key]!.gain / base * 100, noisePercent: noise(run.screen[candidate.key]!) / base * 100, popularity: candidate.popularity })),
-      rules: ['At most one Great Vault choice per set', 'The same ring or trinket can\'t fill both of its slots', 'Unique-equipped items can\'t be worn together', 'Leave a slot out to keep what is equipped there', ...(tankSpecs.includes(character.specName) ? ['This is a tank: never swap out a defensive trinket for damage alone'] : [])],
+      rules: ['At most one Great Vault choice per set', 'The same ring or trinket can\'t fill both of its slots', 'Unique-equipped items can\'t be worn together', 'Leave a slot out to keep what is equipped there', ...(specRole(character.specId) === 'tank' ? ['This is a tank: never swap out a defensive trinket for damage alone, and never pick a piece whose damage taken rises'] : [])],
     })
     run.provider = answer.provider
     const combos: OptimizerCombo[] = []
@@ -242,7 +243,16 @@ export function createOptimizer(options: OptimizerOptions) {
     run.equipped = character.gear.map(item => ({ slot: item.slot, itemId: item.itemId, itemLevel: item.itemLevel }))
     if (stale.length) run.warning = `Your saved ${stale.slice(0, 3).map(item => `${gearSlotLabels[item.slot].toLowerCase()} (${item.itemLevel})`).join(', ')} ${stale.length === 1 ? 'is' : 'are'} above this season's highest item level ${ladderCeiling}, so your saved gear is out of date. Refresh the character, then run this again`
     // A tank's gear also keeps them alive, which a damage simulation can't see
-    if (tankSpecs.includes(character.specName)) run.warning = [run.warning, `SimulationCraft measures damage, not survival. As a ${character.specName} tank, keep the defensive trinkets and pieces you rely on, even where a swap shows more damage`].filter(Boolean).join(' · ')
+    const role = specRole(character.specId)
+    if (role === 'tank') run.warning = [run.warning, `Measured on damage and damage taken. A piece that makes you take more damage is never picked, but SimulationCraft can't see every defensive, so keep the trinkets you rely on`].filter(Boolean).join(' · ')
+    // SimulationCraft can't model healing: a healer's Best gear comes from what top healers wear, and nothing else runs
+    if (role === 'healer') {
+      if (start.mode !== 'gear') throw new Error('SimulationCraft models damage, not healing, so this isn\'t available for healers · Best gear shows what top healers of your specialization wear')
+      run.healer = true
+      run.pool = await gather(character, { ...start, includeTargets: true }, capped)
+      const picks = healerPicks(run.pool, character.gear)
+      return finish(run, picks.length ? `${picks.length} pieces worth a look, from what top healers of your specialization wear and what you own` : 'Nothing clearly beats what you wear, by what top healers wear')
+    }
     run.pool = await gather(character, start, capped)
     if (start.mode === 'loot') return findLoot(run, character, capped)
     if (start.mode === 'vault') return adviseVault(run, character, capped)
