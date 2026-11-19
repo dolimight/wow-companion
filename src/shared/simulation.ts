@@ -55,7 +55,9 @@ export type SimulationSwapsStart = z.input<typeof simulationSwapsStartSchema>
  * described to the engine is skipped with its reason, so one bad combination never fails the rest
  */
 export const simulationSetsStartSchema = simulationStartSchema.omit({ comparePlan: true }).extend({
-  sets: z.array(z.object({ label: z.string().min(1).max(200), items: z.array(gearItemSchema).min(1).max(16) })).min(1).max(PROFILESET_LIMIT),
+  // A set changes items, talents, or both; talents are a loadout string such as the in-game export
+  sets: z.array(z.object({ label: z.string().min(1).max(200), items: z.array(gearItemSchema).max(16), talents: z.string().regex(/^[A-Za-z0-9+/=]{1,400}$/).optional() })
+    .refine(set => set.items.length > 0 || !!set.talents, 'A set needs items or talents')).min(1).max(PROFILESET_LIMIT),
   label: z.string().min(1).max(200).default('Gear sets'),
 })
 export type SimulationSetsStart = z.input<typeof simulationSetsStartSchema>

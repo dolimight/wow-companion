@@ -77,7 +77,7 @@ export function createRouter(s:RouterServices){return t.router({
   simulationWorkspace:p.input(characterIdSchema).query(({input})=>run(()=>s.simulations.list(input.characterId))),
   aiStatus:p.input(z.object({force:z.boolean().default(false)})).query(({input})=>run(()=>s.ai.status(input.force))),
   aiAsk:p.input(aiAskSchema).mutation(({input,signal})=>run(()=>s.ai.ask(input.feature,input.input,signal))),
-  optimizerRun:p.input(characterIdSchema.extend({mode:z.enum(['gear','loot','vault','upgrades']).optional()})).query(({input})=>run(()=>s.optimizer.get(input.characterId,input.mode))),
+  optimizerRun:p.input(characterIdSchema.extend({mode:z.enum(['gear','loot','vault','upgrades','talents']).optional()})).query(({input})=>run(()=>s.optimizer.get(input.characterId,input.mode))),
   startOptimizer:p.input(optimizerStartSchema).mutation(({input})=>run(()=>s.optimizer.start(input))),
   cancelOptimizer:p.input(characterIdSchema).mutation(({input})=>run(()=>s.optimizer.cancel(input.characterId))),
   getModel:p.input(characterIdSchema).query(({input})=>run(()=>s.models.get(input.characterId))),

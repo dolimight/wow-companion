@@ -103,6 +103,19 @@ describe('simulation workspace and job lifecycle', () => {
     // A finished job resolves at once
     expect((await service.waitForJob(character.id, job!.id)).state).toBe('completed')
   })
+  it('runs a talents-only set as a profileset line and skips the build already in use', async () => {
+    const { character, service, root } = await fixture(`await fs.writeFile('result.json',JSON.stringify(${JSON.stringify(profilesetJson(['companion_candidate_1'], [101_000]))}));`)
+    await service.configureExecutable(process.execPath)
+    const { job, labels, skipped } = await service.startSets({ characterId: character.id, iterations: 100, threads: 1, label: 'Best talents', sets: [
+      { label: 'Top build', items: [], talents: 'QUJDREVG' },
+      { label: 'Yours', items: [], talents: character.talents!.loadout! },
+    ] })
+    expect(labels).toEqual(['Top build'])
+    expect(skipped).toEqual([{ label: 'Yours', reason: 'This is the build you use now' }])
+    await service.waitForJob(character.id, job!.id)
+    const input = await readFile(path.join(root, 'artifacts', job!.id, 'input.simc'), 'utf8')
+    expect(input).toMatch(/^profileset\."companion_candidate_1"\+=talents=QUJDREVG$/m)
+  })
   it('refuses a swap the character cannot wear or that breaks unique-equipped limits', async () => {
     const { character, service } = await fixture()
     await service.configureExecutable(process.execPath)
