@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { characterSchema, gearItemSchema, type GearSlot } from './domain'
-import { bestCombos, greedyCombos, trimPool, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
+import { bestCombos, gearChanged, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
 
 const item = (slot: GearSlot, itemId: number, itemLevel: number) => gearItemSchema.parse({ slot, itemId, name: `Item ${itemId}`, itemLevel })
 const candidate = (key: string, slot: GearSlot, itemId: number, itemLevel: number, origin: OptimizerOrigin = 'bags'): OptimizerCandidate => ({ key, slot, item: item(slot, itemId, itemLevel), origin, source: null, icon: null, quality: 4, popularity: null })
@@ -50,5 +50,28 @@ describe('gear optimizer sets', () => {
     const results = { 'app-owned': { mean: 0, error: null, gain: 900 }, 'app-owned-no-vault': { mean: 0, error: null, gain: 400 }, 'app-all': { mean: 0, error: null, gain: 1700 } }
     expect(bestCombos(sets, results, byKey)).toEqual({ wearNow: 'app-owned', chase: 'app-all' })
     expect(bestCombos(sets, { ...results, 'app-all': { mean: 0, error: null, gain: 800 } }, byKey)).toEqual({ wearNow: 'app-owned', chase: null })
+  })
+
+  it('counts a gain only past its noise, so a lower piece within it never replaces what you wear', () => {
+    expect(isGain({ mean: 0, error: 260, gain: 126 })).toBe(false)
+    expect(isGain({ mean: 0, error: 260, gain: 1670 })).toBe(true)
+    expect(isGain({ mean: 0, error: null, gain: 1 })).toBe(true)
+    const pool = [candidate('k1', 'head', 7, 311, 'bags'), candidate('k2', 'trinket2', 8, 318, 'vault')]
+    const sets = greedyCombos(pool, { [pool[0]!.key]: { mean: 0, error: 260, gain: 126 }, [pool[1]!.key]: { mean: 0, error: 260, gain: 1670 } })
+    expect(sets.find(set => set.key === 'app-owned')?.picks).toEqual({ trinket2: pool[1]!.key })
+  })
+
+  it('lists each target worth chasing once, by what it adds over the best you own', () => {
+    const pool = [candidate('u1', 'back', 1, 334, 'drop'), candidate('u2', 'back', 2, 320, 'bags'), candidate('u3', 'finger1', 3, 334, 'top'), candidate('u4', 'finger2', 3, 334, 'top'), candidate('u5', 'head', 4, 334, 'drop')]
+    const screen = { [pool[0]!.key]: { mean: 0, error: 100, gain: 2000 }, [pool[1]!.key]: { mean: 0, error: 100, gain: 900 }, [pool[2]!.key]: { mean: 0, error: 100, gain: 1500 }, [pool[3]!.key]: { mean: 0, error: 100, gain: 2500 }, [pool[4]!.key]: { mean: 0, error: 100, gain: 200 } }
+    const list = upgradesToChase({ pool, screen })
+    expect(list.map(entry => [entry.candidate.slot, Math.round(entry.gain)])).toEqual([['finger2', 2500], ['back', 1100]])
+  })
+
+  it('notices gear changed since a run', () => {
+    const equipped = [{ slot: 'head' as const, itemId: 1, itemLevel: 321 }]
+    expect(gearChanged({ equipped }, [{ slot: 'head', itemId: 1, itemLevel: 321 }])).toBe(false)
+    expect(gearChanged({ equipped }, [{ slot: 'head', itemId: 1, itemLevel: 334 }])).toBe(true)
+    expect(gearChanged({}, [{ slot: 'head', itemId: 1, itemLevel: 334 }])).toBe(false)
   })
 })

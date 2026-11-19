@@ -33,6 +33,7 @@ describe('Best gear page', () => {
       ...run, stage: 'done', finishedAt: '2026-11-18T10:05:00.000Z', summary: 'Your bag hood is the clearest gain',
       combos: [{ key: 'own', label: 'Best of what you own', picks: { head: 'head:3' }, why: 'Bag hood', by: 'app' }, { key: 'all', label: 'With the drop cloak', picks: { head: 'head:3', back: 'back:5' }, why: 'Both', by: 'ai' }],
       results: { own: { mean: 100_800, error: 40, gain: 800 }, all: { mean: 101_400, error: 40, gain: 1400 } }, wearNow: 'own', chase: 'all',
+      screen: { 'head:3': { mean: 100_800, error: 40, gain: 800 }, 'back:5': { mean: 100_600, error: 40, gain: 600 } },
     }
     const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><Results run={done} character={mage} /></QueryClientProvider>)
     expect(html).toContain('Wear now')
@@ -42,5 +43,15 @@ describe('Best gear page', () => {
     expect(html).toContain('replaces Old Hood')
     expect(html).toContain('Kings&#x27; Rest')
     expect(html).toContain('Your bag hood is the clearest gain')
+    // Worth chasing lists each piece with what it adds, not a whole set
+    expect(html).toContain('Drop Cloak')
+    expect(html).toContain('+600')
+    expect(html).not.toContain('Your gear changed')
+  })
+
+  it('says when the gear changed since the run', () => {
+    const done: OptimizerRun = { ...run, stage: 'done', equipped: [{ slot: 'head', itemId: 1, itemLevel: 250 }] }
+    const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><Results run={done} character={mage} /></QueryClientProvider>)
+    expect(html).toContain('Your gear changed since this run')
   })
 })

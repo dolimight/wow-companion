@@ -4,7 +4,7 @@ import { ArrowRight, Check, Cpu, RefreshCw, Sparkles, Square, Target, TriangleAl
 import type { Activity, Character, GearSlot } from '../../../shared/domain'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
 import { simulationScenarios, type SimulationScenarioId } from '../../../shared/simulation'
-import { isOwned, optimizerLoads, optimizerStages, type OptimizerLoad, originLabels, type OptimizerCandidate, type OptimizerCombo, type OptimizerRun } from '../../../shared/optimizer'
+import { gearChanged, isOwned, optimizerLoads, upgradesToChase, optimizerStages, type OptimizerLoad, originLabels, type OptimizerCandidate, type OptimizerCombo, type OptimizerRun } from '../../../shared/optimizer'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
@@ -128,13 +128,14 @@ export function Results({ run, character }: { run: OptimizerRun; character: Char
   const byKey = useMemo(() => new Map(run.pool.map(candidate => [candidate.key, candidate])), [run.pool])
   const sets = [...run.combos].filter(combo => run.results[combo.key]).sort((a, b) => run.results[b.key]!.gain - run.results[a.key]!.gain)
   const wearNow = run.combos.find(combo => combo.key === run.wearNow)
-  const chase = run.combos.find(combo => combo.key === run.chase)
+  const changed = gearChanged(run, character.gear)
   return (
     <>
+      {changed && <p className="best-gear-warning" role="status"><TriangleAlert size={14} aria-hidden="true" />Your gear changed since this run, so these results compare against what you wore then · run it again</p>}
       {run.warning && <p className="best-gear-warning" role="status"><TriangleAlert size={14} aria-hidden="true" />{run.warning}</p>}
       <div className="best-gear-results">
         <SetCard title="Wear now" empty="Nothing you own beats what you wear in this fight" combo={wearNow} run={run} byKey={byKey} character={character} />
-        {run.includeTargets && <SetCard title="Worth chasing" empty="No target beat the best of what you own" combo={chase} run={run} byKey={byKey} character={character} />}
+        {run.includeTargets && <UpgradeCard run={run} character={character} />}
       </div>
       <p className="muted small best-gear-meta">{simulationScenarios[run.scenarioId].label} · ran {new Date(run.startedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}{run.finishedAt ? ` · took ${minutes(Date.parse(run.finishedAt) - Date.parse(run.startedAt))}` : ''} · {Object.keys(run.screen).length} of {run.pool.length} pieces measured</p>
       {run.summary && <Card className="best-gear-summary"><p>{run.provider ? <ProviderIcon id={run.provider.toLowerCase()} size={14} /> : <Sparkles size={14} aria-hidden="true" />}{run.summary}</p></Card>}
@@ -179,7 +180,7 @@ function SetCard({ title, empty, combo, run, byKey, character }: { title: string
                 <ItemHoverCard itemId={candidate.item.itemId} name={candidate.item.name}>
                   <span className="best-gear-item" tabIndex={0}>
                     <ItemIcon icon={candidate.icon} quality={candidate.quality ?? undefined} size="small" />
-                    <span><b className={`quality-text-${candidate.quality ?? 4}`}>{candidate.item.name}</b><small>{candidate.item.itemLevel} · {from ? <>replaces {from.name}</> : 'empty slot'}</small></span>
+                    <span><b className={`quality-text-${candidate.quality ?? 4}`}>{candidate.item.name}</b><small>{candidate.item.itemLevel} · {from ? <>replaces {from.name} ({from.itemLevel})</> : 'empty slot'}</small></span>
                   </span>
                 </ItemHoverCard>
                 <Badge tone={isOwned(candidate) ? 'green' : 'amber'}>{candidate.source ?? originLabels[candidate.origin]}</Badge>
@@ -188,6 +189,38 @@ function SetCard({ title, empty, combo, run, byKey, character }: { title: string
           })}
         </ul>
         {combo.why && <p className="muted small"><ArrowRight size={12} aria-hidden="true" /> {combo.why}</p>}
+      </>}
+    </Card>
+  )
+}
+
+/** The pieces to farm next, one row each, ranked by what each adds beyond the best you own for its slot */
+function UpgradeCard({ run, character }: { run: OptimizerRun; character: Character }) {
+  const upgrades = useMemo(() => upgradesToChase(run), [run])
+  const together = run.chase ? run.results[run.chase] : undefined
+  return (
+    <Card as="section" className="best-gear-set-card" data-kind="chase">
+      <h3>Worth chasing</h3>
+      {!upgrades.length ? <p className="muted">No drop or top-player piece clearly beats the best of what you own</p> : <>
+        <p className="muted small">Each piece alone, over the best you own for that slot</p>
+        <ul className="best-gear-changes">
+          {upgrades.map(({ candidate, gain }) => {
+            const from = character.gear.find(item => item.slot === candidate.slot)
+            return (
+              <li key={candidate.key}>
+                <small>{gearSlotLabels[candidate.slot]}</small>
+                <ItemHoverCard itemId={candidate.item.itemId} name={candidate.item.name}>
+                  <span className="best-gear-item" tabIndex={0}>
+                    <ItemIcon icon={candidate.icon} quality={candidate.quality ?? undefined} size="small" />
+                    <span><b className={`quality-text-${candidate.quality ?? 4}`}>{candidate.item.name}</b><small>{candidate.item.itemLevel} · {candidate.source ?? originLabels[candidate.origin]}{from ? ` · replaces ${from.name} (${from.itemLevel})` : ''}</small></span>
+                  </span>
+                </ItemHoverCard>
+                <span className="best-gear-gain" data-sign="up">{dps(gain)}<small>{run.baseline ? ` ${(gain / run.baseline * 100).toFixed(1)}%` : ''}</small></span>
+              </li>
+            )
+          })}
+        </ul>
+        {together && <p className="muted small"><ArrowRight size={12} aria-hidden="true" /> The best set with targets measured {dps(together.gain)} damage per second</p>}
       </>}
     </Card>
   )

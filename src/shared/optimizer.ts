@@ -72,8 +72,27 @@ export type OptimizerRun = {
   summary: string | null
   /** Something about the inputs that makes the result less trustworthy, such as gear saved before a level squish */
   warning?: string | null
+  /** What was equipped when the run started, so the page can tell when the gear has changed since */
+  equipped?: Array<{ slot: GearSlot; itemId: number | null; itemLevel: number | null }>
   notes: string[]
   failure: string | null
+}
+
+/**
+ * A gain only counts when it clears the noise: twice the error of a difference between two runs, each with this
+ * error. A screening run at 1,500 iterations is about ±260 damage per second, so a +126 swap is noise, not an upgrade
+ */
+export const noise = (measure: Pick<OptimizerMeasure, 'error'>) => 2 * Math.SQRT2 * (measure.error ?? 0)
+export const isGain = (measure: OptimizerMeasure | undefined): measure is OptimizerMeasure => !!measure && measure.gain > noise(measure)
+
+/** SimulationCraft measures damage, which is only part of what a tank's gear is for */
+export const tankSpecs: readonly string[] = ['Blood', 'Protection', 'Guardian', 'Brewmaster', 'Vengeance']
+
+/** True when what's equipped now differs from what the run measured against */
+export function gearChanged(run: Pick<OptimizerRun, 'equipped'>, gear: Array<Pick<GearItem, 'slot' | 'itemId' | 'itemLevel'>>): boolean {
+  if (!run.equipped) return false
+  const now = new Map(gear.map(item => [item.slot, `${item.itemId}:${item.itemLevel}`]))
+  return run.equipped.length !== gear.length || run.equipped.some(item => now.get(item.slot) !== `${item.itemId}:${item.itemLevel}`)
 }
 
 export const pairedSlots: Partial<Record<GearSlot, GearSlot>> = { finger1: 'finger2', finger2: 'finger1', trinket1: 'trinket2', trinket2: 'trinket1' }
@@ -143,9 +162,10 @@ export function greedyCombos(pool: OptimizerCandidate[], screen: Record<string, 
   const build = (allowed: (candidate: OptimizerCandidate) => boolean) => {
     const picks: Partial<Record<GearSlot, string>> = {}
     const gainOf = (key: string | undefined) => key ? screen[key]?.gain ?? 0 : 0
-    const best = (slot: GearSlot, exclude: number | null = null) => pool.filter(candidate => candidate.slot === slot && allowed(candidate) && (screen[candidate.key]?.gain ?? 0) > 0 && candidate.item.itemId !== exclude)
+    const best = (slot: GearSlot, exclude: number | null = null) => pool.filter(candidate => candidate.slot === slot && allowed(candidate) && isGain(screen[candidate.key]) && candidate.item.itemId !== exclude)
       .sort((a, b) => gainOf(b.key) - gainOf(a.key))[0]
-    const slots = [...new Set(pool.map(candidate => candidate.slot))]
+    // A ring or trinket in only one of its slots still pairs with the other, so it is never skipped
+    const slots = [...new Set(pool.flatMap(candidate => [candidate.slot, ...(pairedSlots[candidate.slot] ? [pairedSlots[candidate.slot]!] : [])]))]
     for (const slot of slots) {
       const other = pairedSlots[slot]
       if (other && slot > other) continue
@@ -166,7 +186,7 @@ export function greedyCombos(pool: OptimizerCandidate[], screen: Record<string, 
     if (!Object.keys(picks).length || sets.some(set => JSON.stringify(set.picks) === JSON.stringify(picks))) return
     sets.push({ key, label, picks, why, by: 'app' })
   }
-  add('app-owned', 'Best of what you own', build(isOwned), 'Each slot\'s biggest single gain from gear you already have')
+  add('app-owned', 'Best of what you own', build(isOwned), 'Each slot\'s biggest clear gain from gear you already have')
   add('app-owned-no-vault', 'Best you own without the vault', build(candidate => isOwned(candidate) && candidate.origin !== 'vault'), 'The same, leaving your Great Vault choice open')
   add('app-all', 'Best including targets', build(() => true), 'Each slot\'s biggest single gain, including drops and top-player items you could still get')
   return sets
@@ -178,7 +198,40 @@ export const ownedOnly = (combo: OptimizerCombo, pool: Map<string, OptimizerCand
 /** The best owned set, and the best set with targets when it beats the owned one */
 export function bestCombos(combos: OptimizerCombo[], results: Record<string, OptimizerMeasure>, pool: Map<string, OptimizerCandidate>): { wearNow: string | null; chase: string | null } {
   const measured = combos.filter(combo => results[combo.key]).sort((a, b) => results[b.key]!.gain - results[a.key]!.gain)
-  const wearNow = measured.find(combo => ownedOnly(combo, pool) && results[combo.key]!.gain > 0)?.key ?? null
-  const chase = measured.find(combo => !ownedOnly(combo, pool) && results[combo.key]!.gain > (wearNow ? results[wearNow]!.gain : 0))?.key ?? null
+  const wearNow = measured.find(combo => ownedOnly(combo, pool) && isGain(results[combo.key]))?.key ?? null
+  const chase = measured.find(combo => !ownedOnly(combo, pool) && isGain(results[combo.key]) && results[combo.key]!.gain > (wearNow ? results[wearNow]!.gain : 0))?.key ?? null
   return { wearNow, chase }
+}
+
+export type OptimizerUpgrade = { candidate: OptimizerCandidate; gain: number; error: number | null }
+
+/**
+ * The pieces worth getting, one entry per item and one per slot (two for rings and trinkets), ranked by what each adds beyond the best you already own for that
+ * slot. Only clear gains count, so the list says what to farm next instead of naming a whole set
+ */
+export function upgradesToChase(run: Pick<OptimizerRun, 'pool' | 'screen'>, limit = 8): OptimizerUpgrade[] {
+  const ownedBest = new Map<GearSlot, number>()
+  for (const candidate of run.pool) {
+    const measure = run.screen[candidate.key]
+    if (isOwned(candidate) && isGain(measure)) ownedBest.set(candidate.slot, Math.max(ownedBest.get(candidate.slot) ?? 0, measure.gain))
+  }
+  const best = new Map<string, OptimizerUpgrade>()
+  for (const candidate of run.pool) {
+    const measure = run.screen[candidate.key]
+    if (isOwned(candidate) || !isGain(measure)) continue
+    const gain = measure.gain - (ownedBest.get(candidate.slot) ?? 0)
+    if (gain <= noise(measure)) continue
+    const identity = `${candidate.item.itemId}:${candidate.item.itemLevel}`
+    const seen = best.get(identity)
+    if (!seen || gain > seen.gain) best.set(identity, { candidate, gain, error: measure.error })
+  }
+  // The best one per slot, two for rings and trinkets, so the list spans the gear instead of four alternatives for one slot
+  const taken = new Map<string, number>()
+  return [...best.values()].sort((a, b) => b.gain - a.gain).filter(entry => {
+    const family = entry.candidate.slot.replace(/[12]$/, '')
+    const count = taken.get(family) ?? 0
+    if (count >= (pairedSlots[entry.candidate.slot] ? 2 : 1)) return false
+    taken.set(family, count + 1)
+    return true
+  }).slice(0, limit)
 }

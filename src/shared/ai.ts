@@ -53,7 +53,7 @@ export const gearCombosInputSchema = z.object({
   characterId: z.string().min(1).max(100),
   scenario: z.string().min(1).max(120),
   equipped: z.array(z.object({ slot: z.string().max(20), name: z.string().max(200), itemLevel: z.number().nullable() })).max(16),
-  candidates: z.array(z.object({ key: z.string().max(80), slot: z.string().max(20), name: z.string().max(200), itemLevel: z.number().nullable(), origin: z.string().max(40), gainPercent: z.number(), popularity: z.number().nullable() })).max(240),
+  candidates: z.array(z.object({ key: z.string().max(80), slot: z.string().max(20), name: z.string().max(200), itemLevel: z.number().nullable(), origin: z.string().max(120), gainPercent: z.number(), noisePercent: z.number(), popularity: z.number().nullable() })).max(240),
   rules: z.array(z.string().max(300)).max(12),
 })
 export type GearCombosInput = z.infer<typeof gearCombosInputSchema>
