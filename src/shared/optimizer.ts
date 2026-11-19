@@ -15,7 +15,14 @@ export const optimizerStartSchema = z.object({
   includeTargets: z.boolean().default(true),
   /** How hard SimulationCraft may push the processor: sustained all-core load can reset a computer with unstable power or cooling */
   load: z.enum(['light', 'medium', 'heavy']).default('light'),
+  /** Best gear weighs everything you could wear; the loot finder measures only this season's drops, by where they drop */
+  mode: z.enum(['gear', 'loot']).default('gear'),
+  /** The loot finder measures drops at the first rank of this upgrade track */
+  track: z.enum(['champion', 'hero', 'myth']).default('hero'),
 })
+export type OptimizerMode = z.output<typeof optimizerStartSchema>['mode']
+export type OptimizerTrack = z.output<typeof optimizerStartSchema>['track']
+export const optimizerTrackNames: Record<OptimizerTrack, string> = { champion: 'Champion', hero: 'Hero', myth: 'Myth' }
 export type OptimizerLoad = z.output<typeof optimizerStartSchema>['load']
 export const optimizerLoads: Record<OptimizerLoad, { label: string; threads: number | null }> = {
   light: { label: 'Light load', threads: 2 },
@@ -40,6 +47,9 @@ export type OptimizerCandidate = {
   quality: number | null
   /** Share of sampled top players who wear it, from 0 to 1 */
   popularity: number | null
+  /** For a drop, the dungeon or raid and the boss it drops from */
+  instance?: string | null
+  boss?: string | null
 }
 
 export type OptimizerMeasure = { mean: number; error: number | null; gain: number }
@@ -72,6 +82,11 @@ export type OptimizerRun = {
   summary: string | null
   /** Something about the inputs that makes the result less trustworthy, such as gear saved before a level squish */
   warning?: string | null
+  /** Best gear or the loot finder; runs saved before the loot finder are Best gear */
+  mode?: OptimizerMode
+  /** The loot finder's upgrade track and the item level its drops were measured at */
+  track?: OptimizerTrack
+  trackLevel?: number | null
   /** How many screening results came from earlier runs instead of the engine */
   reused?: number
   /** What was equipped when the run started, so the page can tell when the gear has changed since */
@@ -236,4 +251,30 @@ export function upgradesToChase(run: Pick<OptimizerRun, 'pool' | 'screen'>, limi
     taken.set(family, count + 1)
     return true
   }).slice(0, limit)
+}
+
+export type LootSource = { key: string; instance: string; boss: string | null; total: number; pieces: Array<{ candidate: OptimizerCandidate; gain: number }> }
+
+/**
+ * Where to farm: each dungeon, or each raid boss, with what its drops add for this character. A source counts its best
+ * clear gain per slot (a ring or trinket once, in its better slot), so one source with many weak drops can't outrank
+ * one great drop, and noise never counts
+ */
+export function lootSources(run: Pick<OptimizerRun, 'pool' | 'screen'>): LootSource[] {
+  const sources = new Map<string, LootSource & { bySlot: Map<string, { candidate: OptimizerCandidate; gain: number }> }>()
+  for (const candidate of run.pool) {
+    const measure = run.screen[candidate.key]
+    if (candidate.origin !== 'drop' || !candidate.instance || !isGain(measure)) continue
+    const key = candidate.boss ? `${candidate.instance}:${candidate.boss}` : candidate.instance
+    const source = sources.get(key) ?? { key, instance: candidate.instance, boss: candidate.boss ?? null, total: 0, pieces: [], bySlot: new Map() }
+    // Paired slots share one entry per item, so a ring counts once
+    const slot = pairedSlots[candidate.slot] ? `${candidate.slot.replace(/[12]$/, '')}:${candidate.item.itemId}` : candidate.slot
+    const seen = source.bySlot.get(slot)
+    if (!seen || measure.gain > seen.gain) source.bySlot.set(slot, { candidate, gain: measure.gain })
+    sources.set(key, source)
+  }
+  return [...sources.values()].map(({ bySlot, ...source }) => {
+    const pieces = [...bySlot.values()].sort((a, b) => b.gain - a.gain)
+    return { ...source, pieces, total: pieces.reduce((sum, piece) => sum + piece.gain, 0) }
+  }).sort((a, b) => b.total - a.total)
 }
