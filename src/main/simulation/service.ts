@@ -507,6 +507,8 @@ export function createSimulationService(options: { db: SimulationDatabase; artif
       const job = request(prepared, start, runnable.map(set => set.items.map(item => toItemVariant(item))), { mode: 'profileset', candidateLabels: runnable.map(set => set.label) })
       return { job: await enqueue(prepared, job, `${prepared.text}\n${lines.join('\n')}\n`, start.label), labels: runnable.map(set => set.label), skipped }
     },
+    /** The selected executable's file hash, so saved results can tell when the engine changed */
+    async engineHash(): Promise<string | null> { await loadExecutable(); return executable?.hash ?? null },
     /** Resolves once the job completes, fails, or is cancelled */
     async waitForJob(characterId: string, jobId: string): Promise<SimulationJob> {
       let notify!: (job: SimulationJob) => void

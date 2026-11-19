@@ -15,12 +15,12 @@ const cloth: LootItem = { id: 5, name: 'Drop Cloak', quality: 4, slot: 'Back', i
 const gains: Record<string, number> = { 3: 500, 4: 300, 5: 900 }
 
 /** crash names an item that makes the engine fail: with its profileset in the log, or silently */
-function harness(selected: string | null = 'fake', crash: { itemId: number; named: boolean } | null = null) {
+function harness(selected: string | null = 'fake', crash: { itemId: number; named: boolean } | null = null, engine: string | null = null) {
   const state = new Map<string, unknown>()
   const started: Array<{ label: string; sets: number; threads: number }> = []
   const jobs = new Map<string, SimulationJob>()
   const options: OptimizerOptions = {
-    db: { call: (async (name: string, ...args: unknown[]) => name === 'getCharacter' ? mage : name === 'getFeatureState' ? state.get(String(args[0])) ?? null : name === 'saveFeatureState' ? state.set(String(args[0]), structuredClone(args[2])) : null) as never },
+    db: { call: (async (name: string, ...args: unknown[]) => name === 'getCharacter' ? mage : name === 'getFeatureState' ? state.get(`${args[0]}:${args[1]}`) ?? null : name === 'saveFeatureState' ? state.set(`${args[0]}:${args[1]}`, structuredClone(args[2])) : null) as never },
     simulations: {
       startSets: async (input, _top) => {
         const sets = input.sets
@@ -35,6 +35,7 @@ function harness(selected: string | null = 'fake', crash: { itemId: number; name
       },
       waitForJob: async (_character, id) => jobs.get(id)!,
       cancelJob: async () => ({}) as SimulationJob,
+      engineHash: async () => engine,
     },
     ai: {
       status: async () => ({ selected, providers: [{ id: 'fake', name: 'Fake', description: '', installed: true, version: null, signedIn: true, detail: null }] }),
@@ -44,7 +45,7 @@ function harness(selected: string | null = 'fake', crash: { itemId: number; name
     drops: () => [{ loot: cloth, source: "Kings' Rest" }],
     changed: async () => {},
   }
-  return { optimizer: createOptimizer(options), state, started }
+  return { optimizer: createOptimizer(options), state, started, options }
 }
 
 async function finished(optimizer: ReturnType<typeof createOptimizer>) {
@@ -131,12 +132,39 @@ describe('gear optimizer', () => {
 
   it('marks a run cut off by an app or computer restart as stopped, so it can run again', async () => {
     const { optimizer, state } = harness()
-    state.set('c1', { id: 'old', characterId: 'c1', stage: 'screening', failure: null, finishedAt: null })
+    state.set('c1:optimizer', { id: 'old', characterId: 'c1', stage: 'screening', failure: null, finishedAt: null })
     const run = await optimizer.get('c1')
     expect(run?.stage).toBe('failed')
     expect(run?.failure).toContain('closed before this search finished')
-    expect((state.get('c1') as OptimizerRun).stage).toBe('failed')
+    expect((state.get('c1:optimizer') as OptimizerRun).stage).toBe('failed')
     await optimizer.start({ characterId: 'c1' })
     expect((await finished(optimizer)).stage).toBe('done')
+  })
+
+  it('reuses screening results from an earlier run with the same gear, fight, and engine', async () => {
+    const { optimizer, started, options } = harness(null, null, 'engine-1')
+    await optimizer.start({ characterId: 'c1' })
+    const first = await finished(optimizer)
+    expect(first.reused ?? 0).toBe(0)
+    await optimizer.start({ characterId: 'c1' })
+    const second = await finished(optimizer)
+    expect(second.reused).toBe(second.pool.length)
+    expect(second.screen).toEqual(first.screen)
+    expect(second.baseline).toBe(first.baseline)
+    expect(started.filter(entry => entry.label === 'Best gear · screening')).toHaveLength(1)
+    // A different engine measures everything again
+    options.simulations.engineHash = async () => 'engine-2'
+    await optimizer.start({ characterId: 'c1' })
+    expect((await finished(optimizer)).reused ?? 0).toBe(0)
+    expect(started.filter(entry => entry.label === 'Best gear · screening')).toHaveLength(2)
+  })
+
+  it('keeps nothing without an engine to key results by', async () => {
+    const { optimizer, started } = harness(null)
+    await optimizer.start({ characterId: 'c1' })
+    await finished(optimizer)
+    await optimizer.start({ characterId: 'c1' })
+    await finished(optimizer)
+    expect(started.filter(entry => entry.label === 'Best gear · screening')).toHaveLength(2)
   })
 })

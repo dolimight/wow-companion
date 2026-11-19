@@ -13,6 +13,7 @@ import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../..
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
 import { log } from '../log'
+import { pruneCache, screenKey, type ScreenCache } from './cache'
 
 /** This season's boss loot, bundled by scripts/encounter-data.ts, newest season first */
 const encounterFiles = import.meta.glob<EncounterBundle>('../../../data/dungeons/encounters/season-*.json', { eager: true, import: 'default' })
@@ -58,7 +59,7 @@ export const optimizerThreads = (load: OptimizerLoad = 'light', available = avai
 
 export type OptimizerOptions = {
   db: Pick<DatabaseClient, 'call'>
-  simulations: Pick<SimulationService, 'startSets' | 'waitForJob' | 'cancelJob'>
+  simulations: Pick<SimulationService, 'startSets' | 'waitForJob' | 'cancelJob'> & Partial<Pick<SimulationService, 'engineHash'>>
   ai: Pick<AiService, 'status' | 'ask'>
   topPlayers: (character: Character) => Promise<TopPlayers | null>
   items?: (ids: number[]) => Promise<Array<{ id: number; icon: number | null; quality: number }>>
@@ -135,8 +136,28 @@ export function createOptimizer(options: OptimizerOptions) {
    * again; otherwise the batch is split in half until the failing set is found. Each skipped set gets a note and a log
    * line. Only a setup problem, such as no engine chosen, or the player stopping the run ends it early
    */
-  async function measure(run: OptimizerRun, character: Character, sets: Array<{ label: string; items: GearItem[] }>, iterations: number, label: string, top: TopPlayers | null, describe: (label: string) => string) {
+  /** Screening results saved from earlier runs, by what each depends on; null when there is no engine to key them by */
+  async function cachedScreen(run: OptimizerRun, character: Character, sets: Array<{ label: string; items: GearItem[] }>, iterations: number) {
+    const engine = await options.simulations.engineHash?.().catch(() => null) ?? null
+    if (!engine) return null
+    const cache = (await options.db.call('getFeatureState', character.id, 'optimizer-cache') as ScreenCache | null) ?? { entries: {} }
+    const keys = new Map(sets.map(set => [set.label, screenKey(character, set.items, run.scenarioId, iterations, engine)]))
+    return { cache, keys }
+  }
+
+  async function measure(run: OptimizerRun, character: Character, allSets: Array<{ label: string; items: GearItem[] }>, iterations: number, label: string, top: TopPlayers | null, describe: (label: string) => string, reuse = false) {
     const measures: Record<string, OptimizerMeasure> = {}
+    // A piece measured before against the same gear, talents, fight, and engine isn't run again
+    const saved = reuse ? await cachedScreen(run, character, allSets, iterations) : null
+    const sets = allSets.filter(set => {
+      const hit = saved?.cache.entries[saved.keys.get(set.label)!]
+      if (!hit) return true
+      measures[set.label] = { mean: hit.mean, error: hit.error, gain: hit.gain }
+      run.baseline ??= hit.mean - hit.gain
+      run.reused = (run.reused ?? 0) + 1
+      return false
+    })
+    if (saved && run.reused) log.info('optimizer', `${label}: reused ${run.reused} earlier results`, { run: run.id })
     const queue: Array<typeof sets> = []
     for (let at = 0; at < sets.length; at += PROFILESET_LIMIT - 1) queue.push(sets.slice(at, at + PROFILESET_LIMIT - 1))
     const skip = (set: { label: string }, reason: string) => { run.notes.push(`${describe(set.label)}: ${reason}`); log.warn('optimizer', `${label}: skipped ${describe(set.label)}`, { reason }) }
@@ -171,6 +192,11 @@ export function createOptimizer(options: OptimizerOptions) {
         const half = Math.ceil(runnable.length / 2)
         queue.unshift(runnable.slice(0, half), runnable.slice(half))
       } else if (runnable[0]) skip(runnable[0], engineFailure(done.failure, null))
+    }
+    if (saved) {
+      const at = now()
+      for (const set of sets) { const value = measures[set.label]; if (value) saved.cache.entries[saved.keys.get(set.label)!] = { ...value, at } }
+      await options.db.call('saveFeatureState', character.id, 'optimizer-cache', pruneCache(saved.cache, new Date(at)))
     }
     return measures
   }
@@ -213,7 +239,7 @@ export function createOptimizer(options: OptimizerOptions) {
     run.pool = await gather(character, start, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
-    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key })
+    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
     await stage(run, 'choosing')
     const byKey = new Map(run.pool.map(candidate => [candidate.key, candidate]))
     const fromAi = await aiCombos(run, character).catch(error => { run.notes.push(`The AI assistant couldn't choose sets, so the app chose them: ${(error as Error).message}`); log.warn('optimizer', 'AI set choice failed', error); return { combos: [], summary: null } })

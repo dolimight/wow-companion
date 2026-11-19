@@ -72,6 +72,8 @@ export type OptimizerRun = {
   summary: string | null
   /** Something about the inputs that makes the result less trustworthy, such as gear saved before a level squish */
   warning?: string | null
+  /** How many screening results came from earlier runs instead of the engine */
+  reused?: number
   /** What was equipped when the run started, so the page can tell when the gear has changed since */
   equipped?: Array<{ slot: GearSlot; itemId: number | null; itemLevel: number | null }>
   notes: string[]
