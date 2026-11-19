@@ -167,4 +167,17 @@ describe('gear optimizer', () => {
     await finished(optimizer)
     expect(started.filter(entry => entry.label === 'Best gear · screening')).toHaveLength(2)
   })
+
+  it('finds loot: drops only, at the chosen track, ranked by where they drop, saved apart from Best gear', async () => {
+    const { optimizer, started } = harness(null)
+    await optimizer.start({ characterId: 'c1', mode: 'loot', track: 'hero' })
+    let run = await optimizer.get('c1', 'loot')
+    for (let at = 0; at < 50 && run && run.stage !== 'done'; at++) { await new Promise(resolve => setTimeout(resolve, 5)); run = await optimizer.get('c1', 'loot') }
+    expect(run?.stage).toBe('done')
+    expect(run?.pool.every(candidate => candidate.origin === 'drop' && candidate.item.itemLevel === 305)).toBe(true)
+    expect(run?.trackLevel).toBe(305)
+    expect(started.map(entry => entry.label)).toEqual(['Loot finder · screening'])
+    expect(run?.summary).toContain("Kings' Rest")
+    expect(await optimizer.get('c1')).toBeNull()
+  })
 })

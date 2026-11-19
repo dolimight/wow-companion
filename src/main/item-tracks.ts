@@ -18,6 +18,15 @@ const rulesets = (catalogJson as unknown as { rulesets: Ruleset[] }).rulesets
  */
 export const ladderCeiling: number | null = rulesets.reduce<number | null>((best, ruleset) => ruleset.upgradeTracks.reduce<number | null>((top, track) => Math.max(top ?? 0, track.ranks.at(-1)?.itemLevel ?? 0), best), null)
 
+/** The item level at the first rank of an upgrade track, such as Hero 1/6, or null when the catalog has no such track */
+export function trackStartLevel(name: string): number | null {
+  for (const ruleset of rulesets) {
+    const track = ruleset.upgradeTracks.find(entry => entry.name.toLowerCase() === name.toLowerCase())
+    if (track?.ranks[0]) return track.ranks[0].itemLevel
+  }
+  return null
+}
+
 /** The current season's socket bonuses, or null when the catalog has none reviewed */
 export const socketRules: SocketRules | null = rulesets.find(ruleset => ruleset.sockets)?.sockets ?? null
 /** How many embellished items a character can wear and how to spot one, or null when none are reviewed */

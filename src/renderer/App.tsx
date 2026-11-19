@@ -65,6 +65,7 @@ import {
   Upload,
   Users,
   WandSparkles,
+  Gem,
 } from "lucide-react";
 import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
@@ -106,6 +107,7 @@ import { ProgressionPage, ProgressionSummary, useSeasonCeiling } from "./feature
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { BestGearPage } from "./features/optimizer/BestGearPage";
+import { LootFinderPage } from "./features/optimizer/LootFinderPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
 import { DungeonsPage } from "./features/dungeons/DungeonsPage";
 import { RaidsPage } from "./features/raids/RaidsPage";
@@ -168,7 +170,7 @@ import "./overview.css";
 import "./gear-polish.css";
 import { Card } from "./components/ui/card";
 
-const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, best: WandSparkles, simulations: FlaskConical };
+const gearViewIcons: Record<string, typeof Shield> = { progress: TrendingUp, plan: NotebookPen, owned: Backpack, best: WandSparkles, loot: Gem, simulations: FlaskConical };
 const performanceViewIcons: Record<string, typeof Shield> = { standing: Trophy, keys: KeyRound, leaders: Crown, history: History, reports: FileText };
 
 const activityNames: Record<Activity, string> = {
@@ -1367,6 +1369,8 @@ function CharacterRoute() {
         <InventoryPage character={character} />
       ) : view === "best" ? (
         <BestGearRoute character={character} />
+      ) : view === "loot" ? (
+        <LootFinderRoute character={character} />
       ) : view === "simulations" ? (
         <SimulationsRoute character={character} />
       ) : view === "leaders" ? (
@@ -1386,6 +1390,10 @@ function SimulationsRoute({ character }: { character: Character }) {
   // Opening a job pushes history, so Back returns to the list
   const openJob = (job: string | null) => void navigate({ to: ".", search: ((previous: Record<string, unknown>) => ({ ...previous, job: job ?? undefined })) as never });
   return <SimulationsPage character={character} activity={activity} jobId={search.job} onOpenJob={openJob} />;
+}
+function LootFinderRoute({ character }: { character: Character }) {
+  const { activity } = useActivity(character.id);
+  return <LootFinderPage character={character} activity={activity} />;
 }
 function BestGearRoute({ character }: { character: Character }) {
   const { activity } = useActivity(character.id);

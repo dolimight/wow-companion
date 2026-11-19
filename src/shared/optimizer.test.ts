@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { characterSchema, gearItemSchema, type GearSlot } from './domain'
-import { bestCombos, gearChanged, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
+import { bestCombos, gearChanged, lootSources, greedyCombos, isGain, trimPool, upgradesToChase, wearable, type OptimizerCandidate, type OptimizerOrigin } from './optimizer'
 
 const item = (slot: GearSlot, itemId: number, itemLevel: number) => gearItemSchema.parse({ slot, itemId, name: `Item ${itemId}`, itemLevel })
 const candidate = (key: string, slot: GearSlot, itemId: number, itemLevel: number, origin: OptimizerOrigin = 'bags'): OptimizerCandidate => ({ key, slot, item: item(slot, itemId, itemLevel), origin, source: null, icon: null, quality: 4, popularity: null })
@@ -73,5 +73,13 @@ describe('gear optimizer sets', () => {
     expect(gearChanged({ equipped }, [{ slot: 'head', itemId: 1, itemLevel: 321 }])).toBe(false)
     expect(gearChanged({ equipped }, [{ slot: 'head', itemId: 1, itemLevel: 334 }])).toBe(true)
     expect(gearChanged({}, [{ slot: 'head', itemId: 1, itemLevel: 334 }])).toBe(false)
+  })
+
+  it('ranks loot sources by their best clear gain per slot, counting a ring once', () => {
+    const drop = (key: string, slot: GearSlot, itemId: number, instance: string, boss: string | null = null) => ({ ...candidate(key, slot, itemId, 305, 'drop'), instance, boss })
+    const pool = [drop('a', 'back', 1, 'Vale'), drop('b', 'back', 2, 'Vale'), drop('c', 'finger1', 3, 'Vale'), drop('d', 'finger2', 3, 'Vale'), drop('e', 'head', 4, 'Rest'), drop('f', 'chest', 5, 'Rest')]
+    const m = (gain: number) => ({ mean: 0, error: 10, gain })
+    const sources = lootSources({ pool, screen: { a: m(500), b: m(900), c: m(300), d: m(400), e: m(1500), f: m(20) } })
+    expect(sources.map(source => [source.instance, Math.round(source.total), source.pieces.length])).toEqual([['Rest', 1500, 1], ['Vale', 1300, 2]])
   })
 })

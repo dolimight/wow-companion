@@ -3,12 +3,12 @@ import { randomUUID } from 'node:crypto'
 import type { AiService } from '../ai/service'
 import type { DatabaseClient } from '../database'
 import type { SimulationService } from '../simulation/service'
-import { ladderCeiling } from '../item-tracks'
+import { ladderCeiling, trackStartLevel } from '../item-tracks'
 import { gearItemSchema, type Character, type GearItem, type GearSlot } from '../../shared/domain'
 import type { EncounterBundle, LootItem } from '../../shared/dungeons'
 import { gearSlotsForInventoryType } from '../../shared/gamedata'
 import { inLootTable, isGearDrop, uniqueDrops } from '../../shared/loot'
-import { bestCombos, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart } from '../../shared/optimizer'
+import { bestCombos, lootSources, optimizerTrackNames, candidateKey, greedyCombos, isOwned, noise, optimizerLoads, tankSpecs, optimizerStartSchema, trimPool, wearable, type OptimizerCandidate, type OptimizerCombo, type OptimizerLoad, type OptimizerMeasure, type OptimizerOrigin, type OptimizerRun, type OptimizerStart, type OptimizerMode } from '../../shared/optimizer'
 import { simulationScenarios, PROFILESET_LIMIT, type SimulationJob } from '../../shared/simulation'
 import { capTopLevels, topSlotGroups, type TopPlayers } from '../../shared/top-players'
 import { gearSlotLabels } from '../../shared/simulation-benchmark'
@@ -20,7 +20,7 @@ const encounterFiles = import.meta.glob<EncounterBundle>('../../../data/dungeons
 const encounterBundles = Object.values(encounterFiles).filter(Boolean).sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))
 
 /** Each drop the activity offers, with the boss and instance it comes from */
-export function seasonDrops(activity: string, bundle: EncounterBundle | undefined = encounterBundles[0]): Array<{ loot: LootItem; source: string }> {
+export function seasonDrops(activity: string, bundle: EncounterBundle | undefined = encounterBundles[0]): Array<{ loot: LootItem; source: string; instance?: string; boss?: string | null }> {
   if (!bundle) return []
   const journals = activity === 'raiding' ? Object.values(bundle.raids).map(raid => raid.heroic ?? Object.values(raid)[0]).filter(journal => !!journal) : Object.values(bundle.dungeons)
   const seen = new Set<number>()
@@ -30,7 +30,7 @@ export function seasonDrops(activity: string, bundle: EncounterBundle | undefine
     const current = new Set(uniqueDrops(all.map(entry => entry.loot)))
     return all.filter(entry => current.has(entry.loot) && isGearDrop(entry.loot) && !seen.has(entry.loot.id)).map(entry => {
       seen.add(entry.loot.id)
-      return { loot: entry.loot, source: activity === 'raiding' ? `${entry.boss} · ${journal!.name}` : journal!.name }
+      return { loot: entry.loot, source: activity === 'raiding' ? `${entry.boss} · ${journal!.name}` : journal!.name, instance: journal!.name, boss: activity === 'raiding' ? entry.boss : null }
     })
   })
 }
@@ -63,17 +63,20 @@ export type OptimizerOptions = {
   ai: Pick<AiService, 'status' | 'ask'>
   topPlayers: (character: Character) => Promise<TopPlayers | null>
   items?: (ids: number[]) => Promise<Array<{ id: number; icon: number | null; quality: number }>>
-  drops?: (activity: string) => Array<{ loot: LootItem; source: string }>
+  drops?: (activity: string) => Array<{ loot: LootItem; source: string; instance?: string; boss?: string | null }>
   changed: (characterId: string) => Promise<void>
   now?: () => Date
 }
+
+/** Best gear and the loot finder keep their last runs apart */
+const space = (mode: OptimizerMode | undefined) => mode === 'loot' ? 'optimizer-loot' : 'optimizer'
 
 export function createOptimizer(options: OptimizerOptions) {
   const now = () => (options.now?.() ?? new Date()).toISOString()
   const active = new Map<string, { run: OptimizerRun; cancelled: boolean; job: string | null }>()
 
   async function save(run: OptimizerRun) {
-    await options.db.call('saveFeatureState', run.characterId, 'optimizer', run)
+    await options.db.call('saveFeatureState', run.characterId, space(run.mode), run)
     await options.changed(run.characterId)
   }
   async function stage(run: OptimizerRun, next: OptimizerRun['stage']) { run.stage = next; run.stageStartedAt = now(); log.info('optimizer', `Best gear: ${next}`, { run: run.id }); await save(run) }
@@ -93,7 +96,8 @@ export function createOptimizer(options: OptimizerOptions) {
         pool.push({ key: candidateKey(slot, item, origin, pool.length), slot, item: { ...item, ...enchanted, slot }, origin, source, icon: null, quality: null, popularity: null, ...extra })
       }
     }
-    for (const observation of character.inventoryObservations ?? []) {
+    // The loot finder measures only drops, so what you own stays out of its pool
+    for (const observation of start.mode === 'loot' ? [] : character.inventoryObservations ?? []) {
       if (observation.location === 'equipped') continue
       for (const item of observation.items) {
         if (!item.itemId || item.itemLevel == null) continue
@@ -101,18 +105,18 @@ export function createOptimizer(options: OptimizerOptions) {
         add(item, observation.location, observation.location === 'vault' ? 'Claim it from the Great Vault' : null, slots.length ? slots : [item.slot])
       }
     }
-    if (start.includeTargets) {
-      const level = ladderCeiling
+    if (start.includeTargets || start.mode === 'loot') {
+      const level = start.mode === 'loot' ? trackStartLevel(optimizerTrackNames[start.track]) : ladderCeiling
       const popular = new Map<number, number>()
       if (top?.gearPlayers) for (const group of Object.values(top.slots)) for (const entry of group?.items ?? []) popular.set(entry.id, Math.max(popular.get(entry.id) ?? 0, entry.count / top.gearPlayers))
       const who = { className: character.className, specId: character.specId, level: null }
-      for (const { loot, source } of (options.drops ?? seasonDrops)(start.activity)) {
+      for (const { loot, source, instance, boss } of (options.drops ?? seasonDrops)(start.activity)) {
         if (!inLootTable(loot, who) || level == null) continue
         const item = gearItemSchema.parse({ slot: gearSlotsForInventoryType(loot.inventoryType)[0] ?? 'head', itemId: loot.id, name: loot.name, itemLevel: level, inventoryType: loot.inventoryType, classId: loot.classId, subclassId: loot.subclassId, allowableClassMask: loot.allowableClassMask ?? null, specIds: loot.specIds ?? null, primaryStats: loot.primaryStats ?? null, levelSource: 'estimated' })
-        add(item, 'drop', source, gearSlotsForInventoryType(loot.inventoryType), { icon: loot.icon, quality: loot.quality, popularity: popular.get(loot.id) ?? null })
+        add(item, 'drop', source, gearSlotsForInventoryType(loot.inventoryType), { icon: loot.icon, quality: loot.quality, popularity: popular.get(loot.id) ?? null, instance: instance ?? source, boss: boss ?? null })
       }
       // Top players' most worn pieces, at the level they wear them, when no drop already covers them
-      for (const group of topSlotGroups) {
+      for (const group of start.mode === 'loot' ? [] : topSlotGroups) {
         const entries = top?.slots[group.group]?.items ?? []
         for (const entry of entries.slice(0, 3)) {
           if (pool.some(candidate => candidate.item.itemId === entry.id)) continue
@@ -123,7 +127,8 @@ export function createOptimizer(options: OptimizerOptions) {
         }
       }
     }
-    const trimmed = trimPool(pool, character)
+    // The loot finder keeps every drop: it ranks where to farm, so no slot's list is cut short
+    const trimmed = trimPool(pool, character, start.mode === 'loot' ? 200 : undefined)
     // Icons and quality for pieces the bundle doesn't describe come from the game files when they are ready
     const missing = [...new Set(trimmed.filter(candidate => candidate.icon == null).map(candidate => candidate.item.itemId!))]
     const found = missing.length && options.items ? new Map((await options.items(missing).catch(() => [])).map(info => [info.id, info])) : new Map()
@@ -237,6 +242,7 @@ export function createOptimizer(options: OptimizerOptions) {
     // A tank's gear also keeps them alive, which a damage simulation can't see
     if (tankSpecs.includes(character.specName)) run.warning = [run.warning, `SimulationCraft measures damage, not survival. As a ${character.specName} tank, keep the defensive trinkets and pieces you rely on, even where a swap shows more damage`].filter(Boolean).join(' · ')
     run.pool = await gather(character, start, capped)
+    if (start.mode === 'loot') return findLoot(run, character, capped)
     if (!run.pool.length) throw new Error('Nothing to compare yet · sync your bags and bank with the addon, or include targets')
     await stage(run, 'screening')
     run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Best gear · screening', capped, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
@@ -258,6 +264,16 @@ export function createOptimizer(options: OptimizerOptions) {
     await finish(run, run.summary)
   }
 
+  /** The loot finder: every drop screened alone at the chosen track's level, then ranked by where it drops */
+  async function findLoot(run: OptimizerRun, character: Character, top: TopPlayers | null) {
+    if (!run.trackLevel) throw new Error("This season's upgrade tracks are missing from the app's data")
+    if (!run.pool.length) throw new Error('No drop this season fits your class and specialization')
+    await stage(run, 'screening')
+    run.screen = await measure(run, character, run.pool.map(candidate => ({ label: candidate.key, items: [candidate.item] })), screenIterations, 'Loot finder · screening', top, key => { const candidate = run.pool.find(entry => entry.key === key); return candidate ? `${candidate.item.name} (${candidate.item.itemLevel}) in ${gearSlotLabels[candidate.slot]}` : key }, true)
+    const best = lootSources(run)[0]
+    await finish(run, best ? `${best.boss ? `${best.boss} in ${best.instance}` : best.instance} has the most for you: ${best.pieces.length} ${best.pieces.length === 1 ? 'piece' : 'pieces'} worth ${Math.round(best.total).toLocaleString('en-US')} damage per second together` : 'No drop at this level clearly beats what you wear')
+  }
+
   async function finish(run: OptimizerRun, summary: string | null) {
     run.summary = summary
     run.finishedAt = now()
@@ -266,12 +282,12 @@ export function createOptimizer(options: OptimizerOptions) {
   }
 
   return {
-    async get(characterId: string): Promise<OptimizerRun | null> {
+    async get(characterId: string, mode: OptimizerMode = 'gear'): Promise<OptimizerRun | null> {
       const live = active.get(characterId)?.run
-      if (live) return live
-      const saved = (await options.db.call('getFeatureState', characterId, 'optimizer') as OptimizerRun | null) ?? null
+      if (live && (live.mode ?? 'gear') === mode) return live
+      const saved = (await options.db.call('getFeatureState', characterId, space(mode)) as OptimizerRun | null) ?? null
       // A run saved mid-search that this session isn't running was cut off when the app or computer stopped
-      if (saved && ['gathering', 'screening', 'choosing', 'confirming'].includes(saved.stage)) {
+      if (saved && ['gathering', 'screening', 'choosing', 'confirming'].includes(saved.stage) && !live) {
         saved.stage = 'failed'
         saved.failure = 'The app closed before this search finished. Run it again'
         saved.finishedAt = now()
@@ -282,8 +298,8 @@ export function createOptimizer(options: OptimizerOptions) {
     },
     async start(input: OptimizerStart): Promise<OptimizerRun> {
       const start = optimizerStartSchema.parse(input)
-      if (active.has(start.characterId)) throw new Error('Gear optimization is already running for this character')
-      const run: OptimizerRun = { id: randomUUID(), characterId: start.characterId, activity: start.activity, stage: 'gathering', startedAt: now(), finishedAt: null, stageStartedAt: now(), scenarioId: start.scenarioId, includeTargets: start.includeTargets, threads: optimizerThreads(start.load), provider: null, baseline: null, pool: [], screen: {}, combos: [], results: {}, wearNow: null, chase: null, summary: null, notes: [], failure: null }
+      if (active.has(start.characterId)) throw new Error(`${active.get(start.characterId)!.run.mode === 'loot' ? 'The loot finder' : 'Best gear'} is already running for this character`)
+      const run: OptimizerRun = { id: randomUUID(), characterId: start.characterId, activity: start.activity, stage: 'gathering', startedAt: now(), finishedAt: null, stageStartedAt: now(), scenarioId: start.scenarioId, includeTargets: start.includeTargets, mode: start.mode, track: start.track, trackLevel: start.mode === 'loot' ? trackStartLevel(optimizerTrackNames[start.track]) : null, threads: optimizerThreads(start.load), provider: null, baseline: null, pool: [], screen: {}, combos: [], results: {}, wearNow: null, chase: null, summary: null, notes: [], failure: null }
       active.set(run.characterId, { run, cancelled: false, job: null })
       await save(run)
       void execute(run, start).catch(async error => {
