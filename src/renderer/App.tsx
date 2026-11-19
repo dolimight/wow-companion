@@ -110,6 +110,7 @@ import { BestGearPage } from "./features/optimizer/BestGearPage";
 import { LootFinderPage } from "./features/optimizer/LootFinderPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
 import { DungeonsPage } from "./features/dungeons/DungeonsPage";
+import { MiniPlayContext } from "./features/dungeons/encounters";
 import { RaidsPage } from "./features/raids/RaidsPage";
 import { UpdateSettings } from "./features/updates/UpdateSettings";
 import { UpdateButton } from "./features/updates/UpdateButton";
@@ -348,6 +349,18 @@ function useRoster() {
 }
 function useSettings() {
   return useQuery({ queryKey: ["settings"], queryFn: () => api.getSettings() });
+}
+/** Play mode in its own small window: the dungeon or raid play page alone, marked so Exit closes the window */
+function MiniPlay() {
+  const params = useParams({ strict: false }) as { characterId: string; section: string };
+  const result = useCharacter(params.characterId);
+  if (result.isPending) return <div className="loading-surface" role="status">Loading…</div>;
+  if (!result.character) return <EmptyState icon={Archive} title="Character unavailable" description="Open play mode again from the main window" />;
+  return (
+    <MiniPlayContext.Provider value={true}>
+      {params.section === "raids" ? <RaidsPage character={result.character} /> : <DungeonsPage character={result.character} />}
+    </MiniPlayContext.Provider>
+  );
 }
 function useCharacter(id: string | undefined) {
   const roster = useRoster();
@@ -860,6 +873,7 @@ function Shell() {
       </div>
     </div>
   );
+  if (currentPath.startsWith("/mini/")) return <div className="mini-shell"><Outlet /></div>;
   return (
     <div className="app-shell" data-navigation={drawerMode ? "drawer" : "sidebar"}>
       {drawerMode ? (
@@ -2635,6 +2649,11 @@ const characterRoute = createRoute({
   validateSearch: returnSearch,
   component: CharacterRoute,
 });
+const miniRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mini/$characterId/$section",
+  component: MiniPlay,
+});
 const characterViewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/characters/$characterId/$section/$view",
@@ -2717,7 +2736,7 @@ function TonightRoute() {
 const tonightRoute=createRoute({getParentRoute:()=>rootRoute,path:'/tonight',component:TonightRoute});
 const router = createRouter({
   history: createHashHistory(),
-  routeTree: rootRoute.addChildren([indexRoute, rosterRoute, characterRoute, characterViewRoute, settingsRoute, setupRoute, weekRoute, tonightRoute]),
+  routeTree: rootRoute.addChildren([indexRoute, rosterRoute, characterRoute, characterViewRoute, settingsRoute, setupRoute, weekRoute, tonightRoute, miniRoute]),
 });
 declare module "@tanstack/react-router" {
   interface Register {

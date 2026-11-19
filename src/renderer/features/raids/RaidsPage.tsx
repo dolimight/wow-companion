@@ -179,7 +179,7 @@ function RaidPlay({ character, raid, bosses, strategy, role, difficulty, onRole,
   const warned = boss.abilities.flatMap(ability => [ability, ...ability.children]).filter(ability => whyItMatters(ability.flags, role))
   return (
     <div className="dungeon-play" role="region" aria-label={`${raid.name} play mode`}>
-      <PlayBar title={raid.name} detail={raidDifficultyLabels[difficulty]} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
+      <PlayBar title={raid.name} detail={raidDifficultyLabels[difficulty]} popout={`#/mini/${character.id}/raids?raid=${raid.slug}&play=1`} bosses={bosses} step={step} onStep={setStep} role={role} onRole={onRole} onExit={onExit} />
       <PlayHero boss={boss} step={step} total={bosses.length} />
       <div className="play-raid" data-split={warned.length ? true : undefined}>
         <PlaySection icon={BookOpen} title="How to play it">
