@@ -1,0 +1,34 @@
+name: SimulationCraft round trip
+# Runs the real engine against the app's profile and report code. It is kept off players' computers, so this is the
+# only place a real SimulationCraft run is tested
+on:
+  pull_request:
+    paths:
+      - 'src/main/simulation/**'
+      - 'src/main/optimizer/**'
+      - 'src/shared/simulation*.ts'
+      - '.github/workflows/simulationcraft.yml'
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: simulationcraft-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  round-trip:
+    name: SimulationCraft round trip
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SIMC_IMAGE: simulationcraftorg/simc:latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: docker pull "$SIMC_IMAGE"
+      - run: npx vp test run src/main/simulation/engine.e2e.test.ts
