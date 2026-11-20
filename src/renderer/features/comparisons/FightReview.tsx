@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { Activity, HeartCrack, ShieldAlert, Swords } from 'lucide-react'
-import type { FightSummary } from '../../../shared/comparisons'
+import type { FightSummary } from '../../../shared/fight'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { Card } from '../../components/ui/card'

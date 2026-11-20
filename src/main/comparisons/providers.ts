@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import type { Character } from '../../shared/domain'
-import { logsCredentialsSchema,reportSummarySchema,type LogsStatus,type PvpBracketIndex,type ReportSummary,fightSummarySchema,tableAbilities,tableDeaths,type FightSummary} from '../../shared/comparisons'
+import { logsCredentialsSchema,reportSummarySchema,type LogsStatus,type PvpBracketIndex,type ReportSummary} from '../../shared/comparisons'
+import { fightSummarySchema, tableAbilities, tableDeaths, type FightSummary } from '../../shared/fight'
 import { BlizzardError,realmSlug,type BlizzardApi,type BlizzardRegion } from '../providers/blizzard'
 import type { SecretStore } from '../secrets'
 

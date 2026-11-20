@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import { createLogsProvider, FIGHT_ACTORS_QUERY } from './providers'
 import { MemorySecretStore } from '../secrets'
 import { characterSchema } from '../../shared/domain'
-import { tableAbilities, tableDeaths } from '../../shared/comparisons'
+import { tableAbilities, tableDeaths } from '../../shared/fight'
 import { fightReview } from '../ai/features/fight-review'
 
 const character = characterSchema.parse({ id: 'c1', region: 'us', realm: 'Gurubashi', name: 'Dol', className: 'Death Knight', specName: 'Blood', specId: 250 })

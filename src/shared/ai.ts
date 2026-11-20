@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { fightSummarySchema } from './comparisons'
+import { fightSummarySchema } from './fight'
 
 /**
  * Optional AI help runs through an assistant CLI the player already has installed and signed in, so it uses their own
