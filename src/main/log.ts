@@ -11,10 +11,17 @@ const secretKey = /token|secret|password|authorization|cookie|apikey|api_key|cli
 const day = (date: Date) => date.toISOString().slice(0, 10)
 export const logFileName = (date: Date) => `companion-${day(date)}.log`
 
+/** Credentials inside text, such as a Bearer header or token=... in an error message, which key names can't reveal */
+const secretText: Array<[RegExp, string]> = [
+  [/(bearer\s+)[\w.~+/=-]{8,}/gi, '$1[hidden]'],
+  [/((?:access_token|refresh_token|client_secret|clientSecret|password)["']?\s*[:=]\s*["']?)[^\s"',&}]{4,}/gi, '$1[hidden]'],
+]
+export const hideSecretText = (text: string) => secretText.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), text)
+
 /** A value made safe and short enough for one log line */
 export function scrub(value: unknown, depth = 0): unknown {
-  if (value instanceof Error) return { name: value.name, message: value.message.slice(0, 2000), stack: value.stack?.split('\n').slice(0, 8).join('\n') }
-  if (typeof value === 'string') return value.length > 4000 ? `${value.slice(0, 4000)}…` : value
+  if (value instanceof Error) return { name: value.name, message: hideSecretText(value.message).slice(0, 2000), stack: value.stack ? hideSecretText(value.stack.split('\n').slice(0, 8).join('\n')) : undefined }
+  if (typeof value === 'string') { const text = hideSecretText(value); return text.length > 4000 ? `${text.slice(0, 4000)}…` : text }
   if (value == null || typeof value !== 'object') return value
   if (depth > 4) return '…'
   if (Array.isArray(value)) return value.slice(0, 50).map(entry => scrub(entry, depth + 1))

@@ -107,6 +107,7 @@ main h1[tabindex]:focus, main h1[tabindex]:focus-visible { outline: none; }
 .settings-dialog .settings-section-body:not(.updates-settings) { padding: 0 20px; }
 .settings-dialog .setting-row { min-height: 80px; padding-block: 18px; gap: 24px; }
 .settings-dialog .setting-row > div:first-child { flex: 1; min-width: 0; }
+.setting-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .settings-dialog .setting-row h3 { font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .settings-dialog .setting-row h3 small { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
 .settings-dialog .setting-row h3 .badge svg { margin-right: 3px; vertical-align: -1px; }

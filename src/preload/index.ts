@@ -47,6 +47,7 @@ const bridge:NativeBridge={
   openExternal:(url)=>ipcRenderer.invoke('companion:open-external',url),
   copyText:(text)=>ipcRenderer.invoke('companion:copy-text',text),
   openLogs:()=>ipcRenderer.invoke('companion:open-logs'),
+  diagnostics:()=>ipcRenderer.invoke('companion:diagnostics'),
   openMiniPlay:(route)=>ipcRenderer.invoke('companion:open-mini',route),
   onPlayStep:(listener)=>{
     const receive=(_event:Electron.IpcRendererEvent,delta:number)=>listener(delta)

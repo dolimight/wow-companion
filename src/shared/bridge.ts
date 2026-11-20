@@ -45,6 +45,8 @@ export type NativeBridge = {
   copyText(text:string):Promise<void>
   /** Opens the folder of daily log files kept for troubleshooting */
   openLogs():Promise<void>
+  /** A troubleshooting report to paste into a bug report, with no names, realms, keys, or tokens */
+  diagnostics():Promise<string>
   /** Opens play mode in its own small window, kept on top of the game, at a route such as #/mini/<id>/dungeons?dungeon=x&play=1 */
   openMiniPlay(route:string):Promise<void>
   /** In the play window, the global keys that step bosses from inside the game: +1 for next, -1 for back */
