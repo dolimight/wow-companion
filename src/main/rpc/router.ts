@@ -21,6 +21,7 @@ import type { SimulationService } from '../simulation/service'
 import type { ComparisonService } from '../comparisons/service'
 import {comparisonInputSchema,reportInputSchema} from '../../shared/comparisons'
 import { TIMELINE_NAMESPACE, timelineSchema } from '../../shared/timeline'
+import { RAID_REMINDERS_NAMESPACE, raidReminderSchema, raidRemindersSchema } from '../../shared/raid-reminders'
 import { simulationScenarioSchema } from '../../shared/simulation'
 import { aiAskSchema } from '../../shared/ai'
 import { optimizerStartSchema } from '../../shared/optimizer'
@@ -160,6 +161,9 @@ export function createRouter(s:RouterServices){return t.router({
   dungeonSpells:p.input(z.object({ids:z.array(z.number().int().positive()).max(600)})).query(({input})=>run(()=>s.gameData.call('dungeonSpells',input.ids))),
   weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
   characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),
+  // Planned raids: lockouts a player marks to run again, kept per character
+  raidReminders:p.input(characterIdSchema).query(({input})=>run(async()=>raidRemindersSchema.parse((await s.db.call('getFeatureState',input.characterId,RAID_REMINDERS_NAMESPACE))??{}))),
+  setRaidReminders:p.input(characterIdSchema.extend({reminders:z.array(raidReminderSchema).max(60)})).mutation(async({input})=>{const value=raidRemindersSchema.parse({reminders:input.reminders});await run(()=>s.db.call('saveFeatureState',input.characterId,RAID_REMINDERS_NAMESPACE,value));await s.changed(input.characterId);return value}),
   wowToken:p.input(z.object({region:z.enum(blizzardRegions)})).query(({input})=>run(()=>s.insights.wowToken(input.region))),
   realmStatus:p.input(z.object({region:z.enum(blizzardRegions),force:z.boolean().default(false)})).query(({input})=>run(()=>s.insights.realmStatus(input.region,input.force))),
   // Connections: install, addon, Blizzard key, Battle.net
