@@ -31,15 +31,8 @@ export function useSyncOnFocus() {
   }, [client]);
 }
 
-export function ago(value: string | null | undefined) {
-  if (!value) return "never";
-  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 60_000));
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)} hr ago`;
-  const days = Math.floor(minutes / 1440);
-  return `${days} ${days === 1 ? "day" : "days"} ago`;
-}
+export { ago } from "../../../shared/freshness";
+import { ago } from "../../../shared/freshness";
 
 /** Sidebar utility with a persistent label and live status in its tooltip */
 export function SyncButton({ onClick }: { onClick: () => void }) {
