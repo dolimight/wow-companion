@@ -107,6 +107,8 @@ import { ProgressionPage, ProgressionSummary, useSeasonCeiling } from "./feature
 import { TonightPage } from "./features/tonight/TonightPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { BestGearPage } from "./features/optimizer/BestGearPage";
+import { GearFreshness } from "./features/sync/GearFreshness";
+import { ago } from "../shared/freshness";
 import { LootFinderPage } from "./features/optimizer/LootFinderPage";
 import { WardrobePage } from "./features/outfits/WardrobePage";
 import { DungeonsPage } from "./features/dungeons/DungeonsPage";
@@ -272,14 +274,11 @@ function ExternalSource({ url, children }: { url: string | null | undefined; chi
     </Button>
   );
 }
+/** "3 hr ago", capitalized for table cells, or "Not observed" */
 function age(value: string | null | undefined) {
   if (!value) return "Not observed";
-  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 60_000));
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)} hr ago`;
-  const days = Math.floor(minutes / 1440);
-  return `${days} ${days === 1 ? "day" : "days"} ago`;
+  const text = ago(value);
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 function Known({ children }: { children: string }) {
   return children === "Unknown" ? <span className="muted">Unknown</span> : <>{children}</>;
@@ -1287,8 +1286,9 @@ function CharacterFrame({
           <h1>{heading}</h1>
           <p>
             {spec(character)} · {character.region.toUpperCase()} / {character.realm}
-            {character.level != null ? ` · Level ${character.level}` : ""} · Observed {age(character.observedAt).toLowerCase()}
+            {character.level != null ? ` · Level ${character.level}` : ""} · Observed {age(character.observedAt).toLowerCase()}{character.gearObservedAt && character.gearObservedAt !== character.observedAt ? ` · gear ${ago(character.gearObservedAt)}` : ""}
           </p>
+          <GearFreshness character={character} />
         </div>
         {section !== "wardrobe" && section !== "dungeons" && section !== "raids" && <ActivityTabs value={activity} onChange={setActivity} />}
       </div>
