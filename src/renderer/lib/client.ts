@@ -45,6 +45,7 @@ export const api={
  configureLogs:async(input:{clientId:string;clientSecret:string})=>(await client()).configureLogs.mutate(input),
  clearLogs:async()=>(await client()).clearLogs.mutate(),
  reportSummary:async(input:{characterId:string;url:string})=>(await client()).reportSummary.mutate(input),
+ fightSummary:async(input:{characterId:string;url:string;fightId:number})=>(await client()).fightSummary.mutate(input),
  saveComparisonReport:async(input:{characterId:string;url:string;notes:string})=>(await client()).saveComparisonReport.mutate(input),
  simulationProfile:async(input:{characterId:string})=>(await client()).simulationProfile.query(input),
  importSimulationProfile:async(input:{characterId:string;text:string})=>(await client()).importSimulationProfile.mutate(input),

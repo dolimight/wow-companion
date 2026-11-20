@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { fightSummarySchema } from './fight'
 
 /**
  * Optional AI help runs through an assistant CLI the player already has installed and signed in, so it uses their own
@@ -65,17 +66,27 @@ export const gearCombosOutputSchema = z.object({
 })
 export type GearCombosOutput = z.infer<typeof gearCombosOutputSchema>
 
+/** A review of one fight from a public Warcraft Logs report, from the numbers the app read for this player */
+export const fightReviewInputSchema = z.object({ characterId: z.string().min(1).max(100), fight: fightSummarySchema })
+export type FightReviewInput = z.infer<typeof fightReviewInputSchema>
+export const fightReviewOutputSchema = z.object({
+  findings: z.array(z.object({ title: z.string(), detail: z.string() })).transform(list => list.map(entry => ({ title: entry.title.trim().slice(0, 100), detail: entry.detail.trim().slice(0, 500) })).filter(entry => entry.title && entry.detail).slice(0, 5)),
+  summary: z.string().transform(text => text.trim().slice(0, 600)),
+})
+export type FightReviewOutput = z.infer<typeof fightReviewOutputSchema>
+
 /** Every feature's input and output, so the renderer, the router, and the feature plugins agree */
 export const aiFeatures = {
   bossCoach: { input: bossCoachInputSchema, output: bossCoachOutputSchema },
   gearCombos: { input: gearCombosInputSchema, output: gearCombosOutputSchema },
+  fightReview: { input: fightReviewInputSchema, output: fightReviewOutputSchema },
 } as const
 export type AiFeatureId = keyof typeof aiFeatures
 export type AiFeatureInput<Id extends AiFeatureId> = z.infer<(typeof aiFeatures)[Id]['input']>
 export type AiFeatureOutput<Id extends AiFeatureId> = z.infer<(typeof aiFeatures)[Id]['output']>
 
 /** A question for a feature, as the renderer sends it */
-export const aiAskSchema = z.discriminatedUnion('feature', [z.object({ feature: z.literal('bossCoach'), input: bossCoachInputSchema })])
+export const aiAskSchema = z.discriminatedUnion('feature', [z.object({ feature: z.literal('bossCoach'), input: bossCoachInputSchema }), z.object({ feature: z.literal('fightReview'), input: fightReviewInputSchema })])
 export type AiAsk = z.infer<typeof aiAskSchema>
 
 /** An answer with the provider that gave it, so the page can credit it */

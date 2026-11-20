@@ -89,6 +89,7 @@ export function createRouter(s:RouterServices){return t.router({
   configureLogs:p.input(z.object({clientId:z.string().min(1).max(200),clientSecret:z.string().min(1).max(500)})).mutation(({input})=>run(()=>s.comparisons.configureLogs(input))),
   clearLogs:p.mutation(()=>run(()=>s.comparisons.clearLogs())),
   reportSummary:p.input(characterIdSchema.extend({url:z.string().url().max(2000)})).mutation(({input})=>run(()=>s.comparisons.reportSummary(input))),
+  fightSummary:p.input(characterIdSchema.extend({url:z.string().url().max(2000),fightId:z.number().int().positive()})).mutation(({input})=>run(()=>s.comparisons.fightSummary(input))),
   saveComparisonReport:p.input(reportInputSchema).mutation(async({input})=>{const value=await run(()=>s.comparisons.saveReport(input));await s.changed(input.characterId);return value}),
   simulationProfile:p.input(characterIdSchema).query(({input})=>run(()=>s.simulations.exportProfile(input.characterId))),
   importSimulationProfile:p.input(characterIdSchema.extend({text:z.string().min(1).max(1024*1024)})).mutation(async({input})=>{const value=await run(()=>s.simulations.importProfile(input.characterId,input.text));await s.changed(input.characterId);return value}),

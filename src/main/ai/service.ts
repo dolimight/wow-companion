@@ -1,3 +1,4 @@
+import { fightReview } from './features/fight-review'
 import { talentSummary, type TalentTree } from '../../shared/talents'
 import { mkdtemp, rm } from 'node:fs/promises'
 import path from 'node:path'
@@ -12,7 +13,7 @@ import { log } from '../log'
 
 /** The providers and features the app ships with; another plugin is one more entry in either list */
 export const builtinProviders = (): AiProvider[] => [codexProvider(), claudeProvider()]
-export const builtinFeatures: { [Id in AiFeatureId]: AiFeature<Id> } = { bossCoach, gearCombos }
+export const builtinFeatures: { [Id in AiFeatureId]: AiFeature<Id> } = { bossCoach, gearCombos, fightReview }
 
 export type AiServiceOptions = {
   providers: AiProvider[]

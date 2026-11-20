@@ -54,3 +54,4 @@ export function comparePopulation(input:{context:ComparisonContext;player:Compar
   if(!records.length&&!population.unsupportedFilters.length)reasons.push('No comparable observations are available for this selection')
   return {schemaVersion:1,status,context,player,population,records,providerRank:player.rank!==null&&player.rankScope?{rank:player.rank,scope:player.rankScope,population:player.population}:null,percentile:null,gapToSampleBest:comparable&&best!==null?best-player.value!:null,reasons,assumptions,evidenceRefs:[...player.evidenceRefs,...records.flatMap(record=>record.evidenceRefs)],gearDifferences:[],builds:[],reportReview:{state:'unconfigured',reason:'Warcraft Logs report links are saved locally; authenticated report summaries and event review are not configured'},evaluatedAt:context.to}
 }
+

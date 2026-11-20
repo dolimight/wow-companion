@@ -28,6 +28,7 @@ A feature implements `AiFeature`: fixed instructions, the JSON Schema the answer
 
 - `bossCoach` gives spec-specific tips and cooldown timings for one boss, on top of the strategy the Dungeons and Raids pages already show. It's asked only when the player presses the button, and the answer is cached for the session
   - Its prompt includes the character's item level, trinkets, hero tree, and the specialization and hero talents its build takes, named from the installed game's talent tree (`talentSummary` in `src/shared/talents.ts`), so tips fit the player's own build. Answers are cached by boss, role, build, and item level, so new gear or talents allow a new answer
+- `fightReview` reviews one fight from a public Warcraft Logs report. With the player's own Warcraft Logs API credentials, Performance → Reports reads the fight's damage done and taken by ability, casts, and deaths for the matched character (`fetchFight` in `src/main/comparisons/providers.ts`, two fixed read-only queries). The page shows those numbers first; the assistant sees only them, is asked only from its button, and must tie each finding to one
 - `gearCombos` proposes whole gear sets for the Best gear search from each piece's screening gain. It runs in the main process during a search and isn't exposed to the renderer. The engine measures every set it proposes
 
 To add a feature, add its schemas to `aiFeatures` and `aiAskSchema`, write the plugin under `src/main/ai/features`, and add it to `builtinFeatures`
