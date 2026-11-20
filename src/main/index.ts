@@ -20,6 +20,8 @@ import { minimumWindowSize, readWindowPlacement, rememberWindowPlacement } from 
 import { appIconFiles, resolveAppIcon, type AppIconVariant } from '../shared/app-icons'
 import { openSplash } from './splash'
 import { createMiniWindow } from './mini-window'
+import { diagnosticsText } from './diagnostics'
+import { homedir, release } from 'node:os'
 import { alignShortcutActivator, appIdentity, persistWindowsIcon, refreshPinnedShellItems, registerToastIdentity, taskbarDetails, updatePinnedAppIcons } from './windows-app-icon'
 
 // Development runs are their own app: own name and data folder, so they never share the installed app's database
@@ -187,6 +189,17 @@ async function main(){
   handle('companion:choose-wow-folder',async()=>{const result=await dialog.showOpenDialog(window!,{title:'Choose your World of Warcraft folder',properties:['openDirectory']});if(result.canceled||!result.filePaths[0])return null;return service.connections.useInstallPath(result.filePaths[0])})
   handle('companion:choose-simulation-executable',async()=>{const local=process.env.LOCALAPPDATA,roots=process.platform==='win32'?[...(local?[join(local,'Programs','SimulationCraft'),join(local,'Programs')]:[]),join(process.env.ProgramFiles??'C:/Program Files','SimulationCraft'),process.env.ProgramFiles??'C:/Program Files',app.getPath('downloads')]:process.platform==='darwin'?['/Applications',app.getPath('downloads')]:['/usr/local/bin','/usr/bin',app.getPath('downloads')];const selected=await selectedFile(process.platform==='win32'?[{name:'SimulationCraft engine (simc.exe)',extensions:['exe']}]:[{name:'SimulationCraft engine (simc)',extensions:['*']}],{title:'Choose the SimulationCraft engine',defaultPath:await service.simulations.engineFolder(roots)});return selected?service.simulations.configureExecutable(await realpath(selected)):null})
   handle('companion:open-mini',(route:unknown)=>{if(typeof route!=='string')throw new Error('Not a play mode page');return miniPlay?.open(route)})
+  // A troubleshooting report to paste into a bug report: no names, realms, keys, or tokens, and the home folder as ~
+  handle('companion:diagnostics',async()=>{
+    const characters=await db.call('listCharacters',true).catch(()=>[]) as Array<{name:string;realm:string}>
+    const settings=await db.call('getSettings').catch(()=>null) as Record<string,unknown>|null
+    return diagnosticsText({
+      app:{version:app.getVersion(),packaged:app.isPackaged,platform:process.platform,arch:process.arch,os:release(),electron:process.versions.electron??'unknown'},
+      settings,simulationCraft:{configured:!!(await service.simulations.engineHash().catch(()=>null))},
+      ai:await service.ai.status().catch(()=>null),sync:service.sync.state as never,gameData:await service.gameData.call('getStatus').catch(()=>null),
+      characters:characters.length,names:characters.flatMap(character=>[character.name,character.realm]),logDirectory:resolve(userDir,'logs'),now:new Date(),home:homedir(),
+    })
+  })
   handle('companion:open-logs',async()=>{await mkdir(resolve(userDir,'logs'),{recursive:true});const failure=await shell.openPath(resolve(userDir,'logs'));if(failure)throw new Error(failure)})
   handle('companion:copy-text',async(value:unknown)=>{if(typeof value!=='string'||value.length>1_000_000)throw new Error('Nothing to copy');clipboard.writeText(value)})
   handle('companion:open-external',async(value:unknown)=>{if(typeof value!=='string')throw new Error('Invalid link');const url=externalLink(value);if(!url)throw new Error('This external link is not supported');await shell.openExternal(url.href)})

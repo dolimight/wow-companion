@@ -66,6 +66,7 @@ import {
   Users,
   WandSparkles,
   Gem,
+  ClipboardCopy,
 } from "lucide-react";
 import { api, type BlizzardRegion } from "./lib/client";
 import { assetUrl } from "./lib/assets";
@@ -2476,10 +2477,16 @@ function SettingsPage() {
                     <h3>Troubleshooting logs</h3>
                     <p>A log file for each day records what the app did, such as syncs, simulations, and errors, so problems can be traced. Logs stay on this computer, leave out keys and passwords, and are deleted after two days</p>
                   </div>
-                  <Button onClick={() => void window.companion!.openLogs().catch((error) => notify(errorMessage(error)))}>
-                    <FolderOpen />
-                    Open logs folder
-                  </Button>
+                  <div className="setting-actions">
+                    <Button onClick={() => void window.companion!.openLogs().catch((error) => notify(errorMessage(error)))}>
+                      <FolderOpen />
+                      Open logs folder
+                    </Button>
+                    <Button onClick={() => void window.companion!.diagnostics().then((text) => api.copyText(text)).then(() => notify("Diagnostics copied · paste them into your bug report"), (error) => notify(errorMessage(error)))}>
+                      <ClipboardCopy />
+                      Copy diagnostics
+                    </Button>
+                  </div>
                 </div>
               )}
               <div className="help-box">

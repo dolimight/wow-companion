@@ -105,6 +105,8 @@ Your roster, imported snapshots, plans, and preferences live in a local SQLite d
 
 Troubleshooting logs go to a `logs` folder in the same user-data directory, one `companion-YYYY-MM-DD.log` file per day. They record syncs, simulations, AI requests, and errors, leave out keys and passwords, and are deleted after two days. **Settings → Local data → Open logs folder** opens the folder
 
+Settings → Local data → **Copy diagnostics** copies a report for a bug report: versions, settings, connections, the last sync, and the recent log. It hides keys, tokens, and credential-looking values, shows the home folder as `~`, and replaces character names and realms with `[character]`. Log lines also hide Bearer tokens and `access_token=`-style values inside messages and stack traces
+
 Development builds and isolated acceptance profiles don't fetch desktop updates. See [release channels and publishing](docs/releases.md) for the schedule, verification, and release process
 
 ## Scope and current limits
