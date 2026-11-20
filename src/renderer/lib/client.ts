@@ -113,6 +113,8 @@ export const api={
  realmStatus:async(region:BlizzardRegion,force=false)=>(await client()).realmStatus.query({region,force}),
  weeklyAffixes:async(region:'us'|'eu'|'kr'|'tw')=>(await client()).weeklyAffixes.query({region}),
  characterTimeline:async(characterId:string)=>(await client()).characterTimeline.query({characterId}),
+ raidReminders:async(characterId:string)=>(await client()).raidReminders.query({characterId}),
+ setRaidReminders:async(characterId:string,reminders:import('../../shared/raid-reminders').RaidReminder[])=>(await client()).setRaidReminders.mutate({characterId,reminders}),
  addBlizzardCharacter:async(input:{region:BlizzardRegion;realm:string;name:string})=>(await client()).addBlizzardCharacter.mutate(input),
  beginBattlenetSignIn:async()=>(await client()).beginBattlenetSignIn.mutate(),
  completeBattlenetSignIn:async()=>(await client()).completeBattlenetSignIn.mutate(),

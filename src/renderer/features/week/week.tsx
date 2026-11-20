@@ -11,6 +11,7 @@ import type { Character, CharacterStats } from "../../../shared/domain";
 import { diminishing, drBrackets } from "../../../shared/diminishing";
 import { hasResetSchedule, nextDailyReset, nextWeeklyReset, vaultTracks, weeklyLockouts, weeklyRuns, type VaultTrack } from "../../../shared/weekly";
 import { AffixesSurface, AltReadiness, VaultPlan } from "../season/season";
+import { PlannedRaids, ReminderToggle } from "./raid-reminders";
 import "./week.css";
 import { Card } from "../../components/ui/card";
 
@@ -143,9 +144,10 @@ export function CharacterWeek({ character, action }: { character: Character; act
               <h3><Term term="lockout">Lockouts</Term></h3>
               <ul className="week-list">
                 {lockouts.lockouts.map((lockout, index) => (
-                  <li key={index}>
+                  <li key={index} className="week-lockout">
                     <span>{lockout.name}{lockout.difficulty ? ` · ${lockout.difficulty}` : ""}</span>
                     <strong>{lockout.killed}/{lockout.total}</strong>
+                    {lockout.raid !== false && <ReminderToggle character={character} lockout={lockout} />}
                   </li>
                 ))}
               </ul>
@@ -373,6 +375,7 @@ export function WeekPage({ characters, identity, onOpen, onReview, expandedId, o
         <AffixesSurface region={live[0]?.region ?? "us"} />
         <TokenSurface />
       </div>
+      <PlannedRaids characters={live} />
       <div className="surface-heading week-table-heading">
         <div>
           <h2><Term term="great vault">Great Vault</Term> by character</h2>

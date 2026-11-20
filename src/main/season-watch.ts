@@ -5,6 +5,7 @@ import type { Character } from '../shared/domain'
 import { newSeasonBests, vaultReadyAlerts, type Alert } from '../shared/alerts'
 import { appendTimeline, timelinePoint, timelineSchema, TIMELINE_NAMESPACE } from '../shared/timeline'
 import { weekStart } from '../shared/weekly'
+import { RAID_REMINDERS_NAMESPACE, raidReminderAlerts, raidRemindersSchema, type RaidReminder } from '../shared/raid-reminders'
 
 const VAULT_WINDOW = 48 * 3_600_000
 const seenSchema = z.array(z.string().max(400)).max(2000)
@@ -48,6 +49,10 @@ export function createSeasonWatch(options: { db: DatabaseClient; seenFile: strin
     // The first pass only sets the baseline, so nothing already known is announced as new
     previous = new Map(characters.map(character => [character.id, character]))
     alerts.push(...vaultAlerts(characters))
+    // Planned raids still open after the reset, once per character and week
+    const plans = new Map<string, RaidReminder[]>()
+    for (const character of characters) { const stored = raidRemindersSchema.safeParse((await options.db.call('getFeatureState', character.id, RAID_REMINDERS_NAMESPACE)) ?? {}); if (stored.success && stored.data.reminders.length) plans.set(character.id, stored.data.reminders) }
+    alerts.push(...raidReminderAlerts(characters, plans))
     await raise(alerts)
   }
   function vaultAlerts(characters: Character[], now = Date.now()) {
