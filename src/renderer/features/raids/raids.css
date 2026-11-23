@@ -1,2 +1,8 @@
 .raid-pickers { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
 .dungeon-stat small svg { vertical-align: -1px; }
+
+/* Past seasons' raids under this season's */
+.raid-season { display: grid; gap: 12px; margin-top: 12px; }
+.raid-season h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.raid-season h2 svg { color: var(--secondary); }
+.raid-season h2 small { margin-left: 4px; font-size: 12px; font-weight: 400; color: var(--muted); }

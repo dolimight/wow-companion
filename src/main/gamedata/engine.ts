@@ -901,6 +901,31 @@ export class GameDataEngine {
     return { map, iconOf, fill }
   }
 
+  /**
+   * The journal instances that hold these bosses, matched by name, in the order they first appear, each with its
+   * loading-screen art. Raider.IO files some tiers as one raid (such as "MN Tier 1 (VS / DR / MQD)") that the journal
+   * keeps as separate instances
+   */
+  async raidInstances(encounterNames: string[]): Promise<Array<{ instanceId: number; name: string; art: number | null; matched: string[] }>> {
+    const [instances, encounters, maps, screens] = await Promise.all(['JournalInstance', 'JournalEncounter', 'Map', 'LoadingScreens'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const found = new Map<number, string[]>()
+    for (const name of encounterNames) {
+      // The newest encounter of that name, since an old raid can share a boss name
+      const row = [...encounters.values()].filter(entry => dungeonKey(String(entry.Name_lang ?? '')) === dungeonKey(name)).sort((a, b) => num(b.ID) - num(a.ID))[0]
+      if (!row) continue
+      const id = num(row.JournalInstanceID)
+      found.set(id, [...(found.get(id) ?? []), name])
+    }
+    return [...found].flatMap(([instanceId, matched]) => {
+      const instance = instances.get(instanceId)
+      if (!instance) return []
+      const screen = screens.get(num(maps.get(num(instance.MapID))?.LoadingScreenID))
+      const art = num(screen?.MainImageFileDataID) || num(screen?.WideScreen169FileDataID) || null
+      return [{ instanceId, name: String(instance.Name_lang ?? ''), art, matched }]
+    })
+  }
+
   /** Each boss's loot from the journal, as the summaries a compatibility check reads; needs the item index */
   async encounterLoot(encounterIds: number[]): Promise<Record<number, LootItem[]>> {
     const rows = await this.traitTable('JournalEncounterItem')

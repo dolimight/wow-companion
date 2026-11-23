@@ -1,0 +1,574 @@
+{
+ "generatedAt": "2026-11-23T21:31:32.864Z",
+ "gameBuild": "12.1.5.70961",
+ "seasons": [
+  {
+   "slug": "season-mn-1",
+   "name": "Midnight Season 1",
+   "startsAt": "2026-03-24T15:00:00Z",
+   "endsAt": "2026-08-18T15:00:00Z",
+   "raids": [
+    {
+     "slug": "the-voidspire",
+     "name": "The Voidspire",
+     "shortName": "TV",
+     "startsAt": "2026-03-17T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "imperator-averzian",
+       "name": "Imperator Averzian"
+      },
+      {
+       "slug": "vorasius",
+       "name": "Vorasius"
+      },
+      {
+       "slug": "fallen-king-salhadaar",
+       "name": "Fallen-King Salhadaar"
+      },
+      {
+       "slug": "vaelgor-ezzorak",
+       "name": "Vaelgor & Ezzorak"
+      },
+      {
+       "slug": "lightblinded-vanguard",
+       "name": "Lightblinded Vanguard"
+      },
+      {
+       "slug": "crown-of-the-cosmos",
+       "name": "Crown of the Cosmos"
+      }
+     ],
+     "art": "raids/the-voidspire.jpg"
+    },
+    {
+     "slug": "march-on-queldanas",
+     "name": "March on Quel'Danas",
+     "shortName": "MOQ",
+     "startsAt": "2026-03-17T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "beloren-child-of-alar",
+       "name": "Belo'ren, Child of Al'ar"
+      },
+      {
+       "slug": "midnight-falls",
+       "name": "Midnight Falls"
+      }
+     ],
+     "art": "raids/march-on-queldanas.jpg"
+    },
+    {
+     "slug": "sporefall",
+     "name": "Sporefall",
+     "shortName": "SF",
+     "startsAt": "2026-06-16T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "rotmire",
+       "name": "Rotmire"
+      }
+     ],
+     "art": "raids/sporefall.jpg"
+    },
+    {
+     "slug": "the-dreamrift",
+     "name": "The Dreamrift",
+     "shortName": "TD",
+     "startsAt": "2026-03-17T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "chimaerus-the-undreamt-god",
+       "name": "Chimaerus the Undreamt God"
+      }
+     ],
+     "art": "raids/the-dreamrift.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-tww-3",
+   "name": "The War Within Season 3",
+   "startsAt": "2025-08-12T15:00:00Z",
+   "endsAt": "2026-03-02T22:00:00Z",
+   "raids": [
+    {
+     "slug": "manaforge-omega",
+     "name": "Manaforge Omega",
+     "shortName": "MFO",
+     "startsAt": "2025-08-12T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "plexus-sentinel",
+       "name": "Plexus Sentinel"
+      },
+      {
+       "slug": "loomithar",
+       "name": "Loom'ithar"
+      },
+      {
+       "slug": "soulbinder-naazindhri",
+       "name": "Soulbinder Naazindhri"
+      },
+      {
+       "slug": "forgeweaver-araz",
+       "name": "Forgeweaver Araz"
+      },
+      {
+       "slug": "the-soul-hunters",
+       "name": "The Soul Hunters"
+      },
+      {
+       "slug": "fractillus",
+       "name": "Fractillus"
+      },
+      {
+       "slug": "nexus-king-salhadaar",
+       "name": "Nexus-King Salhadaar"
+      },
+      {
+       "slug": "dimensius-the-all-devouring",
+       "name": "Dimensius, the All-Devouring"
+      }
+     ],
+     "art": "raids/manaforge-omega.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-tww-2",
+   "name": "The War Within Season 2",
+   "startsAt": "2025-03-04T15:00:00Z",
+   "endsAt": "2025-08-12T15:00:00Z",
+   "raids": [
+    {
+     "slug": "liberation-of-undermine",
+     "name": "Liberation of Undermine",
+     "shortName": "LOU",
+     "startsAt": "2025-03-04T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "vexie-and-the-geargrinders",
+       "name": "Vexie and the Geargrinders"
+      },
+      {
+       "slug": "cauldron-of-carnage",
+       "name": "Cauldron of Carnage"
+      },
+      {
+       "slug": "rik-reverb",
+       "name": "Rik Reverb"
+      },
+      {
+       "slug": "stix-bunkjunker",
+       "name": "Stix Bunkjunker"
+      },
+      {
+       "slug": "sprocketmonger-lockenstock",
+       "name": "Sprocketmonger Lockenstock"
+      },
+      {
+       "slug": "the-one-armed-bandit",
+       "name": "The One-Armed Bandit"
+      },
+      {
+       "slug": "mugzee-heads-of-security",
+       "name": "Mug'Zee, Heads of Security"
+      },
+      {
+       "slug": "chrome-king-gallywix",
+       "name": "Chrome King Gallywix"
+      }
+     ],
+     "art": "raids/liberation-of-undermine.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-tww-1",
+   "name": "The War Within Season 1",
+   "startsAt": "2024-09-17T15:00:00Z",
+   "endsAt": "2025-02-25T15:00:00Z",
+   "raids": [
+    {
+     "slug": "blackrock-depths",
+     "name": "Blackrock Depths",
+     "shortName": "BRD",
+     "startsAt": "2024-10-22T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "lord-roccor",
+       "name": "Lord Roccor"
+      },
+      {
+       "slug": "baelgar",
+       "name": "Bael'Gar"
+      },
+      {
+       "slug": "lord-incendius",
+       "name": "Lord Incendius"
+      },
+      {
+       "slug": "golem-lord-argelmach",
+       "name": "Golem Lord Argelmach"
+      },
+      {
+       "slug": "the-seven",
+       "name": "The Seven"
+      },
+      {
+       "slug": "general-angerforge",
+       "name": "General Angerforge"
+      },
+      {
+       "slug": "ambassador-flamelash",
+       "name": "Ambassador Flamelash"
+      },
+      {
+       "slug": "emperor-dagran-thaurissan",
+       "name": "Emperor Dagran Thaurissan"
+      }
+     ]
+    },
+    {
+     "slug": "nerubar-palace",
+     "name": "Nerub-ar Palace",
+     "shortName": "NP",
+     "startsAt": "2024-09-10T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "ulgrax-the-devourer",
+       "name": "Ulgrax the Devourer"
+      },
+      {
+       "slug": "the-bloodbound-horror",
+       "name": "The Bloodbound Horror"
+      },
+      {
+       "slug": "sikran-captain-of-the-sureki",
+       "name": "Sikran, Captain of the Sureki"
+      },
+      {
+       "slug": "rashanan",
+       "name": "Rasha'nan"
+      },
+      {
+       "slug": "broodtwister-ovinax",
+       "name": "Broodtwister Ovi'nax"
+      },
+      {
+       "slug": "nexus-princess-kyveza",
+       "name": "Nexus-Princess Ky'veza"
+      },
+      {
+       "slug": "the-silken-court",
+       "name": "The Silken Court"
+      },
+      {
+       "slug": "queen-ansurek",
+       "name": "Queen Ansurek"
+      }
+     ],
+     "art": "raids/nerubar-palace.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-df-4",
+   "name": "Dragonflight Season 4",
+   "startsAt": "2024-04-23T15:00:00Z",
+   "endsAt": "2024-08-26T22:00:00Z",
+   "raids": [
+    {
+     "slug": "awakened-aberrus-the-shadowed-crucible",
+     "name": "Awakened Aberrus, the Shadowed Crucible",
+     "shortName": "AATSC",
+     "startsAt": "2024-04-30T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "kazzara-the-hellforged",
+       "name": "Kazzara, the Hellforged"
+      },
+      {
+       "slug": "the-amalgamation-chamber",
+       "name": "The Amalgamation Chamber"
+      },
+      {
+       "slug": "the-forgotten-experiments",
+       "name": "The Forgotten Experiments"
+      },
+      {
+       "slug": "assault-of-the-zaqali",
+       "name": "Assault of the Zaqali"
+      },
+      {
+       "slug": "rashok-the-elder",
+       "name": "Rashok, the Elder"
+      },
+      {
+       "slug": "the-vigilant-steward-zskarn",
+       "name": "The Vigilant Steward, Zskarn"
+      },
+      {
+       "slug": "magmorax",
+       "name": "Magmorax"
+      },
+      {
+       "slug": "echo-of-neltharion",
+       "name": "Echo of Neltharion"
+      },
+      {
+       "slug": "scalecommander-sarkareth",
+       "name": "Scalecommander Sarkareth"
+      }
+     ],
+     "journal": "aberrus-the-shadowed-crucible",
+     "art": "raids/aberrus-the-shadowed-crucible.jpg"
+    },
+    {
+     "slug": "awakened-amirdrassil-the-dreams-hope",
+     "name": "Awakened Amirdrassil, the Dream's Hope",
+     "shortName": "AATDH",
+     "startsAt": "2024-05-07T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "gnarlroot",
+       "name": "Gnarlroot"
+      },
+      {
+       "slug": "igira-the-cruel",
+       "name": "Igira the Cruel"
+      },
+      {
+       "slug": "volcoross",
+       "name": "Volcoross"
+      },
+      {
+       "slug": "council-of-dreams",
+       "name": "Council of Dreams"
+      },
+      {
+       "slug": "larodar-keeper-of-the-flame",
+       "name": "Larodar, Keeper of the Flame"
+      },
+      {
+       "slug": "nymue-weaver-of-the-cycle",
+       "name": "Nymue, Weaver of the Cycle"
+      },
+      {
+       "slug": "smolderon",
+       "name": "Smolderon"
+      },
+      {
+       "slug": "tindral-sageswift-seer-of-the-flame",
+       "name": "Tindral Sageswift, Seer of the Flame"
+      },
+      {
+       "slug": "fyrakk-the-blazing",
+       "name": "Fyrakk the Blazing"
+      }
+     ],
+     "journal": "amirdrassil-the-dreams-hope",
+     "art": "raids/amirdrassil-the-dreams-hope.jpg"
+    },
+    {
+     "slug": "awakened-vault-of-the-incarnates",
+     "name": "Awakened Vault of the Incarnates",
+     "shortName": "AVOTI",
+     "startsAt": "2024-04-23T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "eranog",
+       "name": "Eranog"
+      },
+      {
+       "slug": "terros",
+       "name": "Terros"
+      },
+      {
+       "slug": "the-primal-council",
+       "name": "The Primal Council"
+      },
+      {
+       "slug": "sennarth-the-cold-breath",
+       "name": "Sennarth, the Cold Breath"
+      },
+      {
+       "slug": "dathea-ascended",
+       "name": "Dathea, Ascended"
+      },
+      {
+       "slug": "kurog-grimtotem",
+       "name": "Kurog Grimtotem"
+      },
+      {
+       "slug": "broodkeeper-diurna",
+       "name": "Broodkeeper Diurna"
+      },
+      {
+       "slug": "raszageth-the-storm-eater",
+       "name": "Raszageth the Storm-Eater"
+      }
+     ],
+     "journal": "vault-of-the-incarnates",
+     "art": "raids/vault-of-the-incarnates.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-df-3",
+   "name": "Dragonflight Season 3",
+   "startsAt": "2023-11-14T15:00:00Z",
+   "endsAt": "2024-04-23T15:00:00Z",
+   "raids": [
+    {
+     "slug": "amirdrassil-the-dreams-hope",
+     "name": "Amirdrassil, the Dream's Hope",
+     "shortName": "ATDH",
+     "startsAt": "2023-11-14T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "gnarlroot",
+       "name": "Gnarlroot"
+      },
+      {
+       "slug": "igira-the-cruel",
+       "name": "Igira the Cruel"
+      },
+      {
+       "slug": "volcoross",
+       "name": "Volcoross"
+      },
+      {
+       "slug": "council-of-dreams",
+       "name": "Council of Dreams"
+      },
+      {
+       "slug": "larodar-keeper-of-the-flame",
+       "name": "Larodar, Keeper of the Flame"
+      },
+      {
+       "slug": "nymue-weaver-of-the-cycle",
+       "name": "Nymue, Weaver of the Cycle"
+      },
+      {
+       "slug": "smolderon",
+       "name": "Smolderon"
+      },
+      {
+       "slug": "tindral-sageswift-seer-of-the-flame",
+       "name": "Tindral Sageswift, Seer of the Flame"
+      },
+      {
+       "slug": "fyrakk-the-blazing",
+       "name": "Fyrakk the Blazing"
+      }
+     ],
+     "art": "raids/amirdrassil-the-dreams-hope.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-df-2",
+   "name": "Dragonflight Season 2",
+   "startsAt": "2023-05-09T15:00:00Z",
+   "endsAt": "2023-11-14T15:00:00Z",
+   "raids": [
+    {
+     "slug": "aberrus-the-shadowed-crucible",
+     "name": "Aberrus, the Shadowed Crucible",
+     "shortName": "ATSC",
+     "startsAt": "2023-05-09T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "kazzara-the-hellforged",
+       "name": "Kazzara, the Hellforged"
+      },
+      {
+       "slug": "the-amalgamation-chamber",
+       "name": "The Amalgamation Chamber"
+      },
+      {
+       "slug": "the-forgotten-experiments",
+       "name": "The Forgotten Experiments"
+      },
+      {
+       "slug": "assault-of-the-zaqali",
+       "name": "Assault of the Zaqali"
+      },
+      {
+       "slug": "rashok-the-elder",
+       "name": "Rashok, the Elder"
+      },
+      {
+       "slug": "the-vigilant-steward-zskarn",
+       "name": "The Vigilant Steward, Zskarn"
+      },
+      {
+       "slug": "magmorax",
+       "name": "Magmorax"
+      },
+      {
+       "slug": "echo-of-neltharion",
+       "name": "Echo of Neltharion"
+      },
+      {
+       "slug": "scalecommander-sarkareth",
+       "name": "Scalecommander Sarkareth"
+      }
+     ],
+     "art": "raids/aberrus-the-shadowed-crucible.jpg"
+    }
+   ]
+  },
+  {
+   "slug": "season-df-1",
+   "name": "Dragonflight Season 1",
+   "startsAt": "2022-11-28T23:00:00Z",
+   "endsAt": "2023-05-09T15:00:00Z",
+   "raids": [
+    {
+     "slug": "vault-of-the-incarnates",
+     "name": "Vault of the Incarnates",
+     "shortName": "VOTI",
+     "startsAt": "2022-12-13T15:00:00Z",
+     "encounters": [
+      {
+       "slug": "eranog",
+       "name": "Eranog"
+      },
+      {
+       "slug": "terros",
+       "name": "Terros"
+      },
+      {
+       "slug": "the-primal-council",
+       "name": "The Primal Council"
+      },
+      {
+       "slug": "sennarth-the-cold-breath",
+       "name": "Sennarth, the Cold Breath"
+      },
+      {
+       "slug": "dathea-ascended",
+       "name": "Dathea, Ascended"
+      },
+      {
+       "slug": "kurog-grimtotem",
+       "name": "Kurog Grimtotem"
+      },
+      {
+       "slug": "broodkeeper-diurna",
+       "name": "Broodkeeper Diurna"
+      },
+      {
+       "slug": "raszageth-the-storm-eater",
+       "name": "Raszageth the Storm-Eater"
+      }
+     ],
+     "art": "raids/vault-of-the-incarnates.jpg"
+    }
+   ]
+  }
+ ]
+}
