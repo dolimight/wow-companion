@@ -24,11 +24,12 @@ type JournalResult = { data: DungeonJournal | null | undefined; isPending: boole
 
 /**
  * A journal from the bundle; only an instance the bundle lacks, such as a dungeon added after the app was built, is read
- * from the player's game files
+ * from the player's game files. While a bundled part is still loading (`waiting`), the game files are left alone
  */
-export function useEncounterJournal(key: string, packed: DungeonJournal | null | undefined, read: () => Promise<DungeonJournal | null>): JournalResult {
+export function useEncounterJournal(key: string, packed: DungeonJournal | null | undefined, read: () => Promise<DungeonJournal | null>, waiting = false): JournalResult {
   const ready = useGameData().data?.state === 'ready'
-  const live = useQuery({ queryKey: ['encounter-journal', key], queryFn: read, enabled: ready && !packed, staleTime: Infinity })
+  const live = useQuery({ queryKey: ['encounter-journal', key], queryFn: read, enabled: ready && !packed && !waiting, staleTime: Infinity })
+  if (waiting) return { data: undefined, isPending: true, isError: false, error: null }
   return packed ? { data: packed, isPending: false, isError: false, error: null } : live
 }
 

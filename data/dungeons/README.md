@@ -19,6 +19,8 @@ Each file holds:
 
 `encounters/<season>.json` is made by `npm run encounter-data` from a local World of Warcraft install after `dungeon-data` has run: every dungeon's bosses (Mythic+) and every raid's bosses at each difficulty it offers, from the Encounter Journal, with each boss's loot, plus the names, text, and icons of the trash spells. The icons go to `public/assets/icons` and are listed in `encounters/icons.json`. The app never reads these from the player's game files; only an instance missing from the bundle falls back to them. Pass `-- --cache <dir>` to reuse a game data folder that already holds the item index
 
+`data/raids/history.json` and `data/raids/encounters/history.json` are made by `npm run raid-history` from Raider.IO's documented static data and a local World of Warcraft install: the raids of every ended season in the last three expansions (Midnight, The War Within, and Dragonflight), each season under its full name, a tier Raider.IO files as one raid split into its journal instances, a raid run again (such as an Awakened raid) sharing its original's journal and art, each with its bosses and loot at every difficulty, its icons, and its loading-screen art cropped to `public/assets/raids` (cropping needs ffmpeg on the PATH). The Raids page lists them under this season's raids and loads their journals the first time one is shown. Run it again when a season ends
+
 The app uses the newest bundle whose season hasn't ended, and asks Raider.IO for the live season when none applies
 Run the script again when a season starts or Keystone Guru remaps a dungeon, then commit the JSON and any new images
 Images already in `public/assets/dungeons` are kept; new ones are saved as downloaded (1800 px wide)

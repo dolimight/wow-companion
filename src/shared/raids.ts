@@ -1,9 +1,59 @@
-import { dungeonKey, type JournalDifficulty, type StrategyNotes } from './dungeons'
+import { dungeonKey, type DungeonJournal, type JournalDifficulty, type StrategyNotes } from './dungeons'
 
 export type RaidEncounter = { slug: string; name: string }
-/** `art` is a path under public/assets to the raid's loading-screen art, bundled from the game files */
-export type RaidInfo = { slug: string; name: string; shortName: string; startsAt: string | null; encounters: RaidEncounter[]; art?: string }
+/**
+ * `art` is a path under public/assets to the raid's loading-screen art, bundled from the game files. `journal` names the
+ * raid whose bundled journal it shares, such as an Awakened raid and its original
+ */
+export type RaidInfo = { slug: string; name: string; shortName: string; startsAt: string | null; encounters: RaidEncounter[]; art?: string; journal?: string }
 export type RaidList = { raids: RaidInfo[]; observedAt: string; source: string }
+
+/** A Mythic+ season's window, from Raider.IO's static data */
+export type SeasonWindow = { slug: string; name: string; startsAt: string; endsAt: string }
+/** An ended season and the raids that were current in it */
+export type RaidSeason = SeasonWindow & { raids: RaidInfo[] }
+/** data/raids/history.json: the raids of every ended season in the last three expansions, bundled by scripts/raid-history.ts */
+export type RaidHistory = { generatedAt: string; gameBuild: string; seasons: RaidSeason[] }
+/** data/raids/encounters/history.json: those raids' bosses and loot at each difficulty, from the Encounter Journal */
+export type RaidHistoryJournals = { generatedAt: string; gameBuild: string; raids: Record<string, Partial<Record<JournalDifficulty, DungeonJournal>>> }
+
+/** A tier can open a week before its season's keys do */
+const tierLead = 14 * 86_400_000
+
+const expansionNames: Record<string, string> = { mn: 'Midnight', tww: 'The War Within', df: 'Dragonflight', sl: 'Shadowlands', bfa: 'Battle for Azeroth' }
+
+/** The expansion a Raider.IO season slug belongs to, such as "tww" for "season-tww-3" */
+export const seasonExpansion = (slug: string) => slug.match(/^season-([a-z]+)-\d+/)?.[1] ?? null
+
+/** "The War Within Season 3" for "season-tww-3", keeping Raider.IO's own name for an expansion it doesn't know */
+export function fullSeasonName(slug: string, name: string): string {
+  const match = slug.match(/^season-([a-z]+)-(\d+)/)
+  const expansion = match ? expansionNames[match[1]!] : undefined
+  return expansion ? `${expansion} Season ${match![2]}` : name
+}
+
+/**
+ * The seasons that have ended in the newest `expansions` expansions (the current one counts), newest first, each with
+ * the raids that opened during it. Seasons without a raid, such as an event season, are skipped
+ */
+export function pastRaidSeasons(raids: RaidInfo[], seasons: SeasonWindow[], now = Date.now(), expansions = 3): RaidSeason[] {
+  const newest = seasons.filter(season => Date.parse(season.startsAt) <= now).sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt))
+  const kept = new Set<string>()
+  for (const season of newest) {
+    const key = seasonExpansion(season.slug)
+    if (key && kept.size < expansions) kept.add(key)
+  }
+  return newest.filter(season => Date.parse(season.endsAt) <= now && kept.has(seasonExpansion(season.slug) ?? ''))
+    .map(season => ({
+      ...season,
+      raids: raids.filter(raid => raid.startsAt && Date.parse(raid.startsAt) >= Date.parse(season.startsAt) - tierLead && Date.parse(raid.startsAt) < Date.parse(season.endsAt))
+        .sort((a, b) => b.encounters.length - a.encounters.length || Date.parse(a.startsAt!) - Date.parse(b.startsAt!)),
+    }))
+    .filter(season => season.raids.length)
+}
+
+/** A URL slug for a raid named by the journal, such as "march-on-queldanas" */
+export const raidSlug = (name: string) => name.normalize('NFKD').toLocaleLowerCase().replace(/[\u0300-\u036f'’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
 export type RaidDifficulty = Extract<JournalDifficulty, 'lfr' | 'normal' | 'heroic' | 'mythic'>
 export const raidDifficulties: readonly RaidDifficulty[] = ['lfr', 'normal', 'heroic', 'mythic']

@@ -11,9 +11,9 @@ const raidSchema = z.object({
 })
 
 /** Every raid of the newest expansions from Raider.IO's documented static data */
-export async function fetchRaids(signal?: AbortSignal): Promise<RaidInfo[]> {
+export async function fetchRaids(signal?: AbortSignal, expansions = [12, 11]): Promise<RaidInfo[]> {
   const raids: RaidInfo[] = []
-  for (const expansion of [12, 11]) {
+  for (const expansion of expansions) {
     const parsed = z.object({ raids: z.array(raidSchema).default([]) }).safeParse(await getJson('/api/v1/raiding/static-data', { expansion_id: String(expansion) }, signal).catch(() => null))
     if (parsed.success) raids.push(...parsed.data.raids.map(raid => ({ slug: raid.slug, name: raid.name, shortName: raid.short_name ?? raid.name, startsAt: raid.starts?.us ?? null, encounters: raid.encounters.map(({ slug, name }) => ({ slug, name })) })))
   }

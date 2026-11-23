@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, BookOpen, CalendarCheck, Crown, Play, RefreshCw, Skull, Trophy } from 'lucide-react'
+import { ArrowLeft, BookOpen, CalendarCheck, Crown, History, Play, RefreshCw, Skull, Trophy } from 'lucide-react'
 import type { Character } from '../../../shared/domain'
 import { journalDifficultyIds, whyItMatters, type DungeonJournal, type JournalBoss, type JournalRole } from '../../../shared/dungeons'
-import { raidDifficulties, raidDifficultyLabels, raidLockouts, raidSummary, type RaidDifficulty, type RaidInfo, type RaidStrategy } from '../../../shared/raids'
+import { raidDifficulties, raidDifficultyLabels, raidLockouts, raidSummary, type RaidDifficulty, type RaidInfo, type RaidSeason, type RaidStrategy } from '../../../shared/raids'
 import { weeklyLockouts } from '../../../shared/weekly'
 import { api } from '../../lib/client'
 import { iconUrl } from '../../lib/assets'
@@ -16,6 +16,7 @@ import { useGameData } from '../items/items'
 import { Ability, BossCard, PlayBar, PlayHero, PlaySection, RolePicker, StrategySource, StrategyView, useDungeonRole, usePlayKeys } from '../dungeons/encounters'
 import { bundledRaid, useEncounterJournal } from '../dungeons/bundled'
 import { raidStrategy } from './strategy'
+import { pastRaid, pastSeasons, usePastRaidJournals } from './history'
 import { BossCoach } from '../ai/BossCoach'
 import '../dungeons/dungeons.css'
 import './raids.css'
@@ -31,15 +32,21 @@ function useRaidDifficulty(character: Character) {
   return [difficulty, choose] as const
 }
 
+/** A raid's bundled journals: this season's from the encounter bundle, a past season's from the raid history */
+function usePackedRaid(raid: RaidInfo) {
+  const past = !!pastRaid(raid.slug)
+  const history = usePastRaidJournals(past)
+  return { packed: past ? history.data?.raids[raid.journal ?? raid.slug] ?? null : bundledRaid(raid.slug), waiting: past && history.isPending }
+}
+
 /** A bundled raid at the difficulty, or the game files' journal for a raid the bundle lacks */
 function useRaidJournal(raid: RaidInfo, difficulty: RaidDifficulty) {
-  const packed = bundledRaid(raid.slug)
-  return useEncounterJournal(`raid:${raid.slug}:${difficulty}`, packed ? packed[difficulty] ?? Object.values(packed)[0] : null, () => api.dungeonJournal(raid.name, [], difficulty))
+  const { packed, waiting } = usePackedRaid(raid)
+  return useEncounterJournal(`raid:${raid.slug}:${difficulty}`, packed ? packed[difficulty] ?? Object.values(packed)[0] : null, () => api.dungeonJournal(raid.name, [], difficulty), waiting)
 }
 
 /** The difficulties the journal tags for this raid; lairs have no Raid Finder or Mythic in the journal */
-function offered(raid: RaidInfo, journal: DungeonJournal | null | undefined): RaidDifficulty[] {
-  const packed = bundledRaid(raid.slug)
+function offered(packed: ReturnType<typeof usePackedRaid>['packed'], journal: DungeonJournal | null | undefined): RaidDifficulty[] {
   if (packed) return raidDifficulties.filter(entry => packed[entry])
   const tagged = new Set(journal?.difficultyIds ?? [])
   const list = raidDifficulties.filter(difficulty => journalDifficultyIds[difficulty].some(id => tagged.has(id)))
@@ -50,7 +57,10 @@ function useLockouts(character: Character, raid: RaidInfo) {
   return raidLockouts(weeklyLockouts(character.weekly, character.region).lockouts, raid.name)
 }
 
-/** This season's raids with your progress; one opens into its bosses with strategy for your role, or play mode */
+/**
+ * This season's raids with your progress, then the last seasons' raids; one opens into its bosses with strategy for
+ * your role, or play mode
+ */
 export function RaidsPage({ character }: { character: Character }) {
   const search = useSearch({ strict: false }) as { raid?: string; play?: string | boolean }
   const navigate = useNavigate()
@@ -63,16 +73,32 @@ export function RaidsPage({ character }: { character: Character }) {
       <Button onClick={() => void list.refetch()}><RefreshCw size={15} />Try again</Button>
     </EmptyState>
   )
-  const selected = list.data.raids.find(raid => raid.slug === search.raid)
-  if (selected) return <RaidDetail key={selected.slug} character={character} raid={selected} playing={!!search.play} onPlay={play => open(selected.slug, play)} onBack={() => open(null)} />
+  const current = list.data.raids.find(raid => raid.slug === search.raid)
+  const past = current ? null : pastRaid(search.raid)
+  const selected = current ?? past?.raid
+  if (selected) return <RaidDetail key={selected.slug} character={character} raid={selected} season={past?.season} playing={!!search.play} onPlay={play => open(selected.slug, play)} onBack={() => open(null)} />
   return (
     <div className="dungeons">
-      <p className="dungeons-intro">{list.data.raids.length} raids this season · bosses and loot from the Encounter Journal · strategy from Method's guides</p>
+      <p className="dungeons-intro">{list.data.raids.length} raids this season{pastSeasons.length ? `, plus ${pastSeasons.reduce((sum, season) => sum + season.raids.length, 0)} from the last ${pastSeasons.length} seasons` : ''} · bosses and loot from the Encounter Journal · strategy from Method's guides</p>
       <div className="dungeon-grid">
         {list.data.raids.map(raid => <RaidCard key={raid.slug} character={character} raid={raid} onOpen={() => open(raid.slug)} />)}
       </div>
+      {pastSeasons.map(season => (
+        <section key={season.slug} className="raid-season" aria-labelledby={`raid-season-${season.slug}`}>
+          <h2 id={`raid-season-${season.slug}`}><History size={16} aria-hidden="true" />{season.name}<small>{seasonDates(season)}</small></h2>
+          <div className="dungeon-grid">
+            {season.raids.map(raid => <RaidCard key={raid.slug} character={character} raid={raid} season={season} onOpen={() => open(raid.slug)} />)}
+          </div>
+        </section>
+      ))}
     </div>
   )
+}
+
+/** "Mar 2026 – Aug 2026" */
+function seasonDates(season: RaidSeason) {
+  const month = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric', timeZone: 'UTC' })
+  return `${month(season.startsAt)} – ${month(season.endsAt)}`
 }
 
 /** Loading-screen art bundled with the app (public/assets/raids); a raid without it falls back to the journal's button art */
@@ -84,16 +110,18 @@ function RaidArt({ raid, journal, className, children }: { raid: RaidInfo; journ
   return <div className={className}>{src && <img className={bundled ? 'dungeon-art dungeon-art-cover' : 'dungeon-art dungeon-art-button'} src={src} alt="" draggable={false} />}{children}</div>
 }
 
-function RaidCard({ character, raid, onOpen }: { character: Character; raid: RaidInfo; onOpen: () => void }) {
+function RaidCard({ character, raid, season, onOpen }: { character: Character; raid: RaidInfo; season?: RaidSeason; onOpen: () => void }) {
   const journal = useRaidJournal(raid, 'heroic')
-  const summary = raidSummary(character.ratings?.raiding?.label, raid.slug)
+  // Raider.IO's progress label covers only the current season
+  const summary = season ? null : raidSummary(character.ratings?.raiding?.label, raid.slug)
   const week = useLockouts(character, raid)
   return (
     <Card as="article" size="sm" className="dungeon-card">
       <button type="button" className="dungeon-card-hit" onClick={onOpen} aria-label={`Open ${raid.name}`}>
         <RaidArt raid={raid} journal={journal.data} className="dungeon-card-art"><span>{raid.name}</span></RaidArt>
         <span className="dungeon-card-body">
-          <span className="dungeon-best"><b>{summary ?? '—'}</b><small>{summary ? 'your best progress' : 'no kills recorded'}</small></span>
+          {season ? <span className="dungeon-best"><b>Past season</b><small>progress not tracked</small></span>
+            : <span className="dungeon-best"><b>{summary ?? '—'}</b><small>{summary ? 'your best progress' : 'no kills recorded'}</small></span>}
           <span className="dungeon-chips">
             <Badge><Skull size={12} aria-hidden="true" />{raid.encounters.length} {raid.encounters.length === 1 ? 'boss' : 'bosses'}</Badge>
             {week.map(lockout => <Badge key={`${lockout.name}-${lockout.difficulty}`} tone={lockout.killed >= lockout.total ? 'green' : 'blue'}><CalendarCheck size={12} aria-hidden="true" />{lockout.difficulty || 'This week'} {lockout.killed}/{lockout.total}</Badge>)}
@@ -104,18 +132,18 @@ function RaidCard({ character, raid, onOpen }: { character: Character; raid: Rai
   )
 }
 
-function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: Character; raid: RaidInfo; playing: boolean; onPlay: (play: boolean) => void; onBack: () => void }) {
+function RaidDetail({ character, raid, season, playing, onPlay, onBack }: { character: Character; raid: RaidInfo; season?: RaidSeason; playing: boolean; onPlay: (play: boolean) => void; onBack: () => void }) {
   const [role, setRole] = useDungeonRole(character)
   const [chosen, setDifficulty] = useRaidDifficulty(character)
   const probe = useRaidJournal(raid, chosen)
-  const choices = offered(raid, probe.data)
+  const choices = offered(usePackedRaid(raid).packed, probe.data)
   // A difficulty the raid lacks, such as Mythic for a lair, falls back to the hardest one it has
   const difficulty = choices.includes(chosen) ? chosen : choices[choices.length - 1]!
   const journal = useRaidJournal(raid, difficulty)
   const strategy = raidStrategy(raid.slug)
   const bosses = journal.data?.bosses ?? []
   const gameReady = useGameData().data?.state === 'ready'
-  const summary = raidSummary(character.ratings?.raiding?.label, raid.slug)
+  const summary = season ? null : raidSummary(character.ratings?.raiding?.label, raid.slug)
   const week = useLockouts(character, raid)
   const plan = (boss: JournalBoss) => strategy?.bosses.find(entry => entry.encounterId === boss.encounterId)
 
@@ -130,7 +158,7 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
           {!bundledArt(raid) && <RaidArt raid={raid} journal={journal.data} className="dungeon-hero-thumb" />}
           <div className="dungeon-hero-text">
             <h2>{raid.name}</h2>
-            <p>{summary ? `Your progress ${summary}` : 'No kills recorded this season'}</p>
+            <p>{season ? `${season.name} raid · ${seasonDates(season)}` : summary ? `Your progress ${summary}` : 'No kills recorded this season'}</p>
           </div>
           <div className="dungeon-hero-actions">
             <Button variant="primary" onClick={() => onPlay(true)} disabled={!bosses.length}><Play size={14} />Play</Button>
@@ -150,7 +178,7 @@ function RaidDetail({ character, raid, playing, onPlay, onBack }: { character: C
 
       <div className="dungeon-stats">
         <Card className="dungeon-stat"><small>Bosses</small><b>{raid.encounters.length}</b></Card>
-        <Card className="dungeon-stat"><small><Trophy size={12} aria-hidden="true" /> Season best</small><b>{summary ?? '—'}</b></Card>
+        {!season && <Card className="dungeon-stat"><small><Trophy size={12} aria-hidden="true" /> Season best</small><b>{summary ?? '—'}</b></Card>}
         {week.length ? week.slice(0, 2).map(lockout => <Card key={`${lockout.name}-${lockout.difficulty}`} className="dungeon-stat"><small><CalendarCheck size={12} aria-hidden="true" /> This week{lockout.difficulty ? ` · ${lockout.difficulty}` : ''}</small><b>{lockout.killed}/{lockout.total}</b></Card>)
           : <Card className="dungeon-stat"><small><CalendarCheck size={12} aria-hidden="true" /> This week</small><b>No lockout</b></Card>}
       </div>

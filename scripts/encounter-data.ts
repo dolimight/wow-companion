@@ -36,6 +36,41 @@ export function bundleIcons(bundle: EncounterBundle): number[] {
   return [...icons].sort((a, b) => a - b)
 }
 
+/** A raid's journal at every difficulty the journal tags for it, each with the bosses' loot; lairs have no Raid Finder or Mythic */
+export async function raidJournals(name: string, source: Pick<EncounterSource, 'journal' | 'loot'>): Promise<EncounterBundle['raids'][string] | null> {
+  const probe = await source.journal(name, [], 'heroic')
+  if (!probe) return null
+  const tagged = new Set(probe.difficultyIds ?? [])
+  const offered = raidDifficulties.filter(difficulty => journalDifficultyIds[difficulty].some(id => tagged.has(id)))
+  const loot = await source.loot(probe.bosses.map(boss => boss.encounterId))
+  const entry: EncounterBundle['raids'][string] = {}
+  for (const difficulty of offered.length ? offered : (['normal', 'heroic', 'mythic'] as const)) {
+    const journal = difficulty === 'heroic' ? probe : await source.journal(name, [], difficulty)
+    if (journal) entry[difficulty] = withLoot(journal, loot)
+  }
+  return entry
+}
+
+/**
+ * Copies every wanted icon not yet in public/assets/icons from the game files, then lists the folder in icons.json: the
+ * pages load a bundled icon only when it is listed there, so a missing file never replaces the game's own
+ */
+export async function saveIcons(icon: (id: number) => Promise<string>, wanted: number[]): Promise<number> {
+  const icons = resolve(root, 'public/assets/icons')
+  await mkdir(icons, { recursive: true })
+  let saved = 0
+  for (const id of wanted) {
+    const target = resolve(icons, `${id}.png`)
+    try { await access(target); continue } catch { /* not bundled yet */ }
+    try { await copyFile(await icon(id), target); saved++ } catch (error) { console.log(`icon ${id} unavailable (${(error as Error).message})`) }
+  }
+  const listed = (await readdir(icons)).map(name => Number(name.match(/^(\d+)\.png$/)?.[1])).filter(id => id > 0).sort((a, b) => a - b)
+  const folder = resolve(root, 'data/dungeons/encounters')
+  await mkdir(folder, { recursive: true })
+  await writeFile(resolve(folder, 'icons.json'), `${JSON.stringify(listed)}\n`)
+  return saved
+}
+
 export async function buildEncounters(season: DungeonBundle, source: EncounterSource, now = new Date()): Promise<EncounterBundle> {
   const log = source.log ?? (() => {})
   const dungeons: EncounterBundle['dungeons'] = {}
@@ -48,19 +83,11 @@ export async function buildEncounters(season: DungeonBundle, source: EncounterSo
   }
   const raids: EncounterBundle['raids'] = {}
   for (const raid of season.raids ?? []) {
-    // The journal tags the difficulties a raid has; lairs have no Raid Finder or Mythic
-    const probe = await source.journal(raid.name, [], 'heroic')
-    if (!probe) { log(`${raid.name}: not in the Encounter Journal`); continue }
-    const tagged = new Set(probe.difficultyIds ?? [])
-    const offered = raidDifficulties.filter(difficulty => journalDifficultyIds[difficulty].some(id => tagged.has(id)))
-    const loot = await source.loot(probe.bosses.map(boss => boss.encounterId))
-    const entry: EncounterBundle['raids'][string] = {}
-    for (const difficulty of offered.length ? offered : (['normal', 'heroic', 'mythic'] as const)) {
-      const journal = difficulty === 'heroic' ? probe : await source.journal(raid.name, [], difficulty)
-      if (journal) entry[difficulty] = withLoot(journal, loot)
-    }
+    const entry = await raidJournals(raid.name, source)
+    if (!entry) { log(`${raid.name}: not in the Encounter Journal`); continue }
     raids[raid.slug] = entry
-    log(`${raid.name}: ${probe.bosses.length} bosses on ${Object.keys(entry).join(', ')}, ${Object.values(loot).flat().length} items`)
+    const first = Object.values(entry)[0]
+    log(`${raid.name}: ${first?.bosses.length ?? 0} bosses on ${Object.keys(entry).join(', ')}, ${first?.bosses.flatMap(boss => boss.loot ?? []).length ?? 0} items`)
   }
   const spellIds = [...new Set(season.dungeons.flatMap(dungeon => dungeon.enemies?.enemies.flatMap(enemy => enemy.spells?.map(spell => spell.id) ?? []) ?? []))]
   const spells = await source.spells(spellIds)
@@ -98,20 +125,10 @@ async function main() {
       spells: ids => engine.dungeonSpells(ids),
       log: line => console.log(line),
     })
-    const icons = resolve(root, 'public/assets/icons')
-    await mkdir(icons, { recursive: true })
     const wanted = bundleIcons(bundle)
-    let saved = 0
-    for (const id of wanted) {
-      const target = resolve(icons, `${id}.png`)
-      try { await access(target); continue } catch { /* not bundled yet */ }
-      try { await copyFile(await engine.icon(id), target); saved++ } catch (error) { console.log(`icon ${id} unavailable (${(error as Error).message})`) }
-    }
-    // The pages load a bundled icon only when it is listed here, so a missing file never replaces the game's own
-    const listed = (await readdir(icons)).map(name => Number(name.match(/^(\d+)\.png$/)?.[1])).filter(id => id > 0).sort((a, b) => a - b)
+    const saved = await saveIcons(id => engine.icon(id), wanted)
     const file = resolve(root, 'data/dungeons/encounters', `${bundle.season}.json`)
     await mkdir(dirname(file), { recursive: true })
-    await writeFile(resolve(dirname(file), 'icons.json'), `${JSON.stringify(listed)}\n`)
     await writeFile(file, `${JSON.stringify(bundle)}\n`)
     console.log(`Saved encounters for ${bundle.season} from ${bundle.gameBuild} to ${file}, ${saved} new of ${wanted.length} icons`)
   } finally { await engine.close() }
