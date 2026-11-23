@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { ExternalLink, RefreshCw, Search, Sparkles, X } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { Box, ExternalLink, RefreshCw, Search, Sparkles, X } from "lucide-react";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AppSelect } from "../../components/AppSelect";
@@ -15,7 +16,9 @@ import { errorMessage, notify } from "../../lib/notify";
 import { armorSlots, armorTypes, gearSlotsForInventoryType, qualityNames, trackRankLabel, type ArmorType, type ItemSearch, type ItemSummary, type ItemSearchCharacter } from "../../../shared/gamedata";
 import { getItemCompatibility } from "../../../shared/item-compatibility";
 import type { AppearanceSlot, Character, GearItem, StatWeights } from "../../../shared/domain";
+import { wearableTypes } from "../../../shared/model";
 import "./items.css";
+
 
 export { ItemIcon } from "./ItemIcon";
 
@@ -216,6 +219,7 @@ export function ItemSheet({ id, onOpenChange, onPick }: { id: number | null; onO
 export function ItemDetail({ id, onPick, addLabel, compact = false, character = null, slot = null, equipped }: { id: number; onPick?: (item: ItemSummary) => void; addLabel?: string; compact?: boolean; character?: ItemSearchCharacter | null; slot?: AppearanceSlot | null; equipped?: GearItem[] }) {
   const item = useQuery({ queryKey: ["item", id], queryFn: () => api.getItem(id) });
   const [shownLevel, setShownLevel] = useState<number | null>(null);
+  const navigate = useNavigate();
   useEffect(() => setShownLevel(null), [id]);
   const open = (url: string) => void api.openExternal(url).catch((error) => notify(errorMessage(error)));
   const slots = item.data ? new Set<string>(gearSlotsForInventoryType(item.data.inventoryType)) : new Set<string>();
@@ -262,6 +266,7 @@ export function ItemDetail({ id, onPick, addLabel, compact = false, character = 
           {character && compatibility?.reason && <p className="secondary small" role={compatibility.compatible ? undefined : "alert"}>{compatibility.reason}</p>}
           <div className="actions">
             {onPick && <Button variant="primary" disabled={!compatibility?.compatible} onClick={() => onPick(data)}>{addLabel ?? "Add to plan"}</Button>}
+            {wearableTypes.has(data.inventoryType) && <Button onClick={() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); void navigate({ to: "/models", search: { tab: "items", item: data.id } }); }}><Box />View in 3D</Button>}
             <Button onClick={() => open(wowheadItemUrl(data.id, { itemLevel: shownLevel }))}><ExternalLink />Open on Wowhead</Button>
           </div>
         </div>

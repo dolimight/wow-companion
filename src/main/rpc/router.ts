@@ -158,6 +158,13 @@ export function createRouter(s:RouterServices){return t.router({
   routePulls:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/),routeKey:z.string().regex(/^[A-Za-z0-9]{1,20}$/)})).query(({input})=>run(()=>s.insights.routePulls(input.dungeon,input.routeKey))),
   dungeonEnemies:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/)})).query(({input})=>run(()=>s.insights.dungeonEnemies(input.dungeon))),
   dungeonJournal:p.input(z.object({name:z.string().min(1).max(120),encounterIds:z.array(z.number().int().positive()).max(20).default([]),difficulty:z.enum(['mythicPlus','lfr','normal','heroic','mythic']).default('mythicPlus')})).query(({input})=>run(()=>s.gameData.call('dungeonJournal',input.name,input.encounterIds,input.difficulty))),
+  // An item's 3D model from the game files, for the item viewer
+  itemModel:p.input(z.object({itemId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('itemModel',input.itemId))),
+  // The same item worn by a stand-in character, and creature models with the mount and pet lists that lead to them
+  wornModel:p.input(z.object({itemId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('wornModel',input.itemId))),
+  creatureModel:p.input(z.object({displayId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('creatureModel',input.displayId))),
+  mounts:p.input(z.object({text:z.string().max(100).default('')})).query(({input})=>run(()=>s.gameData.call('mounts',input.text))),
+  pets:p.input(z.object({text:z.string().max(100).default('')})).query(({input})=>run(()=>s.gameData.call('pets',input.text))),
   dungeonSpells:p.input(z.object({ids:z.array(z.number().int().positive()).max(600)})).query(({input})=>run(()=>s.gameData.call('dungeonSpells',input.ids))),
   weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
   characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),

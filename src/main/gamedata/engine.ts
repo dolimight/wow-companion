@@ -6,6 +6,8 @@ import { LocalCasc } from './casc'
 import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
+import { readM2, readM2File, readSkin } from './m2'
+import { wornAttachments, wornGeosets, type CreatureModel, type ItemModel, type ModelPart, type WornModel } from '../../shared/model'
 import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type CatalystSource, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
@@ -924,6 +926,227 @@ export class GameDataEngine {
       const art = num(screen?.MainImageFileDataID) || num(screen?.WideScreen169FileDataID) || null
       return [{ instanceId, name: String(instance.Name_lang ?? ''), art, matched }]
     })
+  }
+
+  private models = new Map<string, Promise<unknown>>()
+
+  /** Keeps a handful of recent models; each is read again quickly when reopened */
+  private remember<T>(key: string, read: () => Promise<T>): Promise<T> {
+    let pending = this.models.get(key) as Promise<T> | undefined
+    if (!pending) {
+      pending = read()
+      this.models.set(key, pending)
+      pending.catch(() => this.models.delete(key))
+      if (this.models.size > 16) this.models.delete(this.models.keys().next().value!)
+    }
+    return pending
+  }
+
+  /** One model file read with its first skin; `geosets` keeps only those body pieces */
+  private async modelPart(file: number, textureFor: (type: number, txid: number) => number | null, options: { geosets?: (available: Set<number>) => Set<number>; animations?: number[] } = {}): Promise<ModelPart | null> {
+    const casc = await this.openCasc()
+    const m2 = readM2File(await casc.file(file))
+    const skinId = m2.skins[0]
+    if (!skinId) return null
+    const skin = await casc.file(skinId)
+    const geosets = options.geosets?.(new Set(readSkin(skin).sections.map(section => section.id)))
+    return readM2(m2, file, { skin, textureFor, file: id => casc.file(id), geosets, animations: options.animations })
+  }
+
+  /** An item's base appearance: its display row with the tables that resolve its models and textures */
+  private async itemDisplay(itemId: number) {
+    const [modified, appearances, displays, models, textures, components, componentTextures] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const list = (value: unknown) => (Array.isArray(value) ? value : [value]).map(entry => Number(entry) || 0)
+    const base = [...modified.values()].filter(row => num(row.ItemID) === itemId).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0]
+    const display = displays.get(num(appearances.get(num(base?.ItemAppearanceID))?.ItemDisplayInfoID))
+    if (!display) return null
+    // Models and textures come in versions per race and body type; the human male one (race 1, body 0) is used
+    const modelFile = (resource: number, slot: number) => {
+      const files = [...models.values()].filter(row => num(row.ModelResourcesID) === resource)
+      const entry = (row: Row) => components.get(num(row.FileDataID))
+      const fits = (row: Row) => { const found = entry(row); return !found || num(found.PositionIndex) < 0 || num(found.PositionIndex) === slot }
+      const human = (row: Row) => { const found = entry(row); return !!found && num(found.RaceID) === 1 && num(found.GenderIndex) === 0 }
+      return num((files.find(row => fits(row) && human(row)) ?? files.find(fits) ?? files[0])?.FileDataID) || null
+    }
+    const textureFile = (material: number) => {
+      if (!material) return null
+      const files = [...textures.values()].filter(row => num(row.MaterialResourcesID) === material)
+      const score = (row: Row) => { const found = componentTextures.get(num(row.FileDataID)); if (!found) return 1; const gender = num(found.GenderIndex), race = num(found.RaceID); return (gender === 0 || gender === 3 ? 2 : 0) + (race === 1 ? 2 : race === 0 ? 1 : 0) }
+      return num(files.sort((a, b) => score(b) - score(a))[0]?.FileDataID) || null
+    }
+    return { display, resources: list(display.ModelResourcesID), materials: list(display.ModelMaterialResourcesID), geosetGroup: list(display.GeosetGroup), modelFile, textureFile }
+  }
+
+  /**
+   * An item's 3D models from the game files, for the item viewer: each model of its base appearance with the item's
+   * textures, bones, and animations. Armor drawn only as a texture on the body, and rings, trinkets, and necks, have no
+   * model of their own
+   */
+  itemModel(itemId: number): Promise<ItemModel | null> {
+    if (!Number.isInteger(itemId) || itemId <= 0) return Promise.reject(new Error('Invalid item'))
+    return this.remember(`item:${itemId}`, async () => {
+      const found = await this.itemDisplay(itemId)
+      if (!found) return null
+      const parts: ModelPart[] = []
+      // Shoulders have a model per side; other items show their main model, since a helmet's second one is a variant
+      const shown = this.item(itemId)?.inventoryType === 3 ? found.resources : found.resources.slice(0, 1)
+      for (const [slot, resource] of shown.entries()) {
+        const file = resource ? found.modelFile(resource, slot) : null
+        if (!file) continue
+        const itemTexture = found.textureFile(found.materials[slot] || found.materials[0] || 0)
+        // Texture type 0 is a file named by the model and type 2 the item's own texture. Others, such as weapon blade
+        // and handle glows, are filled by enchants at run time, so they stay empty
+        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type === 2 ? itemTexture : null); if (part) parts.push(part) } catch { /* a model this build can't read is left out */ }
+      }
+      return parts.length ? { itemId, parts } : null
+    })
+  }
+
+  /**
+   * A stand-in human male wearing one item: the body pieces the item switches on, its textures for each body section,
+   * and its models on the hands, shoulders, head, or back. The body has no skin or hair textures of its own
+   */
+  wornModel(itemId: number): Promise<WornModel | null> {
+    if (!Number.isInteger(itemId) || itemId <= 0) return Promise.reject(new Error('Invalid item'))
+    return this.remember(`worn:${itemId}`, async () => {
+      const found = await this.itemDisplay(itemId)
+      const detail = this.item(itemId)
+      if (!found || !detail) return null
+      const [chrModels, displays, creatureModels, layouts, sections, materials] = await Promise.all(['ChrModel', 'CreatureDisplayInfo', 'CreatureModelData', 'CharComponentTextureLayouts', 'CharComponentTextureSections', 'ItemDisplayInfoMaterialRes'].map(table => this.traitTable(table)))
+      const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+      const chr = chrModels.get(1)
+      const bodyFile = num(creatureModels.get(num(displays.get(num(chr?.DisplayID))?.ModelID))?.FileDataID)
+      const layoutId = num(chr?.CharComponentTextureLayoutID)
+      const layout = layouts.get(layoutId)
+      if (!bodyFile || !layout) return null
+      const inventoryType = detail.inventoryType
+      const cape = inventoryType === 16 ? found.textureFile(found.materials[0] ?? 0) : null
+      const looks = await this.defaultLook(1, layoutId, found.textureFile)
+      // A helmet covers the hair
+      const hairGeoset = inventoryType === 1 ? null : looks.hairGeoset
+      const body = await this.modelPart(bodyFile, (type, txid) => type === 0 ? txid || null : type === 2 ? cape : type === 6 ? looks.hair : null, {
+        geosets: available => new Set([...wornGeosets(inventoryType, found.geosetGroup, available), ...(hairGeoset != null && available.has(hairGeoset) ? [hairGeoset] : [])]),
+        animations: [0, 4, 5, 26, 27, 28, 60, 69, 51, 113],
+      })
+      if (!body) return null
+      const textures = [...materials.values()].filter(row => num(row.ItemDisplayInfoID) === num(found.display.ID))
+        .flatMap(row => { const file = found.textureFile(num(row.MaterialResourcesID)); return file ? [{ section: num(row.ComponentSection), fileDataId: file }] : [] })
+      const attached: WornModel['attached'] = []
+      const points = wornAttachments(inventoryType)
+      for (const [slot, resource] of found.resources.entries()) {
+        const file = resource ? found.modelFile(resource, slot) : null
+        const attachment = points[slot]
+        if (!file || attachment == null) continue
+        const itemTexture = found.textureFile(found.materials[slot] || found.materials[0] || 0)
+        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type === 2 ? itemTexture : null); if (part) attached.push({ part, attachment }) } catch { /* left off the body */ }
+      }
+      return {
+        itemId, body, textures, cape, attached, skin: looks.skin, hair: looks.hair,
+        layout: { width: num(layout.Width), height: num(layout.Height), sections: [...sections.values()].filter(row => num(row.CharComponentTextureLayoutID) === layoutId).map(row => ({ section: num(row.SectionType), x: num(row.X), y: num(row.Y), width: num(row.Width), height: num(row.Height) })) },
+      }
+    })
+  }
+
+  /**
+   * A character model's first look in the character creator: its skin and face textures with the body sections each
+   * covers, and its first hairstyle with hair, with that hair's texture. Choices are found by their names in the game's data, so a
+   * look the build doesn't name this way is left plain
+   */
+  private async defaultLook(chrModelId: number, layoutId: number, textureFile: (material: number) => number | null) {
+    const [options, choices, elements, materials, layers, geosets] = await Promise.all(['ChrCustomizationOption', 'ChrCustomizationChoice', 'ChrCustomizationElement', 'ChrCustomizationMaterial', 'ChrModelTextureLayer', 'ChrCustomizationGeoset'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const choicesOf = (name: string) => {
+      const option = [...options.values()].find(row => num(row.ChrModelID) === chrModelId && String(row.Name_lang ?? '').toLocaleLowerCase() === name)
+      return option ? [...choices.values()].filter(row => num(row.ChrCustomizationOptionID) === num(option.ID)).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex)) : []
+    }
+    const first = (name: string) => choicesOf(name)[0] ?? null
+    const skinChoice = first('skin color')
+    // Some faces and hair colours come in a version per skin colour
+    const elementsOf = (choice: Row | null) => choice ? [...elements.values()].filter(row => num(row.ChrCustomizationChoiceID) === num(choice.ID) && (!num(row.RelatedChrCustomizationChoiceID) || num(row.RelatedChrCustomizationChoiceID) === num(skinChoice?.ID))) : []
+    const layerOf = (material: Row) => [...layers.values()].find(row => num(row.CharComponentTextureLayoutsID) === layoutId && (Array.isArray(row.ChrModelTextureTargetID) ? row.ChrModelTextureTargetID : [row.ChrModelTextureTargetID]).map(Number).includes(num(material.ChrModelTextureTargetID)))
+    const skin: Array<{ section: number | null; fileDataId: number; layer: number }> = []
+    let hair: number | null = null
+    for (const element of [...elementsOf(skinChoice), ...elementsOf(first('face')), ...elementsOf(first('hair color'))]) {
+      const material = materials.get(num(element.ChrCustomizationMaterialID))
+      const layer = material ? layerOf(material) : undefined
+      const file = material ? textureFile(num(material.MaterialResourcesID)) : null
+      if (!layer || !file) continue
+      if (num(layer.TextureType) === 6) { hair ??= file; continue }
+      if (num(layer.TextureType) !== 1) continue
+      const mask = num(layer.TextureSectionTypeBitMask)
+      const sections = mask === -1 ? [null] : Array.from({ length: 31 }, (_, bit) => bit).filter(bit => mask & (1 << bit))
+      for (const section of sections) skin.push({ section, fileDataId: file, layer: num(layer.Layer) })
+    }
+    // The first hairstyle is often bald, so the first one with hair is used
+    const hairStyle = choicesOf('hair style').map(choice => elementsOf(choice).map(row => geosets.get(num(row.ChrCustomizationGeosetID))).find(row => row && num(row.GeosetID) > 0)).find(Boolean)
+    return {
+      skin: skin.sort((a, b) => a.layer - b.layer).map(({ section, fileDataId }) => ({ section, fileDataId })),
+      hair,
+      hairGeoset: hairStyle ? num(hairStyle.GeosetType) * 100 + num(hairStyle.GeosetID) : null,
+    }
+  }
+
+  /**
+   * A creature's model from its display, such as a mount or a battle pet, with the display's skins. Pieces in the same
+   * group are alternatives, so only the first of each group shows unless the display picks one
+   */
+  creatureModel(displayId: number): Promise<CreatureModel | null> {
+    if (!Number.isInteger(displayId) || displayId <= 0) return Promise.reject(new Error('Invalid creature'))
+    return this.remember(`creature:${displayId}`, async () => {
+      const [displays, creatureModels, geosetData] = await Promise.all(['CreatureDisplayInfo', 'CreatureModelData', 'CreatureDisplayInfoGeosetData'].map(table => this.traitTable(table)))
+      const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+      const display = displays.get(displayId)
+      const file = num(creatureModels.get(num(display?.ModelID))?.FileDataID)
+      if (!display || !file) return null
+      const skins = (Array.isArray(display.TextureVariationFileDataID) ? display.TextureVariationFileDataID : [display.TextureVariationFileDataID]).map(entry => Number(entry) || 0)
+      const picked = new Map<number, number>()
+      for (const row of geosetData.values()) if (num(row.CreatureDisplayInfoID) === displayId) picked.set(num(row.GeosetIndex) + 1, num(row.GeosetValue))
+      const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type >= 11 && type <= 13 ? skins[type - 11] || null : null, {
+        geosets: available => {
+          const keep = new Set<number>()
+          const groups = new Map<number, number[]>()
+          for (const id of available) groups.set(Math.floor(id / 100), [...(groups.get(Math.floor(id / 100)) ?? []), id])
+          for (const [group, ids] of groups) {
+            const value = picked.get(group)
+            if (group === 0) { ids.forEach(id => keep.add(id)); continue }
+            keep.add(value != null && ids.includes(group * 100 + value) ? group * 100 + value : Math.min(...ids))
+          }
+          return keep
+        },
+      })
+      return part ? { displayId, parts: [part] } : null
+    })
+  }
+
+  /** Test and placeholder entries the game keeps, such as "[PH] Horse with Hat" or "[DNT] Storm Pet Fodder" */
+  private static placeholder = /^\s*[[(]\s*(ph|dnd|dnt|nyi|test|tbd)\b/i
+
+  /** Mounts whose name matches, with each one's creature display and the icon of the spell that summons it */
+  async mounts(text: string, limit = 60): Promise<Array<{ id: number; name: string; icon: number | null; displayId: number }>> {
+    const [mounts, displays, spells] = await Promise.all(['Mount', 'MountXDisplay', 'SpellMisc'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const wanted = text.trim().toLocaleLowerCase()
+    const shown = new Map<number, number>()
+    for (const row of displays.values()) if (!shown.has(num(row.MountID))) shown.set(num(row.MountID), num(row.CreatureDisplayInfoID))
+    const icons = new Map<number, number>()
+    for (const row of spells.values()) if (num(row.SpellIconFileDataID) && !icons.has(num(row.SpellID))) icons.set(num(row.SpellID), num(row.SpellIconFileDataID))
+    return [...mounts.values()].filter(row => String(row.Name_lang ?? '').toLocaleLowerCase().includes(wanted) && !GameDataEngine.placeholder.test(String(row.Name_lang ?? '')) && shown.get(num(row.ID)))
+      .sort((a, b) => String(a.Name_lang).localeCompare(String(b.Name_lang))).slice(0, limit)
+      .map(row => ({ id: num(row.ID), name: String(row.Name_lang), icon: icons.get(num(row.SourceSpellID)) ?? null, displayId: shown.get(num(row.ID))! }))
+  }
+
+  /** Battle pets whose name matches, with each one's creature display and icon */
+  async pets(text: string, limit = 60): Promise<Array<{ id: number; name: string; icon: number | null; displayId: number }>> {
+    const [species, creatures] = await Promise.all(['BattlePetSpecies', 'Creature'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const wanted = text.trim().toLocaleLowerCase()
+    return [...species.values()].flatMap(row => {
+      const creature = creatures.get(num(row.CreatureID))
+      const name = String(creature?.Name_lang ?? '')
+      const displayId = num(creature?.DisplayID)
+      return name && displayId && name.toLocaleLowerCase().includes(wanted) && !GameDataEngine.placeholder.test(name) ? [{ id: num(row.ID), name, icon: num(row.IconFileDataID) || null, displayId }] : []
+    }).sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit)
   }
 
   /** Each boss's loot from the journal, as the summaries a compatibility check reads; needs the item index */

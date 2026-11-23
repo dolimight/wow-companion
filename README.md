@@ -117,6 +117,8 @@ Seasonal ceilings require a validated ruleset for the character's game build; un
 
 Wardrobe saves appearance intent and can inspect an attached self-contained GLB model. It doesn't assemble a live Retail character model with dynamic armor swaps
 
+The Model viewer reads items, mounts, and battle pets from the installed game files and shows them in 3D with their animations. Helmets, shoulders, weapons, shields, and off-hands show their own models, and any wearable item can be shown on a stand-in human with the game's default skin, face, and hair. Particle effects and enchant glows aren't drawn, and the stand-in wears one item at a time
+
 Public profiles can be private or unavailable, and comparison results retain their source and sample scope. Live authenticated provider behavior and the addon still need real-account and in-game verification beyond the deterministic desktop tests
 
 The [implementation status](docs/roadmap-implementation-2026-10-29.md) documents the shipped workflows and remaining release gates

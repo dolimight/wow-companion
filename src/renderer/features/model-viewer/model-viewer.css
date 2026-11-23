@@ -1,0 +1,34 @@
+/* The item's 3D model: a stage the size of the dialog, then the animation controls */
+.model-viewer { display: grid; gap: 12px; min-width: 0; }
+.model-viewer-stage { position: relative; height: min(56vh, 480px); overflow: hidden; border-radius: 10px; background: var(--surface2); }
+.model-viewer-stage canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.model-viewer-stage canvas:active { cursor: grabbing; }
+.model-viewer-stage p { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 24px; font-size: 13px; color: var(--secondary); text-align: center; }
+.model-viewer-stage p svg { flex: none; color: var(--muted); }
+.model-viewer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.model-viewer-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+
+@media (max-width: 640px) { .model-viewer-chips { margin-left: 0; } }
+
+/* The Item viewer page: a picker beside a large stage */
+.model-page { display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.model-page-picker { display: grid; gap: 10px; padding: 14px; position: sticky; top: 0; max-height: calc(100vh - 140px); overflow: auto; }
+.model-page-picker h2 { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: none; }
+.model-page-search { position: relative; display: block; }
+.model-page-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.model-page-search input { padding-left: 32px; }
+.model-page-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.model-page-list > li.muted { padding: 8px 4px; }
+.model-page-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.model-page-item:hover { background: var(--surface2); }
+.model-page-item[aria-current] { background: var(--accent-soft, var(--surface2)); }
+.model-page-item > span { display: grid; gap: 1px; min-width: 0; }
+.model-page-item b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-page-item small { font-size: 11.5px; color: var(--muted); }
+.model-page-stage { display: grid; gap: 12px; padding: 16px; min-width: 0; }
+.model-page-stage .model-viewer-stage { height: min(68vh, 680px); }
+.model-page-title { display: flex; align-items: center; gap: 12px; }
+.model-page-title > div { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.model-page-title h2 { margin: 0; font-size: 17px; }
+.model-page-title p { margin: 0; font-size: 12px; color: var(--muted); }
+@media (max-width: 860px) { .model-page { grid-template-columns: 1fr; } .model-page-picker { position: static; max-height: 320px; } }
