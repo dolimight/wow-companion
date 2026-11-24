@@ -2,7 +2,7 @@ import { Worker } from 'node:worker_threads'
 import type { GameDataEngine } from './engine'
 import type { GameDataStatus } from '../../shared/gamedata'
 
-type Method = 'getStatus' | 'dungeonJournal' | 'dungeonSpells' | 'configure' | 'ensureIndex' | 'search' | 'searchPage' | 'item' | 'itemPower' | 'lootShare' | 'trackInfoFor' | 'effectsFor' | 'instances' | 'items' | 'enhancements' | 'embellishments' | 'talentTree' | 'specializations' | 'enchantSlots' | 'appearanceOptions' | 'enchantNames' | 'enhancementIds' | 'runeforges' | 'bonusInfo' | 'catalystSources' | 'icon' | 'itemModel' | 'wornModel' | 'creatureModel' | 'mounts' | 'pets' | 'looksStatus' | 'close'
+type Method = 'getStatus' | 'dungeonJournal' | 'dungeonSpells' | 'configure' | 'ensureIndex' | 'search' | 'searchPage' | 'item' | 'itemPower' | 'lootShare' | 'trackInfoFor' | 'effectsFor' | 'instances' | 'items' | 'enhancements' | 'embellishments' | 'talentTree' | 'specializations' | 'enchantSlots' | 'appearanceOptions' | 'enchantNames' | 'enhancementIds' | 'runeforges' | 'bonusInfo' | 'catalystSources' | 'icon' | 'itemModel' | 'wornModel' | 'outfitModel' | 'creatureModel' | 'mounts' | 'pets' | 'looksStatus' | 'close'
 type Args<K extends Method> = Parameters<GameDataEngine[K]>
 type Result<K extends Method> = K extends 'configure' ? GameDataStatus : Awaited<ReturnType<GameDataEngine[K]>>
 

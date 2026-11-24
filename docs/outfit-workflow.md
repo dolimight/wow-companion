@@ -28,11 +28,11 @@ Only the appearance intent crosses the bridge; the selected desktop character an
 
 ## Desktop rendering capability
 
-The current workspace has no live character-assembly renderer or model attachment boundary
-Wardrobe retains the official observed character render where available and clearly labels that it does not change with the plan
-The shared `evaluateModelCapability` gate requires two real-character references, customization, dynamic armor swaps, weapon attachments, body variants, animation, local assets, and missing-asset recovery
-An animated flattened GLB cannot pass that gate
-See [model inspection](model-inspection.md) for the shipped renderer boundary; historical extraction experiments are not part of the application
+Wardrobe updates its stand-in human as you add, remove, or hide planned appearances. Local game data provides armor textures, body pieces, weapon attachments, and the animation clips available for each weapon type
+
+The stand-in uses a fixed body and customization. The in-game preview can check the outfit on your character, including weapon illusions and gear that uses additional skinned meshes
+
+See [model inspection](model-inspection.md) for attached GLB files and standalone weapon previews
 
 ## Verification
 

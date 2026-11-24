@@ -8,7 +8,7 @@ import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
 import { readM2, readM2File, readSkin } from './m2'
 import { colorName, paletteOf, tagString, themeTags, type LookColor } from '../../shared/looks'
-import { wornAttachments, wornGeosets, type CreatureModel, type ItemModel, type ModelPart, type WornModel } from '../../shared/model'
+import { outfitGeosets, wearableTypes, weaponAnimations, wornAttachments, type CreatureModel, type DressedModel, type ItemModel, type ModelPart, type OutfitModel, type OutfitModelPiece, type WornModel } from '../../shared/model'
 import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type CatalystSource, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
@@ -67,6 +67,7 @@ const bondingNames: Record<number, string> = { 1: 'Binds when picked up', 2: 'Bi
 /** Item enhancement subclasses by paper-doll slot, used to list enchants */
 const enchantSubclasses: Partial<Record<AppearanceSlot, number[]>> = { head: [0], neck: [1], shoulder: [2], back: [3], chest: [4], wrist: [5], hands: [6], waist: [7], legs: [8], feet: [9], finger1: [10], finger2: [10], mainHand: [11, 12], offHand: [11, 13] }
 const JUNK = `i.name != '' AND i.name NOT LIKE 'Monster -%' AND i.name NOT LIKE '%[PH]%' AND i.name NOT LIKE 'OLD%' AND i.name NOT LIKE 'Test %' AND i.name NOT LIKE '%Deprecated%' AND i.name NOT LIKE 'zz%' AND i.name NOT LIKE '%(old)%'`
+const outfitLayerOrder: AppearanceSlot[] = ['shirt', 'legs', 'chest', 'feet', 'wrist', 'hands', 'tabard', 'waist', 'back', 'head', 'shoulder', 'shoulderLeft', 'shoulderRight', 'mainHand', 'offHand']
 const EQUIPPABLE = Object.keys(inventoryTypeNames).join(',')
 /** Look filters for mounts and pets */
 type LookFilter = { effect?: 'any' | 'with' | 'without'; tags?: string[] }
@@ -976,11 +977,13 @@ export class GameDataEngine {
   }
 
   /** An item's base appearance: its display row with the tables that resolve its models and textures */
-  private async itemDisplay(itemId: number) {
+  private async itemDisplay(itemId: number | null, modifiedAppearanceId: number | null = null, appearanceId: number | null = null) {
     const [modified, appearances, displays, models, textures, components, componentTextures, modelMaterials] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData', 'ItemDisplayInfoModelMatRes'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const list = (value: unknown) => (Array.isArray(value) ? value : [value]).map(entry => Number(entry) || 0)
-    const base = [...modified.values()].filter(row => num(row.ItemID) === itemId).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0]
+    const base = modifiedAppearanceId !== null
+      ? modified.get(modifiedAppearanceId)
+      : itemId !== null ? [...modified.values()].filter(row => num(row.ItemID) === itemId && (appearanceId === null || num(row.ItemAppearanceID) === appearanceId)).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0] : undefined
     const display = displays.get(num(appearances.get(num(base?.ItemAppearanceID))?.ItemDisplayInfoID))
     if (!display) return null
     // Models and textures come in versions per race and body type; the human male one (race 1, body 0) is used
@@ -1006,7 +1009,7 @@ export class GameDataEngine {
       if (row) return textureFile(num(row.MaterialResourcesID))
       return type === 2 ? textureFile(materials[slot] || materials[0] || 0) : null
     }
-    return { display, resources: list(display.ModelResourcesID), materials, geosetGroup: list(display.GeosetGroup), particleColor: num(display.ParticleColorID), modelFile, textureFile, slotTexture }
+    return { itemId: num(base?.ItemID), display, resources: list(display.ModelResourcesID), materials, geosetGroup: list(display.GeosetGroup), particleColor: num(display.ParticleColorID), modelFile, textureFile, slotTexture }
   }
 
   /**
@@ -1043,38 +1046,93 @@ export class GameDataEngine {
       const found = await this.itemDisplay(itemId)
       const detail = this.item(itemId)
       if (!found || !detail) return null
-      const [chrModels, displays, creatureModels, layouts, sections, materials] = await Promise.all(['ChrModel', 'CreatureDisplayInfo', 'CreatureModelData', 'CharComponentTextureLayouts', 'CharComponentTextureSections', 'ItemDisplayInfoMaterialRes'].map(table => this.traitTable(table)))
-      const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
-      const chr = chrModels.get(1)
-      const bodyFile = num(creatureModels.get(num(displays.get(num(chr?.DisplayID))?.ModelID))?.FileDataID)
-      const layoutId = num(chr?.CharComponentTextureLayoutID)
-      const layout = layouts.get(layoutId)
-      if (!bodyFile || !layout) return null
-      const inventoryType = detail.inventoryType
-      const cape = inventoryType === 16 ? found.textureFile(found.materials[0] ?? 0) : null
-      const looks = await this.defaultLook(1, layoutId, found.textureFile)
-      // A helmet covers the hair
-      const hairGeoset = inventoryType === 1 ? null : looks.hairGeoset
-      const body = await this.modelPart(bodyFile, (type, txid) => type === 0 ? txid || null : type === 2 ? cape : type === 6 ? looks.hair : null, {
-        geosets: available => new Set([...wornGeosets(inventoryType, found.geosetGroup, available), ...(hairGeoset != null && available.has(hairGeoset) ? [hairGeoset] : [])]),
-        animations: [0, 4, 5, 26, 27, 28, 60, 69, 51, 113],
-      })
-      if (!body) return null
-      const textures = [...materials.values()].filter(row => num(row.ItemDisplayInfoID) === num(found.display.ID))
-        .flatMap(row => { const file = found.textureFile(num(row.MaterialResourcesID)); return file ? [{ section: num(row.ComponentSection), fileDataId: file }] : [] })
-      const attached: WornModel['attached'] = []
-      const points = wornAttachments(inventoryType)
-      for (const [slot, resource] of found.resources.entries()) {
-        const file = resource ? found.modelFile(resource, slot) : null
-        const attachment = points[slot]
-        if (!file || attachment == null) continue
-        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : found.slotTexture(slot, type), { particleColor: found.particleColor }); if (part) attached.push({ part, attachment }) } catch { /* left off the body */ }
-      }
-      return {
-        itemId, body, textures, cape, attached, skin: looks.skin, hair: looks.hair,
-        layout: { width: num(layout.Width), height: num(layout.Height), sections: [...sections.values()].filter(row => num(row.CharComponentTextureLayoutID) === layoutId).map(row => ({ section: num(row.SectionType), x: num(row.X), y: num(row.Y), width: num(row.Width), height: num(row.Height) })) },
-      }
+      const result = await this.dressedModel([{ found, inventoryType: detail.inventoryType, subclassId: detail.subclassId, slot: undefined }])
+      return result ? { ...result.model, itemId } : null
     })
+  }
+
+  /** Resolve exact appearance sources before painting the pieces together on the viewer's stand-in */
+  outfitModel(pieces: OutfitModelPiece[]): Promise<OutfitModel | null> {
+    const ordered = [...pieces].sort((a, b) => outfitLayerOrder.indexOf(a.slot) - outfitLayerOrder.indexOf(b.slot))
+    return this.remember(`outfit:${JSON.stringify(ordered)}`, async () => {
+      const unavailable: AppearanceSlot[] = []
+      const resolved = await Promise.all(ordered.map(async piece => {
+        const found = await this.itemDisplay(piece.itemId, piece.modifiedAppearanceId, piece.appearanceId)
+        const detail = found?.itemId ? this.item(found.itemId) : null
+        if (!found || !detail || !wearableTypes.has(detail.inventoryType) || !slotInventoryTypes[piece.slot]?.includes(detail.inventoryType)) {
+          unavailable.push(piece.slot)
+          return null
+        }
+        return { found, inventoryType: detail.inventoryType, subclassId: detail.subclassId, slot: piece.slot }
+      }))
+      const result = await this.dressedModel(resolved.filter(piece => piece != null))
+      return result ? { ...result.model, unavailable: [...unavailable, ...result.unavailable] } : null
+    })
+  }
+
+  private async dressedModel(pieces: Array<{ found: NonNullable<Awaited<ReturnType<GameDataEngine['itemDisplay']>>>; inventoryType: number; subclassId: number; slot: AppearanceSlot | undefined }>): Promise<{ model: DressedModel; unavailable: AppearanceSlot[] } | null> {
+    const [chrModels, displays, creatureModels, layouts, sections, materials, textureRows, componentTextures] = await Promise.all(['ChrModel', 'CreatureDisplayInfo', 'CreatureModelData', 'CharComponentTextureLayouts', 'CharComponentTextureSections', 'ItemDisplayInfoMaterialRes', 'TextureFileData', 'ComponentTextureFileData'].map(table => this.traitTable(table)))
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const chr = chrModels.get(1)
+    const bodyFile = num(creatureModels.get(num(displays.get(num(chr?.DisplayID))?.ModelID))?.FileDataID)
+    const layoutId = num(chr?.CharComponentTextureLayoutID)
+    const layout = layouts.get(layoutId)
+    if (!bodyFile || !layout) return null
+    const capePiece = pieces.find(piece => piece.inventoryType === 16)?.found
+    const cape = capePiece?.textureFile(capePiece.materials[0] ?? 0) ?? null
+    const skinTexture = (material: number) => {
+      const candidates = [...textureRows.values()].filter(row => num(row.MaterialResourcesID) === material)
+      const human = candidates.find(row => {
+        const component = componentTextures.get(num(row.FileDataID))
+        return component && num(component.RaceID) === 1 && num(component.GenderIndex) === 0
+      })
+      return num((human ?? candidates[0])?.FileDataID) || null
+    }
+    const looks = await this.defaultLook(1, layoutId, skinTexture)
+    // A helmet covers the hair
+    const hairGeoset = pieces.some(piece => piece.inventoryType === 1) ? null : looks.hairGeoset
+    const weapons = pieces.flatMap(({ inventoryType, subclassId, slot }) => weaponAnimations(inventoryType, subclassId, slot))
+    const animations = [...new Set([0, 4, 5, ...(weapons.length ? weapons : [25, 60, 69, 53, 113])])]
+    const body = await this.modelPart(bodyFile, (type, txid) => type === 0 ? txid || null : type === 2 ? cape : type === 6 ? looks.hair : null, {
+      geosets: available => new Set([...outfitGeosets(pieces.map(({ inventoryType, found }) => ({ inventoryType, geosetGroup: found.geosetGroup })), available), ...(hairGeoset != null && available.has(hairGeoset) ? [hairGeoset] : [])]),
+      animations,
+    })
+    if (!body) return null
+    const attached: DressedModel['attached'] = []
+    const textures: DressedModel['textures'] = []
+    const unavailable: AppearanceSlot[] = []
+    for (const { found, inventoryType, slot } of pieces) {
+      const points = wornAttachments(inventoryType, slot)
+      const layers = [...materials.values()].filter(row => num(row.ItemDisplayInfoID) === num(found.display.ID))
+        .flatMap(row => {
+          const file = found.textureFile(num(row.MaterialResourcesID))
+          return file ? [{ section: num(row.ComponentSection), fileDataId: file }] : []
+        })
+      textures.push(...layers)
+      let shown = layers.length > 0 || (inventoryType === 16 && cape !== null)
+      let omitted = false
+      for (const [index, resource] of found.resources.entries()) {
+        if (!resource || (slot === 'shoulderLeft' && index !== 0) || (slot === 'shoulderRight' && index !== 1)) continue
+        const file = found.modelFile(resource, index)
+        const attachment = points[index]
+        if (!file || attachment == null || !body.attachments.some(point => point.id === attachment)) {
+          // Collection meshes require retargeting. Cloaks are already painted on the body.
+          if (inventoryType !== 16) omitted = true
+          continue
+        }
+        const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : found.slotTexture(index, type), { particleColor: found.particleColor }).catch(() => null)
+        if (part) { attached.push({ part, attachment }); shown = true }
+        else omitted = true
+      }
+      if (slot && (!shown || omitted)) unavailable.push(slot)
+    }
+    return {
+      unavailable,
+      model: {
+        body, textures, cape, attached, skin: looks.skin, hair: looks.hair,
+        layout: { width: num(layout.Width), height: num(layout.Height), sections: [...sections.values()].filter(row => num(row.CharComponentTextureLayoutID) === layoutId).map(row => ({ section: num(row.SectionType), x: num(row.X), y: num(row.Y), width: num(row.Width), height: num(row.Height) })) },
+      },
+    }
   }
 
   /**

@@ -115,7 +115,7 @@ WOW Companion targets **Retail WoW on Windows**. Classic clients, macOS, and Lin
 
 Seasonal ceilings require a validated ruleset for the character's game build; unsupported values stay **Unknown**. Personal item-level targets are planning goals, and a popular item or an incomplete simulation isn't a guaranteed performance improvement
 
-Wardrobe saves appearance intent and can inspect an attached self-contained GLB model. It doesn't assemble a live Retail character model with dynamic armor swaps
+Wardrobe previews planned pieces on a stand-in human using the installed game files. Use the in-game outfit preview to check your character's body, customization, and pieces the desktop preview could only show in part
 
 The Model viewer reads items, mounts, and battle pets from the installed game files and shows them as a grid of 3D tiles that play their animations while on screen, sorted into the game's categories (weapons by type, armor by material and slot, mounts by source, pets by family). Click a tile to open a large viewer. Models draw with the game's multi-layer texture combiners and particle effects, and any wearable item can be shown on a stand-in human with the game's default skin, face, and hair. Side filters narrow by effects, colors, themes, quality, source, expansion, item level, and season; the search box understands look words such as "purple fire effect", typos included, through Fuse.js. The colors and effects come from a looks index built from the game files the first time the page opens
 

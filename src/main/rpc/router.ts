@@ -162,6 +162,13 @@ export function createRouter(s:RouterServices){return t.router({
   itemModel:p.input(z.object({itemId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('itemModel',input.itemId))),
   // The same item worn by a stand-in character, and creature models with the mount and pet lists that lead to them
   wornModel:p.input(z.object({itemId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('wornModel',input.itemId))),
+  outfitModel:p.input(z.object({pieces:z.array(z.object({
+    slot:appearanceSlotSchema,
+    itemId:z.number().int().positive().nullable(),
+    modifiedAppearanceId:z.number().int().positive().nullable(),
+    appearanceId:z.number().int().positive().nullable(),
+  })).max(appearanceSlotSchema.options.length).refine(pieces=>new Set(pieces.map(piece=>piece.slot)).size===pieces.length,'Duplicate outfit slot')}))
+    .query(({input})=>run(()=>s.gameData.call('outfitModel',input.pieces))),
   creatureModel:p.input(z.object({displayId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('creatureModel',input.displayId))),
   mounts:p.input(z.object({text:z.string().max(100).default(''),source:z.number().int().min(0).max(30).nullable().default(null),effect:z.enum(['any','with','without']).default('any'),tags:z.array(z.string().regex(/^[a-z]{2,16}$/)).max(8).default([])})).query(({input})=>run(()=>s.gameData.call('mounts',input.text,input.source,300,{effect:input.effect,tags:input.tags}))),
   pets:p.input(z.object({text:z.string().max(100).default(''),family:z.number().int().min(0).max(20).nullable().default(null),effect:z.enum(['any','with','without']).default('any'),tags:z.array(z.string().regex(/^[a-z]{2,16}$/)).max(8).default([])})).query(({input})=>run(()=>s.gameData.call('pets',input.text,input.family,300,{effect:input.effect,tags:input.tags}))),

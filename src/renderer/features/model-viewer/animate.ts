@@ -1,4 +1,4 @@
-import type { ModelTrack } from '../../../shared/model'
+import type { ModelPart, ModelTrack } from '../../../shared/model'
 
 /**
  * A track's value at a moment: `time` is milliseconds into animation `animation`, and `clock` the milliseconds since
@@ -37,4 +37,10 @@ export function animationChoices(parts: Array<{ animations: Array<{ id: number; 
   const seen = new Map<number, { id: number; name: string; duration: number }>()
   for (const part of parts) for (const animation of part.animations) if (!seen.has(animation.id)) seen.set(animation.id, animation)
   return [...seen.values()].sort((a, b) => (a.id === 0 ? -1 : b.id === 0 ? 1 : a.id - b.id))
+}
+
+/** A missing external clip can have a name and duration but no motion data */
+export function bodyAnimationChoices(body: Pick<ModelPart, 'animations' | 'bones'>) {
+  return body.animations.filter((clip, index) => clip.id === 0 || body.bones.some(bone =>
+    [bone.translation, bone.rotation, bone.scale].some(track => track && track.global < 0 && (track.keys[index]?.times.length ?? 0) > 1)))
 }

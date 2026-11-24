@@ -1,3 +1,5 @@
+import type { AppearanceSlot } from './domain'
+
 /**
  * A game model read from the installed game files for the 3D item viewer. Positions are in the game's coordinates
  * (Z up); the viewer turns the whole model upright
@@ -187,8 +189,7 @@ export type CreatureModel = { displayId: number; parts: ModelPart[] }
  * A stand-in character wearing one item: the body with its pieces switched on, the item's textures painted onto the
  * body in the layout's sections, and the item's own models on the body's attachment points
  */
-export type WornModel = {
-  itemId: number
+export type DressedModel = {
   body: ModelPart
   /** The body texture's size and where each section sits in it */
   layout: { width: number; height: number; sections: Array<{ section: number; x: number; y: number; width: number; height: number }> }
@@ -202,6 +203,10 @@ export type WornModel = {
   cape: number | null
   attached: Array<{ part: ModelPart; attachment: number }>
 }
+
+export type WornModel = DressedModel & { itemId: number }
+export type OutfitModel = DressedModel & { unavailable: AppearanceSlot[] }
+export type OutfitModelPiece = { slot: AppearanceSlot; itemId: number | null; modifiedAppearanceId: number | null; appearanceId: number | null }
 
 /** Item kinds and the body pieces they switch on. Each geoset group holds one piece; the item picks it */
 const geosetGroups: Record<number, number[]> = {
@@ -223,22 +228,29 @@ export const bareGeosets = [0, 401, 501, 702, 1301, 1801, 2001, 2201, 3202]
 
 /** The body pieces a worn item shows: one per group it sets, replacing the bare piece of that group */
 export function wornGeosets(inventoryType: number, geosetGroup: number[], available: Set<number>): number[] {
+  return outfitGeosets([{ inventoryType, geosetGroup }], available)
+}
+
+/** Later layers win when two pieces cover the same part of the body */
+export function outfitGeosets(pieces: Array<{ inventoryType: number; geosetGroup: number[] }>, available: Set<number>): number[] {
   const chosen = new Map(bareGeosets.map(id => [Math.floor(id / 100), id]))
-  for (const [slot, group] of (geosetGroups[inventoryType] ?? []).entries()) {
-    const value = geosetGroup[slot] ?? 0
-    // A value of 0 keeps the bare piece; 1 and up pick the item's piece, such as 1502 for a cape
-    if (!value) continue
-    const id = group * 100 + 1 + value
-    if (available.has(id)) chosen.set(group, id)
+  for (const { inventoryType, geosetGroup } of pieces) {
+    for (const [index, group] of (geosetGroups[inventoryType] ?? []).entries()) {
+      const value = geosetGroup[index] ?? 0
+      if (!value) continue
+      const id = group * 100 + 1 + value
+      if (available.has(id)) chosen.set(group, id)
+    }
   }
   return [...chosen.values()]
 }
 
 /** Where each kind of item hangs on the body: the attachment point for each of its models */
-export function wornAttachments(inventoryType: number): number[] {
+export function wornAttachments(inventoryType: number, slot?: AppearanceSlot): number[] {
   if (inventoryType === 1) return [11] // helmet
   if (inventoryType === 3) return [6, 5] // shoulders: left, then right
   if (inventoryType === 14) return [0] // shield
+  if (slot === 'offHand' && heldTypes.has(inventoryType)) return [2]
   if (inventoryType === 22 || inventoryType === 23 || inventoryType === 15) return [2] // off-hand and bows, held left
   if ([13, 17, 21, 25, 26].includes(inventoryType)) return [1] // weapons, held right
   return []
@@ -248,9 +260,12 @@ export function wornAttachments(inventoryType: number): number[] {
 export const animationNames: Record<number, string> = {
   0: 'Stand', 1: 'Death', 2: 'Spell', 3: 'Stop', 4: 'Walk', 5: 'Run', 6: 'Dead', 7: 'Rise', 8: 'Stand wound', 9: 'Combat wound',
   10: 'Combat critical', 11: 'Shuffle left', 12: 'Shuffle right', 13: 'Walk backwards', 14: 'Stun', 15: 'Hands closed',
-  16: 'Attack unarmed', 17: 'Attack 1H', 18: 'Attack 2H', 19: 'Attack 2H large', 26: 'Ready unarmed', 27: 'Ready 1H',
-  28: 'Ready 2H', 37: 'Jump start', 38: 'Jump', 39: 'Jump end', 40: 'Fall', 51: 'Spell cast directed', 52: 'Spell cast omni',
-  53: 'Battle roar', 60: 'Emote talk', 69: 'Emote dance', 113: 'Spell cast area', 120: 'Sheathe', 121: 'Hip sheathe',
+  16: 'Unarmed attack', 17: 'One-handed swing', 18: 'Two-handed swing', 19: 'Heavy two-handed swing',
+  24: 'Shield block', 25: 'Unarmed ready', 26: 'One-handed ready', 27: 'Two-handed ready', 28: 'Heavy two-handed ready', 29: 'Bow ready',
+  37: 'Jump start', 38: 'Jump', 39: 'Jump end', 40: 'Fall', 46: 'Bow shot', 48: 'Rifle ready', 49: 'Rifle shot',
+  51: 'Directed spell ready', 52: 'Area spell ready', 53: 'Directed spell cast', 54: 'Area spell cast',
+  59: 'Shield bash', 60: 'Talk', 69: 'Dance', 85: 'One-handed thrust', 86: 'Two-handed thrust', 87: 'Off-hand swing',
+  88: 'Off-hand thrust', 89: 'Sheathe', 90: 'Hip sheathe', 107: 'Throw', 108: 'Throw ready', 113: 'Area spell cast',
   145: 'Fly', 158: 'Hold', 192: 'Spawn', 195: 'Spell channel directed', 196: 'Spell channel omni',
 }
 
@@ -262,3 +277,16 @@ export const ownModelTypes = new Set([1, 3, 13, 14, 15, 17, 21, 22, 23, 25, 26])
 export const heldTypes = new Set([13, 14, 15, 17, 21, 22, 23, 25, 26])
 /** Item kinds a character wears or holds, which the stand-in can show; jewelry and bags are left out */
 export const wearableTypes = new Set([1, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 25, 26])
+
+/** Select clips for the held weapon before decoding its skeleton, so the picker stays relevant and the payload stays small */
+export function weaponAnimations(inventoryType: number, subclassId: number, slot?: AppearanceSlot): number[] {
+  if (inventoryType === 14) return [24, 59]
+  if (inventoryType === 23) return []
+  if (slot === 'offHand' || inventoryType === 22) return [26, 87, 88]
+  if (inventoryType === 15 || subclassId === 2) return [29, 46]
+  if (subclassId === 3 || subclassId === 18) return [48, 49]
+  if (inventoryType === 25) return [108, 107]
+  if (subclassId === 19) return [51, 53]
+  if (inventoryType === 17) return [27, 28, 18, 19, 86]
+  return heldTypes.has(inventoryType) ? [26, 17, 85] : []
+}

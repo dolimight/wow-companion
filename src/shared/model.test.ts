@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { bareGeosets, wornAttachments, wornGeosets } from './model'
+import { bareGeosets, outfitGeosets, weaponAnimations, wornAttachments, wornGeosets } from './model'
 
 describe('worn items', () => {
   const available = new Set([...bareGeosets, 802, 803, 1302, 1303, 402, 403, 1502, 1802])
@@ -25,6 +25,25 @@ describe('worn items', () => {
     expect(wornAttachments(17)).toEqual([1])
     expect(wornAttachments(14)).toEqual([0])
     expect(wornAttachments(5)).toEqual([])
+  })
+
+  it('keeps the robe skirt over pants while retaining the other visible pieces', () => {
+    const geosets = outfitGeosets([
+      { inventoryType: 7, geosetGroup: [0, 0, 2] },
+      { inventoryType: 20, geosetGroup: [2, 0, 1] },
+      { inventoryType: 10, geosetGroup: [1, 0] },
+    ], available)
+    expect(geosets).toEqual(expect.arrayContaining([1302, 803, 402]))
+    expect(geosets).not.toContain(1303)
+  })
+
+  it('separates one-handed, two-handed, ranged, and off-hand motion', () => {
+    expect(weaponAnimations(13, 7, 'mainHand')).toContain(17)
+    expect(weaponAnimations(17, 8, 'mainHand')).toContain(18)
+    expect(weaponAnimations(15, 2, 'mainHand')).toContain(46)
+    expect(weaponAnimations(13, 7, 'offHand')).toContain(87)
+    expect(wornAttachments(13, 'offHand')).toEqual([2])
+    expect(weaponAnimations(5, 4)).toEqual([])
   })
 })
 

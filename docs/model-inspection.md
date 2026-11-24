@@ -5,8 +5,9 @@ React Three Fiber and Three.js provide camera movement, supported animation clip
 Attached models are separate from JSON backups
 
 An exported GLB is a snapshot; changing an outfit draft does not rebuild its armor, body, or customization
-Dynamic Retail character assembly is not implemented or proven
-Blizzard character renders and the fictional demo illustration are static images
+The Model viewer and Wardrobe also use models from the local Retail installation. Open a weapon on the stand-in character and choose **Animation** to try the supported ready poses, swings, or shots. In Wardrobe, the same viewer combines planned armor and weapons on the stand-in
+
+The stand-in has a fixed body and customization. Use the in-game outfit preview for the character's own appearance, weapon illusions, or pieces that are only partially rendered on desktop
 
 The in-game addon uses WoW's own rendering APIs for mount, pet, gear, outfit, and housing decor previews
 Outfit codes are passed manually to the addon; desktop and addon do not exchange models over a live socket

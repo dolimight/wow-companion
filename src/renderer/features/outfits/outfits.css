@@ -64,7 +64,7 @@ details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg
 .wardrobe-editor-heading .actions { min-height: 36px; flex-wrap: wrap; }
 .wardrobe-editor-heading input { min-height: 36px; }
 .wardrobe-save-state { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 12px; }
-.wardrobe-editor-body { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 24px; align-items: start; }
+.wardrobe-editor-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(300px, .95fr); gap: 24px; align-items: start; }
 .wardrobe-slot-editor { min-width: 0; }
 .wardrobe-slot-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .wardrobe-slot-picker { display: inline-flex; align-items: center; gap: 8px; color: var(--secondary); }
@@ -77,11 +77,7 @@ details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg
 .wardrobe-planned-slots strong { font-size: 13px; font-weight: 600; }
 .wardrobe-planned-description > span, .wardrobe-planned-description > small { display: block; font-size: 12px; line-height: 1.5; color: var(--secondary); overflow-wrap: anywhere; margin-top: 4px; }
 .wardrobe-planned-slots small { color: var(--muted); }
-.wardrobe-character-preview { background: var(--surface); border-radius: 12px; min-width: 0; padding: 16px; text-align: center; }
-.wardrobe-character-preview img { width: 100%; height: 260px; display: block; object-fit: contain; }
-.wardrobe-character-preview p { font-size: 12px; margin-top: 10px; color: var(--secondary); }
-.wardrobe-character-preview small { display: block; color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.5; }
-.wardrobe-no-render { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 128px; color: var(--muted); padding: 12px; }
+.wardrobe-character-preview .model-viewer-stage { height: clamp(220px, 40vh, 400px); }
 .wardrobe-unsaved, .wardrobe-delete-confirm { padding: 16px 0; margin-bottom: 20px; border-block: 1px solid var(--line); }
 .wardrobe-unsaved p, .wardrobe-delete-confirm p { margin-bottom: 10px; font-size: 13px; }
 .wardrobe-appearance-empty { padding: 32px 0; color: var(--secondary); font-size: 13px; line-height: 1.6; }
@@ -95,17 +91,11 @@ details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg
 .wardrobe-appearance-results small { color: var(--muted); font-size: 12px; margin-top: 5px; }
 @media (max-width: 1250px) {
   .wardrobe-editor-body { grid-template-columns: minmax(0,1fr); }
-  .wardrobe-character-preview { display: flex; align-items: center; gap: 16px; text-align: left; }
-  .wardrobe-character-preview img { width: 120px; height: 150px; flex: none; }
-  .wardrobe-character-preview p, .wardrobe-character-preview small { margin: 0; }
-  .wardrobe-no-render { flex-direction: row; min-height: 0; padding: 0; gap: 12px; text-align: left; }
-  .wardrobe-no-render > svg { flex: none; }
 }
 @media (max-width: 1000px) { .wardrobe-workspace { grid-template-columns: minmax(0,1fr); gap: 20px; } .wardrobe-outfit-list { position: static; display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; } .wardrobe-outfit-choice { flex: 0 0 200px; } .wardrobe-draft-note { flex: none; } }
 @media (max-width: 1000px) { .outfit-illusions { grid-template-columns: minmax(0, 1fr); } .outfit-checklist li { flex-wrap: wrap; } .outfit-checklist .button { margin-left: 28px; } }
 @media (max-width: 600px) {
   .wardrobe-editor-heading .field { max-width: none; }
-  .wardrobe-character-preview { flex-wrap: wrap; }
   .wardrobe-planned-slots li { flex-wrap: wrap; }
   .wardrobe-slot-actions { margin-left: auto; }
 }

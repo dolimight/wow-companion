@@ -107,6 +107,7 @@ export const api={
  dungeonEnemies:async(dungeon:string)=>(await client()).dungeonEnemies.query({dungeon}),
  itemModel:async(itemId:number)=>(await client()).itemModel.query({itemId}),
  wornModel:async(itemId:number)=>(await client()).wornModel.query({itemId}),
+ outfitModel:async(pieces:import('../../shared/model').OutfitModelPiece[])=>(await client()).outfitModel.query({pieces}),
  creatureModel:async(displayId:number)=>(await client()).creatureModel.query({displayId}),
  mounts:async(text:string,source:number|null=null,look:{effect?:'any'|'with'|'without';tags?:string[]}={})=>(await client()).mounts.query({text,source,...look}),
  pets:async(text:string,family:number|null=null,look:{effect?:'any'|'with'|'without';tags?:string[]}={})=>(await client()).pets.query({text,family,...look}),

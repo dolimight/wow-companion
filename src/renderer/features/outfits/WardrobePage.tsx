@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useBlocker } from '@tanstack/react-router'
 import { LeaveGuard } from '../../components/LeaveGuard'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Box, Check, ChevronRight, EyeOff, Plus, RotateCcw, Save, Search, Shirt, Trash2, X } from 'lucide-react'
 import { outfitSchema, type AppearanceSlot, type Character, type Outfit } from '../../../shared/domain'
 import { armorForClass } from '../../../shared/gamedata'
+import { outfitModelPieces } from '../../../shared/outfit-model-pieces'
 import { AppSelect } from '../../components/AppSelect'
 import { Badge, Button, EmptyState, Field, Sheet } from '../../components/ui/primitives'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { ItemIcon, useGameData } from '../items/items'
 import { api } from '../../lib/client'
-import { assetUrl } from '../../lib/assets'
 import { errorMessage, notify } from '../../lib/notify'
 import { OutfitTools } from './OutfitTools'
 import { AppearanceSlotIcon } from './AppearanceSlotIcon'
@@ -17,6 +18,8 @@ import {ModelStage} from '../model-stage/ModelStage'
 import { useUpdateBlocker } from '../../lib/update-safety'
 import { closeWindow, useCloseGuard } from '../../lib/close-guard'
 import './outfits.css'
+
+const ItemModelViewer = lazy(() => import('../model-viewer/ItemModelViewer').then(module => ({ default: module.ItemModelViewer })))
 
 const editableSlots: Array<{ value: AppearanceSlot; label: string }> = [{ value: 'head', label: 'Head' }, { value: 'shoulder', label: 'Shoulders' }, { value: 'shoulderLeft', label: 'Left shoulder' }, { value: 'shoulderRight', label: 'Right shoulder' }, { value: 'back', label: 'Cloak' }, { value: 'chest', label: 'Chest' }, { value: 'shirt', label: 'Shirt' }, { value: 'wrist', label: 'Wrists' }, { value: 'hands', label: 'Hands' }, { value: 'waist', label: 'Waist' }, { value: 'legs', label: 'Legs' }, { value: 'feet', label: 'Feet' }, { value: 'tabard', label: 'Tabard' }, { value: 'mainHand', label: 'Main hand' }, { value: 'offHand', label: 'Off hand' }]
 function newOutfit(character: Character): Outfit { return outfitSchema.parse({ id: crypto.randomUUID(), characterId: character.id, name: 'Untitled outfit', slots: {}, updatedAt: new Date().toISOString() }) }
@@ -34,10 +37,6 @@ export function WardrobePage({ character }: { character: Character }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [text, setText] = useState('')
   const [debounced, setDebounced] = useState('')
-  const render = assetUrl(character.renders?.main)
-  const [renderFailed, setRenderFailed] = useState(false)
-  useEffect(() => setRenderFailed(false), [render])
-  const hasRender = !!render && !renderFailed
   const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: dirty, withResolver: true })
   const [closing, setClosing] = useState(false)
   // The wording follows the last request, so it holds still while the dialog fades out
@@ -51,6 +50,7 @@ export function WardrobePage({ character }: { character: Character }) {
   useEffect(() => { const timer = setTimeout(() => setDebounced(text), 160); return () => clearTimeout(timer) }, [text])
   const options = useQuery({ queryKey: ['outfit-appearances', character.id, character.className, slot, debounced], queryFn: () => api.appearanceOptions({ slot, text: debounced, armor: armorForClass(character.className) }), enabled: searchOpen })
   const gameData = useGameData()
+  const previewPieces = useMemo(() => draft ? outfitModelPieces(draft) : [], [draft?.slots, draft?.hiddenSlots])
   const itemIds = useMemo(() => [...new Set(Object.values(draft?.slots ?? {}).flatMap(entry => entry?.itemId ? [entry.itemId] : []))], [draft?.slots])
   const items = useQuery({ queryKey: ['items', itemIds], queryFn: () => api.getItems(itemIds), enabled: gameData.data?.state === 'ready' && itemIds.length > 0 })
   const itemMap = useMemo(() => new Map((items.data ?? []).map(item => [item.id, item])), [items.data])
@@ -64,7 +64,7 @@ export function WardrobePage({ character }: { character: Character }) {
   }
   return <section className="wardrobe-page" aria-label={`${character.name} wardrobe`}>
     <div className="wardrobe-page-heading page-heading">
-      <div><h2 className="wardrobe-section-title"><Shirt size={18} aria-hidden="true" />Saved outfits</h2><p>Plan appearances for {character.name}, then preview them in WoW</p></div>
+      <div><h2 className="wardrobe-section-title"><Shirt size={18} aria-hidden="true" />Saved outfits</h2><p>Plan appearances for {character.name} and see them together in 3D</p></div>
       <Button onClick={create}><Plus size={14} aria-hidden="true" />New outfit</Button>
     </div>
     <details className="wardrobe-model-details" onToggle={event => setModelOpen(event.currentTarget.open)}>
@@ -109,10 +109,18 @@ export function WardrobePage({ character }: { character: Character }) {
             </li>
           })}</ul>
           {!Object.keys(draft.slots).length && !draft.hiddenSlots.length && <p className="wardrobe-appearance-empty">Choose a slot and find an appearance to begin</p>}
-        </div><aside className="wardrobe-character-preview" data-has-render={hasRender || undefined}>
-          {hasRender ? <><img src={render} alt={`${character.name} official character render`} onError={() => setRenderFailed(true)} /><p>Observed character render</p></> : <div className="wardrobe-no-render"><Shirt size={28} strokeWidth={1.6} aria-hidden="true" /><p>No character render is available</p></div>}
-          <small>{hasRender && <>This image does not change with your outfit plan<br /></>}Use the in-game preview for planned pieces</small>
-        </aside></div>
+        </div>
+        <Card as="aside" size="sm" className="wardrobe-character-preview" aria-label="Outfit preview">
+          <CardHeader>
+            <CardTitle><h3>Outfit preview</h3></CardTitle>
+            <CardDescription>Planned pieces on a stand-in human</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {previewPieces.length ? <Suspense fallback={<p role="status">Loading the 3D viewer…</p>}>
+              <ItemModelViewer key={draft.id} target={{ kind: 'outfit', pieces: previewPieces }} name={draft.name || 'Outfit'} />
+            </Suspense> : <p className="muted small">Choose an appearance to see it here</p>}
+          </CardContent>
+        </Card></div>
         <OutfitTools key={draft.id} character={character} outfit={draft} onChange={change} />
       </fieldset>}
     </div>}

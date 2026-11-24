@@ -896,7 +896,7 @@ export async function runDesktopAcceptance({ window, db, service, outputDir }: {
       await click('Preview this outfit in WoW', 'summary')
       const outfitCode = await evaluate<string>(`[...document.querySelectorAll('label.field')].find(label=>label.querySelector(':scope > span')?.textContent==='Outfit code').querySelector('textarea').value`)
       assert(/^WCO1\.[A-Za-z0-9_-]+\.[a-f0-9]{8}$/.test(outfitCode), 'No bounded outfit transport code was displayed')
-      assert(await evaluate(`document.body.innerText.includes('/wowoutfit')&&document.body.innerText.includes('does not rebuild that model')`), 'Addon instructions or honest desktop assembly boundary are missing')
+      assert(await evaluate(`document.body.innerText.includes('/wowoutfit')&&document.body.innerText.includes('Planned pieces on a stand-in human')`), 'Addon instructions or stand-in preview label are missing')
       await click('Import an outfit code', 'summary')
       await field('Paste a WOW Companion outfit code', outfitCode)
       await click('Apply to this draft')

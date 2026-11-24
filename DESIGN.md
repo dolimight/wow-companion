@@ -403,7 +403,7 @@ Metric headers identify activity and comparison population. Search filters playe
 
 Appearance buttons use 10px corners and a 2px selection border with a check badge and `aria-pressed`. Thumbnails are fixed at 48px × 48px, aspect ratio 1, object-fit contain. Appearance slots include separate left and right shoulders; each slot remembers its appearance and variant when changing slots or characters. Unknown collection ownership stays unknown
 
-The stage inspects a model the player attaches and keeps the outfit editor usable without one. Wardrobe changes never alter an imported model
+The outfit stage shows the current draft on a stand-in human. Weapon animation and camera controls sit above the stage, and attached GLB files remain available in a separate inspection disclosure
 
 ### Sheets and Feedback
 
