@@ -977,7 +977,7 @@ export class GameDataEngine {
 
   /** An item's base appearance: its display row with the tables that resolve its models and textures */
   private async itemDisplay(itemId: number) {
-    const [modified, appearances, displays, models, textures, components, componentTextures] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData'].map(table => this.traitTable(table)))
+    const [modified, appearances, displays, models, textures, components, componentTextures, modelMaterials] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData', 'ItemDisplayInfoModelMatRes'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const list = (value: unknown) => (Array.isArray(value) ? value : [value]).map(entry => Number(entry) || 0)
     const base = [...modified.values()].filter(row => num(row.ItemID) === itemId).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0]
@@ -997,7 +997,16 @@ export class GameDataEngine {
       const score = (row: Row) => { const found = componentTextures.get(num(row.FileDataID)); if (!found) return 1; const gender = num(found.GenderIndex), race = num(found.RaceID); return (gender === 0 || gender === 3 ? 2 : 0) + (race === 1 ? 2 : race === 0 ? 1 : 0) }
       return num(files.sort((a, b) => score(b) - score(a))[0]?.FileDataID) || null
     }
-    return { display, resources: list(display.ModelResourcesID), materials: list(display.ModelMaterialResourcesID), geosetGroup: list(display.GeosetGroup), particleColor: num(display.ParticleColorID), modelFile, textureFile }
+    const materials = list(display.ModelMaterialResourcesID)
+    // Each model's textures by the type its batches ask for, such as 3 and 4 for a weapon's glow layers; wow.export reads
+    // them the same way. Type 2 falls back to the display's own material
+    const typed = [...modelMaterials.values()].filter(row => num(row.ItemDisplayInfoID) === num(display.ID))
+    const slotTexture = (slot: number, type: number) => {
+      const row = typed.find(entry => num(entry.ModelIndex) === slot && num(entry.TextureType) === type) ?? typed.find(entry => num(entry.TextureType) === type)
+      if (row) return textureFile(num(row.MaterialResourcesID))
+      return type === 2 ? textureFile(materials[slot] || materials[0] || 0) : null
+    }
+    return { display, resources: list(display.ModelResourcesID), materials, geosetGroup: list(display.GeosetGroup), particleColor: num(display.ParticleColorID), modelFile, textureFile, slotTexture }
   }
 
   /**
@@ -1016,10 +1025,9 @@ export class GameDataEngine {
       for (const [slot, resource] of shown.entries()) {
         const file = resource ? found.modelFile(resource, slot) : null
         if (!file) continue
-        const itemTexture = found.textureFile(found.materials[slot] || found.materials[0] || 0)
-        // Texture type 0 is a file named by the model and type 2 the item's own texture. Others, such as weapon blade
-        // and handle glows, are filled by enchants at run time, so they stay empty
-        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type === 2 ? itemTexture : null, { particleColor: found.particleColor }); if (part) parts.push(part) } catch { /* a model this build can't read is left out */ }
+        // Texture type 0 is a file named by the model; the display fills the others, such as the item's own texture (2) and
+        // glow layers (3 and 4). A type the display leaves out stays empty
+        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : found.slotTexture(slot, type), { particleColor: found.particleColor }); if (part) parts.push(part) } catch { /* a model this build can't read is left out */ }
       }
       return parts.length ? { itemId, parts } : null
     })
@@ -1060,8 +1068,7 @@ export class GameDataEngine {
         const file = resource ? found.modelFile(resource, slot) : null
         const attachment = points[slot]
         if (!file || attachment == null) continue
-        const itemTexture = found.textureFile(found.materials[slot] || found.materials[0] || 0)
-        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type === 2 ? itemTexture : null, { particleColor: found.particleColor }); if (part) attached.push({ part, attachment }) } catch { /* left off the body */ }
+        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : found.slotTexture(slot, type), { particleColor: found.particleColor }); if (part) attached.push({ part, attachment }) } catch { /* left off the body */ }
       }
       return {
         itemId, body, textures, cape, attached, skin: looks.skin, hair: looks.hair,
