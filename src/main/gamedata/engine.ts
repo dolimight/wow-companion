@@ -7,6 +7,7 @@ import { Definitions } from './definitions'
 import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
 import { readM2, readM2File, readSkin } from './m2'
+import { colorName, paletteOf, tagString, themeTags, type LookColor } from '../../shared/looks'
 import { wornAttachments, wornGeosets, type CreatureModel, type ItemModel, type ModelPart, type WornModel } from '../../shared/model'
 import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type CatalystSource, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
@@ -67,6 +68,8 @@ const bondingNames: Record<number, string> = { 1: 'Binds when picked up', 2: 'Bi
 const enchantSubclasses: Partial<Record<AppearanceSlot, number[]>> = { head: [0], neck: [1], shoulder: [2], back: [3], chest: [4], wrist: [5], hands: [6], waist: [7], legs: [8], feet: [9], finger1: [10], finger2: [10], mainHand: [11, 12], offHand: [11, 13] }
 const JUNK = `i.name != '' AND i.name NOT LIKE 'Monster -%' AND i.name NOT LIKE '%[PH]%' AND i.name NOT LIKE 'OLD%' AND i.name NOT LIKE 'Test %' AND i.name NOT LIKE '%Deprecated%' AND i.name NOT LIKE 'zz%' AND i.name NOT LIKE '%(old)%'`
 const EQUIPPABLE = Object.keys(inventoryTypeNames).join(',')
+/** Look filters for mounts and pets */
+type LookFilter = { effect?: 'any' | 'with' | 'without'; tags?: string[] }
 
 type ItemRow = { id: number; name: string; quality: number; item_level: number; required_level: number; inventory_type: number; class_id: number; subclass_id: number; icon: number | null; expansion: number; bonding: number; sockets: number; description: string; allowable_class_mask?: number | null; spec_ids?: string | null; primary_stats?: string | null; stats?: string | null; item_set?: number | null; track_groups?: string | null; latest_track?: number | null; crafted?: number | null }
 
@@ -498,10 +501,19 @@ export class GameDataEngine {
     let join = ''
     const tokens = query.text.normalize('NFKC').toLocaleLowerCase().match(/[\p{L}\p{N}']+/gu) ?? []
     if (tokens.length) { join = 'JOIN items_fts f ON f.rowid = i.id AND items_fts MATCH ?'; params.push(tokens.map(token => `"${token.replace(/"/g, '')}"*`).join(' ')) }
-    const types = query.slot ? [...slotInventoryTypes[query.slot]] : null
+    const types = query.inventoryTypes ? [...query.inventoryTypes] : query.slot ? [...slotInventoryTypes[query.slot]] : null
     if (types && query.slot === 'offHand' && query.character?.className.toLowerCase() === 'warrior' && query.character.specId === 72) types.push(17)
     where.push(`i.inventory_type IN (${types ? types.join(',') : EQUIPPABLE})`)
     if (query.armor && (!query.slot || armorSlots.has(query.slot))) { where.push(`(i.inventory_type NOT IN (1,3,5,6,7,8,9,10,20) OR (i.class_id = 4 AND i.subclass_id = ?))`); params.push(armorTypes.indexOf(query.armor) + 1) }
+    if (query.itemClass != null) { where.push('i.class_id = ?'); params.push(query.itemClass) }
+    if (query.expansion != null) { where.push('i.expansion = ?'); params.push(query.expansion) }
+    // Look filters apply once the looks index is built; until then they are left out
+    if (this.looksProgress.ready && (query.effect !== 'any' || query.tags.length)) {
+      join += ' JOIN temp.looks l ON l.item_id = i.id'
+      if (query.effect !== 'any') where.push(`l.effect = ${query.effect === 'with' ? 1 : 0}`)
+      for (const tag of query.tags) { where.push('instr(l.tags, ?) > 0'); params.push(`,${tag},`) }
+    }
+    if (query.itemSubclass != null) { where.push('i.subclass_id = ?'); params.push(query.itemSubclass) }
     if (query.source === 'crafted') where.push('i.crafted = 1')
     else if (query.source !== 'any') { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.kind = ?)'); params.push(query.source) }
     if (query.instance) { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.instance = ?)'); params.push(query.instance) }
@@ -943,19 +955,29 @@ export class GameDataEngine {
   }
 
   /** One model file read with its first skin; `geosets` keeps only those body pieces */
-  private async modelPart(file: number, textureFor: (type: number, txid: number) => number | null, options: { geosets?: (available: Set<number>) => Set<number>; animations?: number[] } = {}): Promise<ModelPart | null> {
+  private async modelPart(file: number, textureFor: (type: number, txid: number) => number | null, options: { geosets?: (available: Set<number>) => Set<number>; animations?: number[]; particleColor?: number } = {}): Promise<ModelPart | null> {
     const casc = await this.openCasc()
     const m2 = readM2File(await casc.file(file))
     const skinId = m2.skins[0]
     if (!skinId) return null
     const skin = await casc.file(skinId)
     const geosets = options.geosets?.(new Set(readSkin(skin).sections.map(section => section.id)))
-    return readM2(m2, file, { skin, textureFor, file: id => casc.file(id), geosets, animations: options.animations })
+    return readM2(m2, file, { skin, textureFor, file: id => casc.file(id), geosets, animations: options.animations, particleColors: options.particleColor ? await this.particleColors(options.particleColor) : undefined })
+  }
+
+  /** A display's particle colours from ParticleColor: start, middle, and end for each of its three slots, as RGB */
+  private async particleColors(id: number): Promise<Array<[number[], number[], number[]]>> {
+    const row = (await this.traitTable('ParticleColor')).get(id)
+    if (!row) return []
+    const rgb = (value: unknown) => { const v = Number(value) >>> 0; return [(v >> 16) & 255, (v >> 8) & 255, v & 255] }
+    const list = (value: unknown) => (Array.isArray(value) ? value : [value])
+    const start = list(row.Start), middle = list(row.MID ?? row.Mid), end = list(row.End)
+    return [0, 1, 2].map(i => [rgb(start[i]), rgb(middle[i]), rgb(end[i])] as [number[], number[], number[]])
   }
 
   /** An item's base appearance: its display row with the tables that resolve its models and textures */
   private async itemDisplay(itemId: number) {
-    const [modified, appearances, displays, models, textures, components, componentTextures] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData'].map(table => this.traitTable(table)))
+    const [modified, appearances, displays, models, textures, components, componentTextures, modelMaterials] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData', 'ItemDisplayInfoModelMatRes'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const list = (value: unknown) => (Array.isArray(value) ? value : [value]).map(entry => Number(entry) || 0)
     const base = [...modified.values()].filter(row => num(row.ItemID) === itemId).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0]
@@ -975,7 +997,16 @@ export class GameDataEngine {
       const score = (row: Row) => { const found = componentTextures.get(num(row.FileDataID)); if (!found) return 1; const gender = num(found.GenderIndex), race = num(found.RaceID); return (gender === 0 || gender === 3 ? 2 : 0) + (race === 1 ? 2 : race === 0 ? 1 : 0) }
       return num(files.sort((a, b) => score(b) - score(a))[0]?.FileDataID) || null
     }
-    return { display, resources: list(display.ModelResourcesID), materials: list(display.ModelMaterialResourcesID), geosetGroup: list(display.GeosetGroup), modelFile, textureFile }
+    const materials = list(display.ModelMaterialResourcesID)
+    // Each model's textures by the type its batches ask for, such as 3 and 4 for a weapon's glow layers; wow.export reads
+    // them the same way. Type 2 falls back to the display's own material
+    const typed = [...modelMaterials.values()].filter(row => num(row.ItemDisplayInfoID) === num(display.ID))
+    const slotTexture = (slot: number, type: number) => {
+      const row = typed.find(entry => num(entry.ModelIndex) === slot && num(entry.TextureType) === type) ?? typed.find(entry => num(entry.TextureType) === type)
+      if (row) return textureFile(num(row.MaterialResourcesID))
+      return type === 2 ? textureFile(materials[slot] || materials[0] || 0) : null
+    }
+    return { display, resources: list(display.ModelResourcesID), materials, geosetGroup: list(display.GeosetGroup), particleColor: num(display.ParticleColorID), modelFile, textureFile, slotTexture }
   }
 
   /**
@@ -994,10 +1025,9 @@ export class GameDataEngine {
       for (const [slot, resource] of shown.entries()) {
         const file = resource ? found.modelFile(resource, slot) : null
         if (!file) continue
-        const itemTexture = found.textureFile(found.materials[slot] || found.materials[0] || 0)
-        // Texture type 0 is a file named by the model and type 2 the item's own texture. Others, such as weapon blade
-        // and handle glows, are filled by enchants at run time, so they stay empty
-        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type === 2 ? itemTexture : null); if (part) parts.push(part) } catch { /* a model this build can't read is left out */ }
+        // Texture type 0 is a file named by the model; the display fills the others, such as the item's own texture (2) and
+        // glow layers (3 and 4). A type the display leaves out stays empty
+        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : found.slotTexture(slot, type), { particleColor: found.particleColor }); if (part) parts.push(part) } catch { /* a model this build can't read is left out */ }
       }
       return parts.length ? { itemId, parts } : null
     })
@@ -1038,8 +1068,7 @@ export class GameDataEngine {
         const file = resource ? found.modelFile(resource, slot) : null
         const attachment = points[slot]
         if (!file || attachment == null) continue
-        const itemTexture = found.textureFile(found.materials[slot] || found.materials[0] || 0)
-        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type === 2 ? itemTexture : null); if (part) attached.push({ part, attachment }) } catch { /* left off the body */ }
+        try { const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : found.slotTexture(slot, type), { particleColor: found.particleColor }); if (part) attached.push({ part, attachment }) } catch { /* left off the body */ }
       }
       return {
         itemId, body, textures, cape, attached, skin: looks.skin, hair: looks.hair,
@@ -1103,6 +1132,7 @@ export class GameDataEngine {
       const picked = new Map<number, number>()
       for (const row of geosetData.values()) if (num(row.CreatureDisplayInfoID) === displayId) picked.set(num(row.GeosetIndex) + 1, num(row.GeosetValue))
       const part = await this.modelPart(file, (type, txid) => type === 0 ? txid || null : type >= 11 && type <= 13 ? skins[type - 11] || null : null, {
+        particleColor: num(display.ParticleColorID),
         geosets: available => {
           const keep = new Set<number>()
           const groups = new Map<number, number[]>()
@@ -1119,11 +1149,87 @@ export class GameDataEngine {
     })
   }
 
+  private looksBuild: Promise<void> | null = null
+  private looksProgress = { ready: false, done: 0, total: 0 }
+  /** Each icon's colours, read from its pixels once per game build and kept on disk */
+  private iconColors = new Map<number, LookColor[]>()
+
+  /**
+   * How far the looks index is: the colours of every item, mount, and pet icon, which items have particle effects, and
+   * their theme tags. The first call starts building it in the background; later calls report its progress
+   */
+  looksStatus() {
+    if (!this.looksBuild) {
+      this.looksBuild = this.buildLooks()
+      this.looksBuild.catch(() => { this.looksBuild = null })
+    }
+    return { ...this.looksProgress }
+  }
+
+  private async buildLooks() {
+    const db = this.ready()
+    const casc = await this.openCasc()
+    const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
+    const file = path.join(this.directory, `looks-${this.status.indexedVersion ?? 'unknown'}.json`)
+    try { const saved = JSON.parse(await readFile(file, 'utf8')) as { icons: Record<string, LookColor[]> }; for (const [id, colors] of Object.entries(saved.icons)) this.iconColors.set(Number(id), colors) } catch { /* first build */ }
+    const save = () => writeFile(file, JSON.stringify({ icons: Object.fromEntries(this.iconColors) }))
+    const items = db.prepare(`SELECT id, name, icon FROM items WHERE inventory_type IN (${EQUIPPABLE})`).all() as Array<{ id: number; name: string; icon: number | null }>
+    const creatures = [...await this.mounts('', null, 100000), ...await this.pets('', null, 100000)]
+    const icons = [...new Set([...items, ...creatures].map(entry => entry.icon).filter((icon): icon is number => !!icon && !this.iconColors.has(icon)))]
+    this.looksProgress = { ready: false, done: 0, total: icons.length }
+    for (const [i, icon] of icons.entries()) {
+      try { const picture = decodeBlp(await casc.file(icon)); this.iconColors.set(icon, paletteOf(picture.pixels, picture.width, picture.height)) } catch { this.iconColors.set(icon, []) }
+      this.looksProgress.done = i + 1
+      // Let model reads in between, and keep what is done if the app closes
+      if (i % 200 === 199) await new Promise(resolve => setImmediate(resolve))
+      if (i % 4000 === 3999) await save()
+    }
+    if (icons.length) await save()
+    // An item's look comes from its base appearance's display: particle colours mean an effect
+    const [modified, appearances, displays] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo'].map(table => this.traitTable(table)))
+    const base = new Map<number, Row>()
+    for (const row of modified.values()) { const item = num(row.ItemID); const found = base.get(item); if (!found || num(row.OrderIndex) < num(found.OrderIndex)) base.set(item, row) }
+    const effectColors = new Map<number, LookColor[]>()
+    const colorsOf = async (id: number) => {
+      if (!effectColors.has(id)) effectColors.set(id, [...new Set((await this.particleColors(id)).flat().filter(rgb => rgb.some(value => value > 24)).map(rgb => colorName(rgb[0]!, rgb[1]!, rgb[2]!)))])
+      return effectColors.get(id)!
+    }
+    db.exec('DROP TABLE IF EXISTS temp.looks; CREATE TEMP TABLE looks (item_id INTEGER PRIMARY KEY, effect INTEGER NOT NULL, tags TEXT NOT NULL)')
+    const insert = db.prepare('INSERT INTO temp.looks VALUES (?, ?, ?)')
+    const rows: Array<[number, number, string]> = []
+    for (const item of items) {
+      const display = displays.get(num(appearances.get(num(base.get(item.id)?.ItemAppearanceID))?.ItemDisplayInfoID))
+      const particle = num(display?.ParticleColorID)
+      const effect = particle > 0 || num(display?.ItemVisual) > 0
+      const glow = particle ? await colorsOf(particle) : []
+      const colors = [...(item.icon ? this.iconColors.get(item.icon) ?? [] : []), ...glow]
+      rows.push([item.id, effect ? 1 : 0, tagString([...colors, ...themeTags(item.name, glow), ...(effect ? ['effect'] : [])])])
+    }
+    db.transaction(() => { for (const row of rows) insert.run(...row) })()
+    this.looksProgress = { ready: true, done: icons.length, total: icons.length }
+  }
+
+  /** A filter for creatures by their looks: the icon's colours, theme words in the name, and a particle effect on the display */
+  private async creatureLooks(look: LookFilter) {
+    if (!look.tags?.length && (!look.effect || look.effect === 'any')) return () => true
+    const displays = await this.traitTable('CreatureDisplayInfo')
+    return (name: string, icon: number | null, displayId: number) => {
+      const effect = Number(displays.get(displayId)?.ParticleColorID) > 0
+      if (look.effect === 'with' && !effect) return false
+      if (look.effect === 'without' && effect) return false
+      const tags = new Set([...(icon ? this.iconColors.get(icon) ?? [] : []), ...themeTags(name), ...(effect ? ['effect'] : [])])
+      return (look.tags ?? []).every(tag => tags.has(tag))
+    }
+  }
+
   /** Test and placeholder entries the game keeps, such as "[PH] Horse with Hat" or "[DNT] Storm Pet Fodder" */
   private static placeholder = /^\s*[[(]\s*(ph|dnd|dnt|nyi|test|tbd)\b/i
 
-  /** Mounts whose name matches, with each one's creature display and the icon of the spell that summons it */
-  async mounts(text: string, limit = 60): Promise<Array<{ id: number; name: string; icon: number | null; displayId: number }>> {
+  /**
+   * Mounts whose name matches, optionally from one source (0 drop, 1 quest, 2 vendor, and so on), with each one's
+   * creature display, source, and the icon of the spell that summons it
+   */
+  async mounts(text: string, source: number | null = null, limit = 300, look: LookFilter = {}): Promise<Array<{ id: number; name: string; icon: number | null; displayId: number; source: number }>> {
     const [mounts, displays, spells] = await Promise.all(['Mount', 'MountXDisplay', 'SpellMisc'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const wanted = text.trim().toLocaleLowerCase()
@@ -1131,21 +1237,23 @@ export class GameDataEngine {
     for (const row of displays.values()) if (!shown.has(num(row.MountID))) shown.set(num(row.MountID), num(row.CreatureDisplayInfoID))
     const icons = new Map<number, number>()
     for (const row of spells.values()) if (num(row.SpellIconFileDataID) && !icons.has(num(row.SpellID))) icons.set(num(row.SpellID), num(row.SpellIconFileDataID))
-    return [...mounts.values()].filter(row => String(row.Name_lang ?? '').toLocaleLowerCase().includes(wanted) && !GameDataEngine.placeholder.test(String(row.Name_lang ?? '')) && shown.get(num(row.ID)))
+    const matches = await this.creatureLooks(look)
+    return [...mounts.values()].filter(row => String(row.Name_lang ?? '').toLocaleLowerCase().includes(wanted) && !GameDataEngine.placeholder.test(String(row.Name_lang ?? '')) && shown.get(num(row.ID)) && (source == null || num(row.SourceTypeEnum) === source) && matches(String(row.Name_lang), icons.get(num(row.SourceSpellID)) ?? null, shown.get(num(row.ID))!))
       .sort((a, b) => String(a.Name_lang).localeCompare(String(b.Name_lang))).slice(0, limit)
-      .map(row => ({ id: num(row.ID), name: String(row.Name_lang), icon: icons.get(num(row.SourceSpellID)) ?? null, displayId: shown.get(num(row.ID))! }))
+      .map(row => ({ id: num(row.ID), name: String(row.Name_lang), icon: icons.get(num(row.SourceSpellID)) ?? null, displayId: shown.get(num(row.ID))!, source: num(row.SourceTypeEnum) }))
   }
 
-  /** Battle pets whose name matches, with each one's creature display and icon */
-  async pets(text: string, limit = 60): Promise<Array<{ id: number; name: string; icon: number | null; displayId: number }>> {
+  /** Battle pets whose name matches, optionally of one family (0 humanoid through 9 mechanical), with each one's display, family, and icon */
+  async pets(text: string, family: number | null = null, limit = 300, look: LookFilter = {}): Promise<Array<{ id: number; name: string; icon: number | null; displayId: number; family: number }>> {
     const [species, creatures] = await Promise.all(['BattlePetSpecies', 'Creature'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const wanted = text.trim().toLocaleLowerCase()
+    const matches = await this.creatureLooks(look)
     return [...species.values()].flatMap(row => {
       const creature = creatures.get(num(row.CreatureID))
       const name = String(creature?.Name_lang ?? '')
       const displayId = num(creature?.DisplayID)
-      return name && displayId && name.toLocaleLowerCase().includes(wanted) && !GameDataEngine.placeholder.test(name) ? [{ id: num(row.ID), name, icon: num(row.IconFileDataID) || null, displayId }] : []
+      return name && displayId && name.toLocaleLowerCase().includes(wanted) && !GameDataEngine.placeholder.test(name) && (family == null || num(row.PetTypeEnum) === family) && matches(name, num(row.IconFileDataID) || null, displayId) ? [{ id: num(row.ID), name, icon: num(row.IconFileDataID) || null, displayId, family: num(row.PetTypeEnum) }] : []
     }).sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit)
   }
 

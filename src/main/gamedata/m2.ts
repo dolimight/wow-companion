@@ -4,7 +4,7 @@
  * Kruithne and Marlamin). Only what the viewer draws is read: geometry, textures, bones with their keyframes,
  * attachment points, texture weights, colours, and texture scrolling. Particles and ribbons are counted but not read
  */
-import { animationName, type ModelAnimation, type ModelAttachment, type ModelBone, type ModelGroup, type ModelPart, type ModelTrack } from '../../shared/model'
+import { animationName, batchShader, type ModelLayer, type LifeTrack, type ModelAnimation, type ModelEmitter, type ModelAttachment, type ModelBone, type ModelGroup, type ModelPart, type ModelTrack } from '../../shared/model'
 
 type Chunks = Record<string, Buffer>
 const chunks = (buffer: Buffer): Chunks => {
@@ -50,7 +50,7 @@ export function readAnimFile(buffer: Buffer, skeleton = false): Buffer {
   return (skeleton ? found.AFSB ?? found.AFM2 : found.AFM2 ?? found.AFSB) ?? buffer
 }
 
-type Skin = { vertices: number[]; indices: number[]; sections: Array<{ id: number; indexStart: number; indexCount: number }>; batches: Array<{ priority: number; section: number; color: number; material: number; layer: number; textureCombo: number; weightCombo: number; transformCombo: number }> }
+type Skin = { vertices: number[]; indices: number[]; sections: Array<{ id: number; indexStart: number; indexCount: number }>; batches: Array<{ priority: number; shader: number; section: number; color: number; material: number; layer: number; textureCount: number; textureCombo: number; coordCombo: number; weightCombo: number; transformCombo: number }> }
 
 export function readSkin(buffer: Buffer): Skin {
   if (buffer.toString('ascii', 0, 4) !== 'SKIN') throw new Error('Not a model skin')
@@ -67,7 +67,7 @@ export function readSkin(buffer: Buffer): Skin {
     }),
     batches: Array.from({ length: batches.count }, (_, i) => {
       const at = batches.offset + i * 24
-      return { priority: buffer.readInt8(at + 1), section: buffer.readUInt16LE(at + 4), color: buffer.readUInt16LE(at + 8), material: buffer.readUInt16LE(at + 10), layer: buffer.readUInt16LE(at + 12), textureCombo: buffer.readUInt16LE(at + 16), weightCombo: buffer.readUInt16LE(at + 20), transformCombo: buffer.readUInt16LE(at + 22) }
+      return { priority: buffer.readInt8(at + 1), shader: buffer.readUInt16LE(at + 2), section: buffer.readUInt16LE(at + 4), color: buffer.readUInt16LE(at + 8), material: buffer.readUInt16LE(at + 10), layer: buffer.readUInt16LE(at + 12), textureCount: buffer.readUInt16LE(at + 14), textureCombo: buffer.readUInt16LE(at + 16), coordCombo: buffer.readUInt16LE(at + 18), weightCombo: buffer.readUInt16LE(at + 20), transformCombo: buffer.readUInt16LE(at + 22) }
     }),
   }
 }
@@ -77,8 +77,30 @@ const round = (value: number) => Math.round(value * 1e5) / 1e5
 const fixed16 = (value: number) => value / 32767
 const compressed = (value: number) => (value < 0 ? value + 32768 : value - 32767) / 32767
 
-type Kind = 'vec3' | 'quat' | 'compQuat' | 'fixed16'
-const kinds: Record<Kind, { size: number; count: number }> = { vec3: { size: 12, count: 3 }, quat: { size: 16, count: 4 }, compQuat: { size: 8, count: 4 }, fixed16: { size: 2, count: 1 } }
+type Kind = 'vec3' | 'quat' | 'compQuat' | 'fixed16' | 'float' | 'gravity' | 'byte'
+const kinds: Record<Kind, { size: number; count: number }> = { vec3: { size: 12, count: 3 }, quat: { size: 16, count: 4 }, compQuat: { size: 8, count: 4 }, fixed16: { size: 2, count: 1 }, float: { size: 4, count: 1 }, gravity: { size: 4, count: 3 }, byte: { size: 1, count: 1 } }
+
+/**
+ * A packed gravity vector: a direction from two signed bytes and a signed 16-bit strength, as emitters with flag
+ * 0x800000 store it
+ */
+function packedGravity(source: Buffer, at: number): number[] {
+  const x = source.readInt8(at) / 128, y = source.readInt8(at + 1) / 128
+  let z = Math.sqrt(Math.max(0, 1 - x * x - y * y))
+  let strength = source.readInt16LE(at + 2) * 0.04238648
+  if (strength < 0) { z = -z; strength = -strength }
+  return [x * strength, y * strength, z * strength]
+}
+
+function readValue(source: Buffer, base: number, kind: Kind, c: number): number {
+  switch (kind) {
+    case 'vec3': case 'quat': case 'float': return source.readFloatLE(base + c * 4)
+    case 'compQuat': return compressed(source.readInt16LE(base + c * 2))
+    case 'fixed16': return fixed16(source.readInt16LE(base))
+    case 'byte': return source.readUInt8(base)
+    case 'gravity': return 0
+  }
+}
 type Kept = Array<{ index: number; animation: ModelAnimation }>
 
 /** The first variation of each animation, following aliases to the sequence that holds the data */
@@ -112,7 +134,7 @@ function externalFiles(raw: ReturnType<typeof readSequences>['raw'], kept: Kept,
 
 /** Reads one keyframed value. Headers live in `buffer`; keys of an external sequence live in its .anim data */
 function trackReader(buffer: Buffer, kept: Kept, external: (index: number) => boolean, anims: Map<number, Buffer>) {
-  return (at: number, kind: Kind): ModelTrack | null => {
+  return (at: number, kind: Kind, gravityPacked = false): ModelTrack | null => {
     const global = buffer.readInt16LE(at + 2)
     const timesCount = buffer.readUInt32LE(at + 4), timesOffset = buffer.readUInt32LE(at + 8)
     const valuesCount = buffer.readUInt32LE(at + 12), valuesOffset = buffer.readUInt32LE(at + 16)
@@ -130,9 +152,8 @@ function trackReader(buffer: Buffer, kept: Kept, external: (index: number) => bo
       for (let k = 0; k < keys; k++) {
         out.times.push(source.readUInt32LE(t.offset + k * 4))
         const base = v.offset + k * size
-        for (let c = 0; c < count; c++) {
-          out.values.push(round(kind === 'vec3' || kind === 'quat' ? source.readFloatLE(base + c * 4) : kind === 'compQuat' ? compressed(source.readInt16LE(base + c * 2)) : fixed16(source.readInt16LE(base))))
-        }
+        if (kind === 'gravity') out.values.push(...(gravityPacked ? packedGravity(source, base) : [0, 0, -source.readFloatLE(base)]).map(round))
+        else for (let c = 0; c < count; c++) out.values.push(round(readValue(source, base, kind, c)))
       }
       return out
     }
@@ -175,6 +196,8 @@ export type M2Sources = {
   maxAnimations?: number
   /** Only these animations, by game ID; the first ones the model has when absent */
   animations?: number[]
+  /** The display's particle colours: start, middle, and end for each of the three slots emitters can take them from */
+  particleColors?: Array<[number[], number[], number[]]>
 }
 
 /**
@@ -239,8 +262,8 @@ export async function readM2(file: M2File, fileDataId: number, sources: M2Source
 
   const vertices = array(60)
   const part: ModelPart = {
-    fileDataId, positions: [], normals: [], uvs: [], boneIndices: [], boneWeights: [], indices, groups: [], bones,
-    animations, globalLoops, attachments, opacities: [], colors: [], uvAnimations: [], particles: md20.readUInt32LE(296),
+    fileDataId, positions: [], normals: [], uvs: [], uvs2: [], boneIndices: [], boneWeights: [], indices, groups: [], bones,
+    animations, globalLoops, attachments, opacities: [], colors: [], uvAnimations: [], particles: md20.readUInt32LE(296), emitters: [],
   }
   for (const local of order) {
     const at = vertices.offset + skin.vertices[local]! * 48
@@ -249,6 +272,7 @@ export async function readM2(file: M2File, fileDataId: number, sources: M2Source
     for (let c = 0; c < 4; c++) part.boneIndices.push(md20.readUInt8(at + 16 + c))
     for (let c = 0; c < 3; c++) part.normals.push(round(md20.readFloatLE(at + 20 + c * 4)))
     for (let c = 0; c < 2; c++) part.uvs.push(round(md20.readFloatLE(at + 32 + c * 4)))
+    for (let c = 0; c < 2; c++) part.uvs2.push(round(md20.readFloatLE(at + 40 + c * 4)))
   }
 
   const colors = array(72)
@@ -265,6 +289,7 @@ export async function readM2(file: M2File, fileDataId: number, sources: M2Source
   })
   const materials = array(112)
   const textureLookup = u16s(128), weightLookup = u16s(144), transformLookup = u16s(152)
+  part.emitters = readEmitters(md20, ownTrack, index => textureInfo[index]?.file ?? null, sources.particleColors ?? [])
   part.groups = skin.batches.flatMap((batch): ModelGroup[] => {
     const section = sections[batch.section]
     const start = starts.get(batch.section)
@@ -273,6 +298,21 @@ export async function readM2(file: M2File, fileDataId: number, sources: M2Source
     const material = batch.material < materials.count ? materials.offset + batch.material * 4 : -1
     const weight = weightLookup[batch.weightCombo]
     const transform = batch.transformCombo === none ? undefined : transformLookup[batch.transformCombo]
+    // Up to three texture layers, each with its own coordinates, scrolling, and weight
+    const count = Math.max(1, Math.min(3, batch.textureCount))
+    const shader = batchShader(batch.shader, count)
+    const layers = Array.from({ length: count }, (_, i): ModelLayer => {
+      const info = textureInfo[textureLookup[batch.textureCombo + i] ?? -1]
+      // Layers on the first coordinates share the first scroll and those on the second the second, as the client does
+      const coords = shader.coords[i] ?? 'uv'
+      const scroll = batch.transformCombo === none || coords === 'env' ? undefined : transformLookup[batch.transformCombo + (coords === 'uv2' ? 1 : 0)]
+      const weight = weightLookup[batch.weightCombo + i]
+      return {
+        texture: info?.file ?? null, textureType: info?.type ?? 0, wrap: info?.flags ?? 0, coords,
+        uvAnimation: scroll != null && scroll !== none && scroll < part.uvAnimations.length ? scroll : null,
+        weight: weight != null && weight !== none && weight < part.opacities.length ? weight : null,
+      }
+    })
     return [{
       start,
       count: section.indexCount,
@@ -286,7 +326,70 @@ export async function readM2(file: M2File, fileDataId: number, sources: M2Source
       color: batch.color !== none && batch.color < part.colors.length ? batch.color : null,
       uvAnimation: transform != null && transform !== none && transform < part.uvAnimations.length ? transform : null,
       order: batch.priority * 16 + batch.layer,
+      combiner: shader.combiner,
+      layers,
     }]
   })
   return part
+}
+
+/** A value over a particle's life, stored as fixed-point times from 0 to 1 with a value at each */
+function lifeTrack(md20: Buffer, at: number, size: number, count: number, read: (base: number, c: number) => number): LifeTrack {
+  const times = { count: md20.readUInt32LE(at), offset: md20.readUInt32LE(at + 4) }
+  const values = { count: md20.readUInt32LE(at + 8), offset: md20.readUInt32LE(at + 12) }
+  const keys = Math.min(times.count, values.count, 16)
+  const out: LifeTrack = { times: [], values: [] }
+  if (times.offset + keys * 2 > md20.length || values.offset + keys * size > md20.length) return out
+  for (let k = 0; k < keys; k++) {
+    out.times.push(round(md20.readUInt16LE(times.offset + k * 2) / 32767))
+    for (let c = 0; c < count; c++) out.values.push(round(read(values.offset + k * size, c)))
+  }
+  return out
+}
+
+/**
+ * The model's particle emitters, read from the 492-byte records current models use. An emitter that takes its colour
+ * from the display (slots 11 to 13) gets the display's start, middle, and end colours in place of its own
+ */
+function readEmitters(md20: Buffer, track: ReturnType<typeof trackReader>, textureFile: (index: number) => number | null, displayColors: Array<[number[], number[], number[]]>): ModelEmitter[] {
+  const count = md20.readUInt32LE(296), offset = md20.readUInt32LE(300)
+  const stride = 492
+  if (!count || offset + count * stride > md20.length) return []
+  return Array.from({ length: Math.min(count, 32) }, (_, i): ModelEmitter => {
+    const at = offset + i * stride
+    const flags = md20.readUInt32LE(at + 4)
+    // With several textures packed in, the first sits in the low five bits
+    const packed = md20.readUInt16LE(at + 22)
+    const texture = flags & 0x10000000 ? packed & 0x1f : packed
+    const colorSlot = md20.readUInt16LE(at + 42)
+    const display = colorSlot >= 11 && colorSlot <= 13 ? displayColors[colorSlot - 11] : undefined
+    const color = display ? { times: [0, 0.5, 1], values: display.flat() } : lifeTrack(md20, at + 260, 12, 3, (base, c) => md20.readFloatLE(base + c * 4))
+    return {
+      bone: md20.readUInt16LE(at + 20),
+      position: [round(md20.readFloatLE(at + 8)), round(md20.readFloatLE(at + 12)), round(md20.readFloatLE(at + 16))],
+      texture: textureFile(texture),
+      blend: md20.readUInt8(at + 40),
+      shape: md20.readUInt8(at + 41),
+      flags,
+      rows: Math.max(1, md20.readUInt16LE(at + 48)),
+      columns: Math.max(1, md20.readUInt16LE(at + 50)),
+      speed: track(at + 52, 'float'),
+      speedVariation: track(at + 72, 'float'),
+      verticalRange: track(at + 92, 'float'),
+      horizontalRange: track(at + 112, 'float'),
+      gravity: track(at + 132, 'gravity', (flags & 0x800000) !== 0),
+      lifespan: track(at + 152, 'float'),
+      lifespanVariation: round(md20.readFloatLE(at + 172)),
+      rate: track(at + 176, 'float'),
+      rateVariation: round(md20.readFloatLE(at + 196)),
+      areaLength: track(at + 200, 'float'),
+      areaWidth: track(at + 220, 'float'),
+      enabled: track(at + 456, 'byte'),
+      color,
+      opacity: lifeTrack(md20, at + 276, 2, 1, base => fixed16(md20.readInt16LE(base))),
+      scale: lifeTrack(md20, at + 292, 8, 2, (base, c) => md20.readFloatLE(base + c * 4)),
+      cell: lifeTrack(md20, at + 316, 2, 1, base => md20.readUInt16LE(base)),
+      drag: round(md20.readFloatLE(at + 372)),
+    }
+  })
 }

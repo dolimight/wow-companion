@@ -27,3 +27,16 @@ describe('worn items', () => {
     expect(wornAttachments(5)).toEqual([])
   })
 })
+
+describe('batch shaders', () => {
+  it('reads effect shaders from the table and older ones from their bits', async () => {
+    const { batchShader, combiners } = await import('./model')
+    const effect = batchShader(0x8003, 3)
+    expect(combiners[effect.combiner]).toBe('Opaque_Mod2xNA_Alpha_Add')
+    expect(effect.coords).toEqual(['uv', 'env', 'uv'])
+    expect(combiners[batchShader(0x4011, 2).combiner]).toBe('Mod_Mod')
+    expect(batchShader(0x4011, 2).coords).toEqual(['uv', 'uv2'])
+    expect(combiners[batchShader(0, 1).combiner]).toBe('Opaque')
+    expect(batchShader(0x80, 1).coords).toEqual(['env'])
+  })
+})

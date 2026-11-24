@@ -266,7 +266,7 @@ export function ItemDetail({ id, onPick, addLabel, compact = false, character = 
           {character && compatibility?.reason && <p className="secondary small" role={compatibility.compatible ? undefined : "alert"}>{compatibility.reason}</p>}
           <div className="actions">
             {onPick && <Button variant="primary" disabled={!compatibility?.compatible} onClick={() => onPick(data)}>{addLabel ?? "Add to plan"}</Button>}
-            {wearableTypes.has(data.inventoryType) && <Button onClick={() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); void navigate({ to: "/models", search: { tab: "items", item: data.id } }); }}><Box />View in 3D</Button>}
+            {wearableTypes.has(data.inventoryType) && <Button onClick={() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); void navigate({ to: "/models", search: { item: data.id } }); }}><Box />View in 3D</Button>}
             <Button onClick={() => open(wowheadItemUrl(data.id, { itemLevel: shownLevel }))}><ExternalLink />Open on Wowhead</Button>
           </div>
         </div>

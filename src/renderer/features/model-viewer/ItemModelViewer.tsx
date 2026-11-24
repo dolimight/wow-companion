@@ -12,6 +12,10 @@ import { animationChoices } from './animate'
 import { ItemModelScene, type ViewSubject } from './scene'
 import './model-viewer.css'
 
+/** Whether wearable items open on the stand-in, remembered between items and visits */
+const onCharacterKey = 'wowc:model-on-character'
+function readOnCharacter() { try { return localStorage.getItem(onCharacterKey) === '1' } catch { return false } }
+
 /** What to show: an item on its own or worn by a stand-in, or a creature such as a mount or pet */
 export type ModelTarget = { kind: 'item'; itemId: number; wearable: boolean; ownModel: boolean } | { kind: 'creature'; displayId: number }
 
@@ -21,8 +25,10 @@ export type ModelTarget = { kind: 'item'; itemId: number; wearable: boolean; own
  */
 export function ItemModelViewer({ target, name }: { target: ModelTarget; name: string }) {
   const ready = useGameData().data?.state === 'ready'
-  // Armor drawn on the body has no model of its own, so it starts on the stand-in
-  const [worn, setWorn] = useState(target.kind === 'item' && !target.ownModel)
+  // Armor drawn on the body has no model of its own, so it starts on the stand-in; others follow the saved choice
+  const [onCharacter, setOnCharacter] = useState(readOnCharacter)
+  const worn = target.kind === 'item' && target.wearable && (!target.ownModel || onCharacter)
+  const setWorn = (value: boolean) => { setOnCharacter(value); try { localStorage.setItem(onCharacterKey, value ? '1' : '0') } catch { /* storage unavailable */ } }
   const key = target.kind === 'creature' ? ['creature-model', target.displayId] : [worn ? 'worn-model' : 'item-model', target.itemId]
   const model = useQuery({
     queryKey: key,
@@ -75,7 +81,7 @@ export function ItemModelViewer({ target, name }: { target: ModelTarget; name: s
       </div>
       <div className="model-viewer-controls">
         {target.kind === 'item' && target.wearable && (
-          <Toggle variant="outline" pressed={worn} onPressedChange={value => { setWorn(value); setAnimation(null) }} aria-label="Show it on a character"><Shirt size={14} aria-hidden="true" />On character</Toggle>
+          <Toggle variant="outline" pressed={worn} disabled={!target.ownModel} onPressedChange={value => { setWorn(value); setAnimation(null) }} aria-label="Show it on a character"><Shirt size={14} aria-hidden="true" />On character</Toggle>
         )}
         {model.data && !failed && (
           <>
@@ -87,7 +93,7 @@ export function ItemModelViewer({ target, name }: { target: ModelTarget; name: s
               {animations.length === 1 && <Badge>{animations[0]!.name}</Badge>}
               {model.data.kind === 'item' && model.data.model.parts.length > 1 && <Badge>{model.data.model.parts.length} pieces</Badge>}
               {model.data.kind === 'worn' && <Badge><Shirt size={12} aria-hidden="true" />Stand-in human</Badge>}
-              {particles && <Badge tone="neutral"><Sparkles size={12} aria-hidden="true" />Particle effects not shown</Badge>}
+              {particles && <Badge><Sparkles size={12} aria-hidden="true" />Particle effects</Badge>}
             </span>
           </>
         )}
