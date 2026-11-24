@@ -146,7 +146,7 @@ export function createRouter(s:RouterServices){return t.router({
   talentTree:p.input(z.object({specId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('talentTree',input.specId))),
   specializations:p.query(()=>run(()=>s.gameData.call('specializations'))),
   embellishments:p.input(z.object({itemId:z.number().int().positive().nullable(),itemLevel:z.number().int().min(1).max(2000).nullable()})).query(({input})=>run(()=>s.gameData.call('embellishments',input.itemId,input.itemLevel))),
-  appearanceOptions:p.input(itemSearchSchema.pick({text:true,armor:true,quality:true,source:true,expansion:true,offset:true}).extend({slot:appearanceSlotSchema}))
+  appearanceOptions:p.input(itemSearchSchema.pick({text:true,armor:true,quality:true,source:true,expansion:true,offset:true,character:true,weaponSubclasses:true,inventoryTypes:true}).extend({slot:appearanceSlotSchema}))
     .query(({input})=>run(()=>s.gameData.call('appearanceOptions',input))),
   enchantNames:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('enchantNames',input.ids))),
   // Public insights: top players for a spec and the WoW Token price

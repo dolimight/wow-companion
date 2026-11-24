@@ -115,6 +115,7 @@ export const itemSearchSchema = z.object({
   /** Only items of this game class and subclass, such as 2 and 10 for staves */
   itemClass: z.number().int().min(0).max(20).nullable().default(null),
   itemSubclass: z.number().int().min(0).max(31).nullable().default(null),
+  weaponSubclasses: z.array(z.number().int().min(0).max(31)).min(1).max(20).nullable().default(null),
   /** Only items whose look has a particle effect, or only those without */
   effect: z.enum(['any', 'with', 'without']).default('any'),
   /** Only items carrying every one of these look tags, such as "purple" or "fire" */

@@ -489,24 +489,31 @@ export class GameDataEngine {
     return this.searchRows(input)
   }
 
-  searchPage(input: ItemSearch) {
+  searchPage(input: ItemSearch, appearance = false) {
     const query = itemSearchSchema.parse(input)
-    const rows = this.searchRows(query, 1)
+    const rows = this.searchRows(query, 1, appearance)
     return { items: rows.slice(0, query.limit), nextOffset: rows.length > query.limit ? query.offset + query.limit : null }
   }
 
-  private searchRows(input: ItemSearch, extra = 0): ItemSummary[] {
+  private searchRows(input: ItemSearch, extra = 0, appearance = false): ItemSummary[] {
     const query = itemSearchSchema.parse(input)
     const db = this.ready()
     const where = [JUNK]
+    if (appearance) where.push('EXISTS (SELECT 1 FROM appearances a WHERE a.item_id = i.id)')
     const params: unknown[] = []
     let join = ''
     const tokens = query.text.normalize('NFKC').toLocaleLowerCase().match(/[\p{L}\p{N}']+/gu) ?? []
     if (tokens.length) { join = 'JOIN items_fts f ON f.rowid = i.id AND items_fts MATCH ?'; params.push(tokens.map(token => `"${token.replace(/"/g, '')}"*`).join(' ')) }
-    const types = query.inventoryTypes ? [...query.inventoryTypes] : query.slot ? [...slotInventoryTypes[query.slot]] : null
-    if (types && query.slot === 'offHand' && query.character?.className.toLowerCase() === 'warrior' && query.character.specId === 72) types.push(17)
+    const slotTypes = query.slot ? [...slotInventoryTypes[query.slot]] : null
+    if (slotTypes && query.slot === 'offHand' && query.character?.className.trim().toLowerCase() === 'warrior' && query.character.specId === 72) slotTypes.push(17)
+    const types = query.inventoryTypes && slotTypes ? query.inventoryTypes.filter(type => slotTypes.includes(type)) : query.inventoryTypes ?? slotTypes
+    if (types?.length === 0) return []
     where.push(`i.inventory_type IN (${types ? types.join(',') : EQUIPPABLE})`)
-    if (query.armor && (!query.slot || armorSlots.has(query.slot))) { where.push(`(i.inventory_type NOT IN (1,3,5,6,7,8,9,10,20) OR (i.class_id = 4 AND i.subclass_id = ?))`); params.push(armorTypes.indexOf(query.armor) + 1) }
+    if (query.armor && (!query.slot || armorSlots.has(query.slot))) {
+      const subclasses = appearance ? 'IN (?, 0, 5)' : '= ?'
+      where.push(`(i.inventory_type NOT IN (1,3,5,6,7,8,9,10,20) OR (i.class_id = 4 AND i.subclass_id ${subclasses}))`)
+      params.push(armorTypes.indexOf(query.armor) + 1)
+    }
     if (query.itemClass != null) { where.push('i.class_id = ?'); params.push(query.itemClass) }
     if (query.expansion != null) { where.push('i.expansion = ?'); params.push(query.expansion) }
     // Look filters apply once the looks index is built; until then they are left out
@@ -516,6 +523,10 @@ export class GameDataEngine {
       for (const tag of query.tags) { where.push('instr(l.tags, ?) > 0'); params.push(`,${tag},`) }
     }
     if (query.itemSubclass != null) { where.push('i.subclass_id = ?'); params.push(query.itemSubclass) }
+    if (query.weaponSubclasses) {
+      where.push(`i.class_id = 2 AND i.subclass_id IN (${query.weaponSubclasses.map(() => '?').join(',')})`)
+      params.push(...query.weaponSubclasses)
+    }
     if (query.source === 'crafted') where.push('i.crafted = 1')
     else if (query.source !== 'any') { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.kind = ?)'); params.push(query.source) }
     if (query.instance) { where.push('EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.instance = ?)'); params.push(query.instance) }
@@ -530,10 +541,10 @@ export class GameDataEngine {
       ? "(i.latest_track = 1 OR EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND s.season > 0 AND s.season = (SELECT MAX(season) FROM sources)) OR (i.crafted = 1 AND i.quality >= 4 AND i.class_id IN (2, 4) AND i.expansion = (SELECT MAX(expansion) FROM items WHERE crafted = 1)))"
       : 'EXISTS (SELECT 1 FROM sources s WHERE s.item_id = i.id AND (s.season = (SELECT MAX(season) FROM sources) OR i.expansion = (SELECT MAX(expansion) FROM items WHERE quality = 4 AND id IN (SELECT item_id FROM sources))))')
     // Base level is stored, so its range and order stay in SQL; the highest reachable level is worked out per row below
-    const byMax = query.sort !== 'baseLevel' || (query.levelBasis === 'max' && (query.minLevel != null || query.maxLevel != null))
+    const byMax = !appearance && (query.sort !== 'baseLevel' || (query.levelBasis === 'max' && (query.minLevel != null || query.maxLevel != null)))
     if (query.levelBasis === 'base' && query.minLevel != null) { where.push('i.item_level >= ?'); params.push(query.minLevel) }
     if (query.levelBasis === 'base' && query.maxLevel != null) { where.push('i.item_level <= ?'); params.push(query.maxLevel) }
-    const order = query.sort === 'baseLevel' ? 'ORDER BY i.item_level DESC, i.quality DESC, i.expansion DESC, i.id'
+    const order = !appearance && query.sort === 'baseLevel' ? 'ORDER BY i.item_level DESC, i.quality DESC, i.expansion DESC, i.id'
       : tokens.length ? 'ORDER BY bm25(items_fts), i.expansion DESC, i.item_level DESC, i.id' : 'ORDER BY i.expansion DESC, i.item_level DESC, i.quality DESC, i.id'
     if (byMax) return this.searchByMaxLevel(query, `SELECT i.* FROM items i ${join} WHERE ${where.join(' AND ')} ${order}`, params, extra)
     const statement = db.prepare(`SELECT i.* FROM items i ${join} WHERE ${where.join(' AND ')} ${order} LIMIT ? OFFSET ?`)
@@ -545,7 +556,7 @@ export class GameDataEngine {
     for (let offset=0; unique.length<target; offset+=pageSize) {
       const rows = statement.all(...params,pageSize,offset) as ItemRow[]
       for (const row of rows) {
-        if (!getItemCompatibility(this.summary(row,new Map()),query.character,{slot:query.slot}).compatible) continue
+        if (!getItemCompatibility(this.summary(row,new Map()),query.character,{slot:query.slot,appearance}).compatible) continue
         const key = `${row.name}|${row.inventory_type}`
         if (seen.has(key)) continue
         seen.add(key)
@@ -1066,7 +1077,8 @@ export class GameDataEngine {
       const resolved = await Promise.all(ordered.map(async piece => {
         const found = await this.itemDisplay(piece.itemId, piece.modifiedAppearanceId, piece.appearanceId, look)
         const detail = found?.itemId ? this.item(found.itemId) : null
-        if (!found || !detail || !wearableTypes.has(detail.inventoryType) || !slotInventoryTypes[piece.slot]?.includes(detail.inventoryType)) {
+        const fitsPreview = detail && (slotInventoryTypes[piece.slot].includes(detail.inventoryType) || piece.slot === 'offHand' && detail.inventoryType === 17)
+        if (!found || !detail || !wearableTypes.has(detail.inventoryType) || !fitsPreview) {
           unavailable.push(piece.slot)
           return null
         }
@@ -1441,7 +1453,7 @@ export class GameDataEngine {
   }
 
   appearanceOptions(input: ItemSearch): { items: AppearanceOption[]; nextOffset: number | null } {
-    const { items, nextOffset } = this.searchPage({ ...input, limit: 48 })
+    const { items, nextOffset } = this.searchPage({ ...input, limit: 48 }, true)
     if (!items.length) return { items: [], nextOffset }
     const rows = this.ready().prepare(`SELECT modified_id, item_id, appearance_id, icon FROM appearances WHERE item_id IN (${items.map(() => '?').join(',')}) ORDER BY modifier`).all(...items.map(item => item.id)) as Array<{ modified_id: number; item_id: number; appearance_id: number; icon: number | null }>
     const byItem = new Map(items.map(item => [item.id, item]))

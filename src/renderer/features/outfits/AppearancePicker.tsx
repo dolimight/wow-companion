@@ -1,8 +1,9 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { Search, Shirt } from 'lucide-react'
+import { Axe, Crosshair, Hammer, Search, Shirt, Swords, Wand } from 'lucide-react'
 import type { AppearanceSlot, Character } from '../../../shared/domain'
 import { armorForClass, qualityNames, type AppearanceOption, type ItemSearch } from '../../../shared/gamedata'
+import { classWeaponSubclasses } from '../../../shared/item-compatibility'
 import { api } from '../../lib/client'
 import { errorMessage } from '../../lib/notify'
 import { AppSelect } from '../../components/AppSelect'
@@ -15,6 +16,22 @@ import type { Tile } from '../model-viewer/ModelTile'
 import { TileGrid } from '../model-viewer/TileGrid'
 
 const sources = [{ value: 'any', label: 'Any source' }, { value: 'raid', label: 'Raid' }, { value: 'dungeon', label: 'Dungeon' }, { value: 'crafted', label: 'Crafted' }] as const
+const weaponFamilies = [
+  { value: 'axe', label: 'Axes', subclasses: [0, 1], icon: Axe },
+  { value: 'mace', label: 'Maces', subclasses: [4, 5], icon: Hammer },
+  { value: 'sword', label: 'Swords', subclasses: [7, 8], icon: Swords },
+  { value: 'dagger', label: 'Daggers', subclasses: [15], icon: Swords },
+  { value: 'fist', label: 'Fist weapons', subclasses: [13], icon: Swords },
+  { value: 'glaive', label: 'Warglaives', subclasses: [9], icon: Swords },
+  { value: 'polearm', label: 'Polearms', subclasses: [6], icon: Swords },
+  { value: 'staff', label: 'Staves', subclasses: [10], icon: Wand },
+  { value: 'bow', label: 'Bows', subclasses: [2], icon: Crosshair },
+  { value: 'crossbow', label: 'Crossbows', subclasses: [18], icon: Crosshair },
+  { value: 'gun', label: 'Guns', subclasses: [3], icon: Crosshair },
+  { value: 'wand', label: 'Wands', subclasses: [19], icon: Wand },
+]
+const wieldFilters: Record<string, number[] | null> = { any: null, one: [13, 21, 22], two: [17], ranged: [15, 26], off: [14, 23] }
+const wieldOptions = [{ value: 'any', label: 'Any handedness' }, { value: 'one', label: 'One-handed' }, { value: 'two', label: 'Two-handed' }, { value: 'ranged', label: 'Ranged' }]
 
 export function AppearancePicker({ slot, label, character, onClose, onPick }: {
   slot: AppearanceSlot
@@ -28,10 +45,21 @@ export function AppearancePicker({ slot, label, character, onClose, onPick }: {
   const [quality, setQuality] = useState('any')
   const [source, setSource] = useState<NonNullable<ItemSearch['source']>>('any')
   const [expansion, setExpansion] = useState('any')
+  const [wield, setWield] = useState('any')
+  const [weapon, setWeapon] = useState('any')
   const host = useRef<HTMLDivElement>(null)
   const { data: gameData } = useGameData()
   const ready = gameData?.state === 'ready'
-  const filters = { slot, text: term, armor: armorForClass(character.className), source, quality: quality === 'any' ? null : Number(quality), expansion: expansion === 'any' ? null : Number(expansion) }
+  const weaponSlot = slot === 'mainHand' || slot === 'offHand'
+  const allowed = classWeaponSubclasses(character.className)
+  const families = weaponFamilies.filter(entry => !allowed || entry.subclasses.some(id => allowed.includes(id)))
+  const filters = {
+    slot, text: term, armor: armorForClass(character.className), source,
+    character: { className: character.className, specId: character.specId, level: character.level },
+    quality: quality === 'any' ? null : Number(quality), expansion: expansion === 'any' ? null : Number(expansion),
+    inventoryTypes: weaponSlot ? wieldFilters[wield] ?? null : null,
+    weaponSubclasses: weaponSlot && wield !== 'off' ? families.find(entry => entry.value === weapon)?.subclasses ?? null : null,
+  }
   const appearances = useInfiniteQuery({
     queryKey: ['outfit-appearances', gameData?.indexedVersion, filters],
     queryFn: ({ pageParam }) => api.appearanceOptions({ ...filters, offset: pageParam }),
@@ -62,7 +90,7 @@ export function AppearancePicker({ slot, label, character, onClose, onPick }: {
     <DialogContent className="appearance-picker sm:max-w-[min(960px,calc(100vw-2rem))]">
       <DialogHeader>
         <DialogTitle>Choose {label.toLowerCase()} appearance</DialogTitle>
-        <DialogDescription>Select a tile to add the appearance to your outfit</DialogDescription>
+        <DialogDescription>Showing appearances for {character.className} · Select a tile to add it to your outfit</DialogDescription>
       </DialogHeader>
       <div className="appearance-picker-filters">
         <label className="model-page-search"><Search size={15} aria-hidden="true" />
@@ -71,6 +99,14 @@ export function AppearancePicker({ slot, label, character, onClose, onPick }: {
         <AppSelect label="Expansion" value={expansion} onValueChange={setExpansion} options={[{ value: 'any', label: 'Any expansion' }, ...expansionNames.map((name, i) => ({ value: String(i), label: name })).reverse()]} />
         <AppSelect label="Quality" value={quality} onValueChange={setQuality} options={[{ value: 'any', label: 'Any quality' }, ...qualityNames.map((name, i) => ({ value: String(i), label: name }))]} />
         <AppSelect label="Source" value={source} onValueChange={value => setSource(value as typeof source)} options={sources} />
+        {weaponSlot && <>
+          <AppSelect label="Handedness" value={wield} onValueChange={value => { setWield(value); if (value === 'off') setWeapon('any') }}
+            options={slot === 'offHand'
+              ? [...wieldOptions.filter(option => option.value !== 'ranged' && (option.value !== 'two' || character.specId === 72)), { value: 'off', label: 'Shields and held items' }]
+              : wieldOptions} />
+          <AppSelect label="Weapon type" value={weapon} onValueChange={setWeapon} disabled={wield === 'off'}
+            options={[{ value: 'any', label: 'Any weapon type' }, ...families.map(({ value, label, icon: Icon }) => ({ value, label, icon: <Icon size={14} aria-hidden="true" /> }))]} />
+        </>}
       </div>
       <div className="appearance-picker-stage" ref={host}>
         <div className="appearance-picker-results" key={JSON.stringify(filters)}>

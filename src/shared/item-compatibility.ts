@@ -55,12 +55,16 @@ const weaponInventoryTypes = new Set([13, 15, 17, 21, 22, 26])
 const normalizeClass = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ')
 const reject = (reason: string): ItemCompatibility => ({ compatible: false, verified: true, reason })
 
+export function classWeaponSubclasses(className: string): readonly number[] | undefined {
+  return classes[normalizeClass(className)]?.weapons
+}
+
 /** A completed check covers known equipment rules only, not loot access, effects, or best-in-slot */
-export function getItemCompatibility(item: ItemSummary, character: ItemSearchCharacter | null, options: { slot?: AppearanceSlot | null } = {}): ItemCompatibility {
+export function getItemCompatibility(item: ItemSummary, character: ItemSearchCharacter | null, options: { slot?: AppearanceSlot | null; appearance?: boolean } = {}): ItemCompatibility {
   const className = character ? normalizeClass(character.className) : ''
   const playerClass = classes[className]
   const candidateSpec = character?.specId ? specs[character.specId] : undefined
-  const spec = candidateSpec?.classId === playerClass?.id ? candidateSpec : undefined
+  const spec = !options.appearance && candidateSpec?.classId === playerClass?.id ? candidateSpec : undefined
   const titansGrip = playerClass?.id === 1 && character?.specId === 72 && item.inventoryType === 17 && item.classId === 2 && [1, 5, 6, 8].includes(item.subclassId ?? -1)
   const { slot } = options
   if (slot && !slotInventoryTypes[slot].includes(item.inventoryType) && !(slot === 'offHand' && titansGrip)) return reject('This item does not fit the selected slot')
@@ -68,16 +72,19 @@ export function getItemCompatibility(item: ItemSummary, character: ItemSearchCha
 
   const unknown: string[] = []
   if (!playerClass) unknown.push('class is unknown')
-  if (!spec) unknown.push('specialization is unknown')
-  if (character.level == null && item.requiredLevel > 0) unknown.push('character level is unknown')
-  if (character.level != null && item.requiredLevel > character.level) return reject(`Requires level ${item.requiredLevel}`)
+  if (!options.appearance) {
+    if (!spec) unknown.push('specialization is unknown')
+    if (character.level == null && item.requiredLevel > 0) unknown.push('character level is unknown')
+    if (character.level != null && item.requiredLevel > character.level) return reject(`Requires level ${item.requiredLevel}`)
+  }
   if (item.allowableClassMask == null) unknown.push('item class restrictions are unavailable')
   else if (playerClass && (item.allowableClassMask & (1 << (playerClass.id - 1))) === 0) return reject('This item is restricted to other classes')
 
   if (armorInventoryTypes.has(item.inventoryType)) {
     const armor = item.armor ?? (item.classId === 4 ? [null, 'cloth', 'leather', 'mail', 'plate'][item.subclassId ?? -1] : null)
     if (armor && playerClass && armor !== armorForClass(className)) return reject(`This character uses ${armorForClass(className)} armor`)
-    if (!armor && !(item.classId === 4 && item.subclassId === 0)) unknown.push('armor type is unavailable')
+    const cosmetic = options.appearance && item.classId === 4 && item.subclassId === 5
+    if (!armor && !cosmetic && !(item.classId === 4 && item.subclassId === 0)) unknown.push('armor type is unavailable')
   }
   if (item.inventoryType === 14) {
     if (playerClass && ![1, 2, 7].includes(playerClass.id)) return reject('This class cannot use shields')
@@ -99,6 +106,8 @@ export function getItemCompatibility(item: ItemSummary, character: ItemSearchCha
     if (offhand && !spec && playerClass && ![1, 3, 4, 6, 7, 10, 12].includes(playerClass.id)) return reject('This class cannot dual wield')
     if (offhand && item.inventoryType === 17 && !titansGrip) return reject('Only Fury can use this two-hand weapon in the off hand')
   }
+
+  if (options.appearance) return { compatible: true, verified: unknown.length === 0, reason: unknown.length ? `Partial check: ${unknown.join('; ')}` : null }
 
   // ItemSpecOverride is authoritative over inferred primary-stat suitability. For trinkets it only decides who can
   // loot one: any class can wear it, and tanks do wear damage trinkets for their effects, so it never hides one
