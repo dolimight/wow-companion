@@ -66,7 +66,8 @@
 .model-page-leaf { padding: 4px 8px; }
 .model-dialog { display: grid; gap: 14px; }
 .model-dialog .model-viewer-stage { height: min(72vh, 760px); }
-.model-dialog-link { margin-left: auto; }
+/* Clear of the dialog's close button in the top corner */
+.model-dialog-link { margin-left: auto; margin-right: 36px; }
 
 /* The shared canvas the grid's models play on, laid over the page; the pointer passes through to the tiles */
 .model-grid-stage { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 5; }
