@@ -4,7 +4,6 @@ import type { Activity, AddCharacterInput, AppSettings, CharacterPatch, GearDraf
 import type { ConnectionInfo, NativeBridge } from '../../shared/bridge'
 import type { ItemSearch, ItemSearchCharacter } from '../../shared/gamedata'
 import type { AppearanceSlot } from '../../shared/domain'
-import type { ArmorType } from '../../shared/gamedata'
 import type { SimulationScenarioId } from '../../shared/simulation'
 import type { ContentPreferences } from '../../shared/season-rules'
 import type { SessionPreferences } from '../../shared/session-plan'
@@ -83,7 +82,7 @@ export const api={
  talentTree:async(specId:number)=>(await client()).talentTree.query({specId}),
  specializations:async()=>(await client()).specializations.query(),
  embellishments:async(input:{itemId:number|null;itemLevel:number|null})=>(await client()).embellishments.query(input),
- appearanceOptions:async(input:{slot:AppearanceSlot;text:string;armor:ArmorType|null})=>(await client()).appearanceOptions.query(input),
+ appearanceOptions:async(input:Pick<ItemSearch,'text'|'armor'|'quality'|'source'|'expansion'|'offset'> & {slot:AppearanceSlot})=>(await client()).appearanceOptions.query(input),
  enchantNames:async(ids:number[])=>(await client()).enchantNames.query({ids}),
  connectionsStatus:async()=>(await client()).connectionsStatus.query(),
  detectInstall:async()=>(await client()).detectInstall.mutate(),
@@ -105,7 +104,7 @@ export const api={
  aiAsk:async<F extends import('../../shared/ai').AiAsk>(ask:F)=>(await client()).aiAsk.mutate(ask) as Promise<import('../../shared/ai').AiAnswer<import('../../shared/ai').AiFeatureOutput<F['feature']>>>,
  routePulls:async(dungeon:string,routeKey:string)=>(await client()).routePulls.query({dungeon,routeKey}),
  dungeonEnemies:async(dungeon:string)=>(await client()).dungeonEnemies.query({dungeon}),
- itemModel:async(itemId:number)=>(await client()).itemModel.query({itemId}),
+ itemModel:async(itemId:number,modifiedAppearanceId?:number)=>(await client()).itemModel.query({itemId,modifiedAppearanceId}),
  wornModel:async(itemId:number,characterId?:string)=>(await client()).wornModel.query({itemId,characterId}),
  outfitModel:async(pieces:import('../../shared/model').OutfitModelPiece[],characterId?:string)=>(await client()).outfitModel.query({pieces,characterId}),
  creatureModel:async(displayId:number)=>(await client()).creatureModel.query({displayId}),

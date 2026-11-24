@@ -72,14 +72,6 @@
 .wardrobe-unsaved, .wardrobe-delete-confirm { padding: 16px 0; margin-bottom: 20px; border-block: 1px solid var(--line); }
 .wardrobe-unsaved p, .wardrobe-delete-confirm p { margin-bottom: 10px; font-size: 13px; }
 .wardrobe-appearance-empty { padding: 32px 0; color: var(--secondary); font-size: 13px; line-height: 1.6; }
-.wardrobe-appearance-results { list-style: none; padding: 0; margin: 18px 0; }
-.wardrobe-appearance-results button { display: flex; width: 100%; gap: 12px; align-items: center; text-align: left; border: 0; background: transparent; color: var(--ink); padding: 12px 4px; border-bottom: 1px solid var(--line); }
-.wardrobe-appearance-results button:hover { background: var(--surface2); }
-.wardrobe-appearance-results button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
-.wardrobe-appearance-results button > span:last-child { flex: 1; min-width: 0; }
-.wardrobe-appearance-results strong, .wardrobe-appearance-results small { display: block; overflow-wrap: anywhere; }
-.wardrobe-appearance-results strong { font-size: 13px; font-weight: 600; }
-.wardrobe-appearance-results small { color: var(--muted); font-size: 12px; margin-top: 5px; }
 @media (max-width: 1250px) {
   .wardrobe-editor-body { grid-template-columns: minmax(0,1fr); }
 }
@@ -90,3 +82,10 @@
   .wardrobe-planned-slots li { flex-wrap: wrap; }
   .wardrobe-slot-actions { margin-left: auto; }
 }
+.appearance-picker { display: flex; flex-direction: column; height: min(780px, calc(100dvh - 3rem)); min-height: 0; }
+.appearance-picker-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.appearance-picker-filters .model-page-search { flex: 1 1 240px; min-width: 0; }
+.appearance-picker-stage { position: relative; flex: 1; min-height: 0; }
+.appearance-picker-results { height: 100%; overflow: auto; padding: 2px 6px 14px 2px; }
+.appearance-picker-results > button { display: flex; margin: 16px auto 0; }
+.appearance-picker-results .model-grid { grid-template-columns: repeat(auto-fill, minmax(min(148px, 100%), 1fr)); }

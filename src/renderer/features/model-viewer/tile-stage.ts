@@ -35,22 +35,29 @@ export class TileStage {
   private busy = 0
   private frame = 0
   private last = performance.now()
+  private sizeObserver?: ResizeObserver
   paused = false
 
-  constructor(private clip: () => { left: number; top: number; right: number; bottom: number }) {
+  constructor(private clip: () => { left: number; top: number; right: number; bottom: number }, private host?: HTMLElement) {
     this.canvas.className = 'model-grid-stage'
     this.canvas.setAttribute('aria-hidden', 'true')
-    document.body.appendChild(this.canvas)
     this.renderer = new WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true })
+    if (host) this.canvas.classList.add('model-grid-stage-local')
+    const parent = host ?? document.body
+    parent.appendChild(this.canvas)
     this.renderer.outputColorSpace = SRGBColorSpace
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     this.resize()
     window.addEventListener('resize', this.resize)
+    if (host) {
+      this.sizeObserver = new ResizeObserver(this.resize)
+      this.sizeObserver.observe(host)
+    }
     const loop = (now: number) => { this.frame = requestAnimationFrame(loop); this.draw(now) }
     this.frame = requestAnimationFrame(loop)
   }
 
-  private resize = () => this.renderer.setSize(window.innerWidth, window.innerHeight, false)
+  private resize = () => this.renderer.setSize(this.host?.clientWidth ?? window.innerWidth, this.host?.clientHeight ?? window.innerHeight, false)
 
   /** Shows a tile's model once it is read; returns what to call when the tile leaves the view */
   add(element: HTMLElement, target: TileTarget, onState: (state: TileState) => void) {
@@ -75,6 +82,8 @@ export class TileStage {
         entry.scene = new ItemModelScene(this.canvas, found, iconUrl, { renderer: this.renderer, background: entry.background })
         entry.scene.setTurning(entry.hovered)
         entry.onState('ready')
+      }).catch(() => {
+        if (this.entries.has(entry)) entry.onState('empty')
       }).finally(() => { this.busy--; this.pump() })
     }
   }
@@ -88,19 +97,23 @@ export class TileStage {
     if (this.paused) return
     this.renderer.setScissorTest(true)
     const clip = this.clip()
-    const height = window.innerHeight
+    const hostRect = this.host?.getBoundingClientRect()
+    const x = hostRect?.left ?? 0, y = hostRect?.top ?? 0
+    const height = this.host?.clientHeight ?? window.innerHeight
+    const localClip = { left: clip.left - x, top: clip.top - y, right: clip.right - x, bottom: clip.bottom - y }
     for (const entry of this.entries) {
       if (!entry.scene) continue
       const rect = entry.element.getBoundingClientRect()
       if (rect.bottom < clip.top || rect.top > clip.bottom || rect.right < clip.left || rect.left > clip.right) continue
       entry.scene.advance(delta)
-      entry.scene.renderViewport(rect, clip, height)
+      entry.scene.renderViewport({ left: rect.left - x, top: rect.top - y, width: rect.width, height: rect.height }, localClip, height)
     }
   }
 
   dispose() {
     cancelAnimationFrame(this.frame)
     window.removeEventListener('resize', this.resize)
+    this.sizeObserver?.disconnect()
     for (const entry of this.entries) entry.scene?.dispose()
     this.entries.clear()
     this.renderer.dispose()

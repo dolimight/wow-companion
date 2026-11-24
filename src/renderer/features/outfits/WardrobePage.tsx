@@ -4,10 +4,11 @@ import { LeaveGuard } from '../../components/LeaveGuard'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, EyeOff, Plus, RotateCcw, Save, Search, Shirt, Trash2, X } from 'lucide-react'
 import { outfitSchema, type AppearanceSlot, type Character, type Outfit } from '../../../shared/domain'
-import { armorForClass } from '../../../shared/gamedata'
+import type { AppearanceOption } from '../../../shared/gamedata'
+import { AppearancePicker } from './AppearancePicker'
 import { outfitModelPieces } from '../../../shared/outfit-model-pieces'
 import { AppSelect } from '../../components/AppSelect'
-import { Badge, Button, EmptyState, Field, Sheet } from '../../components/ui/primitives'
+import { Badge, Button, EmptyState, Field } from '../../components/ui/primitives'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { ItemIcon, useGameData } from '../items/items'
 import { api } from '../../lib/client'
@@ -33,8 +34,6 @@ export function WardrobePage({ character }: { character: Character }) {
   const [deleting, setDeleting] = useState(false)
   const [slot, setSlot] = useState<AppearanceSlot>('head')
   const [searchOpen, setSearchOpen] = useState(false)
-  const [text, setText] = useState('')
-  const [debounced, setDebounced] = useState('')
   const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: dirty, withResolver: true })
   const [closing, setClosing] = useState(false)
   // The wording follows the last request, so it holds still while the dialog fades out
@@ -45,8 +44,6 @@ export function WardrobePage({ character }: { character: Character }) {
   const remove = useMutation({ mutationFn: (id: string) => api.deleteOutfit({ id }), onSuccess: (_, id) => { const remaining = (query.data ?? []).filter(outfit => outfit.id !== id); queryClient.setQueryData(['outfits', character.id], remaining); setDraft(remaining[0] ?? null); setDirty(false); setDeleting(false); void queryClient.invalidateQueries({ queryKey: ['outfits', character.id] }); notify('Outfit deleted') }, onError: error => notify(errorMessage(error)) })
   useEffect(() => { setDraft(null); setDirty(false); setPending(null); setDeleting(false); setSearchOpen(false) }, [character.id])
   useEffect(() => { if (!draft && !dirty && query.data?.length) setDraft(query.data[0]!) }, [query.data, draft, dirty])
-  useEffect(() => { const timer = setTimeout(() => setDebounced(text), 160); return () => clearTimeout(timer) }, [text])
-  const options = useQuery({ queryKey: ['outfit-appearances', character.id, character.className, slot, debounced], queryFn: () => api.appearanceOptions({ slot, text: debounced, armor: armorForClass(character.className) }), enabled: searchOpen })
   const gameData = useGameData()
   const previewPieces = useMemo(() => draft ? outfitModelPieces(draft) : [], [draft?.slots, draft?.hiddenSlots])
   const itemIds = useMemo(() => [...new Set(Object.values(draft?.slots ?? {}).flatMap(entry => entry?.itemId ? [entry.itemId] : []))], [draft?.slots])
@@ -55,6 +52,17 @@ export function WardrobePage({ character }: { character: Character }) {
   function change(value: Outfit) { setDraft(value); setDirty(true); setDeleting(false) }
   function choose(value: Outfit) { if (save.isPending || remove.isPending || draft?.id === value.id) return; if (dirty) { setPending(value); return } setDraft(value); setDeleting(false) }
   function create() { if (save.isPending || remove.isPending) return; const value = newOutfit(character); if (dirty) setPending(value); else change(value) }
+  function pickAppearance(appearance: AppearanceOption) {
+    if (!draft) return
+    const { appearanceId, modifiedAppearanceId, itemId, itemName } = appearance
+    change({
+      ...draft,
+      slots: { ...draft.slots, [slot]: { appearanceId, modifiedAppearanceId, itemId, variantKey: null, source: itemName } },
+      hiddenSlots: draft.hiddenSlots.filter(value => value !== slot),
+      updatedAt: new Date().toISOString(),
+    })
+    setSearchOpen(false)
+  }
   function observedLook() {
     if (!draft) return
     if (!Object.keys(character.observedTransmog).length) { notify('No observed transmog is available for this character'); return }
@@ -86,7 +94,7 @@ export function WardrobePage({ character }: { character: Character }) {
         <div className="wardrobe-editor-body"><div className="wardrobe-slot-editor">
           <div className="wardrobe-slot-toolbar">
             <div className="wardrobe-slot-picker"><AppearanceSlotIcon slot={slot} size={17} /><AppSelect aria-label="Appearance slot" value={slot} options={editableSlots} onValueChange={value => setSlot(value as AppearanceSlot)} /></div>
-            <Button onClick={() => { setText(''); setSearchOpen(true) }}><Search size={14} aria-hidden="true" />Find appearance</Button>
+            <Button onClick={() => setSearchOpen(true)}><Search size={14} aria-hidden="true" />Find appearance</Button>
             <Button variant="quiet" disabled={!Object.keys(character.observedTransmog).length} onClick={observedLook}><RotateCcw size={14} aria-hidden="true" />Use observed look</Button>
           </div>
           <ul className="wardrobe-planned-slots">{editableSlots.filter(entry => draft.slots[entry.value] || draft.hiddenSlots.includes(entry.value)).map(entry => {
@@ -97,7 +105,7 @@ export function WardrobePage({ character }: { character: Character }) {
               <ItemIcon icon={item?.icon} quality={item?.quality} fallback={hidden ? <EyeOff size={18} aria-hidden="true" /> : <AppearanceSlotIcon slot={entry.value} />} />
               <div className="wardrobe-planned-description"><strong>{entry.label}</strong><span>{hidden ? 'Hidden' : appearance?.source ?? 'Planned appearance'}</span><small>{appearance?.modifiedAppearanceId ? `Appearance source ${appearance.modifiedAppearanceId}` : 'Exact appearance source unknown'}</small></div>
               <div className="wardrobe-slot-actions">
-                <Button variant="quiet" aria-label={`Change ${entry.label}`} onClick={() => { setSlot(entry.value); setText(''); setSearchOpen(true) }}>Change</Button>
+                <Button variant="quiet" aria-label={`Change ${entry.label}`} onClick={() => { setSlot(entry.value); setSearchOpen(true) }}>Change</Button>
                 <Button variant="icon" aria-label={`Remove ${entry.label}`} onClick={() => { const slots = { ...draft.slots }; delete slots[entry.value]; change({ ...draft, slots, hiddenSlots: draft.hiddenSlots.filter(slot => slot !== entry.value), acquisitionTargets: draft.acquisitionTargets.filter(target => target.slot !== entry.value), updatedAt: new Date().toISOString() }) }}><X size={14} aria-hidden="true" /></Button>
               </div>
             </li>
@@ -118,9 +126,6 @@ export function WardrobePage({ character }: { character: Character }) {
         <OutfitTools key={draft.id} character={character} outfit={draft} onChange={change} />
       </fieldset>}
     </div>}
-    <Sheet open={searchOpen} onOpenChange={setSearchOpen} title={`Choose ${editableSlots.find(entry => entry.value === slot)?.label.toLowerCase() ?? 'appearance'}`} description="Appearances from your installed item data, filtered to the selected slot and armor type">
-      <Field label="Search appearances"><input autoFocus value={text} maxLength={100} onChange={event => setText(event.currentTarget.value)} placeholder="Search by item name" /></Field><p className="muted small">Race, body, and character requirements are checked by the in-game preview</p>
-      {options.isError ? <div role="alert"><p>{errorMessage(options.error)}</p><Button onClick={() => void options.refetch()}>Try again</Button></div> : options.isFetching ? <p role="status">Searching appearances…</p> : !options.data?.length ? <p className="muted">No appearances found — check that local game data is ready or try another name</p> : <ul className="wardrobe-appearance-results">{options.data.map(appearance => <li key={`${appearance.modifiedAppearanceId}:${appearance.itemId}`}><button type="button" onClick={() => { if (!draft) return; change({ ...draft, slots: { ...draft.slots, [slot]: { appearanceId: appearance.appearanceId, modifiedAppearanceId: appearance.modifiedAppearanceId, itemId: appearance.itemId, variantKey: null, source: appearance.itemName } }, hiddenSlots: draft.hiddenSlots.filter(value => value !== slot), updatedAt: new Date().toISOString() }); setSearchOpen(false) }}><ItemIcon icon={appearance.icon} quality={appearance.quality} /><span><strong>{appearance.itemName}</strong><small>Appearance source {appearance.modifiedAppearanceId} · Ownership checked separately</small></span></button></li>)}</ul>}
-    </Sheet>
+    {searchOpen && <AppearancePicker key={slot} slot={slot} label={editableSlots.find(entry => entry.value === slot)?.label ?? slot} character={character} onClose={() => setSearchOpen(false)} onPick={pickAppearance} />}
   </section>
 }

@@ -12,7 +12,7 @@ import type { Sync } from '../sync'
 import type { ProgressionService } from '../progression/service'
 import { contentPreferencesSchema } from '../../shared/season-rules'
 import { appearanceSlotSchema } from '../../shared/domain'
-import { armorTypes, ascensionItem, itemSearchCharacterSchema, itemSearchSchema } from '../../shared/gamedata'
+import { ascensionItem, itemSearchCharacterSchema, itemSearchSchema } from '../../shared/gamedata'
 import { embellishmentRules, itemTracks, socketRules } from '../item-tracks'
 import { blizzardRegions } from '../providers/blizzard'
 import type { SessionService } from '../session/service'
@@ -146,7 +146,8 @@ export function createRouter(s:RouterServices){return t.router({
   talentTree:p.input(z.object({specId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('talentTree',input.specId))),
   specializations:p.query(()=>run(()=>s.gameData.call('specializations'))),
   embellishments:p.input(z.object({itemId:z.number().int().positive().nullable(),itemLevel:z.number().int().min(1).max(2000).nullable()})).query(({input})=>run(()=>s.gameData.call('embellishments',input.itemId,input.itemLevel))),
-  appearanceOptions:p.input(z.object({slot:appearanceSlotSchema,text:z.string().max(100),armor:z.enum(armorTypes).nullable()})).query(({input})=>run(()=>s.gameData.call('appearanceOptions',input.slot,input.text,input.armor))),
+  appearanceOptions:p.input(itemSearchSchema.pick({text:true,armor:true,quality:true,source:true,expansion:true,offset:true}).extend({slot:appearanceSlotSchema}))
+    .query(({input})=>run(()=>s.gameData.call('appearanceOptions',input))),
   enchantNames:p.input(z.object({ids:z.array(z.number().int().positive()).max(200)})).query(({input})=>run(()=>s.gameData.call('enchantNames',input.ids))),
   // Public insights: top players for a spec and the WoW Token price
   topPlayers:p.input(z.object({specId:z.number().int().positive(),specName:z.string().min(1).max(60),className:z.string().min(1).max(60),region:z.enum(['us','eu','world']).default('us'),force:z.boolean().optional()})).query(({input})=>run(()=>s.insights.topPlayers(input))),
@@ -159,7 +160,8 @@ export function createRouter(s:RouterServices){return t.router({
   dungeonEnemies:p.input(z.object({dungeon:z.string().regex(/^[a-z0-9-]{1,80}$/)})).query(({input})=>run(()=>s.insights.dungeonEnemies(input.dungeon))),
   dungeonJournal:p.input(z.object({name:z.string().min(1).max(120),encounterIds:z.array(z.number().int().positive()).max(20).default([]),difficulty:z.enum(['mythicPlus','lfr','normal','heroic','mythic']).default('mythicPlus')})).query(({input})=>run(()=>s.gameData.call('dungeonJournal',input.name,input.encounterIds,input.difficulty))),
   // An item's 3D model from the game files, for the item viewer
-  itemModel:p.input(z.object({itemId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('itemModel',input.itemId))),
+  itemModel:p.input(z.object({itemId:z.number().int().positive(),modifiedAppearanceId:z.number().int().positive().optional()}))
+    .query(({input})=>run(()=>s.gameData.call('itemModel',input.itemId,input.modifiedAppearanceId))),
   // The same item worn by a stand-in character, and creature models with the mount and pet lists that lead to them
   wornModel:p.input(z.object({itemId:z.number().int().positive(),characterId:z.string().min(1).max(100).optional()})).query(({input})=>run(async()=>{
     const character = input.characterId ? await s.db.call('getCharacter',input.characterId) : null

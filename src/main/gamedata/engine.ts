@@ -1024,11 +1024,11 @@ export class GameDataEngine {
    * textures, bones, and animations. Armor drawn only as a texture on the body, and rings, trinkets, and necks, have no
    * model of their own
    */
-  itemModel(itemId: number): Promise<ItemModel | null> {
+  itemModel(itemId: number, modifiedAppearanceId: number | null = null): Promise<ItemModel | null> {
     if (!Number.isInteger(itemId) || itemId <= 0) return Promise.reject(new Error('Invalid item'))
-    return this.remember(`item:${itemId}`, async () => {
-      const found = await this.itemDisplay(itemId)
-      if (!found) return null
+    return this.remember(`item:${itemId}:${modifiedAppearanceId}`, async () => {
+      const found = await this.itemDisplay(itemId, modifiedAppearanceId)
+      if (!found || found.itemId !== itemId) return null
       const parts: ModelPart[] = []
       // Shoulders have a model per side; other items show their main model, since a helmet's second one is a variant
       const shown = this.item(itemId)?.inventoryType === 3 ? found.resources : found.resources.slice(0, 1)
@@ -1440,18 +1440,19 @@ export class GameDataEngine {
     return result
   }
 
-  appearanceOptions(slot: AppearanceSlot, text: string, armor: (typeof armorTypes)[number] | null): AppearanceOption[] {
-    const items = this.search({ text, slot, armor, limit: 60 })
-    if (!items.length) return []
+  appearanceOptions(input: ItemSearch): { items: AppearanceOption[]; nextOffset: number | null } {
+    const { items, nextOffset } = this.searchPage({ ...input, limit: 48 })
+    if (!items.length) return { items: [], nextOffset }
     const rows = this.ready().prepare(`SELECT modified_id, item_id, appearance_id, icon FROM appearances WHERE item_id IN (${items.map(() => '?').join(',')}) ORDER BY modifier`).all(...items.map(item => item.id)) as Array<{ modified_id: number; item_id: number; appearance_id: number; icon: number | null }>
     const byItem = new Map(items.map(item => [item.id, item]))
     const seen = new Set<number>()
-    return rows.flatMap(row => {
+    const options = rows.flatMap(row => {
       if (seen.has(row.appearance_id)) return []
       seen.add(row.appearance_id)
       const item = byItem.get(row.item_id)!
       return [{ appearanceId: row.appearance_id, modifiedAppearanceId: row.modified_id, itemId: row.item_id, itemName: item.name, quality: item.quality, icon: row.icon ?? item.icon }]
     })
+    return { items: options, nextOffset }
   }
 
   /** Reads game tables for talents once per open session; they're large and every specialization shares them */
