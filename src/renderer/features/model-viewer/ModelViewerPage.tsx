@@ -4,7 +4,7 @@ import { Box, ChevronLeft, ChevronRight, ExternalLink, Search, Shirt } from 'luc
 import type { Character, GearItem } from '../../../shared/domain'
 import type { ItemSearchPage } from '../../../shared/gamedata'
 import { gearSlotLabels } from '../../../shared/simulation-benchmark'
-import { ownModelTypes, wearableTypes } from '../../../shared/model'
+import { heldTypes, ownModelTypes, wearableTypes } from '../../../shared/model'
 import { api } from '../../lib/client'
 import { errorMessage, notify } from '../../lib/notify'
 import { Card } from '../../components/ui/card'
@@ -83,7 +83,7 @@ export function ModelViewerPage({ character, selection, onSelect }: { character:
 
   const itemTile = (entry: { id: number; name: string; quality: number; icon: number | null; inventoryType: number }, detail: string): Tile => ({
     key: `i${entry.id}`, name: entry.name, quality: entry.quality, icon: entry.icon, detail,
-    target: { kind: 'item', itemId: entry.id, worn: wearableTypes.has(entry.inventoryType) && !ownModelTypes.has(entry.inventoryType) },
+    target: { kind: 'item', itemId: entry.id, worn: wearableTypes.has(entry.inventoryType) && !heldTypes.has(entry.inventoryType) },
     open: () => onSelect({ cat: selection.cat, item: entry.id }),
   })
   const tiles: Tile[] = useMemo(() => {
@@ -221,7 +221,7 @@ function ModelDialog({ selection, onClose }: { selection: ViewerSelection; onClo
           {shown && <Button className="model-dialog-link" onClick={() => external(wowheadItemUrl(shown.id, {}))}><ExternalLink size={14} aria-hidden="true" />Wowhead</Button>}
         </header>
         <Suspense fallback={<p className="muted small" role="status">Loading the 3D viewer…</p>}>
-          {shown ? <ItemModelViewer key={`item-${shown.id}`} target={{ kind: 'item', itemId: shown.id, wearable: wearableTypes.has(shown.inventoryType), ownModel: ownModelTypes.has(shown.inventoryType) }} name={shown.name} />
+          {shown ? <ItemModelViewer key={`item-${shown.id}`} target={{ kind: 'item', itemId: shown.id, wearable: wearableTypes.has(shown.inventoryType), ownModel: ownModelTypes.has(shown.inventoryType), held: heldTypes.has(shown.inventoryType) }} name={shown.name} />
             : selection.creature != null ? <ItemModelViewer key={`creature-${selection.creature}`} target={{ kind: 'creature', displayId: selection.creature }} name={title} />
               : open ? <p className="muted small" role="status">Loading…</p> : null}
         </Suspense>

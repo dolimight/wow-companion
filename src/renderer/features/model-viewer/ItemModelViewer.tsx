@@ -13,11 +13,12 @@ import { ItemModelScene, type ViewSubject } from './scene'
 import './model-viewer.css'
 
 /** Whether wearable items open on the stand-in, remembered between items and visits */
-const onCharacterKey = 'wowc:model-on-character'
-function readOnCharacter() { try { return localStorage.getItem(onCharacterKey) === '1' } catch { return false } }
+const onCharacterKey = (held: boolean) => held ? 'wowc:model-on-character' : 'wowc:model-armor-on-character'
+/** Armor starts on the stand-in and held items on their own; each remembers the player's own choice */
+function readOnCharacter(held: boolean) { try { const saved = localStorage.getItem(onCharacterKey(held)); return saved == null ? !held : saved === '1' } catch { return !held } }
 
 /** What to show: an item on its own or worn by a stand-in, or a creature such as a mount or pet */
-export type ModelTarget = { kind: 'item'; itemId: number; wearable: boolean; ownModel: boolean } | { kind: 'creature'; displayId: number }
+export type ModelTarget = { kind: 'item'; itemId: number; wearable: boolean; ownModel: boolean; held: boolean } | { kind: 'creature'; displayId: number }
 
 /**
  * A model from the player's game files: drag to turn it, scroll to zoom, and play the animations it has. Items that
@@ -26,9 +27,9 @@ export type ModelTarget = { kind: 'item'; itemId: number; wearable: boolean; own
 export function ItemModelViewer({ target, name }: { target: ModelTarget; name: string }) {
   const ready = useGameData().data?.state === 'ready'
   // Armor drawn on the body has no model of its own, so it starts on the stand-in; others follow the saved choice
-  const [onCharacter, setOnCharacter] = useState(readOnCharacter)
+  const [onCharacter, setOnCharacter] = useState(() => readOnCharacter(target.kind === 'item' && target.held))
   const worn = target.kind === 'item' && target.wearable && (!target.ownModel || onCharacter)
-  const setWorn = (value: boolean) => { setOnCharacter(value); try { localStorage.setItem(onCharacterKey, value ? '1' : '0') } catch { /* storage unavailable */ } }
+  const setWorn = (value: boolean) => { setOnCharacter(value); try { localStorage.setItem(onCharacterKey(target.kind === 'item' && target.held), value ? '1' : '0') } catch { /* storage unavailable */ } }
   const key = target.kind === 'creature' ? ['creature-model', target.displayId] : [worn ? 'worn-model' : 'item-model', target.itemId]
   const model = useQuery({
     queryKey: key,
