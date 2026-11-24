@@ -15,13 +15,12 @@
 .outfit-checklist .button { flex: none; }
 .outfit-observation-note, .outfit-preview-boundary { font-size: 12px; line-height: 1.5; color: var(--muted); max-width: 70ch; overflow-wrap: anywhere; }
 .outfit-options, .outfit-transfer { border-top: 1px solid var(--line); margin-top: 20px; }
-.outfit-tools summary, .wardrobe-model-details > summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.5; padding: 16px 0; }
-.outfit-tools summary::-webkit-details-marker, .wardrobe-model-details > summary::-webkit-details-marker { display: none; }
-.outfit-tools summary > svg, .wardrobe-model-details > summary > svg { flex: none; color: var(--secondary); }
-.outfit-tools summary > span, .wardrobe-model-details > summary > span { flex: 1; min-width: 0; }
+.outfit-tools summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.5; padding: 16px 0; }
+.outfit-tools summary::-webkit-details-marker { display: none; }
+.outfit-tools summary > svg { flex: none; color: var(--secondary); }
+.outfit-tools summary > span { flex: 1; min-width: 0; }
 .outfit-tools summary:hover { color: var(--accent); }
-.outfit-tools summary:focus-visible, .wardrobe-model-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
-details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg); }
+.outfit-tools summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
 .outfit-tools details > p { margin: 12px 0; font-size: 13px; line-height: 1.5; max-width: 70ch; }
 .outfit-hidden-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
 .outfit-slot-toggle { border: 1px solid var(--line); border-radius: 8px; min-height: 34px; padding: 5px 10px; font-size: 12px; color: var(--secondary); }
@@ -37,14 +36,6 @@ details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg
 .wardrobe-page-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .wardrobe-page-heading > .button { flex: none; }
 .wardrobe-page-heading p { color: var(--secondary); font-size: 13px; margin-top: 6px; }
-.wardrobe-model-details { margin-bottom: 24px; border-block: 1px solid var(--line); }
-.wardrobe-model-details > summary { cursor: pointer; font-size: 13px; font-weight: 550; padding: 14px 0; color: var(--secondary); }
-.wardrobe-model-details > summary:hover { color: var(--ink); }
-.wardrobe-model-details[open] > summary { color: var(--ink); }
-.wardrobe-model-details > section { margin-bottom: 18px; }
-.wardrobe-model-details > section > h2 { margin-bottom: 6px; }
-.wardrobe-model-details > section > p { margin-bottom: 16px; }
-.wardrobe-model-details:has(canvas) { border-bottom: 0; }
 .wardrobe-workspace { display: grid; grid-template-columns: 190px minmax(0,1fr); gap: 24px; align-items: start; }
 .wardrobe-workspace[data-empty] { grid-template-columns: minmax(0, 1fr); }
 .wardrobe-workspace[data-empty] > .empty-state { min-height: 340px; padding-block: 44px; }
@@ -64,7 +55,7 @@ details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg
 .wardrobe-editor-heading .actions { min-height: 36px; flex-wrap: wrap; }
 .wardrobe-editor-heading input { min-height: 36px; }
 .wardrobe-save-state { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 12px; }
-.wardrobe-editor-body { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 24px; align-items: start; }
+.wardrobe-editor-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(300px, .95fr); gap: 24px; align-items: start; }
 .wardrobe-slot-editor { min-width: 0; }
 .wardrobe-slot-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .wardrobe-slot-picker { display: inline-flex; align-items: center; gap: 8px; color: var(--secondary); }
@@ -77,35 +68,24 @@ details[open] > summary > .wardrobe-disclosure-chevron { transform: rotate(90deg
 .wardrobe-planned-slots strong { font-size: 13px; font-weight: 600; }
 .wardrobe-planned-description > span, .wardrobe-planned-description > small { display: block; font-size: 12px; line-height: 1.5; color: var(--secondary); overflow-wrap: anywhere; margin-top: 4px; }
 .wardrobe-planned-slots small { color: var(--muted); }
-.wardrobe-character-preview { background: var(--surface); border-radius: 12px; min-width: 0; padding: 16px; text-align: center; }
-.wardrobe-character-preview img { width: 100%; height: 260px; display: block; object-fit: contain; }
-.wardrobe-character-preview p { font-size: 12px; margin-top: 10px; color: var(--secondary); }
-.wardrobe-character-preview small { display: block; color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.5; }
-.wardrobe-no-render { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 128px; color: var(--muted); padding: 12px; }
+.wardrobe-character-preview .model-viewer-stage { height: clamp(220px, 40vh, 400px); }
 .wardrobe-unsaved, .wardrobe-delete-confirm { padding: 16px 0; margin-bottom: 20px; border-block: 1px solid var(--line); }
 .wardrobe-unsaved p, .wardrobe-delete-confirm p { margin-bottom: 10px; font-size: 13px; }
 .wardrobe-appearance-empty { padding: 32px 0; color: var(--secondary); font-size: 13px; line-height: 1.6; }
-.wardrobe-appearance-results { list-style: none; padding: 0; margin: 18px 0; }
-.wardrobe-appearance-results button { display: flex; width: 100%; gap: 12px; align-items: center; text-align: left; border: 0; background: transparent; color: var(--ink); padding: 12px 4px; border-bottom: 1px solid var(--line); }
-.wardrobe-appearance-results button:hover { background: var(--surface2); }
-.wardrobe-appearance-results button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
-.wardrobe-appearance-results button > span:last-child { flex: 1; min-width: 0; }
-.wardrobe-appearance-results strong, .wardrobe-appearance-results small { display: block; overflow-wrap: anywhere; }
-.wardrobe-appearance-results strong { font-size: 13px; font-weight: 600; }
-.wardrobe-appearance-results small { color: var(--muted); font-size: 12px; margin-top: 5px; }
 @media (max-width: 1250px) {
   .wardrobe-editor-body { grid-template-columns: minmax(0,1fr); }
-  .wardrobe-character-preview { display: flex; align-items: center; gap: 16px; text-align: left; }
-  .wardrobe-character-preview img { width: 120px; height: 150px; flex: none; }
-  .wardrobe-character-preview p, .wardrobe-character-preview small { margin: 0; }
-  .wardrobe-no-render { flex-direction: row; min-height: 0; padding: 0; gap: 12px; text-align: left; }
-  .wardrobe-no-render > svg { flex: none; }
 }
 @media (max-width: 1000px) { .wardrobe-workspace { grid-template-columns: minmax(0,1fr); gap: 20px; } .wardrobe-outfit-list { position: static; display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; } .wardrobe-outfit-choice { flex: 0 0 200px; } .wardrobe-draft-note { flex: none; } }
 @media (max-width: 1000px) { .outfit-illusions { grid-template-columns: minmax(0, 1fr); } .outfit-checklist li { flex-wrap: wrap; } .outfit-checklist .button { margin-left: 28px; } }
 @media (max-width: 600px) {
   .wardrobe-editor-heading .field { max-width: none; }
-  .wardrobe-character-preview { flex-wrap: wrap; }
   .wardrobe-planned-slots li { flex-wrap: wrap; }
   .wardrobe-slot-actions { margin-left: auto; }
 }
+.appearance-picker { display: flex; flex-direction: column; height: min(780px, calc(100dvh - 3rem)); min-height: 0; }
+.appearance-picker-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.appearance-picker-filters .model-page-search { flex: 1 1 240px; min-width: 0; }
+.appearance-picker-stage { position: relative; flex: 1; min-height: 0; }
+.appearance-picker-results { height: 100%; overflow: auto; padding: 2px 6px 14px 2px; }
+.appearance-picker-results > button { display: flex; margin: 16px auto 0; }
+.appearance-picker-results .model-grid { grid-template-columns: repeat(auto-fill, minmax(min(148px, 100%), 1fr)); }

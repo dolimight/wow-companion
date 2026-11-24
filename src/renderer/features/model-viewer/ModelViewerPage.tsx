@@ -1,4 +1,4 @@
-import { lazy, Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Box, ChevronLeft, ChevronRight, ExternalLink, Search, Shirt } from 'lucide-react'
 import type { Character, GearItem } from '../../../shared/domain'
@@ -15,10 +15,10 @@ import { ItemIcon } from '../items/ItemIcon'
 import { wowheadItemUrl } from '../items/ItemPower'
 import { useGameData } from '../items/items'
 import { categories, mountSources, petFamilies, trail, type CategoryFilter, type CategoryNode } from './categories'
-import { ModelTile, TileStageContext, type Tile } from './ModelTile'
+import type { Tile } from './ModelTile'
 import { ModelFilters, noFilters, type ModelFilterValues } from './ModelFilters'
 import { parseQuery } from './query'
-import { TileStage } from './tile-stage'
+import { TileGrid } from './TileGrid'
 import './model-viewer.css'
 
 const ItemModelViewer = lazy(() => import('./ItemModelViewer').then(module => ({ default: module.ItemModelViewer })))
@@ -161,49 +161,13 @@ export function ModelViewerPage({ character, selection, onSelect }: { character:
           </section>
         </div>
       )}
-      <ModelDialog selection={selection} onClose={() => onSelect({ cat: selection.cat })} />
+      <ModelDialog character={character} selection={selection} onClose={() => onSelect({ cat: selection.cat })} />
     </>
   )
 }
 
-/** The tiles, asking for the next page when the end of the grid comes into view */
-function TileGrid({ tiles, more, onMore, paused }: { tiles: Tile[]; more: boolean; onMore: () => void; paused: boolean }) {
-  const end = useRef<HTMLDivElement>(null)
-  const grid = useRef<HTMLUListElement>(null)
-  // The stage draws only inside the scrolling page area, so tiles never paint over the title bar or sidebar
-  const [stage, setStage] = useState<TileStage | null>(null)
-  useEffect(() => {
-    const made = new TileStage(() => {
-      const scroller = grid.current?.closest('.workspace-scroll') ?? document.documentElement
-      const rect = scroller.getBoundingClientRect()
-      return { left: Math.max(0, rect.left), top: Math.max(0, rect.top), right: Math.min(window.innerWidth, rect.right), bottom: Math.min(window.innerHeight, rect.bottom) }
-    })
-    setStage(made)
-    return () => made.dispose()
-  }, [])
-  // A dialog covers the grid, so the stage rests while one is open
-  useEffect(() => { if (stage) stage.paused = paused }, [stage, paused])
-  const latest = useRef(onMore)
-  latest.current = onMore
-  useEffect(() => {
-    const element = end.current
-    if (!element || !more) return
-    const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) latest.current() }, { rootMargin: '600px' })
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [more, tiles.length])
-  return (
-    <TileStageContext.Provider value={stage}>
-      <ul ref={grid} className="model-grid">
-        {tiles.map(tile => <ModelTile key={tile.key} tile={tile} />)}
-      </ul>
-      {more && <div ref={end} className="model-grid-end muted small" role="status">Loading more…</div>}
-    </TileStageContext.Provider>
-  )
-}
-
 /** The large viewer for the open item or creature, with its details */
-function ModelDialog({ selection, onClose }: { selection: ViewerSelection; onClose: () => void }) {
+function ModelDialog({ character, selection, onClose }: { character: Character | null; selection: ViewerSelection; onClose: () => void }) {
   const open = selection.item != null || selection.creature != null
   const item = useQuery({ queryKey: ['item', selection.item], queryFn: () => api.getItem(selection.item!), enabled: selection.item != null })
   const shown = selection.item != null ? item.data ?? null : null
@@ -221,7 +185,7 @@ function ModelDialog({ selection, onClose }: { selection: ViewerSelection; onClo
           {shown && <Button className="model-dialog-link" onClick={() => external(wowheadItemUrl(shown.id, {}))}><ExternalLink size={14} aria-hidden="true" />Wowhead</Button>}
         </header>
         <Suspense fallback={<p className="muted small" role="status">Loading the 3D viewer…</p>}>
-          {shown ? <ItemModelViewer key={`item-${shown.id}`} target={{ kind: 'item', itemId: shown.id, wearable: wearableTypes.has(shown.inventoryType), ownModel: ownModelTypes.has(shown.inventoryType), held: heldTypes.has(shown.inventoryType) }} name={shown.name} />
+          {shown ? <ItemModelViewer key={`item-${shown.id}`} target={{ kind: 'item', itemId: shown.id, wearable: wearableTypes.has(shown.inventoryType), ownModel: ownModelTypes.has(shown.inventoryType), held: heldTypes.has(shown.inventoryType) }} name={shown.name} character={character} />
             : selection.creature != null ? <ItemModelViewer key={`creature-${selection.creature}`} target={{ kind: 'creature', displayId: selection.creature }} name={title} />
               : open ? <p className="muted small" role="status">Loading…</p> : null}
         </Suspense>

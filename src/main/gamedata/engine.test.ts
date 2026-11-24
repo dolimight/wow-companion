@@ -35,6 +35,22 @@ function fixture(version=INDEX_VERSION) {
 }
 
 describe('local character-compatible item search',()=>{
+  it('shows only class-compatible appearances matching both weapon type and handedness', async () => {
+    const { db, add, engine } = fixture()
+    add(1, 'Two-Hand Mace', { inventory: 17, classId: 2, subclass: 5 })
+    add(2, 'One-Hand Mace', { inventory: 13, classId: 2, subclass: 4 })
+    add(3, 'Two-Hand Axe', { inventory: 17, classId: 2, subclass: 1 })
+    add(4, 'Mage-only Mace', { inventory: 17, classId: 2, subclass: 5, mask: 1 << 7 })
+    for (let id = 1; id <= 4; id++) db.prepare('INSERT INTO appearances VALUES (?, ?, ?, 0, NULL)').run(id + 10, id, id + 20)
+    db.close()
+    await engine.useInstall(install)
+    const filters = { slot: 'mainHand' as const, inventoryTypes: [17], weaponSubclasses: [4, 5] }
+    const deathKnight = { className: 'Death Knight', specId: 251, level: 80 }
+    expect(engine.appearanceOptions({ ...filters, character: deathKnight }).items.map(item => item.modifiedAppearanceId)).toEqual([11])
+    expect(engine.appearanceOptions({ ...filters, character: { className: 'Mage', specId: 64, level: 90 } }).items).toEqual([])
+    expect(engine.appearanceOptions({ ...filters, slot: 'offHand', character: deathKnight }).items).toEqual([])
+    expect(engine.appearanceOptions({ ...filters, slot: 'offHand', character: { className: 'Warrior', specId: 72, level: 90 } }).items.map(item => item.modifiedAppearanceId)).toEqual([11])
+  })
   it('paginates compatible unique results across rejected candidates and duplicate variants',async()=>{
     const {db,add,engine}=fixture()
     for(let id=1;id<=180;id++)add(id,`Rejected plate ${id}`,{level:1000-id})

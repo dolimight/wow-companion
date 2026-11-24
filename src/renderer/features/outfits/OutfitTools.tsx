@@ -48,7 +48,7 @@ export function OutfitTools({ character, outfit, onChange }: { character: Charac
       <Field label="Outfit code"><textarea rows={3} readOnly value={encoded.code} onFocus={event => event.currentTarget.select()} spellCheck={false} /></Field>
       {encoded.error && <p role="alert" className="outfit-error">{encoded.error}</p>}
       <Button disabled={!encoded.code} onClick={() => void api.copyText(encoded.code).then(() => notify('Outfit code copied'), () => notify('Select the outfit code and copy it manually'))}><Copy size={14} />Copy outfit code</Button>
-      <p className="outfit-preview-boundary">Desktop model inspection shows an attached export; changing this plan does not rebuild that model<br />The in-game preview reports unsupported pieces and does not apply or purchase transmog</p>
+      <p className="outfit-preview-boundary">Use the in-game preview to check the outfit on your character and see any pieces the desktop preview could only show in part</p>
     </details>
     <details className="outfit-transfer"><summary><Import size={17} aria-hidden="true" /><span>Import an outfit code</span><ChevronRight className="wardrobe-disclosure-chevron" size={16} aria-hidden="true" /></summary><Field label="Paste a WOW Companion outfit code"><textarea rows={3} value={paste} maxLength={87400} onChange={event => { setPaste(event.currentTarget.value); setError(null) }} spellCheck={false} /></Field>{error && <p role="alert" className="outfit-error">{error}</p>}<Button disabled={!paste.trim()} onClick={importCode}><Import size={14} />Apply to this draft</Button></details>
   </section>

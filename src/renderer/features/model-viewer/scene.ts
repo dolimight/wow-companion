@@ -5,10 +5,10 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CanvasTexture } from 'three'
-import type { CreatureModel, ItemModel, ModelGroup, ModelPart, WornModel } from '../../../shared/model'
+import type { CreatureModel, DressedModel, ItemModel, ModelGroup, ModelPart } from '../../../shared/model'
 
 /** What the viewer shows: an item's own models, a creature, or a stand-in character wearing an item */
-export type ViewSubject = { kind: 'item'; model: ItemModel } | { kind: 'creature'; model: CreatureModel } | { kind: 'worn'; model: WornModel }
+export type ViewSubject = { kind: 'item'; model: ItemModel } | { kind: 'creature'; model: CreatureModel } | { kind: 'worn'; model: DressedModel }
 
 /** The stand-in's skin before its textures arrive, and wherever the game's default skin leaves a gap */
 const mannequinSkin = '#a8998c'
@@ -60,6 +60,7 @@ export class ItemModelScene {
   /** Seconds since the last frame while playing, which moves the particles on */
   private step = 0
   private upright = new Group()
+  private readonly frameWeaponMotion: boolean
   playing = true
 
   /** Pictures still on their way; a snapshot waits for them */
@@ -73,6 +74,7 @@ export class ItemModelScene {
   constructor(private canvas: HTMLCanvasElement, subject: ViewSubject, textureUrl: (fileDataId: number) => string | null, options: { renderer?: WebGLRenderer; background?: string } = {}) {
     // An opaque background: the game keeps masks in the alpha of solid textures, which a see-through one would show
     this.ownsRenderer = !options.renderer
+    this.frameWeaponMotion = this.ownsRenderer && subject.kind === 'worn' && subject.model.attached.some(entry => entry.attachment <= 2)
     this.renderer = options.renderer ?? new WebGLRenderer({ canvas, antialias: true })
     this.scene.background = new Color(options.background ?? (getComputedStyle(canvas.parentElement ?? canvas).backgroundColor || '#1c1c1e'))
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
@@ -127,9 +129,9 @@ export class ItemModelScene {
     this.controls = new OrbitControls(this.camera, options.renderer ? document.createElement('div') : canvas)
     this.controls.enableDamping = true
     this.controls.autoRotateSpeed = 1.6
+    if (this.ownsRenderer) this.resize()
     this.fit()
     if (this.ownsRenderer) {
-      this.resize()
       const loop = () => { this.frame = requestAnimationFrame(loop); this.tick() }
       loop()
     }
@@ -177,7 +179,7 @@ export class ItemModelScene {
    * The stand-in body with the item's textures painted onto its skin, section by section, and the item's models hung on
    * the body's attachment points so they follow its animations
    */
-  private dress(model: WornModel, upright: Group, texture: (id: number) => Texture | null, textureUrl: (fileDataId: number) => string | null) {
+  private dress(model: DressedModel, upright: Group, texture: (id: number) => Texture | null, textureUrl: (fileDataId: number) => string | null) {
     const canvas = document.createElement('canvas')
     canvas.width = model.layout.width
     canvas.height = model.layout.height
@@ -340,21 +342,39 @@ export class ItemModelScene {
   }
 
   /** Every animation shown is a game ID; a part without it stands still */
-  setAnimation(id: number | null) { this.animationId = id; this.time = 0 }
+  setAnimation(id: number | null) {
+    const changed = this.animationId !== id
+    this.animationId = id
+    this.time = 0
+    if (changed && this.frameWeaponMotion) this.fit()
+  }
 
   setTurning(on: boolean) { this.controls.autoRotate = on }
 
   /** Frames the model again from the front */
   fit() {
-    this.pose()
-    // Skinned bounds read the bone matrices, which are otherwise only refreshed when a frame is drawn
-    this.scene.updateMatrixWorld(true)
-    this.scene.traverse(object => { if (object instanceof SkinnedMesh) object.skeleton.update() })
-    const box = new Box3().setFromObject(this.scene, true)
+    // Frame the swing, not just its first pose: a long blade can sweep well beyond the standing bounds
+    const duration = this.frameWeaponMotion && this.animationId !== 0
+      ? this.built[0]?.part.animations.find(clip => clip.id === this.animationId)?.duration ?? 0 : 0
+    const box = new Box3(), time = this.time, step = this.step
+    this.step = 0
+    const samples = duration > 0 ? 8 : 1
+    for (let frame = 0; frame < samples; frame++) {
+      this.time = duration > 0 ? duration * frame / samples : time
+      this.pose()
+      // Skinned bounds read the bone matrices, which are otherwise only refreshed when a frame is drawn
+      this.scene.updateMatrixWorld(true)
+      this.scene.traverse(object => { if (object instanceof SkinnedMesh) object.skeleton.update() })
+      box.union(new Box3().setFromObject(this.scene, true))
+    }
+    this.time = time
+    this.step = step
     if (box.isEmpty()) return
     const center = box.getCenter(new Vector3()), size = box.getSize(new Vector3())
     const radius = Math.max(size.length() / 2, 0.05)
-    const distance = radius / Math.sin((this.camera.fov * Math.PI) / 360) * 1.05
+    const vertical = (this.camera.fov * Math.PI) / 360
+    const angle = this.ownsRenderer ? Math.min(vertical, Math.atan(Math.tan(vertical) * this.camera.aspect)) : vertical
+    const distance = radius / Math.sin(angle) * 1.12
     this.camera.near = distance / 100
     this.camera.far = distance * 100
     this.camera.position.copy(center).add(new Vector3(0.35, 0.18, 1).normalize().multiplyScalar(distance))
