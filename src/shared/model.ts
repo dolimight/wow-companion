@@ -258,5 +258,7 @@ export const animationName = (id: number) => animationNames[id] ?? `Animation ${
 
 /** Item kinds with a model of their own: helmets, shoulders, weapons, shields, and off-hands */
 export const ownModelTypes = new Set([1, 3, 13, 14, 15, 17, 21, 22, 23, 25, 26])
+/** Item kinds held rather than worn: weapons, shields, and off-hands. Everything else wearable opens on the stand-in */
+export const heldTypes = new Set([13, 14, 15, 17, 21, 22, 23, 25, 26])
 /** Item kinds a character wears or holds, which the stand-in can show; jewelry and bags are left out */
 export const wearableTypes = new Set([1, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 25, 26])
