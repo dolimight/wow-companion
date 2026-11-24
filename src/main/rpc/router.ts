@@ -163,8 +163,10 @@ export function createRouter(s:RouterServices){return t.router({
   // The same item worn by a stand-in character, and creature models with the mount and pet lists that lead to them
   wornModel:p.input(z.object({itemId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('wornModel',input.itemId))),
   creatureModel:p.input(z.object({displayId:z.number().int().positive()})).query(({input})=>run(()=>s.gameData.call('creatureModel',input.displayId))),
-  mounts:p.input(z.object({text:z.string().max(100).default('')})).query(({input})=>run(()=>s.gameData.call('mounts',input.text))),
-  pets:p.input(z.object({text:z.string().max(100).default('')})).query(({input})=>run(()=>s.gameData.call('pets',input.text))),
+  mounts:p.input(z.object({text:z.string().max(100).default(''),source:z.number().int().min(0).max(30).nullable().default(null),effect:z.enum(['any','with','without']).default('any'),tags:z.array(z.string().regex(/^[a-z]{2,16}$/)).max(8).default([])})).query(({input})=>run(()=>s.gameData.call('mounts',input.text,input.source,300,{effect:input.effect,tags:input.tags}))),
+  pets:p.input(z.object({text:z.string().max(100).default(''),family:z.number().int().min(0).max(20).nullable().default(null),effect:z.enum(['any','with','without']).default('any'),tags:z.array(z.string().regex(/^[a-z]{2,16}$/)).max(8).default([])})).query(({input})=>run(()=>s.gameData.call('pets',input.text,input.family,300,{effect:input.effect,tags:input.tags}))),
+  // The looks index behind colour, theme, and effect filters; asking starts it
+  looksStatus:p.query(()=>run(()=>s.gameData.call('looksStatus'))),
   dungeonSpells:p.input(z.object({ids:z.array(z.number().int().positive()).max(600)})).query(({input})=>run(()=>s.gameData.call('dungeonSpells',input.ids))),
   weeklyAffixes:p.input(z.object({region:z.enum(['us','eu','kr','tw'])})).query(({input})=>run(()=>s.insights.affixes(input.region))),
   characterTimeline:p.input(characterIdSchema).query(({input})=>run(async()=>timelineSchema.parse((await s.db.call('getFeatureState',input.characterId,TIMELINE_NAMESPACE))??{}))),

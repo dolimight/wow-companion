@@ -43,15 +43,120 @@ export type ModelGroup = {
   color: number | null
   uvAnimation: number | null
   order: number
+  /** The game's pixel combiner for its texture layers (see `combiners`) */
+  combiner: number
+  /** Its texture layers, the first being `texture` */
+  layers: ModelLayer[]
+}
+
+/** One texture layer of a draw: its file, which coordinates it reads, and its own scrolling and weight */
+export type ModelLayer = { texture: number | null; textureType: number; wrap: number; coords: 'uv' | 'uv2' | 'env'; uvAnimation: number | null; weight: number | null }
+
+/**
+ * The game's pixel combiners, numbered as wow.export numbers them (MIT, Kruithne and Marlamin), which follows the
+ * client's shader names on wowdev.wiki
+ */
+export const combiners = [
+  'Opaque', 'Mod', 'Opaque_Mod', 'Opaque_Mod2x', 'Opaque_Mod2xNA', 'Opaque_Opaque', 'Mod_Mod', 'Mod_Mod2x', 'Mod_Add', 'Mod_Mod2xNA', 'Mod_AddNA', 'Mod_Opaque',
+  'Opaque_Mod2xNA_Alpha', 'Opaque_AddAlpha', 'Opaque_AddAlpha_Alpha', 'Opaque_Mod2xNA_Alpha_Add', 'Mod_AddAlpha', 'Mod_AddAlpha_Alpha', 'Opaque_Alpha_Alpha',
+  'Opaque_Mod2xNA_Alpha_3s', 'Opaque_AddAlpha_Wgt', 'Mod_Add_Alpha', 'Opaque_ModNA_Alpha', 'Mod_AddAlpha_Wgt', 'Opaque_Mod_Add_Wgt', 'Opaque_Mod2xNA_Alpha_UnshAlpha',
+  'Mod_Dual_Crossfade', 'Opaque_Mod2xNA_Alpha_Alpha', 'Mod_Masked_Dual_Crossfade', 'Opaque_Alpha', 'Guild', 'Guild_NoBorder', 'Guild_Opaque', 'Mod_Depth', 'Illum',
+  'Mod_Mod_Mod_Const', 'Mod_Mod_Depth',
+] as const
+const combiner = (name: (typeof combiners)[number]) => combiners.indexOf(name)
+
+/** Where each layer reads its coordinates, by the client's vertex shader names */
+const vertexShaders: Record<string, Array<ModelLayer['coords']>> = {
+  T1: ['uv'], T2: ['uv2'], Env: ['env'], T1_T2: ['uv', 'uv2'], T1_Env: ['uv', 'env'], Env_T1: ['env', 'uv'], Env_Env: ['env', 'env'], T1_T1: ['uv', 'uv'],
+  T1_Env_T1: ['uv', 'env', 'uv'], T1_T1_T1: ['uv', 'uv', 'uv'], T1_Env_T2: ['uv', 'env', 'uv2'], T1_T2_T1: ['uv', 'uv2', 'uv'], T1_T2_T3: ['uv', 'uv2', 'uv2'],
+  EdgeFade_T1: ['uv'], EdgeFade_T1_T2: ['uv', 'uv2'], EdgeFade_Env: ['env'], Color_T1_T2_T3: ['uv2', 'uv', 'uv2'],
+}
+
+/** The client's shader effects for batches whose shader number has the high bit set: the combiner and the vertex shader */
+const effects: Array<[(typeof combiners)[number], string]> = [
+  ['Opaque_Mod2xNA_Alpha', 'T1_Env'], ['Opaque_AddAlpha', 'T1_Env'], ['Opaque_AddAlpha_Alpha', 'T1_Env'], ['Opaque_Mod2xNA_Alpha_Add', 'T1_Env_T1'],
+  ['Mod_AddAlpha', 'T1_Env'], ['Opaque_AddAlpha', 'T1_T1'], ['Mod_AddAlpha', 'T1_T1'], ['Mod_AddAlpha_Alpha', 'T1_Env'], ['Opaque_Alpha_Alpha', 'T1_Env'],
+  ['Opaque_Mod2xNA_Alpha_3s', 'T1_Env_T1'], ['Opaque_AddAlpha_Wgt', 'T1_T1'], ['Mod_Add_Alpha', 'T1_Env'], ['Opaque_ModNA_Alpha', 'T1_Env'],
+  ['Mod_AddAlpha_Wgt', 'T1_Env'], ['Mod_AddAlpha_Wgt', 'T1_T1'], ['Opaque_AddAlpha_Wgt', 'T1_T2'], ['Opaque_Mod_Add_Wgt', 'T1_Env'],
+  ['Opaque_Mod2xNA_Alpha_UnshAlpha', 'T1_Env_T1'], ['Mod_Dual_Crossfade', 'T1'], ['Mod_Depth', 'EdgeFade_T1'], ['Opaque_Mod2xNA_Alpha_Alpha', 'T1_Env_T2'],
+  ['Mod_Mod', 'EdgeFade_T1_T2'], ['Mod_Masked_Dual_Crossfade', 'T1_T2'], ['Opaque_Alpha', 'T1_T1'], ['Opaque_Mod2xNA_Alpha_UnshAlpha', 'T1_Env_T2'],
+  ['Mod_Depth', 'EdgeFade_Env'], ['Guild', 'T1_T2_T1'], ['Guild_NoBorder', 'T1_T2'], ['Guild_Opaque', 'T1_T2_T1'], ['Illum', 'T1_T1'],
+  ['Mod_Mod_Mod_Const', 'T1_T2_T3'], ['Mod_Mod_Mod_Const', 'Color_T1_T2_T3'], ['Opaque', 'T1'], ['Mod_Mod2x', 'EdgeFade_T1_T2'], ['Mod', 'EdgeFade_T1'],
+  ['Mod_Mod_Depth', 'EdgeFade_T1_T2'],
+]
+
+/**
+ * A batch's combiner and where each layer reads its coordinates. Shader numbers with the high bit index the effect
+ * table; others encode the blends in their low bits and the coordinates in flags 0x80 (reflection), 0x8 (second layer
+ * reflection), and 0x4000 (second set), as wow.export's ShaderMapper reads them
+ */
+export function batchShader(shader: number, layers: number): { combiner: number; coords: Array<ModelLayer['coords']> } {
+  const pad = (coords: Array<ModelLayer['coords']>) => Array.from({ length: layers }, (_, i) => coords[i] ?? coords[coords.length - 1] ?? 'uv')
+  if (shader & 0x8000) {
+    const effect = effects[shader & 0x7fff]
+    if (!effect) return { combiner: combiner('Opaque'), coords: pad(['uv']) }
+    // These read every layer from the first coordinates
+    const same = ['Mod_Dual_Crossfade', 'Opaque_Mod2xNA_Alpha_Alpha', 'Mod_Masked_Dual_Crossfade'].includes(effect[0])
+    return { combiner: combiner(effect[0]), coords: same ? pad(['uv']) : pad(vertexShaders[effect[1]] ?? ['uv']) }
+  }
+  if (layers <= 1) return { combiner: combiner(shader & 0x70 ? 'Mod' : 'Opaque'), coords: [shader & 0x80 ? 'env' : shader & 0x4000 ? 'uv2' : 'uv'] }
+  const coords: Array<ModelLayer['coords']> = shader & 0x80 ? (shader & 0x8 ? ['env', 'env'] : ['env', 'uv']) : shader & 0x8 ? ['uv', 'env'] : shader & 0x4000 ? ['uv', 'uv2'] : ['uv', 'uv']
+  const low = shader & 7
+  const name: (typeof combiners)[number] = shader & 0x70
+    ? low === 3 ? 'Mod_Add' : low === 4 ? 'Mod_Mod2x' : low === 6 ? 'Mod_Mod2xNA' : low === 7 ? 'Mod_AddNA' : 'Mod_Mod'
+    : low === 0 ? 'Opaque_Opaque' : low === 3 || low === 7 ? 'Opaque_AddAlpha' : low === 4 ? 'Opaque_Mod2x' : low === 6 ? 'Opaque_Mod2xNA' : 'Opaque_Mod'
+  return { combiner: combiner(name), coords: pad(coords) }
 }
 
 export type ModelAnimation = { id: number; name: string; duration: number }
+
+/** A value over a particle's life: times run from 0 at birth to 1 at death */
+export type LifeTrack = { times: number[]; values: number[] }
+
+/**
+ * A particle emitter on a bone. Emission values are keyframed like bones; colour, opacity, size, and the texture cell
+ * change over each particle's life
+ */
+export type ModelEmitter = {
+  bone: number
+  position: [number, number, number]
+  texture: number | null
+  /** 0 opaque, 1 alpha key, 2 alpha, 3 and up additive */
+  blend: number
+  /** 1 a plane, 2 a sphere, 3 a spline, 4 a bone */
+  shape: number
+  flags: number
+  rows: number
+  columns: number
+  speed: ModelTrack | null
+  speedVariation: ModelTrack | null
+  verticalRange: ModelTrack | null
+  horizontalRange: ModelTrack | null
+  /** A vector in model space, three values per key */
+  gravity: ModelTrack | null
+  lifespan: ModelTrack | null
+  lifespanVariation: number
+  rate: ModelTrack | null
+  rateVariation: number
+  areaLength: ModelTrack | null
+  areaWidth: ModelTrack | null
+  enabled: ModelTrack | null
+  /** Red, green, and blue from 0 to 255 */
+  color: LifeTrack
+  opacity: LifeTrack
+  /** Width and height */
+  scale: LifeTrack
+  cell: LifeTrack
+  drag: number
+}
 
 export type ModelPart = {
   fileDataId: number
   positions: number[]
   normals: number[]
   uvs: number[]
+  /** The second texture coordinates, read by layers that use them */
+  uvs2: number[]
   boneIndices: number[]
   boneWeights: number[]
   indices: number[]
@@ -63,8 +168,10 @@ export type ModelPart = {
   opacities: Array<ModelTrack | null>
   colors: Array<{ color: ModelTrack | null; alpha: ModelTrack | null }>
   uvAnimations: Array<{ translation: ModelTrack | null; rotation: ModelTrack | null; scale: ModelTrack | null }>
-  /** Particle emitters the viewer leaves out */
+  /** How many particle emitters the model has */
   particles: number
+  /** Its particle emitters, as far as the viewer draws them */
+  emitters: ModelEmitter[]
 }
 
 export type ItemModel = {

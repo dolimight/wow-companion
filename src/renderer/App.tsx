@@ -755,7 +755,7 @@ function Shell() {
           <CalendarClock />
           <span>This week</span>
         </Link>
-        <Link to="/models" search={{ tab: "items" }} className={`nav-link ${isModels ? "active" : ""}`} aria-current={isModels ? "page" : undefined}>
+        <Link to="/models" search={{}} className={`nav-link ${isModels ? "active" : ""}`} aria-current={isModels ? "page" : undefined}>
           <Box /><span>Model viewer</span>
         </Link>
       </nav>
@@ -2758,9 +2758,11 @@ function ModelsRoute() {
 }
 const positive=(value:unknown)=>{const number=Number(value);return Number.isInteger(number)&&number>0?number:undefined};
 const modelsRoute=createRoute({getParentRoute:()=>rootRoute,path:'/models',validateSearch:(search:Record<string,unknown>):ViewerSelection=>({
-  tab:search.tab==='mounts'||search.tab==='pets'?search.tab:'items',
+  cat:typeof search.cat==='string'&&/^[a-z0-9/-]{1,80}$/.test(search.cat)?search.cat:undefined,
   item:positive(search.item),creature:positive(search.creature),icon:positive(search.icon),
   label:typeof search.label==='string'?search.label.slice(0,120):undefined,
+  kind:search.kind==='mount'||search.kind==='pet'?search.kind:undefined,
+  note:typeof search.note==='string'?search.note.slice(0,60):undefined,
 }),component:ModelsRoute});
 const router = createRouter({
   history: createHashHistory(),

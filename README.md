@@ -117,7 +117,7 @@ Seasonal ceilings require a validated ruleset for the character's game build; un
 
 Wardrobe saves appearance intent and can inspect an attached self-contained GLB model. It doesn't assemble a live Retail character model with dynamic armor swaps
 
-The Model viewer reads items, mounts, and battle pets from the installed game files and shows them in 3D with their animations. Helmets, shoulders, weapons, shields, and off-hands show their own models, and any wearable item can be shown on a stand-in human with the game's default skin, face, and hair. Particle effects and enchant glows aren't drawn, and the stand-in wears one item at a time
+The Model viewer reads items, mounts, and battle pets from the installed game files and shows them as a grid of 3D tiles that play their animations while on screen, sorted into the game's categories (weapons by type, armor by material and slot, mounts by source, pets by family). Click a tile to open a large viewer. Models draw with the game's multi-layer texture combiners and particle effects, and any wearable item can be shown on a stand-in human with the game's default skin, face, and hair. Side filters narrow by effects, colors, themes, quality, source, expansion, item level, and season; the search box understands look words such as "purple fire effect", typos included, through Fuse.js. The colors and effects come from a looks index built from the game files the first time the page opens
 
 Public profiles can be private or unavailable, and comparison results retain their source and sample scope. Live authenticated provider behavior and the addon still need real-account and in-game verification beyond the deterministic desktop tests
 

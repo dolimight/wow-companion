@@ -112,6 +112,17 @@ export const itemSearchSchema = z.object({
   maxLevel: z.number().int().min(1).max(2000).nullable().default(null),
   limit: z.number().int().min(1).max(100).default(40),
   offset: z.number().int().nonnegative().default(0),
+  /** Only items of this game class and subclass, such as 2 and 10 for staves */
+  itemClass: z.number().int().min(0).max(20).nullable().default(null),
+  itemSubclass: z.number().int().min(0).max(31).nullable().default(null),
+  /** Only items whose look has a particle effect, or only those without */
+  effect: z.enum(['any', 'with', 'without']).default('any'),
+  /** Only items carrying every one of these look tags, such as "purple" or "fire" */
+  tags: z.array(z.string().regex(/^[a-z]{2,16}$/)).max(8).default([]),
+  /** Only items from this expansion, 0 for the original game */
+  expansion: z.number().int().min(0).max(20).nullable().default(null),
+  /** Only these inventory types, such as 16 for cloaks; used in place of the slot's */
+  inventoryTypes: z.array(z.number().int().min(0).max(30)).min(1).max(30).nullable().default(null),
 })
 export type ItemSearch = z.input<typeof itemSearchSchema>
 /** Secondary stat filter values and the game's stat type for each */

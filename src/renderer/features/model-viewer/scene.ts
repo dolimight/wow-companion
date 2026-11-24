@@ -13,9 +13,12 @@ export type ViewSubject = { kind: 'item'; model: ItemModel } | { kind: 'creature
 /** The stand-in's skin before its textures arrive, and wherever the game's default skin leaves a gap */
 const mannequinSkin = '#a8998c'
 import { sample } from './animate'
+import { ParticleEmitter } from './particles'
+import { applyCombiner, type CombinerUniforms } from './combiners'
+import { DataTexture } from 'three'
 
-type Draw = { mesh: Mesh; material: MeshBasicMaterial | MeshLambertMaterial; group: ModelGroup; texture: Texture | null }
-type Built = { part: ModelPart; bones: Bone[]; draws: Draw[]; root: Group }
+type Draw = { mesh: Mesh; material: MeshBasicMaterial | MeshLambertMaterial; group: ModelGroup; texture: Texture | null; extra: Array<Texture | null>; uniforms: CombinerUniforms | null }
+type Built = { part: ModelPart; bones: Bone[]; draws: Draw[]; root: Group; emitters: ParticleEmitter[] }
 
 /** The game's blend mode as a three.js material setup */
 function blending(material: Material, group: ModelGroup) {
@@ -48,16 +51,30 @@ export class ItemModelScene {
   private copies = new Map<number, Texture[]>()
   /** Textures the scene made itself, such as the painted skin */
   private ownTextures: Texture[] = []
+  /** A white pixel for combiner layers that have no texture */
+  private blank = (() => { const made = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); made.needsUpdate = true; return made })()
   private frame = 0
   private elapsed = 0
   private time = 0
   private animationId: number | null = 0
+  /** Seconds since the last frame while playing, which moves the particles on */
+  private step = 0
+  private upright = new Group()
   playing = true
 
-  constructor(private canvas: HTMLCanvasElement, subject: ViewSubject, textureUrl: (fileDataId: number) => string | null) {
-    // An opaque canvas: the game keeps masks in the alpha of solid textures, which a see-through canvas would show
-    this.renderer = new WebGLRenderer({ canvas, antialias: true })
-    this.scene.background = new Color(getComputedStyle(canvas.parentElement ?? canvas).backgroundColor || '#1c1c1e')
+  /** Pictures still on their way; a snapshot waits for them */
+  private loading: Array<Promise<unknown>> = []
+  private ownsRenderer: boolean
+
+  /**
+   * With `options.renderer` the scene draws through a renderer it shares and doesn't run its own loop or controls, as
+   * the tile snapshots do; `options.background` sets the colour behind the model
+   */
+  constructor(private canvas: HTMLCanvasElement, subject: ViewSubject, textureUrl: (fileDataId: number) => string | null, options: { renderer?: WebGLRenderer; background?: string } = {}) {
+    // An opaque background: the game keeps masks in the alpha of solid textures, which a see-through one would show
+    this.ownsRenderer = !options.renderer
+    this.renderer = options.renderer ?? new WebGLRenderer({ canvas, antialias: true })
+    this.scene.background = new Color(options.background ?? (getComputedStyle(canvas.parentElement ?? canvas).backgroundColor || '#1c1c1e'))
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     this.renderer.outputColorSpace = SRGBColorSpace
     this.scene.add(new AmbientLight(0xffffff, 1.6))
@@ -68,7 +85,7 @@ export class ItemModelScene {
     fill.position.set(-4, 1, -3)
     this.scene.add(fill)
 
-    const upright = new Group()
+    const upright = this.upright
     upright.rotation.set(-Math.PI / 2, 0, 0)
     const facing = new Group()
     facing.rotation.set(0, -Math.PI / 2, 0)
@@ -80,7 +97,9 @@ export class ItemModelScene {
       if (!found) {
         const url = textureUrl(id)
         if (!url) return null
-        found = loader.load(url, () => { for (const copy of this.copies.get(id) ?? []) copy.needsUpdate = true })
+        let done = () => {}
+        this.loading.push(new Promise<void>(resolve => { done = resolve }))
+        found = loader.load(url, () => { for (const copy of this.copies.get(id) ?? []) copy.needsUpdate = true; done() }, undefined, () => done())
         found.colorSpace = SRGBColorSpace
         found.flipY = false
         this.textures.set(id, found)
@@ -103,15 +122,55 @@ export class ItemModelScene {
       }
     }
     this.pose()
-    if (subject.kind === 'item') this.standUp(facing)
+    if (subject.kind === 'item') this.layFlat(facing)
 
-    this.controls = new OrbitControls(this.camera, canvas)
+    this.controls = new OrbitControls(this.camera, options.renderer ? document.createElement('div') : canvas)
     this.controls.enableDamping = true
     this.controls.autoRotateSpeed = 1.6
     this.fit()
-    this.resize()
-    const loop = () => { this.frame = requestAnimationFrame(loop); this.tick() }
-    loop()
+    if (this.ownsRenderer) {
+      this.resize()
+      const loop = () => { this.frame = requestAnimationFrame(loop); this.tick() }
+      loop()
+    }
+  }
+
+  /** Moves the animation, particles, and turning on by `delta` milliseconds, for a scene drawn by someone else's loop */
+  advance(delta: number) {
+    const step = Math.min(delta, 100)
+    if (this.playing) { this.elapsed += step; this.time += step }
+    this.step = this.playing ? step / 1000 : 0
+    this.pose()
+    this.controls.update()
+  }
+
+  /**
+   * Draws into one tile of a shared canvas: `rect` is the tile and `clip` the part of the page it may show in, both in
+   * CSS pixels from the top left; `height` is the canvas height
+   */
+  renderViewport(rect: { left: number; top: number; width: number; height: number }, clip: { left: number; top: number; right: number; bottom: number }, height: number) {
+    const aspect = rect.width / Math.max(1, rect.height)
+    if (Math.abs(this.camera.aspect - aspect) > 1e-3) { this.camera.aspect = aspect; this.camera.updateProjectionMatrix() }
+    const pixels = (rect.height * this.renderer.getPixelRatio()) / (2 * Math.tan((this.camera.fov * Math.PI) / 360))
+    for (const { emitters } of this.built) for (const emitter of emitters) emitter.setScale(pixels)
+    const left = Math.max(rect.left, clip.left), top = Math.max(rect.top, clip.top)
+    const right = Math.min(rect.left + rect.width, clip.right), bottom = Math.min(rect.top + rect.height, clip.bottom)
+    if (right <= left || bottom <= top) return
+    this.renderer.setViewport(rect.left, height - rect.top - rect.height, rect.width, rect.height)
+    this.renderer.setScissor(left, height - bottom, right - left, bottom - top)
+    this.renderer.render(this.scene, this.camera)
+  }
+
+  /** Resolves once every texture has arrived or failed */
+  async ready() { await Promise.all(this.loading) }
+
+  /** Draws one frame through the shared renderer at its size, for a snapshot */
+  renderOnce(width: number, height: number) {
+    this.renderer.setSize(width, height, false)
+    this.camera.aspect = width / height
+    this.camera.updateProjectionMatrix()
+    this.fit()
+    this.renderer.render(this.scene, this.camera)
   }
 
   /**
@@ -131,6 +190,8 @@ export class ItemModelScene {
     this.ownTextures.push(skin)
     // Paint in order once every picture has arrived: the default skin and face, then the item over them
     const layers = [...model.skin, ...model.textures]
+    let painted = () => {}
+    this.loading.push(new Promise<void>(resolve => { painted = resolve }))
     const pictures = layers.map(entry => new Promise<HTMLImageElement | null>(resolve => {
       const url = textureUrl(entry.fileDataId)
       if (!url) return resolve(null)
@@ -147,6 +208,7 @@ export class ItemModelScene {
         if (image && section) context.drawImage(image, section.x, section.y, section.width, section.height)
       })
       skin.needsUpdate = true
+      painted()
     })
     const body = this.build(model.body, texture, group => group.textureType === 1 ? skin : null)
     upright.add(body.root)
@@ -170,6 +232,7 @@ export class ItemModelScene {
     geometry.setAttribute('position', new BufferAttribute(new Float32Array(part.positions), 3))
     geometry.setAttribute('normal', new BufferAttribute(new Float32Array(part.normals), 3))
     geometry.setAttribute('uv', new BufferAttribute(new Float32Array(part.uvs), 2))
+    const second = new BufferAttribute(new Float32Array(part.uvs2.length ? part.uvs2 : part.uvs), 2)
     geometry.setAttribute('skinIndex', new BufferAttribute(new Uint16Array(part.boneIndices), 4))
     geometry.setAttribute('skinWeight', new BufferAttribute(new Float32Array(part.boneWeights), 4))
     const index = new BufferAttribute(part.positions.length / 3 > 65535 ? new Uint32Array(part.indices) : new Uint16Array(part.indices), 1)
@@ -198,6 +261,8 @@ export class ItemModelScene {
       // Each draw gets its own geometry view, so blended ones can be ordered after solid ones
       const view = new BufferGeometry()
       for (const name of ['position', 'normal', 'uv', 'skinIndex', 'skinWeight']) view.setAttribute(name, geometry.getAttribute(name))
+      view.setAttribute('uv1', second)
+      view.setAttribute('wowUv2', second)
       view.setIndex(index)
       view.setDrawRange(group.start, group.count)
       view.boundingBox = null
@@ -211,29 +276,66 @@ export class ItemModelScene {
       }
       const material = group.flags & 0x1 || group.blend >= 3 ? new MeshBasicMaterial({ map, color: map ? 0xffffff : 0x888888 }) : new MeshLambertMaterial({ map, color: map ? 0xffffff : 0x888888 })
       blending(material, group)
+      // Several layers, or a first layer on other coordinates, need the game's combiner
+      const layers = group.layers ?? []
+      const extra = layers.slice(1).map(layer => {
+        const made = copy(layer.texture)
+        if (made) { made.wrapS = layer.wrap & 0x1 ? RepeatWrapping : ClampToEdgeWrapping; made.wrapT = layer.wrap & 0x2 ? RepeatWrapping : ClampToEdgeWrapping; made.center.set(0.5, 0.5); made.needsUpdate = true }
+        return made
+      })
+      if (map && layers[0]?.coords === 'uv2') map.channel = 1
+      const uniforms = layers.length > 1 || group.combiner > 1 || layers[0]?.coords === 'env' ? applyCombiner(material, group.combiner, layers, extra, this.blank) : null
       const mesh = skeleton ? new SkinnedMesh(view, material) : new Mesh(view, material)
       if (mesh instanceof SkinnedMesh && skeleton) mesh.bind(skeleton, new Matrix4())
       mesh.frustumCulled = false
       mesh.renderOrder = (group.blend >= 2 ? 1000 : 0) + group.order
       root.add(mesh)
-      return { mesh, material, group, texture: map }
+      return { mesh, material, group, texture: map, extra, uniforms }
     })
-    return { part, bones, draws, root }
+    // Particles live in world space, so they trail behind a moving bone as the game draws them
+    const emitters = part.emitters.map(emitter => {
+      const made = new ParticleEmitter(emitter, bones[emitter.bone] ?? root, part.bones[emitter.bone]?.pivot ?? [0, 0, 0], emitter.texture ? texture(emitter.texture) : null)
+      this.scene.add(made.points)
+      return made
+    })
+    return { part, bones, draws, root, emitters }
   }
 
   /**
-   * Long models such as staves and swords are stood on end, the end farther from the grip at the top, since a weapon's
-   * model lies along the way it is held
+   * Long models such as staves and swords are laid flat across the view with the head on the right, as item sites show
+   * them. A weapon's model lies along the way it is held with the grip at its origin: when the grip is near one end, the
+   * far end (the blade or head) is the head; when it is near the middle, the end with more of the model is
    */
-  private standUp(facing: Group) {
+  private layFlat(facing: Group) {
     const box = new Box3().setFromObject(facing)
     if (box.isEmpty()) return
     const size = box.getSize(new Vector3())
-    const axis = size.x >= size.z ? 'x' : 'z'
-    if (size[axis] < size.y * 1.3) return
-    const far = Math.abs(box.max[axis]) >= Math.abs(box.min[axis]) ? -1 : 1
-    const turn = new Quaternion().setFromAxisAngle(axis === 'x' ? new Vector3(0, 0, 1) : new Vector3(-1, 0, 0), (far * Math.PI) / 2)
-    facing.quaternion.premultiply(turn)
+    const axis = (['x', 'y', 'z'] as const).reduce((best, entry) => (size[entry] > size[best] ? entry : best), 'x' as 'x' | 'y' | 'z')
+    const others = (['x', 'y', 'z'] as const).filter(entry => entry !== axis)
+    if (size[axis] < Math.max(...others.map(entry => size[entry])) * 1.3) return
+    // +1 when the head is at the positive end of the axis
+    const high = Math.abs(box.max[axis]), low = Math.abs(box.min[axis])
+    let head = high >= low ? 1 : -1
+    if (Math.max(high, low) < Math.min(high, low) * 1.5) {
+      const center = (box.max[axis] + box.min[axis]) / 2
+      const point = new Vector3()
+      let mass = 0
+      facing.traverse(object => {
+        if (!(object instanceof Mesh)) return
+        const positions = object.geometry.getAttribute('position')
+        const index = object.geometry.index
+        const { start, count } = object.geometry.drawRange
+        const end = Math.min(index ? index.count : positions.count, start + count)
+        for (let k = start; k < end; k += 3) {
+          point.fromBufferAttribute(positions, index ? index.getX(k) : k).applyMatrix4(object.matrixWorld)
+          mass += (point[axis] > center ? 1 : -1) * Math.hypot(point[others[0]!], point[others[1]!])
+        }
+      })
+      head = mass >= 0 ? 1 : -1
+    }
+    // Turn the head's end of the axis to +X, the right of the view
+    const from = new Vector3(axis === 'x' ? head : 0, axis === 'y' ? head : 0, axis === 'z' ? head : 0)
+    facing.quaternion.premultiply(new Quaternion().setFromUnitVectors(from, new Vector3(1, 0, 0)))
     facing.updateMatrixWorld(true)
   }
 
@@ -269,11 +371,14 @@ export class ItemModelScene {
     this.renderer.setSize(width, height, false)
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
+    const pixels = (height * this.renderer.getPixelRatio()) / (2 * Math.tan((this.camera.fov * Math.PI) / 360))
+    for (const { emitters } of this.built) for (const emitter of emitters) emitter.setScale(pixels)
   }
 
   private tick() {
     const delta = Math.min(this.clock.getDelta(), 0.1) * 1000
     if (this.playing) { this.elapsed += delta; this.time += delta }
+    this.step = this.playing ? delta / 1000 : 0
     this.pose()
     this.controls.update()
     this.renderer.render(this.scene, this.camera)
@@ -284,7 +389,7 @@ export class ItemModelScene {
     const camera = new Vector3(), up = new Vector3(), parentQuat = new Quaternion(), basis = new Matrix4(), position = new Vector3()
     this.camera.getWorldPosition(camera)
     up.set(0, 1, 0).applyQuaternion(this.camera.quaternion)
-    for (const { part, bones, draws, root } of this.built) {
+    for (const { part, bones, draws, root, emitters } of this.built) {
       const animation = this.animationId == null ? -1 : part.animations.findIndex(entry => entry.id === this.animationId)
       const duration = part.animations[animation]?.duration || 1
       const time = this.time % duration
@@ -313,6 +418,14 @@ export class ItemModelScene {
         node.quaternion.copy(parentQuat.invert().multiply(world))
         node.updateMatrixWorld(true)
       })
+      // An item's effects run whatever it is doing, so an emitter without keys for this animation uses the first that has them
+      const lasting = (track: Parameters<typeof sample>[0], stride: number) => {
+        const value = at(track, stride)
+        if (value || !track) return value
+        const index = track.keys.findIndex(Boolean)
+        return index < 0 ? null : sample(track, index, this.time % (part.animations[index]?.duration || 1), this.elapsed, part.globalLoops, stride)
+      }
+      for (const emitter of emitters) emitter.update(this.step, lasting, this.upright.matrixWorld, 1)
       for (const draw of draws) {
         const { group, material } = draw
         const weight = group.opacity == null ? 1 : at(part.opacities[group.opacity] ?? null, 1)?.[0] ?? 1
@@ -332,6 +445,24 @@ export class ItemModelScene {
           if (turn) draw.texture.rotation = 2 * Math.atan2(turn[2]!, turn[3]!)
           if (size) draw.texture.repeat.set(size[0]!, size[1]!)
         }
+        // The extra layers scroll on their own and carry their own weights
+        if (draw.uniforms) {
+          const layers = group.layers ?? []
+          const weight = (index: number | null) => index == null ? 1 : at(part.opacities[index] ?? null, 1)?.[0] ?? 1
+          draw.uniforms.wowWeights.value.set(weight(layers[0]?.weight ?? null), weight(layers[1]?.weight ?? null), weight(layers[2]?.weight ?? null))
+          draw.extra.forEach((layerTexture, i) => {
+            if (!layerTexture) return
+            const layerScroll = layers[i + 1]?.uvAnimation == null ? null : part.uvAnimations[layers[i + 1]!.uvAnimation!]
+            if (layerScroll) {
+              const move = at(layerScroll.translation, 3), turn = at(layerScroll.rotation, 4), size = at(layerScroll.scale, 3)
+              if (move) layerTexture.offset.set(move[0]!, move[1]!)
+              if (turn) layerTexture.rotation = 2 * Math.atan2(turn[2]!, turn[3]!)
+              if (size) layerTexture.repeat.set(size[0]!, size[1]!)
+            }
+            layerTexture.updateMatrix()
+            ;(i === 0 ? draw.uniforms!.wowT1 : draw.uniforms!.wowT2).value.copy(layerTexture.matrix)
+          })
+        }
       }
     }
   }
@@ -339,8 +470,9 @@ export class ItemModelScene {
   dispose() {
     cancelAnimationFrame(this.frame)
     this.controls.dispose()
-    for (const { draws } of this.built) for (const draw of draws) { draw.mesh.geometry.dispose(); draw.material.dispose(); draw.texture?.dispose() }
+    for (const { draws, emitters } of this.built) { for (const draw of draws) { draw.mesh.geometry.dispose(); draw.material.dispose(); draw.texture?.dispose(); draw.extra.forEach(layer => layer?.dispose()) } emitters.forEach(emitter => emitter.dispose()) }
+    this.blank.dispose()
     for (const texture of [...this.textures.values(), ...this.ownTextures]) texture.dispose()
-    this.renderer.dispose()
+    if (this.ownsRenderer) this.renderer.dispose()
   }
 }
