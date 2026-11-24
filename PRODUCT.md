@@ -50,7 +50,7 @@ Data comes from four layered sources, each optional, and every value names the s
 - The companion addon, installed for the player: the exact Great Vault, saved lockouts, this week's keys, gear, and talents through SavedVariables. WoW only writes them on /reload or normal logout, and a desktop check cannot force that
 Great Vault progress is shown as live when the addon supplied it and as an estimate otherwise; delve progress is only available from the addon
 Weekly resets follow each region's published schedule
-The desktop previews items, weapons and planned outfits on a stand-in using local Retail models, and can inspect an attached GLB. Wardrobe uses the in-game addon to preview the plan on the player's own character
+The desktop previews items, weapons and planned outfits using local Retail models and synced character customization. Wardrobe starts new outfits with no gear applied and offers an in-game preview for pieces that require WoW's renderer
 Item search uses the local Retail game data index; planners never have to know an item ID
 
 ## Brand Commitments

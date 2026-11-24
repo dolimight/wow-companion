@@ -1,4 +1,4 @@
-import type { AppearanceSlot } from './domain'
+import type { AppearanceSlot, Character } from './domain'
 
 /**
  * A game model read from the installed game files for the 3D item viewer. Positions are in the game's coordinates
@@ -190,6 +190,7 @@ export type CreatureModel = { displayId: number; parts: ModelPart[] }
  * body in the layout's sections, and the item's own models on the body's attachment points
  */
 export type DressedModel = {
+  appearance?: 'synced' | 'default' | 'stand-in'
   body: ModelPart
   /** The body texture's size and where each section sits in it */
   layout: { width: number; height: number; sections: Array<{ section: number; x: number; y: number; width: number; height: number }> }
@@ -207,6 +208,7 @@ export type DressedModel = {
 export type WornModel = DressedModel & { itemId: number }
 export type OutfitModel = DressedModel & { unavailable: AppearanceSlot[] }
 export type OutfitModelPiece = { slot: AppearanceSlot; itemId: number | null; modifiedAppearanceId: number | null; appearanceId: number | null }
+export type CharacterModelLook = Pick<Character, 'raceId' | 'sex' | 'customization'>
 
 /** Item kinds and the body pieces they switch on. Each geoset group holds one piece; the item picks it */
 const geosetGroups: Record<number, number[]> = {
@@ -232,17 +234,20 @@ export function wornGeosets(inventoryType: number, geosetGroup: number[], availa
 }
 
 /** Later layers win when two pieces cover the same part of the body */
-export function outfitGeosets(pieces: Array<{ inventoryType: number; geosetGroup: number[] }>, available: Set<number>): number[] {
-  const chosen = new Map(bareGeosets.map(id => [Math.floor(id / 100), id]))
+export function outfitGeosets(pieces: Array<{ inventoryType: number; geosetGroup: number[] }>, available: Set<number>, base = bareGeosets): number[] {
+  const chosen = new Set(base)
   for (const { inventoryType, geosetGroup } of pieces) {
     for (const [index, group] of (geosetGroups[inventoryType] ?? []).entries()) {
       const value = geosetGroup[index] ?? 0
       if (!value) continue
       const id = group * 100 + 1 + value
-      if (available.has(id)) chosen.set(group, id)
+      if (available.has(id)) {
+        for (const current of chosen) if (Math.floor(current / 100) === group) chosen.delete(current)
+        chosen.add(id)
+      }
     }
   }
-  return [...chosen.values()]
+  return [...chosen]
 }
 
 /** Where each kind of item hangs on the body: the attachment point for each of its models */

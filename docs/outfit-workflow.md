@@ -28,11 +28,11 @@ Only the appearance intent crosses the bridge; the selected desktop character an
 
 ## Desktop rendering capability
 
-Wardrobe updates its stand-in human as you add, remove, or hide planned appearances. Local game data provides armor textures, body pieces, weapon attachments, and the animation clips available for each weapon type
+Wardrobe opens a new outfit on the selected character's base body with no gear applied. Synced race, body type, and customization choose the model and skin, and the stage updates as you add, remove, or hide planned appearances
 
-The stand-in uses a fixed body and customization. The in-game preview can check the outfit on your character, including weapon illusions and gear that uses additional skinned meshes
+The preview labels a fallback body or default customization if synced appearance data is unavailable. The in-game preview can show weapon illusions and gear that uses additional skinned meshes
 
-See [model inspection](model-inspection.md) for attached GLB files and standalone weapon previews
+See [model inspection](model-inspection.md) for standalone weapon previews
 
 ## Verification
 

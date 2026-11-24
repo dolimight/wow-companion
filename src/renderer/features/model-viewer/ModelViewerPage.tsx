@@ -161,7 +161,7 @@ export function ModelViewerPage({ character, selection, onSelect }: { character:
           </section>
         </div>
       )}
-      <ModelDialog selection={selection} onClose={() => onSelect({ cat: selection.cat })} />
+      <ModelDialog character={character} selection={selection} onClose={() => onSelect({ cat: selection.cat })} />
     </>
   )
 }
@@ -203,7 +203,7 @@ function TileGrid({ tiles, more, onMore, paused }: { tiles: Tile[]; more: boolea
 }
 
 /** The large viewer for the open item or creature, with its details */
-function ModelDialog({ selection, onClose }: { selection: ViewerSelection; onClose: () => void }) {
+function ModelDialog({ character, selection, onClose }: { character: Character | null; selection: ViewerSelection; onClose: () => void }) {
   const open = selection.item != null || selection.creature != null
   const item = useQuery({ queryKey: ['item', selection.item], queryFn: () => api.getItem(selection.item!), enabled: selection.item != null })
   const shown = selection.item != null ? item.data ?? null : null
@@ -221,7 +221,7 @@ function ModelDialog({ selection, onClose }: { selection: ViewerSelection; onClo
           {shown && <Button className="model-dialog-link" onClick={() => external(wowheadItemUrl(shown.id, {}))}><ExternalLink size={14} aria-hidden="true" />Wowhead</Button>}
         </header>
         <Suspense fallback={<p className="muted small" role="status">Loading the 3D viewer…</p>}>
-          {shown ? <ItemModelViewer key={`item-${shown.id}`} target={{ kind: 'item', itemId: shown.id, wearable: wearableTypes.has(shown.inventoryType), ownModel: ownModelTypes.has(shown.inventoryType), held: heldTypes.has(shown.inventoryType) }} name={shown.name} />
+          {shown ? <ItemModelViewer key={`item-${shown.id}`} target={{ kind: 'item', itemId: shown.id, wearable: wearableTypes.has(shown.inventoryType), ownModel: ownModelTypes.has(shown.inventoryType), held: heldTypes.has(shown.inventoryType) }} name={shown.name} character={character} />
             : selection.creature != null ? <ItemModelViewer key={`creature-${selection.creature}`} target={{ kind: 'creature', displayId: selection.creature }} name={title} />
               : open ? <p className="muted small" role="status">Loading…</p> : null}
         </Suspense>

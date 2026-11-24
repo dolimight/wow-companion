@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useBlocker } from '@tanstack/react-router'
 import { LeaveGuard } from '../../components/LeaveGuard'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Box, Check, ChevronRight, EyeOff, Plus, RotateCcw, Save, Search, Shirt, Trash2, X } from 'lucide-react'
+import { Check, EyeOff, Plus, RotateCcw, Save, Search, Shirt, Trash2, X } from 'lucide-react'
 import { outfitSchema, type AppearanceSlot, type Character, type Outfit } from '../../../shared/domain'
 import { armorForClass } from '../../../shared/gamedata'
 import { outfitModelPieces } from '../../../shared/outfit-model-pieces'
@@ -14,7 +14,6 @@ import { api } from '../../lib/client'
 import { errorMessage, notify } from '../../lib/notify'
 import { OutfitTools } from './OutfitTools'
 import { AppearanceSlotIcon } from './AppearanceSlotIcon'
-import {ModelStage} from '../model-stage/ModelStage'
 import { useUpdateBlocker } from '../../lib/update-safety'
 import { closeWindow, useCloseGuard } from '../../lib/close-guard'
 import './outfits.css'
@@ -32,7 +31,6 @@ export function WardrobePage({ character }: { character: Character }) {
   useUpdateBlocker(dirty, 'Save or discard your outfit before restarting')
   const [pending, setPending] = useState<Outfit | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [modelOpen,setModelOpen]=useState(false)
   const [slot, setSlot] = useState<AppearanceSlot>('head')
   const [searchOpen, setSearchOpen] = useState(false)
   const [text, setText] = useState('')
@@ -67,10 +65,6 @@ export function WardrobePage({ character }: { character: Character }) {
       <div><h2 className="wardrobe-section-title"><Shirt size={18} aria-hidden="true" />Saved outfits</h2><p>Plan appearances for {character.name} and see them together in 3D</p></div>
       <Button onClick={create}><Plus size={14} aria-hidden="true" />New outfit</Button>
     </div>
-    <details className="wardrobe-model-details" onToggle={event => setModelOpen(event.currentTarget.open)}>
-      <summary><Box size={17} aria-hidden="true" /><span>Inspect a 3D model</span><ChevronRight className="wardrobe-disclosure-chevron" size={16} aria-hidden="true" /></summary>
-      {modelOpen && <ModelStage key={character.id} characterId={character.id} />}
-    </details>
     <LeaveGuard open={!!pending || blocker.status === 'blocked' || closing} title="Discard unsaved outfit changes?" description="This outfit has changes that are not saved" onKeep={() => { setPending(null); setClosing(false); if (blocker.status === 'blocked') blocker.reset() }} discardLabel={closeWording ? 'Close without saving' : 'Discard changes'} onDiscard={() => { if (closing) { closeWindow(); return } setDirty(pending ? !query.data?.some(outfit => outfit.id === pending.id) : false); if (pending) { setDraft(pending); setPending(null) } if (blocker.status === 'blocked') blocker.proceed() }} />
     {query.isError ? <div role="alert"><p>{errorMessage(query.error)}</p><Button onClick={() => void query.refetch()}>Try again</Button></div> : query.isPending ? <p className="muted" role="status">Loading outfits…</p> : <div className="wardrobe-workspace" data-empty={!draft && !query.data.length || undefined}>
       {(query.data.length > 0 || draft) && <aside className="wardrobe-outfit-list" aria-label="Saved outfits">
@@ -113,12 +107,12 @@ export function WardrobePage({ character }: { character: Character }) {
         <Card as="aside" size="sm" className="wardrobe-character-preview" aria-label="Outfit preview">
           <CardHeader>
             <CardTitle><h3>Outfit preview</h3></CardTitle>
-            <CardDescription>Planned pieces on a stand-in human</CardDescription>
+            <CardDescription>{previewPieces.length ? `Try planned appearances on ${character.name}` : 'No gear applied'}</CardDescription>
           </CardHeader>
           <CardContent>
-            {previewPieces.length ? <Suspense fallback={<p role="status">Loading the 3D viewer…</p>}>
-              <ItemModelViewer key={draft.id} target={{ kind: 'outfit', pieces: previewPieces }} name={draft.name || 'Outfit'} />
-            </Suspense> : <p className="muted small">Choose an appearance to see it here</p>}
+            <Suspense fallback={<p role="status">Loading the 3D viewer…</p>}>
+              <ItemModelViewer key={draft.id} target={{ kind: 'outfit', pieces: previewPieces }} name={draft.name || 'Outfit'} character={character} />
+            </Suspense>
           </CardContent>
         </Card></div>
         <OutfitTools key={draft.id} character={character} outfit={draft} onChange={change} />

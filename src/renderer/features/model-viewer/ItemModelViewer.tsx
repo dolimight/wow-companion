@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Box, Focus, Pause, Play, RotateCw, Shirt, Sparkles } from 'lucide-react'
 import type { OutfitModelPiece } from '../../../shared/model'
+import type { Character } from '../../../shared/domain'
 import { api } from '../../lib/client'
 import { iconUrl } from '../../lib/assets'
 import { errorMessage } from '../../lib/notify'
@@ -28,25 +29,26 @@ export type ModelTarget =
  * A model from the player's game files: drag to turn it, scroll to zoom, and play the animations it has. Items that
  * have models of their own show them; any wearable item can also be shown on a stand-in character
  */
-export function ItemModelViewer({ target, name }: { target: ModelTarget; name: string }) {
+export function ItemModelViewer({ target, name, character }: { target: ModelTarget; name: string; character?: Character | null }) {
   const { data: gameData } = useGameData()
   const ready = gameData?.state === 'ready'
   // Armor drawn on the body has no model of its own, so it starts on the stand-in; others follow the saved choice
   const [onCharacter, setOnCharacter] = useState(() => readOnCharacter(target.kind === 'item' && target.held))
   const worn = target.kind === 'item' && target.wearable && (!target.ownModel || onCharacter)
   const setWorn = (value: boolean) => { setOnCharacter(value); try { localStorage.setItem(onCharacterKey(target.kind === 'item' && target.held), value ? '1' : '0') } catch { /* storage unavailable */ } }
+  const characterKey = [character?.id, character?.raceId, character?.sex, character?.customization]
   const key = target.kind === 'creature' ? ['creature-model', target.displayId]
-    : target.kind === 'outfit' ? ['outfit-model', gameData?.indexedVersion, target.pieces]
-      : [worn ? 'worn-model' : 'item-model', target.itemId]
+    : target.kind === 'outfit' ? ['outfit-model', gameData?.indexedVersion, target.pieces, characterKey]
+      : worn ? ['worn-model', target.itemId, characterKey] : ['item-model', target.itemId]
   const model = useQuery({
     queryKey: key,
     queryFn: async (): Promise<(ViewSubject & { unavailable?: number }) | null> => {
       if (target.kind === 'creature') { const found = await api.creatureModel(target.displayId); return found ? { kind: 'creature', model: found } : null }
       if (target.kind === 'outfit') {
-        const found = await api.outfitModel(target.pieces)
+        const found = await api.outfitModel(target.pieces, character?.id)
         return found ? { kind: 'worn', model: found, unavailable: new Set(found.unavailable).size } : null
       }
-      if (worn) { const found = await api.wornModel(target.itemId); return found ? { kind: 'worn', model: found } : null }
+      if (worn) { const found = await api.wornModel(target.itemId, character?.id); return found ? { kind: 'worn', model: found } : null }
       const found = await api.itemModel(target.itemId)
       return found ? { kind: 'item', model: found } : null
     },
@@ -107,7 +109,10 @@ export function ItemModelViewer({ target, name }: { target: ModelTarget; name: s
             <span className="model-viewer-chips">
               {animations.length === 1 && <Badge>{animations[0]!.name}</Badge>}
               {model.data.kind === 'item' && model.data.model.parts.length > 1 && <Badge>{model.data.model.parts.length} pieces</Badge>}
-              {model.data.kind === 'worn' && target.kind !== 'outfit' && <Badge><Shirt size={12} aria-hidden="true" />Stand-in human</Badge>}
+              {model.data.kind === 'worn' && <Badge><Shirt size={12} aria-hidden="true" />{
+                model.data.model.appearance === 'synced' ? character?.name ?? 'Synced appearance'
+                  : model.data.model.appearance === 'default' ? 'Default customization' : 'Stand-in human'
+              }</Badge>}
               {particles && <Badge><Sparkles size={12} aria-hidden="true" />Particle effects</Badge>}
             </span>
           </>

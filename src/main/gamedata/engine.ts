@@ -8,7 +8,8 @@ import { detectInstall, readInstall, type WowInstall } from './install'
 import { readHeader, readTable, type Row } from './wdc'
 import { readM2, readM2File, readSkin } from './m2'
 import { colorName, paletteOf, tagString, themeTags, type LookColor } from '../../shared/looks'
-import { outfitGeosets, wearableTypes, weaponAnimations, wornAttachments, type CreatureModel, type DressedModel, type ItemModel, type ModelPart, type OutfitModel, type OutfitModelPiece, type WornModel } from '../../shared/model'
+import { bareGeosets, outfitGeosets, wearableTypes, weaponAnimations, wornAttachments, type CharacterModelLook, type CreatureModel, type DressedModel, type ItemModel, type ModelPart, type OutfitModel, type OutfitModelPiece, type WornModel } from '../../shared/model'
+import { syncedCharacterLook } from './character-look'
 import { armorSlots, armorTypes, inventoryTypeNames, itemSearchSchema, secondaryStatTypes, slotInventoryTypes, type AppearanceOption, type BonusInfo, type CatalystSource, type EmbellishmentOption, type EnhancementOption, runeforgeIds, type GameDataStatus, type ItemDetail, type ItemInstance, type ItemLootShare, type ItemPower, type ItemSearch, type ItemSearchCharacter, type ItemSource, type ItemSummary } from '../../shared/gamedata'
 import { effectText, scaledArmor, scaledEffects, scaledStats, type ArmorLocationRow, type ItemEffectData, type ItemStatBlock, type RatingColumns, type ScalingLevel, type SpellData } from '../../shared/item-scaling'
 import type { AppearanceSlot, StatWeights } from '../../shared/domain'
@@ -977,7 +978,7 @@ export class GameDataEngine {
   }
 
   /** An item's base appearance: its display row with the tables that resolve its models and textures */
-  private async itemDisplay(itemId: number | null, modifiedAppearanceId: number | null = null, appearanceId: number | null = null) {
+  private async itemDisplay(itemId: number | null, modifiedAppearanceId: number | null = null, appearanceId: number | null = null, look?: CharacterModelLook) {
     const [modified, appearances, displays, models, textures, components, componentTextures, modelMaterials] = await Promise.all(['ItemModifiedAppearance', 'ItemAppearance', 'ItemDisplayInfo', 'ModelFileData', 'TextureFileData', 'ComponentModelFileData', 'ComponentTextureFileData', 'ItemDisplayInfoModelMatRes'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
     const list = (value: unknown) => (Array.isArray(value) ? value : [value]).map(entry => Number(entry) || 0)
@@ -986,18 +987,24 @@ export class GameDataEngine {
       : itemId !== null ? [...modified.values()].filter(row => num(row.ItemID) === itemId && (appearanceId === null || num(row.ItemAppearanceID) === appearanceId)).sort((a, b) => num(a.OrderIndex) - num(b.OrderIndex))[0] : undefined
     const display = displays.get(num(appearances.get(num(base?.ItemAppearanceID))?.ItemDisplayInfoID))
     if (!display) return null
-    // Models and textures come in versions per race and body type; the human male one (race 1, body 0) is used
+    const race = look?.raceId ?? 1
+    const gender = look?.sex === 'female' ? 1 : 0
     const modelFile = (resource: number, slot: number) => {
       const files = [...models.values()].filter(row => num(row.ModelResourcesID) === resource)
       const entry = (row: Row) => components.get(num(row.FileDataID))
       const fits = (row: Row) => { const found = entry(row); return !found || num(found.PositionIndex) < 0 || num(found.PositionIndex) === slot }
-      const human = (row: Row) => { const found = entry(row); return !!found && num(found.RaceID) === 1 && num(found.GenderIndex) === 0 }
-      return num((files.find(row => fits(row) && human(row)) ?? files.find(fits) ?? files[0])?.FileDataID) || null
+      const match = (row: Row) => { const found = entry(row); return !!found && num(found.RaceID) === race && num(found.GenderIndex) === gender }
+      return num((files.find(row => fits(row) && match(row)) ?? files.find(row => fits(row) && !entry(row)) ?? files.find(fits) ?? files[0])?.FileDataID) || null
     }
     const textureFile = (material: number) => {
       if (!material) return null
       const files = [...textures.values()].filter(row => num(row.MaterialResourcesID) === material)
-      const score = (row: Row) => { const found = componentTextures.get(num(row.FileDataID)); if (!found) return 1; const gender = num(found.GenderIndex), race = num(found.RaceID); return (gender === 0 || gender === 3 ? 2 : 0) + (race === 1 ? 2 : race === 0 ? 1 : 0) }
+      const score = (row: Row) => {
+        const found = componentTextures.get(num(row.FileDataID))
+        if (!found) return 2
+        const variantRace = num(found.RaceID), variantGender = num(found.GenderIndex)
+        return (variantRace === race ? 8 : variantRace === 0 ? 4 : 0) + (variantGender === gender ? 2 : variantGender === 3 ? 1 : -4)
+      }
       return num(files.sort((a, b) => score(b) - score(a))[0]?.FileDataID) || null
     }
     const materials = list(display.ModelMaterialResourcesID)
@@ -1040,24 +1047,24 @@ export class GameDataEngine {
    * A stand-in human male wearing one item: the body pieces the item switches on, its textures for each body section,
    * and its models on the hands, shoulders, head, or back. The body has no skin or hair textures of its own
    */
-  wornModel(itemId: number): Promise<WornModel | null> {
+  wornModel(itemId: number, look?: CharacterModelLook): Promise<WornModel | null> {
     if (!Number.isInteger(itemId) || itemId <= 0) return Promise.reject(new Error('Invalid item'))
-    return this.remember(`worn:${itemId}`, async () => {
-      const found = await this.itemDisplay(itemId)
+    return this.remember(`worn:${itemId}:${JSON.stringify(look)}`, async () => {
+      const found = await this.itemDisplay(itemId, null, null, look)
       const detail = this.item(itemId)
       if (!found || !detail) return null
-      const result = await this.dressedModel([{ found, inventoryType: detail.inventoryType, subclassId: detail.subclassId, slot: undefined }])
+      const result = await this.dressedModel([{ found, inventoryType: detail.inventoryType, subclassId: detail.subclassId, slot: undefined }], look)
       return result ? { ...result.model, itemId } : null
     })
   }
 
   /** Resolve exact appearance sources before painting the pieces together on the viewer's stand-in */
-  outfitModel(pieces: OutfitModelPiece[]): Promise<OutfitModel | null> {
+  outfitModel(pieces: OutfitModelPiece[], look?: CharacterModelLook): Promise<OutfitModel | null> {
     const ordered = [...pieces].sort((a, b) => outfitLayerOrder.indexOf(a.slot) - outfitLayerOrder.indexOf(b.slot))
-    return this.remember(`outfit:${JSON.stringify(ordered)}`, async () => {
+    return this.remember(`outfit:${JSON.stringify([look, ordered])}`, async () => {
       const unavailable: AppearanceSlot[] = []
       const resolved = await Promise.all(ordered.map(async piece => {
-        const found = await this.itemDisplay(piece.itemId, piece.modifiedAppearanceId, piece.appearanceId)
+        const found = await this.itemDisplay(piece.itemId, piece.modifiedAppearanceId, piece.appearanceId, look)
         const detail = found?.itemId ? this.item(found.itemId) : null
         if (!found || !detail || !wearableTypes.has(detail.inventoryType) || !slotInventoryTypes[piece.slot]?.includes(detail.inventoryType)) {
           unavailable.push(piece.slot)
@@ -1065,15 +1072,19 @@ export class GameDataEngine {
         }
         return { found, inventoryType: detail.inventoryType, subclassId: detail.subclassId, slot: piece.slot }
       }))
-      const result = await this.dressedModel(resolved.filter(piece => piece != null))
+      const result = await this.dressedModel(resolved.filter(piece => piece != null), look)
       return result ? { ...result.model, unavailable: [...unavailable, ...result.unavailable] } : null
     })
   }
 
-  private async dressedModel(pieces: Array<{ found: NonNullable<Awaited<ReturnType<GameDataEngine['itemDisplay']>>>; inventoryType: number; subclassId: number; slot: AppearanceSlot | undefined }>): Promise<{ model: DressedModel; unavailable: AppearanceSlot[] } | null> {
+  private async dressedModel(pieces: Array<{ found: NonNullable<Awaited<ReturnType<GameDataEngine['itemDisplay']>>>; inventoryType: number; subclassId: number; slot: AppearanceSlot | undefined }>, look?: CharacterModelLook): Promise<{ model: DressedModel; unavailable: AppearanceSlot[] } | null> {
     const [chrModels, displays, creatureModels, layouts, sections, materials, textureRows, componentTextures] = await Promise.all(['ChrModel', 'CreatureDisplayInfo', 'CreatureModelData', 'CharComponentTextureLayouts', 'CharComponentTextureSections', 'ItemDisplayInfoMaterialRes', 'TextureFileData', 'ComponentTextureFileData'].map(table => this.traitTable(table)))
     const num = (value: unknown) => Number(Array.isArray(value) ? value[0] : value) || 0
-    const chr = chrModels.get(1)
+    const bodyIndex = look?.sex === 'female' ? 1 : 0
+    const raceModels = look?.raceId && look.sex ? await this.traitTable('ChrRaceXChrModel') : null
+    const match = raceModels && [...raceModels.values()].find(row => num(row.ChrRacesID) === look?.raceId && num(row.Sex) === bodyIndex)
+    const modelId = num(match && match.ChrModelID) || 1
+    const chr = chrModels.get(modelId)
     const bodyFile = num(creatureModels.get(num(displays.get(num(chr?.DisplayID))?.ModelID))?.FileDataID)
     const layoutId = num(chr?.CharComponentTextureLayoutID)
     const layout = layouts.get(layoutId)
@@ -1082,19 +1093,33 @@ export class GameDataEngine {
     const cape = capePiece?.textureFile(capePiece.materials[0] ?? 0) ?? null
     const skinTexture = (material: number) => {
       const candidates = [...textureRows.values()].filter(row => num(row.MaterialResourcesID) === material)
-      const human = candidates.find(row => {
+      const variant = candidates.find(row => {
         const component = componentTextures.get(num(row.FileDataID))
-        return component && num(component.RaceID) === 1 && num(component.GenderIndex) === 0
+        return component && num(component.RaceID) === (match ? look?.raceId : 1) && num(component.GenderIndex) === (match ? bodyIndex : 0)
       })
-      return num((human ?? candidates[0])?.FileDataID) || null
+      return num((variant ?? candidates[0])?.FileDataID) || null
     }
-    const looks = await this.defaultLook(1, layoutId, skinTexture)
+    const synced = match && look?.customization.length ? await this.readSyncedLook(modelId, layoutId, look, skinTexture) : null
+    const looks = synced?.skin.length ? { skin: synced.skin, hair: synced.textures.get(6) ?? null, hairGeoset: null } : await this.defaultLook(modelId, layoutId, skinTexture)
+    const conditional = synced?.conditionalModel ? (await this.traitTable('ChrCustomizationCondModel').catch(() => null))?.get(synced.conditionalModel) : undefined
     // A helmet covers the hair
     const hairGeoset = pieces.some(piece => piece.inventoryType === 1) ? null : looks.hairGeoset
     const weapons = pieces.flatMap(({ inventoryType, subclassId, slot }) => weaponAnimations(inventoryType, subclassId, slot))
     const animations = [...new Set([0, 4, 5, ...(weapons.length ? weapons : [25, 60, 69, 53, 113])])]
-    const body = await this.modelPart(bodyFile, (type, txid) => type === 0 ? txid || null : type === 2 ? cape : type === 6 ? looks.hair : null, {
-      geosets: available => new Set([...outfitGeosets(pieces.map(({ inventoryType, found }) => ({ inventoryType, geosetGroup: found.geosetGroup })), available), ...(hairGeoset != null && available.has(hairGeoset) ? [hairGeoset] : [])]),
+    const helmet = pieces.some(piece => piece.inventoryType === 1)
+    const body = await this.modelPart(num(conditional?.FileDataID) || bodyFile, (type, txid) => type === 0 ? txid || null : type === 2 ? cape : type === 6 ? looks.hair : synced?.textures.get(type) ?? null, {
+      geosets: available => {
+        const selectedGroups = new Set([...synced?.pickedGeosets ?? []].map(id => Math.floor(id / 100)).filter(Boolean))
+        const base = bareGeosets.filter(id => available.has(id) && !synced?.replaceGeosets.has(id) && !selectedGroups.has(Math.floor(id / 100)))
+        for (const group of [7, 22, 32]) {
+          if (selectedGroups.has(group) || base.some(id => Math.floor(id / 100) === group)) continue
+          const id = [...available].find(id => Math.floor(id / 100) === group && !synced?.replaceGeosets.has(id))
+          if (id != null) base.push(id)
+        }
+        for (const id of synced?.pickedGeosets ?? []) if (available.has(id) && (!helmet || Math.floor(id / 100) !== 0)) base.push(id)
+        if (hairGeoset != null && available.has(hairGeoset)) base.push(hairGeoset)
+        return new Set(outfitGeosets(pieces.map(({ inventoryType, found }) => ({ inventoryType, geosetGroup: found.geosetGroup })), available, base))
+      },
       animations,
     })
     if (!body) return null
@@ -1129,10 +1154,16 @@ export class GameDataEngine {
     return {
       unavailable,
       model: {
+        appearance: synced?.skin.length ? 'synced' : match ? 'default' : 'stand-in',
         body, textures, cape, attached, skin: looks.skin, hair: looks.hair,
         layout: { width: num(layout.Width), height: num(layout.Height), sections: [...sections.values()].filter(row => num(row.CharComponentTextureLayoutID) === layoutId).map(row => ({ section: num(row.SectionType), x: num(row.X), y: num(row.Y), width: num(row.Width), height: num(row.Height) })) },
       },
     }
+  }
+
+  private async readSyncedLook(modelId: number, layout: number, look: CharacterModelLook, textureFile: (material: number) => number | null) {
+    const [options, choices, elements, materials, layers, geosets] = await Promise.all(['ChrCustomizationOption', 'ChrCustomizationChoice', 'ChrCustomizationElement', 'ChrCustomizationMaterial', 'ChrModelTextureLayer', 'ChrCustomizationGeoset'].map(table => this.traitTable(table)))
+    return syncedCharacterLook(modelId, layout, look.customization, { options, choices, elements, materials, layers, geosets }, textureFile)
   }
 
   /**
