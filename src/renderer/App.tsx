@@ -34,6 +34,7 @@ import {
   ArrowDownUp,
   ArrowLeft,
   ArrowRight,
+  Box,
   CalendarClock,
   Check,
   ChevronsUpDown,
@@ -106,6 +107,7 @@ import { useStagePlan } from "./features/plan/StagePlan";
 import { vaultTracks } from "../shared/weekly";
 import { ProgressionPage, ProgressionSummary, useSeasonCeiling } from "./features/progression/progression";
 import { TonightPage } from "./features/tonight/TonightPage";
+import { ModelViewerPage, type ViewerSelection } from "./features/model-viewer/ModelViewerPage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { BestGearPage } from "./features/optimizer/BestGearPage";
 import { GearFreshness } from "./features/sync/GearFreshness";
@@ -702,6 +704,7 @@ function Shell() {
   const isSetup = currentPath === "/setup";
   const isWeek = currentPath === "/week";
   const isTonight = currentPath === "/tonight";
+  const isModels = currentPath === "/models";
   const isRoster = currentPath === "/" || currentPath === "/characters";
   const changeCharacter = (id: string) => {
     void api.saveSettings({ lastCharacterId: id }).then(saved=>client.setQueryData(['settings'],saved));
@@ -711,6 +714,8 @@ function Shell() {
   };
   const title = isTonight
     ? "Tonight"
+    : isModels
+      ? "Model viewer"
     : isSetup
         ? "Setup"
         : isWeek
@@ -749,6 +754,9 @@ function Shell() {
         >
           <CalendarClock />
           <span>This week</span>
+        </Link>
+        <Link to="/models" search={{ tab: "items" }} className={`nav-link ${isModels ? "active" : ""}`} aria-current={isModels ? "page" : undefined}>
+          <Box /><span>Model viewer</span>
         </Link>
       </nav>
       <div className="nav-group-label">Selected character</div>
@@ -2741,9 +2749,22 @@ function TonightRoute() {
   }}/>;
 }
 const tonightRoute=createRoute({getParentRoute:()=>rootRoute,path:'/tonight',component:TonightRoute});
+function ModelsRoute() {
+  const roster=useRoster();const settings=useSettings();const navigate=useNavigate();
+  const selection=modelsRoute.useSearch();
+  const active=(roster.data??[]).filter(c=>!c.archived);
+  const character=active.find(c=>c.id===settings.data?.lastCharacterId)??active.find(c=>c.isMain)??active[0]??null;
+  return <ModelViewerPage character={character} selection={selection} onSelect={next=>void navigate({to:'/models',search:next})}/>;
+}
+const positive=(value:unknown)=>{const number=Number(value);return Number.isInteger(number)&&number>0?number:undefined};
+const modelsRoute=createRoute({getParentRoute:()=>rootRoute,path:'/models',validateSearch:(search:Record<string,unknown>):ViewerSelection=>({
+  tab:search.tab==='mounts'||search.tab==='pets'?search.tab:'items',
+  item:positive(search.item),creature:positive(search.creature),icon:positive(search.icon),
+  label:typeof search.label==='string'?search.label.slice(0,120):undefined,
+}),component:ModelsRoute});
 const router = createRouter({
   history: createHashHistory(),
-  routeTree: rootRoute.addChildren([indexRoute, rosterRoute, characterRoute, characterViewRoute, settingsRoute, setupRoute, weekRoute, tonightRoute, miniRoute]),
+  routeTree: rootRoute.addChildren([indexRoute, rosterRoute, characterRoute, characterViewRoute, settingsRoute, setupRoute, weekRoute, tonightRoute, modelsRoute, miniRoute]),
 });
 declare module "@tanstack/react-router" {
   interface Register {
