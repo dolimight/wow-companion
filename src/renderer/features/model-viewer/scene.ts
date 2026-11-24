@@ -51,8 +51,8 @@ export class ItemModelScene {
   private copies = new Map<number, Texture[]>()
   /** Textures the scene made itself, such as the painted skin */
   private ownTextures: Texture[] = []
-  /** A white pixel for combiner layers that have no texture */
-  private blank = (() => { const made = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); made.needsUpdate = true; return made })()
+  /** A clear white pixel for combiner layers the item leaves empty, such as enchant glows: it adds no light, mixes nothing in, and multiplies by one */
+  private blank = (() => { const made = new DataTexture(new Uint8Array([255, 255, 255, 0]), 1, 1); made.needsUpdate = true; return made })()
   private frame = 0
   private elapsed = 0
   private time = 0
